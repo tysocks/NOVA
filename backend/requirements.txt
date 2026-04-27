@@ -1,0 +1,8 @@
+fastapi
+python-multipart
+uvicorn
+psycopg2-binary
+pydantic-settings
+PySide6
+pandas
+nptdms
