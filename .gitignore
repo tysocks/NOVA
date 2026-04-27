@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+
+# Local environment secrets
+.env
+backend/.env
+
+# Uploaded and sample runtime files
+backend/uploads/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
