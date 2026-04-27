@@ -202,3 +202,33 @@ def list_channels_for_tests(
         cur.execute(sql, (test_run_ids,))
         rows: Sequence[dict] = cur.fetchall()
     return [ChannelItem(**row) for row in rows]
+
+
+def list_test_metadata(
+    test_run_ids: list[int],
+    db_name: str | None = None,
+    db_host: str | None = None,
+    db_port: int | None = None,
+    db_user: str | None = None,
+    db_password: str | None = None,
+    db_sslmode: str | None = None,
+) -> list[dict]:
+    if not test_run_ids:
+        return []
+    sql = """
+    SELECT tr.*
+    FROM test_runs tr
+    WHERE tr.id = ANY(%s)
+    ORDER BY tr.start_time DESC NULLS LAST, tr.id DESC
+    """
+    with get_conn(
+        db_name=db_name,
+        db_host=db_host,
+        db_port=db_port,
+        db_user=db_user,
+        db_password=db_password,
+        db_sslmode=db_sslmode,
+    ) as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql, (test_run_ids,))
+        rows: Sequence[dict] = cur.fetchall()
+    return list(rows)

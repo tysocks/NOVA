@@ -54,6 +54,22 @@ Create a new derived channel from multiple source channels using a formula with 
 
 - selected channels are mapped by order to `A`, `B`, `C`, ...
 - formula examples: `A + B`, `A / B`, `(A - B) * 10`
+- band-pass syntax: `band_pass_filter(A, low_freq, high_freq)`
+
+Supported formula functions:
+
+- `ABS(x)`
+- `SQRT(x)`
+- `POW(x, y)`
+- `EXP(x)`
+- `LOG(x)`
+- `LOG10(x)`
+- `SIN(x)`, `COS(x)`, `TAN(x)`
+- `ASIN(x)`, `ACOS(x)`, `ATAN(x)`
+- `ROUND(x)`, `FLOOR(x)`, `CEIL(x)`
+- `MIN(...)`, `MAX(...)`
+- `CLAMP(x, lo, hi)`
+- `BAND_PASS_FILTER(A, low_freq, high_freq)`
 
 You can configure:
 

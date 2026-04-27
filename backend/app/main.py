@@ -9,6 +9,7 @@ from .services.timeseries import (
     list_channels,
     list_channels_for_tests,
     list_databases,
+    list_test_metadata,
     list_tests,
 )
 from .services.file_sources import file_channels, file_tests, file_timeseries
@@ -129,6 +130,27 @@ def timeseries(
         start_time=start_time,
         end_time=end_time,
         limit=limit,
+        db_name=db_name,
+        db_host=db_host,
+        db_port=db_port,
+        db_user=db_user,
+        db_password=db_password,
+        db_sslmode=db_sslmode,
+    )
+
+
+@app.get("/api/metadata")
+def metadata(
+    test_run_ids: list[int] = Query(..., description="One or more test_run_id values."),
+    db_name: str | None = Query(default=None, description="Optional database override."),
+    db_host: str | None = Query(default=None),
+    db_port: int | None = Query(default=None),
+    db_user: str | None = Query(default=None),
+    db_password: str | None = Query(default=None),
+    db_sslmode: str | None = Query(default=None),
+) -> list[dict]:
+    return list_test_metadata(
+        test_run_ids=test_run_ids,
         db_name=db_name,
         db_host=db_host,
         db_port=db_port,
