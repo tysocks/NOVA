@@ -13,6 +13,10 @@ NOVA supports multiple data source types in one session:
 The UI lets you:
 
 - Add multiple sources, then add databases/tests/channels from those sources.
+- Use the `+` button in Channels with a dropdown:
+  - `Add channels from source`
+  - `Rolling channel calculations`
+  - `Channel wise calculations`
 - Multi-select tests/channels and plot in Plotly.
 - Use either `time` or a selected channel on the X axis.
 - Switch time reference between `Raw Time` and `t0 = First Point (per test)`.
@@ -22,6 +26,49 @@ The UI lets you:
 - Use a simple ruler tool (`R` key + right-click after hover) for delta and slope checks.
 
 UI state is persisted in browser storage and restored on restart.
+
+## Calculated Channels
+
+Calculated channels are created client-side from selected source channels and are available in the same channels list as regular channels.
+
+### Rolling channel calculations
+
+Create a new derived channel from one source channel using:
+
+- `mean`
+- `sum`
+- `min`
+- `max`
+- `std`
+
+You can configure:
+
+- calculated channel name
+- output units
+- source channel
+- rolling window size (samples)
+
+### Channel wise calculations
+
+Create a new derived channel from multiple source channels using a formula with letter variables:
+
+- selected channels are mapped by order to `A`, `B`, `C`, ...
+- formula examples: `A + B`, `A / B`, `(A - B) * 10`
+
+You can configure:
+
+- calculated channel name
+- output units
+- channel selection order
+- formula expression
+
+### Editing calculated channels
+
+Right-click a calculated channel in the Channels list and choose:
+
+- `Edit calculated channel...`
+
+You can edit name, units, input channels, and formula/rolling settings. The existing right-click actions for frequency and delete still apply.
 
 ## Project Structure
 
