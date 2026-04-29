@@ -12,6 +12,7 @@ from PySide6.QtCore import QUrl, Qt
 from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtGui import QPixmap
+from PySide6.QtWebEngineCore import QWebEngineProfile
 
 
 def wait_for_port(host: str, port: int, timeout_s: float = 20.0) -> bool:
@@ -50,6 +51,14 @@ def main() -> None:
     env["PYTHONPATH"] = str(backend_dir)
 
     app = QApplication(sys.argv)
+    # Force a stable on-disk WebEngine profile so localStorage/cookies persist
+    # across launches (important for UI preferences like appearance settings).
+    profile_root = project_root / ".nova_profile"
+    profile_root.mkdir(parents=True, exist_ok=True)
+    profile = QWebEngineProfile.defaultProfile()
+    profile.setPersistentStoragePath(str(profile_root / "storage"))
+    profile.setCachePath(str(profile_root / "cache"))
+    profile.setPersistentCookiesPolicy(QWebEngineProfile.ForcePersistentCookies)
     splash = QSplashScreen(QPixmap(500, 240))
     splash.showMessage("Starting NOVA...", alignment=Qt.AlignCenter | Qt.AlignBottom, color=Qt.white)
     splash.show()
