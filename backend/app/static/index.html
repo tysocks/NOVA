@@ -4,40 +4,57 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NOVA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <style>
-    :root { color-scheme: dark; }
+    :root { color-scheme: dark; --nova-ui-bg:#070b11; --nova-view-bg:#000000; --nova-accent:#1e3a8a; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #0b1220; color: #e2e8f0; height: 100vh; overflow: hidden; }
-    .ribbon { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid #1f2937; background: #0f172a; }
-    .app { display: flex; height: calc(100vh - 46px); width: 100vw; }
-    .sidebar { width: 30%; min-width: 360px; max-width: 580px; background: #0f172a; border-right: 1px solid #1f2937; padding: 10px; overflow-y: auto; }
-    .main { width: 70%; padding: 10px; background: #020617; overflow: hidden; display: flex; flex-direction: column; }
-    .panel { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+    body { margin: 0; font-family: "MiSans", "Segoe UI", "Microsoft YaHei UI", Arial, sans-serif; font-size: 13px; background: var(--nova-ui-bg); color: #e2e8f0; height: 100vh; overflow: hidden; }
+    .menubar { display:flex; align-items:center; gap:6px; padding:4px 7px; border-bottom:1px solid #1f2937; background:var(--nova-ui-bg); user-select:none; }
+    .menuItem { position: relative; padding:6px 10px; border:1px solid transparent; cursor:pointer; font-size:0.86rem; }
+    .menuItem:hover { background:#111827; border-color:#334155; }
+    .menuDropdown { position:absolute; top:calc(100% + 2px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-ui-bg); border:1px solid #334155; box-shadow:0 10px 24px rgba(0,0,0,0.45); }
+    .menuDropdown.show { display:block; }
+    .menuAction { padding:8px 10px; border-bottom:1px solid #1f2937; font-size:0.84rem; cursor:pointer; }
+    .menuAction:last-child { border-bottom:none; }
+    .menuAction:hover { background:#1e293b; }
+    .menuSep { height:1px; background:#1f2937; margin:4px 0; }
+    .app { display: flex; height: calc(100vh - 28px); width: 100vw; }
+    .sidebar { width: 420px; min-width: 5vw; max-width: 880px; background: var(--nova-ui-bg); border-right: 1px solid #1f2937; padding: 0px; overflow-y: auto; flex: 0 0 auto; }
+    .sidebarResizer { width: 4px; margin-left: -2px; margin-right: -2px; cursor: col-resize; background: transparent; border-right: none; z-index: 5; }
+    .main { flex: 1 1 auto; padding: 0px; background: var(--nova-view-bg); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+    .panel { background: transparent; border: none; border-radius: 0px; padding: 0px; margin-bottom: 0px; }
     .panelHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .panelHeader h3 { margin: 0; font-size: 0.92rem; color: #cbd5e1; }
-    .addBtn, .collapseBtn { width: 26px; height: 26px; border-radius: 999px; border: 1px solid #334155; background: #0b1220; color: #e2e8f0; padding: 0; font-weight: 700; cursor: pointer; }
+    .panelHeader { background:var(--nova-ui-bg); border-bottom:1px solid #1f2937; padding:4px 6px; margin:0; }
+    .panelHeader h3 { margin: 0; font-size: 0.86rem; color: #cbd5e1; }
+    .addBtn, .collapseBtn { width: 18px; height: 18px; border-radius: 4px; border: 1px solid #334155; background: var(--nova-ui-bg); color: #e2e8f0; padding: 0; font-weight: 800; cursor: pointer; }
     .headerBtns { display: flex; gap: 6px; }
-    .list { border: 1px solid #334155; border-radius: 6px; background: #0b1220; overflow-y: auto; max-height: 170px; }
-    .item { padding: 7px 8px; border-bottom: 1px solid #1f2937; cursor: pointer; }
+    .list { border: none; border-radius: 0px; background: var(--nova-ui-bg); overflow-y: auto; max-height: 170px; }
+    .item { padding: 5px 6px; border-bottom: 1px solid #1f2937; cursor: pointer; }
     .item:last-child { border-bottom: none; }
     .item.active { background: #1e293b; }
     .item.focused { outline: 1px solid #60a5fa; }
-    .itemPrimary { font-size: 0.84rem; color: #e2e8f0; line-height: 1.2; }
-    .itemMeta { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; line-height: 1.2; }
+    .itemPrimary { font-size: 0.84rem; color: #e2e8f0; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .itemMeta { font-size: 0.72rem; color: #94a3b8; margin-top: 1px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .empty { padding: 8px; color: #64748b; font-size: 0.78rem; }
-    label { display: block; margin: 8px 0 4px 0; font-size: 0.78rem; color: #cbd5e1; }
-    input, select, button { width: 100%; border: 1px solid #334155; border-radius: 6px; background: #0b1220; color: #e2e8f0; padding: 7px; }
-    button { cursor: pointer; background: #1d4ed8; border-color: #1d4ed8; font-weight: 600; }
-    .mainTabs { display: flex; gap: 6px; margin-bottom: 8px; }
-    .tabBtn { width: auto; min-width: 120px; background: #0b1220; border-color: #334155; }
-    .tabBtn.active { background: #1d4ed8; border-color: #1d4ed8; }
-    .tabPanel { flex: 1; min-height: 0; display: none; }
-    .tabPanel.active { display: block; }
-    #plot { width: 100%; height: calc(100vh - 108px); }
-    #metadataPanel { overflow: auto; border: 1px solid #1f2937; border-radius: 8px; background: #0b1220; padding: 8px; }
-    #metadataEmpty { color: #94a3b8; font-size: 0.82rem; padding: 8px 4px; }
-    #metadataTableWrap { display: none; overflow: auto; max-height: calc(100vh - 160px); }
+    label { display: block; margin: 6px 0 3px 0; font-size: 0.78rem; color: #cbd5e1; }
+    input, select, button { width: 100%; border: 1px solid #334155; border-radius: 0px; background: var(--nova-ui-bg); color: #e2e8f0; padding: 6px; }
+    button { cursor: pointer; background: var(--nova-accent); border-color: var(--nova-accent); font-weight: 600; }
+    .plotTabs { display:flex; align-items:stretch; gap:0; padding:0; border-bottom:1px solid #1f2937; background:var(--nova-ui-bg); min-height:26px; flex: 0 0 auto; overflow-x:auto; }
+    .plotTab { width:auto; min-width:82px; max-width: 195px; background:var(--nova-ui-bg); border-color:#334155; border-top:none; border-bottom:none; border-left:none; border-right:1px solid #334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 0 auto; padding:4px 8px; font-size:0.8rem; }
+    .plotTab.active { background:var(--nova-accent); border-color:var(--nova-accent); }
+    .plotAdd { width:auto; min-width:24px; max-width:24px; padding:0; font-weight:900; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; border-top:none; border-bottom:none; border-right:none; border-left:none; border-radius:0; }
+    #plot { width: 100%; flex: 1 1 auto; min-height: 0; }
+
+    /* Fix global button width:100% for tab/menu buttons */
+    .menuItem { width: auto; }
+    .plotTab, .plotAdd { width: auto !important; }
+    .menubar button { width: auto; }
+
+    /* Hide scrollbars */
+    .sidebar, .list, .modalList, .tableWrap { scrollbar-width: none; }
+    .sidebar::-webkit-scrollbar, .list::-webkit-scrollbar, .modalList::-webkit-scrollbar, .tableWrap::-webkit-scrollbar { width: 0; height: 0; }
     .status { color: #93c5fd; font-size: 0.85rem; margin-top: 8px; }
     .error { color: #fda4af; }
     .drawer { position: fixed; left: 0; right: 0; bottom: 0; background: #111827; border-top: 1px solid #334155; max-height: 44vh; padding: 10px; display: none; z-index: 40; }
@@ -47,16 +64,19 @@
     th, td { border-bottom: 1px solid #1f2937; padding: 5px; text-align: left; white-space: nowrap; }
     .modalBackdrop { position: fixed; inset: 0; background: rgba(2,6,23,0.7); display: none; z-index: 60; align-items: center; justify-content: center; }
     .modalBackdrop.show { display: flex; }
-    .modal { width: min(760px, 92vw); max-height: 82vh; overflow: auto; background: #111827; border: 1px solid #334155; border-radius: 10px; padding: 12px; }
+    .modal { width: min(760px, 92vw); max-height: 82vh; overflow: auto; background: #111827; border: 1px solid #334155; border-radius: 0px; padding: 10px; }
     .modalHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .modalTitle { margin: 0; font-size: 0.95rem; color: #e2e8f0; }
     .modalClose { width: auto; min-width: 28px; padding: 4px 8px; }
     .modalGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .modalActions { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
-    .modalList { border: 1px solid #334155; border-radius: 6px; background: #0b1220; max-height: 48vh; overflow-y: auto; }
+    .modalActions button { width: auto; min-width: 140px; }
+    .modalList { border: 1px solid #334155; border-radius: 6px; background: var(--nova-ui-bg); max-height: 48vh; overflow-y: auto; }
     .selectRow { padding: 8px; border-bottom: 1px solid #1f2937; cursor: pointer; }
     .selectRow:last-child { border-bottom: none; }
     .selectRow.active { background: #1e293b; }
+    .timeRangeRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .timeRangeRow label { margin-top: 0; }
     .contextMenu, .miniMenu { position: fixed; z-index: 80; display: none; background: #111827; border: 1px solid #334155; border-radius: 6px; min-width: 180px; }
     .contextItem, .miniMenuItem { padding: 8px; cursor: pointer; font-size: 0.82rem; border-bottom: 1px solid #1f2937; }
     .contextItem:last-child, .miniMenuItem:last-child { border-bottom: none; }
@@ -64,12 +84,39 @@
   </style>
 </head>
 <body>
-  <div class="ribbon">
-    <button id="showPreviewBtn" type="button" style="width:auto;min-width:150px;">Show Data Preview</button>
-    <button id="sourceHelpBtn" type="button" style="width:auto;min-width:170px;">Source Help</button>
+  <div class="menubar" id="menubar">
+    <div class="menuItem" data-menu="file">File
+      <div class="menuDropdown" id="menu_file">
+        <div class="menuAction" id="file_saveConfig">Save Config...</div>
+        <div class="menuAction" id="file_loadConfig">Open Config...</div>
+        <div class="menuSep"></div>
+        <div class="menuAction" id="file_exportPlot">Export Current View (CSV)...</div>
+      </div>
+    </div>
+    <div class="menuItem" data-menu="edit">Edit
+      <div class="menuDropdown" id="menu_edit">
+        <div class="menuAction" id="edit_showMetadata">Show Metadata (current selection)</div>
+        <div class="menuSep"></div>
+        <div class="menuAction" style="opacity:0.7;cursor:default;">Analysis tools (coming soon)</div>
+      </div>
+    </div>
+      <div class="menuItem" data-menu="view">View
+      <div class="menuDropdown" id="menu_view">
+        <div class="menuAction" id="view_togglePreview">Toggle Data Preview</div>
+        <div class="menuSep"></div>
+          <div class="menuAction" id="view_appearance">Appearance...</div>
+      </div>
+    </div>
+    <div class="menuItem" data-menu="help">Help
+      <div class="menuDropdown" id="menu_help">
+        <div class="menuAction" id="help_github">Open GitHub Repo</div>
+        <div class="menuAction" id="help_sourceHelp">Source Help</div>
+      </div>
+    </div>
+    <input id="filePicker" type="file" style="display:none;" />
   </div>
   <div class="app">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="panel">
         <div class="panelHeader"><h3>Sources</h3><div class="headerBtns"><button data-collapse="sourcesList" class="collapseBtn" type="button">-</button><button id="addSourceBtn" class="addBtn" type="button">+</button></div></div>
         <div id="sourcesList" class="list"></div>
@@ -87,32 +134,23 @@
         <div id="channelsList" class="list"></div>
       </div>
       <div class="panel">
-        <h3 style="margin:0 0 8px 0; font-size:0.9rem; color:#cbd5e1;">Region</h3>
-        <label for="t0Mode">Time Reference</label><select id="t0Mode"><option value="raw">Raw Time</option><option value="first_sample">t0 = First Point (per test)</option></select>
-        <label for="startTime">Start Time</label><input id="startTime" type="text" placeholder="2026-01-01T00:00:00Z" />
-        <label for="endTime">End Time</label><input id="endTime" type="text" placeholder="2026-01-01T00:01:00Z" />
+        <div class="panelHeader"><h3>Masks</h3><div class="headerBtns"><button data-collapse="masksList" class="collapseBtn" type="button">-</button><button id="addMaskBtn" class="addBtn" type="button">+</button></div></div>
+        <div id="masksList" class="list"></div>
       </div>
       <div class="panel">
-        <label for="xAxis">X Axis</label><select id="xAxis"><option value="time">time</option></select>
-        <div style="margin-top:10px;"><button id="loadBtn">Chooch</button></div>
-        <p id="status" class="status"></p>
+        <div class="panelHeader"><h3>Region</h3><div class="headerBtns"><button data-collapse="regionBody" class="collapseBtn" type="button">-</button></div></div>
+        <div id="regionBody" class="list" style="max-height:none;padding:6px;">
+          <label for="t0Mode">Time Reference</label><select id="t0Mode"><option value="absolute">Absolute</option><option value="first_index">First Index</option><option value="t0_relative">t0 Relative</option></select>
+          <label for="xAxis">X Axis</label><select id="xAxis"><option value="time">time</option></select>
+          <p id="status" class="status"></p>
+        </div>
+        <div style="padding:6px;"><button id="loadBtn">Chooch</button></div>
       </div>
     </aside>
+    <div class="sidebarResizer" id="sidebarResizer" title="Drag to resize"></div>
     <main class="main">
-      <div class="mainTabs">
-        <button id="plotTabBtn" class="tabBtn active" type="button">Plot</button>
-        <button id="metadataTabBtn" class="tabBtn" type="button">Metadata</button>
-      </div>
-      <div id="plotPanel" class="tabPanel active"><div id="plot"></div></div>
-      <div id="metadataPanel" class="tabPanel">
-        <div id="metadataEmpty">No metadata loaded yet. Click Chooch with selected tests.</div>
-        <div id="metadataTableWrap">
-          <table>
-            <thead><tr id="metadataHeadRow"></tr></thead>
-            <tbody id="metadataRows"></tbody>
-          </table>
-        </div>
-      </div>
+      <div class="plotTabs" id="plotTabs"></div>
+      <div id="plot"></div>
     </main>
   </div>
 
@@ -124,54 +162,374 @@
   <div id="contextMenu" class="contextMenu"></div>
   <div id="sourceAddMenu" class="miniMenu"></div>
   <div id="channelAddMenu" class="miniMenu"></div>
+  <div id="maskAddMenu" class="miniMenu"></div>
 
   <script>
     const STORAGE_KEY = "nova.uiState.v6";
     const byId = (id) => document.getElementById(id);
     const toIso = (v) => (v ? new Date(v).toISOString() : "n/a");
-    let latestRows = [], metadataRows = [], testsData = [], channelsData = [], previewVisible = false, focusedItem = null, lastHoverPoint = null;
-    let rulerEnabled = false, rulerPoints = [];
-    let selectedSourceIds = new Set(), selectedDatabaseIds = new Set(), selectedTestIds = new Set(), selectedChannelIds = new Set();
+    let latestRows = [], metadataRows = [], testsData = [], channelsData = [], previewVisible = false, focusedItem = null;
+    let selectedSourceIds = new Set(), selectedDatabaseIds = new Set(), selectedTestIds = new Set(), selectedChannelIds = new Set(), selectedMaskIds = new Set();
     let addedTestIds = new Set(), addedChannelIds = new Set();
     let channelUnitMap = new Map();
-    let state = { sources: [], databases: [], calculatedChannels: [], freqOverrides: {}, collapsed: {} };
+    let state = { sources: [], databases: [], masks: [], calculatedChannels: [], freqOverrides: {}, collapsed: {} };
+    const lastClickedByKind = {};
+    const catalogCache = new Map();
+    let plotHandlersBound = false;
+    function clearCatalogCache(){ catalogCache.clear(); }
+    function nextPaint(){ return new Promise((resolve)=>requestAnimationFrame(()=>resolve())); }
+    function runDeferred(fn){ return new Promise((resolve)=>setTimeout(()=>resolve(fn()), 0)); }
     function setStatus(text, isError = false) { const e = byId("status"); e.textContent = text; e.className = isError ? "status error" : "status"; }
     function sourceConnQuery(src) { if (!src || src.type !== "postgres") return ""; const p = new URLSearchParams(); p.append("db_host", src.host); p.append("db_port", String(src.port)); p.append("db_user", src.user); p.append("db_password", src.password); p.append("db_sslmode", src.sslmode || "disable"); return p.toString(); }
     async function getJson(url) { const r = await fetch(url); if (!r.ok) throw new Error(`Request failed ${r.status}`); return r.json(); }
     function activeSources() { return state.sources.filter((s) => selectedSourceIds.has(s.id)); }
-    function setPreviewVisible(v) { previewVisible = v; byId("previewDrawer").className = v ? "drawer show" : "drawer"; byId("showPreviewBtn").textContent = v ? "Hide Data Preview" : "Show Data Preview"; }
-    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, selectedSourceIds:[...selectedSourceIds], selectedDatabaseIds:[...selectedDatabaseIds], selectedTestIds:[...selectedTestIds], selectedChannelIds:[...selectedChannelIds], addedTestIds:[...addedTestIds], addedChannelIds:[...addedChannelIds], xAxis:byId("xAxis").value, t0Mode:byId("t0Mode").value, startTime:byId("startTime").value, endTime:byId("endTime").value, previewVisible })); }
-    function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); state = { sources:s.sources || [], databases:s.databases || [], calculatedChannels:s.calculatedChannels || [], freqOverrides:s.freqOverrides || {}, collapsed:s.collapsed || {} }; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = new Set(s.selectedChannelIds || []); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = new Set(s.addedChannelIds || []); byId("xAxis").value = s.xAxis || "time"; byId("t0Mode").value = s.t0Mode || "raw"; byId("startTime").value = s.startTime || ""; byId("endTime").value = s.endTime || ""; previewVisible = Boolean(s.previewVisible); } catch {} }
-    function openModal(title, bodyHtml, onSave) { byId("modalTitle").textContent = title; byId("modalBody").innerHTML = bodyHtml; byId("modalBackdrop").classList.add("show"); byId("modalCloseBtn").onclick = closeModal; const s = byId("modalSaveBtn"); if (s) s.onclick = async () => { const shouldClose = await onSave(); if (shouldClose !== false) closeModal(); }; const c = byId("modalCancelBtn"); if (c) c.onclick = closeModal; }
+    function setPreviewVisible(v) {
+      previewVisible = v;
+      byId("previewDrawer").className = v ? "drawer show" : "drawer";
+      const previewBtn = byId("showPreviewBtn");
+      if (previewBtn) previewBtn.textContent = v ? "Hide Data Preview" : "Show Data Preview";
+    }
+    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, appearance, selectedSourceIds:[...selectedSourceIds], selectedDatabaseIds:[...selectedDatabaseIds], selectedTestIds:[...selectedTestIds], selectedChannelIds:[...selectedChannelIds], selectedMaskIds:[...selectedMaskIds], addedTestIds:[...addedTestIds], addedChannelIds:[...addedChannelIds], xAxis:byId("xAxis").value, t0Mode:byId("t0Mode").value, previewVisible })); localStorage.setItem(APPEAR_KEY, JSON.stringify(appearance)); }
+    function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:s.calculatedChannels || [], freqOverrides:s.freqOverrides || {}, collapsed:s.collapsed || {} }; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = new Set(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = new Set(s.addedChannelIds || []); byId("xAxis").value = s.xAxis || "time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "absolute")); byId("t0Mode").value = nextT0; previewVisible = Boolean(s.previewVisible); } catch {} }
+    function openModal(title, bodyHtml, onSave) {
+      byId("modalTitle").textContent = title;
+      byId("modalBody").innerHTML = bodyHtml;
+      byId("modalBackdrop").classList.add("show");
+      byId("modalCloseBtn").onclick = closeModal;
+
+      const applyBtn = byId("modalSaveBtn");
+      if (applyBtn) applyBtn.onclick = async () => { await onSave(); };
+
+      const applyCloseBtn = byId("modalSaveCloseBtn");
+      if (applyCloseBtn) applyCloseBtn.onclick = async () => {
+        const ok = await onSave();
+        if (ok === false) return;
+        closeModal();
+      };
+
+      const c = byId("modalCancelBtn");
+      if (c) c.onclick = closeModal;
+    }
     function closeModal() { byId("modalBackdrop").classList.remove("show"); byId("modalBody").innerHTML = ""; }
-    function hideMenus() { byId("contextMenu").style.display = "none"; byId("sourceAddMenu").style.display = "none"; byId("channelAddMenu").style.display = "none"; }
+    function hideMenus() { byId("contextMenu").style.display = "none"; byId("sourceAddMenu").style.display = "none"; byId("channelAddMenu").style.display = "none"; byId("maskAddMenu").style.display = "none"; }
     function showContextMenu(x,y,items){ const m=byId("contextMenu"); m.innerHTML=items.map((i,idx)=>`<div class="contextItem" data-i="${idx}">${i.label}</div>`).join(""); m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".contextItem").forEach((el)=>el.onclick=()=>{items[Number(el.getAttribute("data-i"))].action(); hideMenus();}); }
     function showSourceAddMenu(x,y){ const m=byId("sourceAddMenu"); m.innerHTML=`<div class="miniMenuItem" data-t="postgres">Add PostgreSQL</div><div class="miniMenuItem" data-t="csv">Add CSV</div><div class="miniMenuItem" data-t="tdms">Add TDMS</div>`; m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="postgres")showAddPostgresModal(); if(t==="csv")showAddCsvModal(); if(t==="tdms")showAddTdmsModal();}); }
     function showChannelAddMenu(x,y){ const m=byId("channelAddMenu"); m.innerHTML=`<div class="miniMenuItem" data-t="source">Add channels from source</div><div class="miniMenuItem" data-t="rolling">Rolling channel calculations</div><div class="miniMenuItem" data-t="formula">Channel wise calculations</div>`; m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="source")showAddChannelsModal(); if(t==="rolling")showAddRollingChannelModal(); if(t==="formula")showAddChannelWiseModal();}); }
+    function showMaskAddMenu(x,y){ const m=byId("maskAddMenu"); m.innerHTML=`<div class="miniMenuItem" data-t="source">Add mask from channel/time</div><div class="miniMenuItem" data-t="rolling">Rolling mask calculation</div><div class="miniMenuItem" data-t="formula">Channel wise mask calculation</div>`; m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="source")showAddMaskModal(); if(t==="rolling")showAddRollingMaskModal(); if(t==="formula")showAddChannelWiseMaskModal();}); }
     document.addEventListener("click", (e) => {
       const menu = byId("sourceAddMenu");
       const addBtn = byId("addSourceBtn");
       const channelMenu = byId("channelAddMenu");
       const addChannelBtn = byId("addChannelBtn");
-      if (menu.contains(e.target) || addBtn.contains(e.target) || channelMenu.contains(e.target) || addChannelBtn.contains(e.target)) return;
+      const maskMenu = byId("maskAddMenu");
+      const addMaskBtn = byId("addMaskBtn");
+      if (menu.contains(e.target) || addBtn.contains(e.target) || channelMenu.contains(e.target) || addChannelBtn.contains(e.target) || maskMenu.contains(e.target) || addMaskBtn.contains(e.target)) return;
       hideMenus();
     });
-    function setMainTab(name){ const isMetadata=name==="metadata"; byId("plotTabBtn").classList.toggle("active", !isMetadata); byId("metadataTabBtn").classList.toggle("active", isMetadata); byId("plotPanel").classList.toggle("active", !isMetadata); byId("metadataPanel").classList.toggle("active", isMetadata); if(!isMetadata && latestRows.length){ Plotly.Plots.resize(byId("plot")); } }
-    function renderRows(rows){ const b=byId("rows"); b.innerHTML=""; rows.slice(0,200).forEach((r)=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td>${r.test_run_id}</td><td>${r.test_run_code}</td><td>${r.channel_name}</td><td>${r.unit||"unitless"}</td><td>${r.time}</td><td>${Number(r.value).toFixed(4)}</td>`; b.appendChild(tr);}); }
-    function renderMetadata(rows){ metadataRows=rows||[]; const empty=byId("metadataEmpty"); const wrap=byId("metadataTableWrap"); const head=byId("metadataHeadRow"); const body=byId("metadataRows"); if(!metadataRows.length){ empty.textContent="No metadata available for current selection."; empty.style.display="block"; wrap.style.display="none"; head.innerHTML=""; body.innerHTML=""; return; } const cols=Object.keys(metadataRows[0]); head.innerHTML=cols.map((c)=>`<th>${c}</th>`).join(""); body.innerHTML=""; metadataRows.forEach((r)=>{ const tr=document.createElement("tr"); tr.innerHTML=cols.map((c)=>`<td>${r[c] ?? ""}</td>`).join(""); body.appendChild(tr); }); empty.style.display="none"; wrap.style.display="block"; }
-    function renderList(target,items,set,kind,empty){ const root=byId(target); root.innerHTML=""; if(!items.length){ root.innerHTML=`<div class="empty">${empty}</div>`; return;} items.forEach((it)=>{ const row=document.createElement("div"); row.className="item"+(set.has(it.id)?" active":"")+(focusedItem&&focusedItem.kind===kind&&focusedItem.id===it.id?" focused":""); row.innerHTML=`<div class="itemPrimary">${it.primary}</div>${it.meta?`<div class="itemMeta">${it.meta}</div>`:""}`; row.onclick=async()=>{focusedItem={kind,id:it.id}; if(set.has(it.id)) set.delete(it.id); else set.add(it.id); if(kind==="source"){ state.databases=state.databases.filter((d)=>selectedSourceIds.has(d.sourceId)); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id);}); testsData=[]; channelsData=[]; } if(kind==="database"){ await refreshCatalogsForSelections(); } renderAll(); saveState();}; row.oncontextmenu=(e)=>{e.preventDefault(); focusedItem={kind,id:it.id}; const menu=[{label:"Delete",action:deleteFocused}]; if(kind==="channel"){ if(it.isCalculated) menu.push({label:"Edit calculated channel...",action:()=>editCalculatedChannel(it.id)}); menu.push({label:"Set Frequency...",action:()=>setChannelFrequency(it.id)}); } showContextMenu(e.clientX,e.clientY,menu);}; root.appendChild(row);}); }
-    function buildXAxis(){ const x=byId("xAxis"),prev=x.value; x.innerHTML=`<option value="time">time</option>`; [...selectedChannelIds].forEach((id)=>{ const o=document.createElement("option"); o.value=id; o.textContent=id.split("|")[1]; x.appendChild(o);}); if([...x.options].some((o)=>o.value===prev)) x.value=prev; }
-    function buildUnitAxes(traces){ const m=new Map(),layout={},axisStepPx=58; let i=0; traces.forEach((t)=>{ const u=t._unit||"unitless"; if(!m.has(u)){ i+=1; m.set(u,i===1?"y":`y${i}`); const key=i===1?"yaxis":`yaxis${i}`; layout[key]={title:u,overlaying:i===1?undefined:"y",side:"right",anchor:"free",position:1,autoshift:false,shift:(i-1)*axisStepPx,showticklabels:true,ticks:"outside",ticklen:4,automargin:true}; }}); traces.forEach((t)=>{ t.yaxis=m.get(t._unit||"unitless"); delete t._unit;}); return layout; }
-    function applyFreq(points,chId){ const hz=Number(state.freqOverrides[chId]||0); if(!hz||hz<=0) return points; const bucket=Math.max(1,Math.round(1000/hz)); const bins=new Map(); points.forEach((p)=>{ const ts=new Date(p.time).getTime(),k=Math.floor(ts/bucket)*bucket; if(!bins.has(k)) bins.set(k,{sum:0,n:0,s:p}); const b=bins.get(k); b.sum+=p.value; b.n+=1;}); return [...bins.entries()].sort((a,b)=>a[0]-b[0]).map(([k,v])=>({...v.s,time:new Date(k).toISOString(),value:v.sum/v.n})); }
-    function rulerOverlays(){ if(!rulerPoints.length) return {shapes:[],annotations:[]}; const shapes=[],annotations=[]; rulerPoints.forEach((p)=>{ shapes.push({type:"line",xref:"x",yref:p.yaxis,x0:p.x,x1:p.x,y0:-1e12,y1:1e12,line:{color:"#f59e0b",dash:"dot"}}); annotations.push({xref:"x",yref:p.yaxis,x:p.x,y:p.y,text:`${p.y.toFixed(4)}`,showarrow:true,arrowhead:2,bgcolor:"rgba(15,23,42,0.8)"});}); if(rulerPoints.length>=2){ const a=rulerPoints[rulerPoints.length-2],b=rulerPoints[rulerPoints.length-1]; const dx=(typeof a.x==="number"&&typeof b.x==="number")?(b.x-a.x):(new Date(b.x).getTime()-new Date(a.x).getTime())/1000; const dy=b.y-a.y; const slope=dx!==0?dy/dx:0; shapes.push({type:"line",xref:"x",yref:b.yaxis,x0:a.x,y0:a.y,x1:b.x,y1:b.y,line:{color:"#f97316",width:2}}); annotations.push({xref:"x",yref:b.yaxis,x:b.x,y:b.y,text:`Δx=${dx.toFixed(4)} Δy=${dy.toFixed(4)} slope=${slope.toFixed(4)}`,showarrow:true,arrowhead:2,bgcolor:"rgba(15,23,42,0.8)"});} return {shapes,annotations}; }
-    function plotRows(rows){ const xAxis=byId("xAxis").value,t0Mode=byId("t0Mode").value; const grouped=new Map(); rows.forEach((r)=>{const cid=`${r.__dbId}|${r.channel_name}`;const k=`${r.test_run_code} | ${cid}`;if(!grouped.has(k))grouped.set(k,[]);grouped.get(k).push(r);}); const t0=new Map(); if(t0Mode==="first_sample") rows.forEach((r)=>{const k=`${r.__dbId}|${r.test_run_code}`;const ts=new Date(r.time).getTime();if(!t0.has(k)||ts<t0.get(k))t0.set(k,ts);}); const traces=[]; if(xAxis==="time"){ grouped.forEach((pts,name)=>{ const chId=`${pts[0].__dbId}|${pts[0].channel_name}`; const down=applyFreq(pts,chId).sort((a,b)=>new Date(a.time)-new Date(b.time)); traces.push({type:"scattergl",mode:"lines",name,x:down.map((p)=>t0Mode==="first_sample"?(new Date(p.time).getTime()-t0.get(`${p.__dbId}|${p.test_run_code}`))/1000:p.time),y:down.map((p)=>p.value),_unit:pts[0]?.unit||channelUnitMap.get(chId)||"unitless"});}); } else { const byTest=new Map(); rows.forEach((r)=>{const tk=`${r.__dbId}|${r.test_run_code}`;if(!byTest.has(tk))byTest.set(tk,new Map());const m=byTest.get(tk);if(!m.has(r.time))m.set(r.time,{});m.get(r.time)[`${r.__dbId}|${r.channel_name}`]=r.value;}); byTest.forEach((timeMap,tk)=>{ [...selectedChannelIds].filter((c)=>c!==xAxis).forEach((chId)=>{const xs=[],ys=[];timeMap.forEach((v)=>{if(v[xAxis]!==undefined&&v[chId]!==undefined){xs.push(v[xAxis]);ys.push(v[chId]);}}); if(xs.length) traces.push({type:"scattergl",mode:"markers",name:`${tk} | ${chId.split("|")[1]} vs ${xAxis.split("|")[1]}`,x:xs,y:ys,_unit:channelUnitMap.get(chId)||"unitless"});});}); }
-      const yLayout=buildUnitAxes(traces), unitCount=Object.keys(yLayout).length, ruler=rulerOverlays();
-      Plotly.newPlot("plot", traces, {paper_bgcolor:"#020617",plot_bgcolor:"#020617",font:{color:"#e2e8f0"},xaxis:{title:""},margin:{l:48,r:Math.max(90,90+(unitCount-1)*58),t:12,b:44},legend:{x:0.01,y:0.99,xanchor:"left",yanchor:"top",bgcolor:"rgba(2,6,23,0.55)"},shapes:ruler.shapes,annotations:ruler.annotations,...yLayout},{responsive:true,displaylogo:false,scrollZoom:true,editable:true,edits:{legendPosition:true,axisTitleText:false,titleText:false,annotationPosition:false,annotationText:false,shapePosition:false}});
-      const plot=byId("plot");
-      plot.on("plotly_hover",(ev)=>{ if(!ev?.points?.length) return; const p=ev.points[0]; lastHoverPoint={x:p.x,y:p.y,yaxis:p.yaxis||"y"}; });
-      plot.oncontextmenu=(e)=>{ if(!rulerEnabled||!lastHoverPoint) return; e.preventDefault(); rulerPoints.push({...lastHoverPoint}); if(rulerPoints.length>2) rulerPoints=rulerPoints.slice(-2); plotRows(rows); };
+    const PLOTS_KEY = "nova.plots.v1";
+    let plots = [];
+    let activePlotId = null;
+    function newPlotInstance(){ return { id: crypto.randomUUID(), name: `View ${plots.length+1}`, selections: null, latestRows: [], metadataRows: [] }; }
+    function snapshotSelections(){ return { selectedSourceIds:[...selectedSourceIds], selectedDatabaseIds:[...selectedDatabaseIds], selectedTestIds:[...selectedTestIds], selectedChannelIds:[...selectedChannelIds], addedTestIds:[...addedTestIds], addedChannelIds:[...addedChannelIds], xAxis:byId("xAxis").value, t0Mode:byId("t0Mode").value, previewVisible }; }
+    function restoreSelections(s){ if(!s) return; selectedSourceIds=new Set(s.selectedSourceIds||[]); selectedDatabaseIds=new Set(s.selectedDatabaseIds||[]); selectedTestIds=new Set(s.selectedTestIds||[]); selectedChannelIds=new Set(s.selectedChannelIds||[]); addedTestIds=new Set(s.addedTestIds||[]); addedChannelIds=new Set(s.addedChannelIds||[]); byId("xAxis").value=s.xAxis||"time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "absolute")); byId("t0Mode").value=nextT0; previewVisible=Boolean(s.previewVisible); }
+    function getActivePlot(){ return plots.find((p)=>p.id===activePlotId) || null; }
+    function toPersistedPlot(p){
+      return {
+        id: p.id,
+        name: p.name,
+        selections: p.selections || null,
+      };
     }
-    async function refreshCatalogsForSelections(){ testsData=[]; channelsData=[]; for(const dbId of selectedDatabaseIds){ const db=state.databases.find((d)=>d.id===dbId), src=db?state.sources.find((s)=>s.id===db.sourceId):null; if(!db||!src) continue; if(src.type==="postgres"){ const conn=sourceConnQuery(src); const t=await getJson(`/api/tests?limit=5000000&db_name=${encodeURIComponent(db.name)}&${conn}`); const c=await getJson(`/api/channels?limit=5000000&db_name=${encodeURIComponent(db.name)}&${conn}`); t.forEach((x)=>testsData.push({...x,__dbId:db.id})); c.forEach((x)=>channelsData.push({...x,__dbId:db.id})); } else { const t=await getJson(`/api/file/tests?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}`); const c=await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}`); t.forEach((x)=>testsData.push({...x,__dbId:db.id})); c.forEach((x)=>channelsData.push({...x,__dbId:db.id})); }} const selectedDbSet=new Set([...selectedDatabaseIds]); (state.calculatedChannels||[]).forEach((calc)=>{ if(!selectedDbSet.has(calc.dbId)) return; channelsData.push({ channel_id: calc.id, channel_name: calc.name, display_name: calc.name, unit: calc.unit || null, sample_rate_hz: null, valid_min: null, valid_max: null, __dbId: calc.dbId, __isCalculated: true, __calcKind: calc.kind }); }); channelUnitMap=new Map(channelsData.map((c)=>[`${c.__dbId}|${c.channel_name}`,c.unit||"unitless"])); }
+    function savePlots(){
+      // Keep tab persistence lightweight; row payloads can be very large.
+      localStorage.setItem(PLOTS_KEY, JSON.stringify({
+        activePlotId,
+        plots: plots.map(toPersistedPlot),
+      }));
+    }
+    function loadPlots(){
+      try{
+        const s=JSON.parse(localStorage.getItem(PLOTS_KEY)||"{}");
+        plots=(s.plots||[]).map((p, idx)=>({
+          id:p.id||crypto.randomUUID(),
+          name:p.name||`View ${idx+1}`,
+          selections:p.selections||null,
+          latestRows:[],
+          metadataRows:[],
+        }));
+        activePlotId = s.activePlotId || (plots[0]?.id || null);
+      }catch{
+        plots=[];
+        activePlotId=null;
+      }
+      if(!plots.length){
+        plots=[newPlotInstance()];
+        activePlotId=plots[0].id;
+      }
+    }
+    function renamePlot(id){
+      const p=plots.find((x)=>x.id===id); if(!p) return;
+      const next=(prompt("Rename plot tab:", p.name)||"").trim();
+      if(!next) return;
+      p.name=next;
+      savePlots(); renderPlotTabs();
+      setStatus(`Renamed to: ${next}`);
+    }
+    function duplicatePlot(id){
+      const p=plots.find((x)=>x.id===id); if(!p) return;
+      const cur=getActivePlot();
+      if(cur){ cur.selections=snapshotSelections(); cur.latestRows=latestRows; cur.metadataRows=metadataRows; }
+      const copy={ id:crypto.randomUUID(), name:`${p.name} (copy)`, selections:structuredClone(p.selections), latestRows:structuredClone(p.latestRows||[]), metadataRows:structuredClone(p.metadataRows||[]) };
+      plots.push(copy);
+      activePlotId=copy.id;
+      latestRows=copy.latestRows||[]; metadataRows=copy.metadataRows||[];
+      restoreSelections(copy.selections);
+      refreshCatalogsForSelections().then(()=>{
+        renderPlotTabs();
+        renderAll();
+        if(latestRows.length){
+          renderRows(latestRows);
+          try { plotRows(latestRows); } catch(e) { setStatus(`Plot render warning: ${e}`, true); }
+        }
+        savePlots();
+        setStatus(`Active: ${copy.name}`);
+      });
+    }
+    function closePlot(id){
+      if(plots.length<=1){ setStatus("Cannot close the last plot tab.", true); return; }
+      const idx=plots.findIndex((x)=>x.id===id);
+      if(idx<0) return;
+      const closingActive = (id===activePlotId);
+      plots.splice(idx,1);
+      if(closingActive){
+        const next = plots[Math.max(0, idx-1)];
+        activePlotId = next.id;
+        latestRows=next.latestRows||[]; metadataRows=next.metadataRows||[];
+        restoreSelections(next.selections);
+      }
+      savePlots();
+      renderPlotTabs();
+      if(closingActive){
+        refreshCatalogsForSelections().then(()=>{
+          renderPlotTabs();
+          renderAll();
+          if(latestRows.length){
+            renderRows(latestRows);
+            try { plotRows(latestRows); } catch(e) { setStatus(`Plot render warning: ${e}`, true); }
+          }
+        });
+      }
+    }
+    function renderPlotTabs(){
+      const root=byId("plotTabs");
+      root.innerHTML="";
+      let activeBtn = null;
+      plots.forEach((p)=>{
+        const b=document.createElement("button");
+        b.type="button";
+        b.className="plotTab"+(p.id===activePlotId?" active":"");
+        b.textContent=p.name;
+        if(p.id===activePlotId) activeBtn = b;
+        b.onclick=()=>switchPlot(p.id);
+        b.ondblclick=()=>renamePlot(p.id);
+        b.oncontextmenu=(e)=>{
+          e.preventDefault();
+          showContextMenu(e.clientX,e.clientY,[
+            {label:"Rename...", action:()=>renamePlot(p.id)},
+            {label:"Duplicate", action:()=>duplicatePlot(p.id)},
+            {label:"Close", action:()=>closePlot(p.id)},
+          ]);
+        };
+        root.appendChild(b);
+      });
+      const add=document.createElement("button");
+      add.type="button";
+      add.className="plotAdd";
+      add.textContent="+";
+      add.title="Add plot tab";
+      add.onclick=addPlot;
+      root.appendChild(add);
+      if (activeBtn) {
+        requestAnimationFrame(() => {
+          activeBtn.scrollIntoView({ behavior: "auto", block: "nearest", inline: "nearest" });
+        });
+      }
+    }
+    function switchPlot(id){
+      const cur=getActivePlot();
+      if(cur){ cur.selections=snapshotSelections(); cur.latestRows=latestRows; cur.metadataRows=metadataRows; }
+      activePlotId=id;
+      const next=getActivePlot();
+      latestRows=(next?.latestRows)||[];
+      metadataRows=(next?.metadataRows)||[];
+
+      const prevSel=snapshotSelections();
+      restoreSelections(next?.selections);
+      // Keep sources/databases/tests persistent across tabs; only channels are tab-specific.
+      selectedSourceIds = new Set(prevSel.selectedSourceIds || []);
+      selectedDatabaseIds = new Set(prevSel.selectedDatabaseIds || []);
+      selectedTestIds = new Set(prevSel.selectedTestIds || []);
+      addedTestIds = new Set(prevSel.addedTestIds || []);
+      selectedChannelIds = new Set((next?.selections?.selectedChannelIds) || []);
+      addedChannelIds = new Set((next?.selections?.addedChannelIds) || []);
+
+      refreshCatalogsForSelections().then(()=>{
+        renderPlotTabs();
+        renderAll();
+        if(latestRows.length){
+          renderRows(latestRows);
+          try { plotRows(latestRows); } catch(e) { setStatus(`Plot render warning: ${e}`, true); }
+        }
+        setStatus(`Active: ${next?.name||"View"}`);
+        savePlots();
+      });
+    }
+    function addPlot(){
+      const cur=getActivePlot();
+      if(cur){ cur.selections=snapshotSelections(); cur.latestRows=latestRows; cur.metadataRows=metadataRows; }
+      const p=newPlotInstance();
+      plots.push(p);
+      activePlotId=p.id;
+      latestRows=[]; metadataRows=[];
+      // Keep source/database/test context; start new tab with empty channels only.
+      selectedChannelIds=new Set();
+      addedChannelIds=new Set();
+      renderRows([]);
+      setStatus(`Active: ${p.name}`);
+      savePlots();
+      renderPlotTabs();
+      const tabs=byId("plotTabs");
+      requestAnimationFrame(()=>{
+        tabs.scrollLeft = tabs.scrollWidth;
+        const active=tabs.querySelector(".plotTab.active");
+        if(active) active.scrollIntoView({ behavior:"auto", block:"nearest", inline:"nearest" });
+        setTimeout(()=>{ try { Plotly.purge("plot"); } catch {} }, 0);
+      });
+      renderAll();
+    }
+    function renderRows(rows){ const b=byId("rows"); b.innerHTML=""; rows.slice(0,200).forEach((r)=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td>${r.test_run_id}</td><td>${r.test_run_code}</td><td>${r.channel_name}</td><td>${r.unit||"unitless"}</td><td>${r.time}</td><td>${Number(r.value).toFixed(4)}</td>`; b.appendChild(tr);}); }
+    function renderMetadata(rows){ metadataRows=rows||[]; }
+    function showMetadataModal(){ if(!metadataRows.length){ setStatus("No metadata loaded yet. Click Chooch first.", true); return; } const cols=Object.keys(metadataRows[0]); const head=cols.map((c)=>`<th>${c}</th>`).join(""); const body=metadataRows.map((r)=>`<tr>${cols.map((c)=>`<td>${r[c] ?? ""}</td>`).join("")}</tr>`).join(""); openModal("Metadata",`<div class="tableWrap" style="max-height:70vh;"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true); }
+    function renderList(target,items,set,kind,empty){ const root=byId(target); root.innerHTML=""; if(!items.length){ root.innerHTML=`<div class="empty">${empty}</div>`; return;} items.forEach((it,idx)=>{ const row=document.createElement("div"); row.className="item"+(set.has(it.id)?" active":"")+(focusedItem&&focusedItem.kind===kind&&focusedItem.id===it.id?" focused":""); row.innerHTML=`<div class="itemPrimary">${it.primary}</div>${it.meta?`<div class="itemMeta">${it.meta}</div>`:""}`; row.onclick=async(e)=>{focusedItem={kind,id:it.id}; const last=lastClickedByKind[kind]; if(e.shiftKey && Number.isInteger(last) && last>=0 && last<items.length){ const a=Math.min(last,idx), b=Math.max(last,idx); for(let i=a;i<=b;i+=1) set.add(items[i].id); } else { if(set.has(it.id)) set.delete(it.id); else set.add(it.id); lastClickedByKind[kind]=idx; } if(kind==="source"){ state.databases=state.databases.filter((d)=>selectedSourceIds.has(d.sourceId)); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id);}); testsData=[]; channelsData=[]; } if(kind==="database"){ await refreshCatalogsForSelections(); } renderAll(); saveState();}; row.oncontextmenu=(e)=>{e.preventDefault(); focusedItem={kind,id:it.id}; const menu=[{label:"Delete",action:deleteFocused}]; if(kind==="channel"){ if(it.isCalculated) menu.push({label:"Edit calculated channel...",action:()=>editCalculatedChannel(it.id)}); menu.push({label:"Set Frequency...",action:()=>setChannelFrequency(it.id)}); } if(kind==="mask"){ menu.unshift({label:"Edit mask...",action:()=>editMask(it.id)}); } showContextMenu(e.clientX,e.clientY,menu);}; root.appendChild(row);}); }
+    function buildXAxis(){ const x=byId("xAxis"),prev=x.value; x.innerHTML=`<option value="time">time</option>`; [...selectedChannelIds].forEach((id)=>{ const o=document.createElement("option"); o.value=id; o.textContent=id.split("|")[1]; x.appendChild(o);}); if([...x.options].some((o)=>o.value===prev)) x.value=prev; }
+    function buildUnitAxes(traces, plotWidthPx){
+      const m=new Map(),layout={};
+      const axisSpacingPx = plotWidthPx < 1200 ? 64 : 54;
+      let i=0;
+      traces.forEach((t)=>{
+        const u=t._unit||"unitless";
+        if(!m.has(u)){
+          i+=1;
+          m.set(u, i===1 ? "y" : `y${i}`);
+          const key=i===1 ? "yaxis" : `yaxis${i}`;
+          if(i===1){
+            layout[key]={
+              title:u,
+              side:"right",
+              anchor:"x",
+              automargin:true,
+              showticklabels:true,
+              ticks:"outside",
+              ticklen:4,
+              showline:true,
+              zeroline:false
+            };
+          } else {
+            const axisOffset=i-1;
+            layout[key]={
+              title:u,
+              overlaying:"y",
+              side:"right",
+              anchor:"free",
+              position:1,
+              // Keep spacing readable even in windowed mode.
+              shift:axisOffset*axisSpacingPx,
+              automargin:true,
+              showticklabels:true,
+              ticks:"outside",
+              ticklen:4,
+              showline:true,
+              zeroline:false
+            };
+          }
+        }
+      });
+      traces.forEach((t)=>{ t.yaxis=m.get(t._unit||"unitless"); delete t._unit; });
+      return layout;
+    }
+    function applyFreq(points,chId){ const hz=Number(state.freqOverrides[chId]||0); if(!hz||hz<=0) return points; const bucket=Math.max(1,Math.round(1000/hz)); const bins=new Map(); points.forEach((p)=>{ const ts=new Date(p.time).getTime(),k=Math.floor(ts/bucket)*bucket; if(!bins.has(k)) bins.set(k,{sum:0,n:0,s:p}); const b=bins.get(k); b.sum+=p.value; b.n+=1;}); return [...bins.entries()].sort((a,b)=>a[0]-b[0]).map(([k,v])=>({...v.s,time:new Date(k).toISOString(),value:v.sum/v.n})); }
+    function plotRows(rows){ const xAxis=byId("xAxis").value,t0Mode=byId("t0Mode").value; const grouped=new Map(); rows.forEach((r)=>{ const key=`${r.test_run_code || r.test_run_id} | ${r.channel_name}`; if(!grouped.has(key)) grouped.set(key,[]); grouped.get(key).push(r); }); const t0FirstSample=new Map(); const t0Meta=new Map(); if(t0Mode==="first_index" || t0Mode==="t0_relative"){ rows.forEach((r)=>{ const k=`${r.__dbId}|${r.test_run_id}`; const ts=new Date(r.time).getTime(); if(!t0FirstSample.has(k)||ts<t0FirstSample.get(k)) t0FirstSample.set(k,ts); }); } if(t0Mode==="t0_relative"){ testsData.forEach((t)=>{ const ts=Date.parse(String(t.t0_utc||"")); if(Number.isFinite(ts)) t0Meta.set(`${t.__dbId}|${t.test_run_id}`, ts); }); } const traces=[]; if(xAxis==="time"){ grouped.forEach((pts,name)=>{ const chId=`${pts[0].__dbId}|${pts[0].channel_name}`; const down=applyFreq(pts,chId).sort((a,b)=>new Date(a.time)-new Date(b.time)); traces.push({type:"scattergl",mode:"lines",name,x:down.map((p)=>{ if(t0Mode==="absolute") return p.time; const k=`${p.__dbId}|${p.test_run_id}`; const base=t0Mode==="t0_relative" ? t0Meta.get(k) : t0FirstSample.get(k); return Number.isFinite(base)?(new Date(p.time).getTime()-base)/1000:p.time; }),y:down.map((p)=>p.value),_unit:pts[0]?.unit||channelUnitMap.get(chId)||"unitless"});}); } else { const byTest=new Map(); rows.forEach((r)=>{const tk=`${r.__dbId}|${r.test_run_code}`;if(!byTest.has(tk))byTest.set(tk,new Map());const m=byTest.get(tk);if(!m.has(r.time))m.set(r.time,{});m.get(r.time)[`${r.__dbId}|${r.channel_name}`]=r.value;}); byTest.forEach((timeMap,tk)=>{ [...selectedChannelIds].filter((c)=>c!==xAxis).forEach((chId)=>{const xs=[],ys=[];timeMap.forEach((v)=>{if(v[xAxis]!==undefined&&v[chId]!==undefined){xs.push(v[xAxis]);ys.push(v[chId]);}}); if(xs.length) traces.push({type:"scattergl",mode:"markers",name:`${tk.split("|")[1]||tk} | ${chId.split("|")[1]} vs ${xAxis.split("|")[1]}`,x:xs,y:ys,_unit:channelUnitMap.get(chId)||"unitless"});});}); }
+      const plotEl=byId("plot");
+      const plotWidth=Math.max(320, Number(plotEl?.clientWidth||window.innerWidth||0));
+      const yLayout=buildUnitAxes(traces, plotWidth), unitCount=Object.keys(yLayout).length;
+      const extraRight=Math.max(0,unitCount-1);
+      const axisSpacingPx = plotWidth < 1200 ? 64 : 54;
+      Plotly.react("plot", traces, {
+        autosize:true,
+        paper_bgcolor: appearance?.viewBg || "#000000",
+        plot_bgcolor: appearance?.viewBg || "#000000",
+        font:{color:"#e2e8f0"},
+        colorway: parseColorway(),
+        xaxis:{title:"",automargin:true},
+        margin:{l:12,r:Math.max(70,56+extraRight*(axisSpacingPx+6)),t:12,b:48},
+        legend:{x:0.01,y:0.99,xanchor:"left",yanchor:"top",bgcolor:"rgba(2,6,23,0.55)"},
+        ...yLayout
+      },{responsive:true,displaylogo:false,scrollZoom:true,editable:true,edits:{legendPosition:true,axisTitleText:false,titleText:false,annotationPosition:false,annotationText:false,shapePosition:false}});
+    }
+    function buildCatalogCacheKey(db, src){
+      if (!db || !src) return "";
+      if (src.type === "postgres") {
+        return JSON.stringify({
+          dbId: db.id,
+          sourceType: src.type,
+          dbName: db.name,
+          host: src.host,
+          port: src.port,
+          user: src.user,
+          sslmode: src.sslmode || "disable",
+        });
+      }
+      return JSON.stringify({
+        dbId: db.id,
+        sourceType: src.type,
+        dbName: db.name,
+        filePath: src.file_path || "",
+      });
+    }
+
+    async function fetchCatalogRows(db, src){
+      const key = buildCatalogCacheKey(db, src);
+      if (key && catalogCache.has(key)) return catalogCache.get(key);
+      let tests = [], channels = [];
+      if(src.type==="postgres"){
+        const conn=sourceConnQuery(src);
+        tests = await getJson(`/api/tests?limit=5000000&db_name=${encodeURIComponent(db.name)}&${conn}`);
+        channels = await getJson(`/api/channels?limit=5000000&db_name=${encodeURIComponent(db.name)}&${conn}`);
+      } else {
+        tests = await getJson(`/api/file/tests?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}`);
+        channels = await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}`);
+      }
+      const packed = { tests, channels };
+      if (key) catalogCache.set(key, packed);
+      return packed;
+    }
+
+    async function refreshCatalogsForSelections(){
+      testsData=[]; channelsData=[];
+      for(const dbId of selectedDatabaseIds){
+        const db=state.databases.find((d)=>d.id===dbId), src=db?state.sources.find((s)=>s.id===db.sourceId):null;
+        if(!db||!src) continue;
+        const { tests, channels } = await fetchCatalogRows(db, src);
+        tests.forEach((x)=>testsData.push({...x,__dbId:db.id}));
+        channels.forEach((x)=>channelsData.push({...x,__dbId:db.id}));
+      }
+      const selectedDbSet=new Set([...selectedDatabaseIds]);
+      (state.calculatedChannels||[]).forEach((calc)=>{
+        if(!selectedDbSet.has(calc.dbId)) return;
+        channelsData.push({ channel_id: calc.id, channel_name: calc.name, display_name: calc.name, unit: calc.unit || null, sample_rate_hz: null, valid_min: null, valid_max: null, __dbId: calc.dbId, __isCalculated: true, __calcKind: calc.kind });
+      });
+      channelUnitMap=new Map(channelsData.map((c)=>[`${c.__dbId}|${c.channel_name}`,c.unit||"unitless"]));
+    }
     function renderAll() {
       const dup = {};
       testsData.forEach((t) => {
@@ -231,24 +589,262 @@
         "channel",
         "No channels added."
       );
+      renderList(
+        "masksList",
+        (state.masks||[]).map((m)=>({
+          id:m.id,
+          primary: m.kind==="rolling"
+            ? `rolling(${m.sourceChannel.split("|")[1]}, ${m.rollingOp}, w=${m.window}) ${m.op}${(m.op==="between"||m.op==="outside")?` ${m.valueA}..${m.valueB}`:` ${m.valueA}`}`
+            : m.kind==="formula"
+              ? `formula(${(m.channels||[]).map((ch)=>ch.split("|")[1]).join(",")}) ${m.op}${(m.op==="between"||m.op==="outside")?` ${m.valueA}..${m.valueB}`:` ${m.valueA}`}`
+              : `${m.channels.map((ch)=>ch==="__time__"?"time":ch.split("|")[1]).join(", ")} ${m.op}${(m.op==="between"||m.op==="outside")?` ${m.valueA}..${m.valueB}`:` ${m.valueA}`}`,
+          meta:m.kind==="rolling" ? "rolling mask" : (m.kind==="formula" ? "channel-wise mask" : (m.channels.length>1?"all selected channels must match":"single channel mask")),
+        })),
+        selectedMaskIds,
+        "mask",
+        "No masks added."
+      );
 
       buildXAxis();
       setPreviewVisible(previewVisible);
 
       Object.entries(state.collapsed).forEach(([k, v]) => {
-        const idMap = { sources: "sourcesList", databases: "databasesList", tests: "testsList", channels: "channelsList" };
+        const idMap = { sources: "sourcesList", databases: "databasesList", tests: "testsList", channels: "channelsList", masks: "masksList" };
         const el = byId(idMap[k]);
         if (el) el.style.display = v ? "none" : "block";
       });
+      renderPlotTabs();
     }
-    function deleteFocused(){ if(!focusedItem) return; const {kind,id}=focusedItem; if(kind==="source"){ state.sources=state.sources.filter((s)=>s.id!==id); selectedSourceIds.delete(id); state.databases=state.databases.filter((d)=>d.sourceId!==id); [...selectedDatabaseIds].forEach((db)=>{ if(!state.databases.some((d)=>d.id===db)) selectedDatabaseIds.delete(db);}); } else if(kind==="database"){ state.databases=state.databases.filter((d)=>d.id!==id); selectedDatabaseIds.delete(id);} else if(kind==="test"){ selectedTestIds.delete(id); addedTestIds.delete(id); } else if(kind==="channel"){ selectedChannelIds.delete(id); addedChannelIds.delete(id); const [dbId,channelName]=id.split("|"); state.calculatedChannels=(state.calculatedChannels||[]).filter((c)=>!(c.dbId===dbId&&c.name===channelName)); } focusedItem=null; renderAll(); saveState(); }
+    function deleteFocused(){ if(!focusedItem) return; const {kind,id}=focusedItem; if(kind==="source"){ state.sources=state.sources.filter((s)=>s.id!==id); selectedSourceIds.delete(id); state.databases=state.databases.filter((d)=>d.sourceId!==id); [...selectedDatabaseIds].forEach((db)=>{ if(!state.databases.some((d)=>d.id===db)) selectedDatabaseIds.delete(db);}); clearCatalogCache(); } else if(kind==="database"){ state.databases=state.databases.filter((d)=>d.id!==id); selectedDatabaseIds.delete(id); clearCatalogCache(); } else if(kind==="test"){ selectedTestIds.delete(id); addedTestIds.delete(id); } else if(kind==="channel"){ selectedChannelIds.delete(id); addedChannelIds.delete(id); const [dbId,channelName]=id.split("|"); state.calculatedChannels=(state.calculatedChannels||[]).filter((c)=>!(c.dbId===dbId&&c.name===channelName)); } else if(kind==="mask"){ state.masks=(state.masks||[]).filter((m)=>m.id!==id); selectedMaskIds.delete(id); } focusedItem=null; renderAll(); saveState(); }
     async function uploadSelectedFile(inputId){ const input=byId(inputId); const file=(input&&input.files&&input.files[0])?input.files[0]:null; if(!file) return ""; const fd=new FormData(); fd.append("file",file); const r=await fetch("/api/file/upload",{method:"POST",body:fd}); if(!r.ok) throw new Error(`Upload failed (${r.status})`); const out=await r.json(); return out.path||""; }
     function setChannelFrequency(chId){ const current=state.freqOverrides[chId]||""; const next=prompt(`Set target frequency (Hz) for ${chId.split("|")[1]}. Leave empty to clear.`,String(current)); if(next===null) return; const cleaned=next.trim(); if(!cleaned) delete state.freqOverrides[chId]; else { const hz=Number(cleaned); if(!Number.isFinite(hz)||hz<=0){ setStatus("Frequency must be a positive number.",true); return;} state.freqOverrides[chId]=hz; } if(latestRows.length) plotRows(latestRows); renderAll(); saveState(); }
     function searchableRowsHtml(prefix,rows,set){ return `<input id="${prefix}_search" type="text" placeholder="Search..." /><div id="${prefix}_list" class="modalList">${rows.map((r)=>`<div class="selectRow${set.has(r.id)?" active":""}" data-id="${r.id}"><div class="itemPrimary">${r.primary}</div>${r.meta?`<div class="itemMeta">${r.meta}</div>`:""}</div>`).join("")}</div>`; }
     function bindSearchableModal(prefix,chosen){ const search=byId(`${prefix}_search`), list=byId(`${prefix}_list`), rows=[...list.querySelectorAll(".selectRow")]; rows.forEach((row)=>row.onclick=()=>{ const id=row.getAttribute("data-id"); if(chosen.has(id)){ chosen.delete(id); row.classList.remove("active"); } else { chosen.add(id); row.classList.add("active"); }}); search.oninput=()=>{ const q=search.value.toLowerCase(); rows.forEach((r)=>r.style.display=r.textContent.toLowerCase().includes(q)?"block":"none"); }; }
-    function showAddPostgresModal(){ openModal("Add PostgreSQL Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="PostgreSQL Source" /></div><div><label>Host</label><input id="m_host" type="text" value="localhost" /></div><div><label>Port</label><input id="m_port" type="number" value="5432" /></div><div><label>User</label><input id="m_user" type="text" value="pipeline" /></div><div><label>Password</label><input id="m_password" type="password" value="test" /></div><div><label>SSL Mode</label><input id="m_ssl" type="text" value="disable" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,async()=>{ state.sources.push({id:crypto.randomUUID(),type:"postgres",name:byId("m_sourceName").value||"PostgreSQL Source",host:byId("m_host").value||"localhost",port:Number(byId("m_port").value||"5432"),user:byId("m_user").value||"pipeline",password:byId("m_password").value||"",sslmode:byId("m_ssl").value||"disable",file_path:""}); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); }); }
-    function showAddCsvModal(){ openModal("Add CSV Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="CSV Source" /></div><div><label>CSV File</label><input id="m_fileUpload" type="file" accept=".csv,text/csv" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick a CSV file first.",true); return; } state.sources.push({id:crypto.randomUUID(),type:"csv",name:byId("m_sourceName").value||"CSV Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); }); }
-    function showAddTdmsModal(){ openModal("Add TDMS Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="TDMS Source" /></div><div><label>TDMS File</label><input id="m_fileUpload" type="file" accept=".tdms,application/octet-stream" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick a TDMS file first.",true); return; } state.sources.push({id:crypto.randomUUID(),type:"tdms",name:byId("m_sourceName").value||"TDMS Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); }); }
+    function maskOpNeedsTwoValues(op){ return op==="between" || op==="outside"; }
+    function evalMaskValue(v, op, a, b){
+      if(!Number.isFinite(v) || !Number.isFinite(a)) return false;
+      if(op==="=") return v===a;
+      if(op===">") return v>a;
+      if(op==="<") return v<a;
+      if(op==="!=") return v!==a;
+      if(op==="between"){ if(!Number.isFinite(b)) return false; const lo=Math.min(a,b), hi=Math.max(a,b); return v>=lo && v<=hi; }
+      if(op==="outside"){ if(!Number.isFinite(b)) return false; const lo=Math.min(a,b), hi=Math.max(a,b); return v<lo || v>hi; }
+      return false;
+    }
+    function parseUtcInput(value){
+      const txt=String(value||"").trim();
+      if(!txt) return Number.NaN;
+      if(/z$/i.test(txt)) return Date.parse(txt);
+      return Date.parse(`${txt}Z`);
+    }
+    function parseMaskCompareValues(mask, isTimeMask){
+      if(!isTimeMask) return { a:Number(mask.valueA), b:Number(mask.valueB) };
+      const t0Mode = byId("t0Mode").value;
+      if(t0Mode==="absolute"){
+        const a=parseUtcInput(mask.valueA);
+        const b=parseUtcInput(mask.valueB);
+        return { a, b };
+      }
+      return { a:Number(mask.valueA), b:Number(mask.valueB) };
+    }
+    function applyMasks(rows){
+      const activeMasks=(state.masks||[]).filter((m)=>selectedMaskIds.has(m.id));
+      if(!activeMasks.length) return rows;
+      const t0ByTest = new Map();
+      if(byId("t0Mode").value!=="absolute"){
+        rows.forEach((r)=>{
+          const key=`${r.__dbId}|${r.test_run_id}`;
+          const ts=Date.parse(String(r.time));
+          if(!Number.isFinite(ts)) return;
+          if(!t0ByTest.has(key) || ts<t0ByTest.get(key)) t0ByTest.set(key, ts);
+        });
+      }
+      const t0MetaByTest = new Map();
+      if(byId("t0Mode").value==="t0_relative"){
+        testsData.forEach((t)=>{
+          const ts=Date.parse(String(t.t0_utc||""));
+          if(Number.isFinite(ts)) t0MetaByTest.set(`${t.__dbId}|${t.test_run_id}`, ts);
+        });
+      }
+      const groups=new Map();
+      const groupsByTest=new Map();
+      rows.forEach((r)=>{
+        const k=`${r.__dbId}|${r.test_run_id}|${String(r.time)}`;
+        if(!groups.has(k)) groups.set(k,{ rows:[], vals:{}, sample:r });
+        const g=groups.get(k);
+        g.rows.push(r);
+        g.vals[`${r.__dbId}|${r.channel_name}`]=Number(r.value);
+        const tk=`${r.__dbId}|${r.test_run_id}`;
+        if(!groupsByTest.has(tk)) groupsByTest.set(tk, []);
+        groupsByTest.get(tk).push(k);
+      });
+      const derivedMaskVals = new Map();
+      activeMasks.forEach((m)=>derivedMaskVals.set(m.id,new Map()));
+      activeMasks.forEach((m)=>{
+        if(m.kind!=="rolling" && m.kind!=="formula") return;
+        const out=derivedMaskVals.get(m.id);
+        if(m.kind==="rolling"){
+          const byTestSeries=new Map();
+          rows.forEach((r)=>{
+            if(`${r.__dbId}|${r.channel_name}`!==m.sourceChannel) return;
+            const tk=`${r.__dbId}|${r.test_run_id}`;
+            if(!byTestSeries.has(tk)) byTestSeries.set(tk, []);
+            byTestSeries.get(tk).push(r);
+          });
+          byTestSeries.forEach((series)=>{
+            series.sort((a,b)=>new Date(a.time)-new Date(b.time));
+            const w=Math.max(1, Number(m.window||1));
+            for(let i=0;i<series.length;i+=1){
+              const vals=series.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x));
+              const v=rollingCalc(m.rollingOp, vals);
+              if(v===null||!Number.isFinite(v)) continue;
+              const key=`${series[i].__dbId}|${series[i].test_run_id}|${String(series[i].time)}`;
+              out.set(key, Number(v));
+            }
+          });
+          return;
+        }
+        if(m.kind==="formula"){
+          const deps=(m.channels||[]).map((id)=>id.split("|")[1]);
+          const compiled=compileFormula(m.formula||"", deps.length);
+          if(!compiled.ok) return;
+          groupsByTest.forEach((keys)=>{
+            const sorted=keys.slice().sort((a,b)=>new Date(groups.get(a).sample.time)-new Date(groups.get(b).sample.time));
+            let prevMs=null;
+            const ctx={dt_s:0,__bpStates:{}};
+            sorted.forEach((k)=>{
+              const g=groups.get(k);
+              const vals=(m.channels||[]).map((id)=>Number(g.vals[id]));
+              if(vals.some((v)=>!Number.isFinite(v))) return;
+              const currMs=Date.parse(String(g.sample.time));
+              ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000);
+              prevMs=currMs;
+              let outVal=null;
+              try{ outVal=compiled.evalFn(vals,ctx); }catch{ outVal=null; }
+              if(!Number.isFinite(outVal)) return;
+              out.set(k, Number(outVal));
+            });
+          });
+        }
+      });
+      const kept=[];
+      groups.forEach((g)=>{
+        const passAll=activeMasks.every((m)=>{
+          if(m.kind==="rolling" || m.kind==="formula"){
+            const key=`${g.sample.__dbId}|${g.sample.test_run_id}|${String(g.sample.time)}`;
+            const v=derivedMaskVals.get(m.id)?.get(key);
+            const { a, b } = parseMaskCompareValues(m, false);
+            return evalMaskValue(Number(v), m.op, a, b);
+          }
+          if(!m.channels?.length) return false;
+          const isTimeMask = m.channels.every((chId)=>chId==="__time__");
+          const { a, b } = parseMaskCompareValues(m, isTimeMask);
+          return m.channels.every((chId)=>{
+            if(chId==="__time__"){
+              const ts=Date.parse(String(g.sample.time));
+              if(!Number.isFinite(ts)) return false;
+              if(byId("t0Mode").value==="absolute") return evalMaskValue(ts, m.op, a, b);
+              const key=`${g.sample.__dbId}|${g.sample.test_run_id}`;
+              const t0=byId("t0Mode").value==="t0_relative" ? t0MetaByTest.get(key) : t0ByTest.get(key);
+              if(!Number.isFinite(t0)) return false;
+              const rel=(ts-t0)/1000;
+              return evalMaskValue(rel, m.op, a, b);
+            }
+            return evalMaskValue(Number(g.vals[chId]), m.op, a, b);
+          });
+        });
+        if(passAll) kept.push(...g.rows);
+      });
+      return kept;
+    }
+    async function showAddMaskModal(){
+      if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; }
+      await refreshCatalogsForSelections();
+      const rows=[{id:"__time__",primary:"time",meta:"Uses UTC in Absolute mode, seconds from t0 in relative modes"}, ...channelsData.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`DB ${c.__dbId.slice(0,8)} | unit ${c.unit||"unitless"}`}))];
+      const chosen=new Set();
+      openModal("Add Mask",`${searchableRowsHtml("mm",rows,chosen)}<div style="margin-top:8px;"><label>Condition</label><select id="m_mask_op"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select><label id="m_mask_a_label">Value A</label><input id="m_mask_a" type="number" step="any" placeholder="e.g. 0" /><div id="m_mask_b_wrap" style="display:none;"><label id="m_mask_b_label">Value B</label><input id="m_mask_b" type="number" step="any" placeholder="e.g. 100" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const channels=[...chosen]; if(!channels.length){ setStatus("Select at least one channel for the mask.",true); return false; } const op=byId("m_mask_op").value; const isTimeMask=channels.every((ch)=>ch==="__time__"); const rawA=byId("m_mask_a").value.trim(); const rawB=byId("m_mask_b").value.trim(); const needsB=maskOpNeedsTwoValues(op); const parsedA=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawA) : Number(rawA); const parsedB=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawB) : Number(rawB); if(!Number.isFinite(parsedA)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value A must be valid UTC time.":"Value A is required.",true); return false; } if(needsB && !Number.isFinite(parsedB)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value B must be valid UTC time.":"Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), channels, op, valueA:rawA, valueB:needsB?rawB:null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Mask added."); return true; });
+      bindSearchableModal("mm",chosen);
+      const opSel=byId("m_mask_op"), bWrap=byId("m_mask_b_wrap");
+      const aInput=byId("m_mask_a"), bInput=byId("m_mask_b"), aLabel=byId("m_mask_a_label"), bLabel=byId("m_mask_b_label");
+      const refreshMaskInputs=()=>{ const isTime=[...chosen].every((ch)=>ch==="__time__")&&chosen.size>0; const absoluteMode=byId("t0Mode").value==="absolute"; bWrap.style.display=maskOpNeedsTwoValues(opSel.value)?"block":"none"; if(isTime&&absoluteMode){ aInput.type="datetime-local"; bInput.type="datetime-local"; aInput.placeholder=""; bInput.placeholder=""; aLabel.textContent="UTC Time A"; bLabel.textContent="UTC Time B"; } else if(isTime){ aInput.type="number"; bInput.type="number"; aInput.step="any"; bInput.step="any"; aInput.placeholder="seconds from t0 (e.g. 0)"; bInput.placeholder="seconds from t0 (e.g. 30)"; aLabel.textContent="t0 Seconds A"; bLabel.textContent="t0 Seconds B"; } else { aInput.type="number"; bInput.type="number"; aInput.step="any"; bInput.step="any"; aInput.placeholder="e.g. 0"; bInput.placeholder="e.g. 100"; aLabel.textContent="Value A"; bLabel.textContent="Value B"; } };
+      opSel.onchange=refreshMaskInputs;
+      const mmList=byId("mm_list");
+      if(mmList) mmList.addEventListener("click",()=>setTimeout(refreshMaskInputs,0));
+      refreshMaskInputs();
+    }
+    async function showAddRollingMaskModal(){
+      if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; }
+      await refreshCatalogsForSelections();
+      const dbId=[...selectedDatabaseIds][0];
+      const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
+      if(!sourceChannels.length){ setStatus("No source channels available for rolling mask.",true); return; }
+      const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}">${c.channel_name}</option>`).join("");
+      openModal("Rolling Mask Calculation",`<div class="modalGrid"><div><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="10" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" /></div><div id="m_mask_val_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const sourceChannel=byId("m_mask_src").value; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"rolling", dbId, sourceChannel, rollingOp, window, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Rolling mask added."); return true; });
+      const cond=byId("m_mask_cond"), wrap=byId("m_mask_val_b_wrap");
+      cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
+    }
+    async function showAddChannelWiseMaskModal(){
+      if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; }
+      await refreshCatalogsForSelections();
+      const dbId=[...selectedDatabaseIds][0];
+      const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
+      if(sourceChannels.length<2){ setStatus("Need at least two source channels for channel-wise mask.",true); return; }
+      const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`}));
+      const chosen=new Set();
+      openModal("Channel Wise Mask Calculation",`${searchableRowsHtml("mfm",rows,chosen)}<div style="margin-top:8px;"><label>Formula</label><input id="m_mask_formula" type="text" placeholder="A + B" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" /><div id="m_mask_formula_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"formula", dbId, channels, formula:compiled.expr, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Channel-wise mask added."); return true; });
+      bindSearchableModal("mfm",chosen);
+      const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); byId("m_mask_formula_hint").textContent=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | ")||"Select channels to map A, B, C..."; };
+      const list=byId("mfm_list");
+      if(list) list.addEventListener("click",()=>setTimeout(refreshHint,0));
+      refreshHint();
+      const cond=byId("m_mask_formula_cond"), wrap=byId("m_mask_formula_b_wrap");
+      cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
+    }
+    async function editMask(maskId){
+      const mask=(state.masks||[]).find((m)=>m.id===maskId);
+      if(!mask){ setStatus("Mask not found.", true); return; }
+      if(mask.kind==="rolling"){
+        await refreshCatalogsForSelections();
+        const dbId=mask.dbId || [...selectedDatabaseIds][0];
+        const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
+        const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}" ${mask.sourceChannel===`${c.__dbId}|${c.channel_name}`?"selected":""}>${c.channel_name}</option>`).join("");
+        openModal("Edit Rolling Mask",`<div class="modalGrid"><div><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean" ${mask.rollingOp==="mean"?"selected":""}>mean</option><option value="sum" ${mask.rollingOp==="sum"?"selected":""}>sum</option><option value="min" ${mask.rollingOp==="min"?"selected":""}>min</option><option value="max" ${mask.rollingOp==="max"?"selected":""}>max</option><option value="std" ${mask.rollingOp==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="${mask.window||10}" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" value="${mask.valueA??""}" /></div><div id="m_mask_val_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{ const sourceChannel=byId("m_mask_src").value; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.sourceChannel=sourceChannel; mask.rollingOp=rollingOp; mask.window=window; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Rolling mask updated."); return true; });
+        const cond=byId("m_mask_cond"), wrap=byId("m_mask_val_b_wrap");
+        cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
+        return;
+      }
+      if(mask.kind==="formula"){
+        await refreshCatalogsForSelections();
+        const dbId=mask.dbId || [...selectedDatabaseIds][0];
+        const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
+        const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`}));
+        const chosen=new Set(mask.channels||[]);
+        openModal("Edit Channel Wise Mask",`${searchableRowsHtml("emfm",rows,chosen)}<div style="margin-top:8px;"><label>Formula</label><input id="m_mask_formula" type="text" value="${mask.formula||""}" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" value="${mask.valueA??""}" /><div id="m_mask_formula_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.channels=channels; mask.formula=compiled.expr; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Channel-wise mask updated."); return true; });
+        bindSearchableModal("emfm",chosen);
+        const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); byId("m_mask_formula_hint").textContent=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | ")||"Select channels to map A, B, C..."; };
+        const list=byId("emfm_list");
+        if(list) list.addEventListener("click",()=>setTimeout(refreshHint,0));
+        refreshHint();
+        const cond=byId("m_mask_formula_cond"), wrap=byId("m_mask_formula_b_wrap");
+        cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
+        return;
+      }
+      await refreshCatalogsForSelections();
+      const rows=[{id:"__time__",primary:"time",meta:"Uses UTC in Absolute mode, seconds from t0 in relative modes"}, ...channelsData.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`DB ${c.__dbId.slice(0,8)} | unit ${c.unit||"unitless"}`}))];
+      const chosen=new Set(mask.channels||[]);
+      openModal("Edit Mask",`${searchableRowsHtml("emm",rows,chosen)}<div style="margin-top:8px;"><label>Condition</label><select id="m_mask_op"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select><label id="m_mask_a_label">Value A</label><input id="m_mask_a" type="number" step="any" value="${mask.valueA??""}" /><div id="m_mask_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label id="m_mask_b_label">Value B</label><input id="m_mask_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{ const channels=[...chosen]; if(!channels.length){ setStatus("Select at least one channel for the mask.",true); return false; } const op=byId("m_mask_op").value; const isTimeMask=channels.every((ch)=>ch==="__time__"); const rawA=byId("m_mask_a").value.trim(); const rawB=byId("m_mask_b").value.trim(); const needsB=maskOpNeedsTwoValues(op); const parsedA=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawA) : Number(rawA); const parsedB=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawB) : Number(rawB); if(!Number.isFinite(parsedA)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value A must be valid UTC time.":"Value A is required.",true); return false; } if(needsB && !Number.isFinite(parsedB)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value B must be valid UTC time.":"Value B is required for this condition.",true); return false; } mask.channels=channels; mask.op=op; mask.valueA=rawA; mask.valueB=needsB?rawB:null; renderAll(); saveState(); setStatus("Mask updated."); return true; });
+      bindSearchableModal("emm",chosen);
+      const opSel=byId("m_mask_op"), bWrap=byId("m_mask_b_wrap");
+      const aInput=byId("m_mask_a"), bInput=byId("m_mask_b"), aLabel=byId("m_mask_a_label"), bLabel=byId("m_mask_b_label");
+      const refreshMaskInputs=()=>{ const isTime=[...chosen].every((ch)=>ch==="__time__")&&chosen.size>0; const absoluteMode=byId("t0Mode").value==="absolute"; bWrap.style.display=maskOpNeedsTwoValues(opSel.value)?"block":"none"; if(isTime&&absoluteMode){ aInput.type="datetime-local"; bInput.type="datetime-local"; aLabel.textContent="UTC Time A"; bLabel.textContent="UTC Time B"; } else if(isTime){ aInput.type="number"; bInput.type="number"; aInput.step="any"; bInput.step="any"; aLabel.textContent="t0 Seconds A"; bLabel.textContent="t0 Seconds B"; } else { aInput.type="number"; bInput.type="number"; aInput.step="any"; bInput.step="any"; aLabel.textContent="Value A"; bLabel.textContent="Value B"; } };
+      opSel.onchange=refreshMaskInputs;
+      const mmList=byId("emm_list");
+      if(mmList) mmList.addEventListener("click",()=>setTimeout(refreshMaskInputs,0));
+      refreshMaskInputs();
+    }
+    function showAddPostgresModal(){ openModal("Add PostgreSQL Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="PostgreSQL Source" /></div><div><label>Host</label><input id="m_host" type="text" value="localhost" /></div><div><label>Port</label><input id="m_port" type="number" value="5432" /></div><div><label>User</label><input id="m_user" type="text" value="pipeline" /></div><div><label>Password</label><input id="m_password" type="password" value="test" /></div><div><label>SSL Mode</label><input id="m_ssl" type="text" value="disable" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ state.sources.push({id:crypto.randomUUID(),type:"postgres",name:byId("m_sourceName").value||"PostgreSQL Source",host:byId("m_host").value||"localhost",port:Number(byId("m_port").value||"5432"),user:byId("m_user").value||"pipeline",password:byId("m_password").value||"",sslmode:byId("m_ssl").value||"disable",file_path:""}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
+    function showAddCsvModal(){ openModal("Add CSV Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="CSV Source" /></div><div><label>CSV File</label><input id="m_fileUpload" type="file" accept=".csv,text/csv" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick a CSV file first.",true); return false; } state.sources.push({id:crypto.randomUUID(),type:"csv",name:byId("m_sourceName").value||"CSV Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
+    function showAddTdmsModal(){ openModal("Add TDMS Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="TDMS Source" /></div><div><label>TDMS File</label><input id="m_fileUpload" type="file" accept=".tdms,application/octet-stream" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick a TDMS file first.",true); return false; } state.sources.push({id:crypto.randomUUID(),type:"tdms",name:byId("m_sourceName").value||"TDMS Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
     function showAddSourceMenu(ev){
       if (ev) {
         ev.preventDefault();
@@ -267,17 +863,27 @@
       const rect = byId("addChannelBtn").getBoundingClientRect();
       showChannelAddMenu(rect.left, rect.bottom + 4);
     }
+    function showAddMasksMenu(ev){
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      }
+      const rect = byId("addMaskBtn").getBoundingClientRect();
+      showMaskAddMenu(rect.left, rect.bottom + 4);
+    }
     function nextCalcName(dbId, base, excludeName){ const stem=(base||"calc_channel").trim()||"calc_channel"; let name=stem; let n=1; const existing=new Set(channelsData.filter((c)=>c.__dbId===dbId).map((c)=>c.channel_name).filter((n0)=>n0!==excludeName)); while(existing.has(name)){ n+=1; name=`${stem}_${n}`; } return name; }
     function varLetters(n){ return Array.from({length:n}, (_,i)=>String.fromCharCode(65+i)); }
     function compileFormula(exprRaw, variableCount){ let expr=String(exprRaw||"").trim().toUpperCase(); if(expr.startsWith("=")) expr=expr.slice(1).trim(); if(!expr) return {ok:false,error:"Enter a formula using A, B, C..."}; if(!/^[A-Z0-9_+\-*/().,\s]+$/.test(expr)) return {ok:false,error:"Formula contains invalid characters."}; const vars=new Set(varLetters(variableCount)); const funcs=new Set(["ABS","SQRT","POW","EXP","LOG","LOG10","SIN","COS","TAN","ASIN","ACOS","ATAN","ROUND","FLOOR","CEIL","MIN","MAX","CLAMP","BAND_PASS_FILTER"]); const words=expr.match(/[A-Z_]+/g)||[]; for(const w of words){ if(vars.has(w)||funcs.has(w)) continue; return {ok:false,error:`Unsupported symbol: ${w}`}; } const helper={ ABS:Math.abs,SQRT:Math.sqrt,POW:Math.pow,EXP:Math.exp,LOG:Math.log,LOG10:Math.log10||((x)=>Math.log(x)/Math.LN10),SIN:Math.sin,COS:Math.cos,TAN:Math.tan,ASIN:Math.asin,ACOS:Math.acos,ATAN:Math.atan,ROUND:Math.round,FLOOR:Math.floor,CEIL:Math.ceil,MIN:Math.min,MAX:Math.max,CLAMP:(x,lo,hi)=>Math.min(Math.max(x,lo),hi), BAND_PASS_FILTER:(x,lowFreq,highFreq)=>{ const low=Number(lowFreq), high=Number(highFreq); if(!Number.isFinite(x)||!Number.isFinite(low)||!Number.isFinite(high)||low<=0||high<=0||high<=low) return Number(x); const ctx=helper.__ctx||{}; const dt=Math.max(1e-6, Number(ctx.dt_s||0)); const callKey=String((helper.__bpCallIndex=(helper.__bpCallIndex||0)+1)); if(!ctx.__bpStates) ctx.__bpStates={}; const state=ctx.__bpStates[callKey]||{lpHigh:Number(x),lpLow:Number(x)}; const tauHigh=1/(2*Math.PI*high); const tauLow=1/(2*Math.PI*low); const aHigh=dt/(tauHigh+dt); const aLow=dt/(tauLow+dt); state.lpHigh=state.lpHigh + aHigh*(Number(x)-state.lpHigh); state.lpLow=state.lpLow + aLow*(Number(x)-state.lpLow); ctx.__bpStates[callKey]=state; return state.lpHigh - state.lpLow; } }; let jsExpr=expr; funcs.forEach((f)=>{ jsExpr=jsExpr.replace(new RegExp(`\\b${f}\\b`,"g"),`__f.${f}`); }); try{ const fn=new Function(...[...vars], "__f", `return (${jsExpr});`); return {ok:true,expr,evalFn:(vals,ctx)=>{ helper.__ctx=ctx||{}; helper.__bpCallIndex=0; return fn(...vals,helper);} }; }catch{ return {ok:false,error:"Formula could not be parsed."}; } }
-    async function showAddRollingChannelModal(){ if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; } await refreshCatalogsForSelections(); const dbId=[...selectedDatabaseIds][0]; const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(!sourceChannels.length){ setStatus("No source channels available for rolling calculation.",true); return; } const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}">${c.channel_name}</option>`).join(""); openModal("Rolling Channel Calculation",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="rolling_mean" /></div><div><label>Units</label><input id="m_calc_unit" type="text" placeholder="e.g. N, kg/s, unitless" /></div><div><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="10" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Create</button></div>`,async()=>{ const sourceId=byId("m_calc_source").value; const op=byId("m_calc_op").value; const window=Math.max(1,Number(byId("m_calc_window").value||1)); const rawName=(byId("m_calc_name").value||"rolling_mean").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const name=nextCalcName(dbId, rawName); const unit=(byId("m_calc_unit").value||"").trim(); state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"rolling", dbId, name, unit, channels:[sourceId], op, window }); addedChannelIds.add(`${dbId}|${name}`); selectedChannelIds.add(`${dbId}|${name}`); await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Added rolling calculated channel '${name}'.`); return true; }); }
-    async function showAddChannelWiseModal(){ if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; } await refreshCatalogsForSelections(); const dbId=[...selectedDatabaseIds][0]; const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(sourceChannels.length<2){ setStatus("Need at least two source channels for channel-wise calculation.",true); return; } const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`})); const chosen=new Set(); openModal("Channel Wise Calculation",`${searchableRowsHtml("fcm",rows,chosen)}<div style="margin-top:8px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="channel_formula" /><label>Units</label><input id="m_formula_unit" type="text" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Create</button></div>`,async()=>{ const ordered=[...chosen]; if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const rawName=(byId("m_formula_name").value||"channel_formula").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const name=nextCalcName(dbId, rawName); const unit=(byId("m_formula_unit").value||"").trim(); state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"formula", dbId, name, unit, channels:ordered, formula:compiled.expr }); addedChannelIds.add(`${dbId}|${name}`); selectedChannelIds.add(`${dbId}|${name}`); await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Added channel-wise calculated channel '${name}'.`); return true; }); bindSearchableModal("fcm",chosen); const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); const txt=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | "); byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C..."; }; const list=byId("fcm_list"); if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); } refreshHint(); }
+    async function showAddRollingChannelModal(){ if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; } await refreshCatalogsForSelections(); const dbId=[...selectedDatabaseIds][0]; const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(!sourceChannels.length){ setStatus("No source channels available for rolling calculation.",true); return; } const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}">${c.channel_name}</option>`).join(""); openModal("Rolling Channel Calculation",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="rolling_mean" /></div><div><label>Units</label><input id="m_calc_unit" type="text" placeholder="e.g. N, kg/s, unitless" /></div><div><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="10" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const sourceId=byId("m_calc_source").value; const op=byId("m_calc_op").value; const window=Math.max(1,Number(byId("m_calc_window").value||1)); const rawName=(byId("m_calc_name").value||"rolling_mean").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const name=nextCalcName(dbId, rawName); const unit=(byId("m_calc_unit").value||"").trim(); state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"rolling", dbId, name, unit, channels:[sourceId], op, window }); addedChannelIds.add(`${dbId}|${name}`); selectedChannelIds.add(`${dbId}|${name}`); await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Added rolling calculated channel '${name}'.`); return true; }); }
+    async function showAddChannelWiseModal(){ if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; } await refreshCatalogsForSelections(); const dbId=[...selectedDatabaseIds][0]; const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(sourceChannels.length<2){ setStatus("Need at least two source channels for channel-wise calculation.",true); return; } const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`})); const chosen=new Set(); openModal("Channel Wise Calculation",`${searchableRowsHtml("fcm",rows,chosen)}<div style="margin-top:8px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="channel_formula" /><label>Units</label><input id="m_formula_unit" type="text" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const ordered=[...chosen]; if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const rawName=(byId("m_formula_name").value||"channel_formula").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const name=nextCalcName(dbId, rawName); const unit=(byId("m_formula_unit").value||"").trim(); state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"formula", dbId, name, unit, channels:ordered, formula:compiled.expr }); addedChannelIds.add(`${dbId}|${name}`); selectedChannelIds.add(`${dbId}|${name}`); await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Added channel-wise calculated channel '${name}'.`); return true; }); bindSearchableModal("fcm",chosen); const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); const txt=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | "); byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C..."; }; const list=byId("fcm_list"); if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); } refreshHint(); }
     async function editCalculatedChannel(channelId){ const [dbId, channelName] = channelId.split("|"); const calc = (state.calculatedChannels||[]).find((c)=>c.dbId===dbId && c.name===channelName); if(!calc){ setStatus("Only calculated channels can be edited.", true); return; } await refreshCatalogsForSelections(); const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(calc.kind==="rolling"){ if(!sourceChannels.length){ setStatus("No source channels available for rolling calculation.",true); return; } const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}" ${calc.channels&&calc.channels[0]===`${c.__dbId}|${c.channel_name}`?"selected":""}>${c.channel_name}</option>`).join(""); openModal("Edit Rolling Channel",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="${calc.name}" /></div><div><label>Units</label><input id="m_calc_unit" type="text" value="${calc.unit||""}" placeholder="e.g. N, kg/s, unitless" /></div><div><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean" ${calc.op==="mean"?"selected":""}>mean</option><option value="sum" ${calc.op==="sum"?"selected":""}>sum</option><option value="min" ${calc.op==="min"?"selected":""}>min</option><option value="max" ${calc.op==="max"?"selected":""}>max</option><option value="std" ${calc.op==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="${calc.window||10}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,async()=>{ const sourceId=byId("m_calc_source").value; const op=byId("m_calc_op").value; const window=Math.max(1,Number(byId("m_calc_window").value||1)); const rawName=(byId("m_calc_name").value||"rolling_mean").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const oldName=calc.name; const name=nextCalcName(dbId, rawName, oldName); calc.name=name; calc.unit=(byId("m_calc_unit").value||"").trim(); calc.channels=[sourceId]; calc.op=op; calc.window=window; if(addedChannelIds.delete(`${dbId}|${oldName}`)) addedChannelIds.add(`${dbId}|${name}`); if(selectedChannelIds.delete(`${dbId}|${oldName}`)) selectedChannelIds.add(`${dbId}|${name}`); if(byId("xAxis").value===`${dbId}|${oldName}`) byId("xAxis").value=`${dbId}|${name}`; await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Updated calculated channel '${name}'.`); return true; }); return; } const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`})); const chosen=new Set(calc.channels||[]); openModal("Edit Channel Wise Calculation",`${searchableRowsHtml("efcm",rows,chosen)}<div style="margin-top:8px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="${calc.name}" /><label>Units</label><input id="m_formula_unit" type="text" value="${calc.unit||""}" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" value="${calc.formula||""}" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,async()=>{ const ordered=[...chosen]; if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const rawName=(byId("m_formula_name").value||"channel_formula").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const oldName=calc.name; const name=nextCalcName(dbId, rawName, oldName); calc.name=name; calc.unit=(byId("m_formula_unit").value||"").trim(); calc.channels=ordered; calc.formula=compiled.expr; if(addedChannelIds.delete(`${dbId}|${oldName}`)) addedChannelIds.add(`${dbId}|${name}`); if(selectedChannelIds.delete(`${dbId}|${oldName}`)) selectedChannelIds.add(`${dbId}|${name}`); if(byId("xAxis").value===`${dbId}|${oldName}`) byId("xAxis").value=`${dbId}|${name}`; await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Updated calculated channel '${name}'.`); return true; }); bindSearchableModal("efcm",chosen); const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); const txt=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | "); byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C..."; }; const list=byId("efcm_list"); if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); } refreshHint(); }
-    async function showAddDatabaseModal(){ const srcs=activeSources(); if(!srcs.length){ setStatus("Select at least one source first.",true); return; } const rows=[]; for(const src of srcs){ if(src.type==="postgres"){ try{ const dbs=await getJson(`/api/databases?${sourceConnQuery(src)}`); dbs.forEach((d)=>rows.push({id:`${src.id}|${d.name}`,primary:d.name,meta:src.name,sourceId:src.id,sourceType:src.type,name:d.name})); }catch{} } else rows.push({id:`${src.id}|${src.file_path||src.name}`,primary:src.name,meta:`${src.type} source`,sourceId:src.id,sourceType:src.type,name:src.name}); } const chosen=new Set(); openModal("Add Databases",`${searchableRowsHtml("dbm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Add Selected</button></div>`,async()=>{ [...chosen].forEach((id)=>{ const r=rows.find((x)=>x.id===id); if(!r) return; const entry={id:crypto.randomUUID(),sourceId:r.sourceId,sourceType:r.sourceType,name:r.name}; if(!state.databases.some((d)=>d.sourceId===entry.sourceId&&d.name===entry.name)) state.databases.push(entry); }); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id); }); state.databases.forEach((d)=>{ if(chosen.has(`${d.sourceId}|${d.name}`)) selectedDatabaseIds.add(d.id); }); await refreshCatalogsForSelections(); renderAll(); saveState(); }); bindSearchableModal("dbm",chosen); }
-    async function showAddTestsModal(){ if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; } await refreshCatalogsForSelections(); const dup={}; testsData.forEach((t)=>dup[`${t.__dbId}|${t.run_code}`]=(dup[`${t.__dbId}|${t.run_code}`]||0)+1); const rows=testsData.map((t)=>({id:`${t.__dbId}|${t.test_run_id}`,primary:dup[`${t.__dbId}|${t.run_code}`]>1?`${t.run_code} (#${t.test_run_id})`:t.run_code,meta:`${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`})); const chosen=new Set(addedTestIds); openModal("Select Tests",`${searchableRowsHtml("tm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button></div>`,async()=>{ addedTestIds=new Set(chosen); selectedTestIds=new Set(chosen); renderAll(); saveState(); }); bindSearchableModal("tm",chosen); }
-    async function showAddChannelsModal(){ if(!addedTestIds.size){ setStatus("Add at least one test first.",true); return; } await refreshCatalogsForSelections(); const rows=[]; const testsByDb=new Map(); [...addedTestIds].forEach((k)=>{ const [dbId,testId]=k.split("|"); if(!testsByDb.has(dbId)) testsByDb.set(dbId,[]); testsByDb.get(dbId).push(testId); }); for(const [dbId,testIds] of testsByDb.entries()){ const db=state.databases.find((d)=>d.id===dbId),src=db?state.sources.find((s)=>s.id===db.sourceId):null; if(!db||!src) continue; if(src.type==="postgres"){ const p=new URLSearchParams(); testIds.forEach((id)=>p.append("test_run_ids",id)); p.append("db_name",db.name); sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }}); try{ const ch=await getJson(`/api/available-channels?${p.toString()}`); ch.forEach((c)=>rows.push({id:`${dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`})); }catch{} } else { try{ const ch=await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}`); ch.forEach((c)=>rows.push({id:`${dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`})); }catch{} } } const dedup=new Map(); rows.forEach((r)=>dedup.set(r.id,r)); const finalRows=[...dedup.values()]; const chosen=new Set(addedChannelIds); openModal("Select Channels",`${searchableRowsHtml("cm",finalRows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button></div>`,async()=>{ addedChannelIds=new Set(chosen); selectedChannelIds=new Set(chosen); renderAll(); saveState(); }); bindSearchableModal("cm",chosen); }
+    async function showAddDatabaseModal(){ const srcs=activeSources(); if(!srcs.length){ setStatus("Select at least one source first.",true); return; } const rows=[]; for(const src of srcs){ if(src.type==="postgres"){ try{ const dbs=await getJson(`/api/databases?${sourceConnQuery(src)}`); dbs.forEach((d)=>rows.push({id:`${src.id}|${d.name}`,primary:d.name,meta:src.name,sourceId:src.id,sourceType:src.type,name:d.name})); }catch{} } else rows.push({id:`${src.id}|${src.file_path||src.name}`,primary:src.name,meta:`${src.type} source`,sourceId:src.id,sourceType:src.type,name:src.name}); } const chosen=new Set(); openModal("Add Databases",`${searchableRowsHtml("dbm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const newlyAddedIds=[]; [...chosen].forEach((id)=>{ const r=rows.find((x)=>x.id===id); if(!r) return; const existing=state.databases.find((d)=>d.sourceId===r.sourceId&&d.name===r.name); if(existing){ newlyAddedIds.push(existing.id); return; } const entry={id:crypto.randomUUID(),sourceId:r.sourceId,sourceType:r.sourceType,name:r.name}; state.databases.push(entry); newlyAddedIds.push(entry.id); }); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id); }); // Explicitly select every added database after apply/close.
+      newlyAddedIds.forEach((id)=>selectedDatabaseIds.add(id)); await refreshCatalogsForSelections(); renderAll(); saveState(); return true; }); bindSearchableModal("dbm",chosen); }
+    async function showAddTestsModal(){ if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; } await refreshCatalogsForSelections(); const dup={}; testsData.forEach((t)=>dup[`${t.__dbId}|${t.run_code}`]=(dup[`${t.__dbId}|${t.run_code}`]||0)+1); const rows=testsData.map((t)=>({id:`${t.__dbId}|${t.test_run_id}`,primary:dup[`${t.__dbId}|${t.run_code}`]>1?`${t.run_code} (#${t.test_run_id})`:t.run_code,meta:`${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`})); const chosen=new Set(addedTestIds); openModal("Select Tests",`${searchableRowsHtml("tm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ addedTestIds=new Set(chosen); selectedTestIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("tm",chosen); }
+    async function showAddChannelsModal(){ if(!addedTestIds.size){ setStatus("Add at least one test first.",true); return; } await refreshCatalogsForSelections(); const rows=[]; const testsByDb=new Map(); [...addedTestIds].forEach((k)=>{ const [dbId,testId]=k.split("|"); if(!testsByDb.has(dbId)) testsByDb.set(dbId,[]); testsByDb.get(dbId).push(testId); }); for(const [dbId,testIds] of testsByDb.entries()){ const db=state.databases.find((d)=>d.id===dbId),src=db?state.sources.find((s)=>s.id===db.sourceId):null; if(!db||!src) continue; if(src.type==="postgres"){ const p=new URLSearchParams(); testIds.forEach((id)=>p.append("test_run_ids",id)); p.append("db_name",db.name); sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }}); try{ const ch=await getJson(`/api/available-channels?${p.toString()}`); ch.forEach((c)=>rows.push({id:`${dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`})); }catch{} } else { try{ const ch=await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}`); ch.forEach((c)=>rows.push({id:`${dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`})); }catch{} } } const dedup=new Map(); rows.forEach((r)=>dedup.set(r.id,r)); const finalRows=[...dedup.values()]; const chosen=new Set(addedChannelIds); openModal("Select Channels",`${searchableRowsHtml("cm",finalRows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ addedChannelIds=new Set(chosen); selectedChannelIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("cm",chosen); }
     function rollingCalc(op, arr){ if(!arr.length) return null; if(op==="mean") return arr.reduce((a,b)=>a+b,0)/arr.length; if(op==="sum") return arr.reduce((a,b)=>a+b,0); if(op==="min") return Math.min(...arr); if(op==="max") return Math.max(...arr); if(op==="std"){ const m=arr.reduce((a,b)=>a+b,0)/arr.length; const v=arr.reduce((a,b)=>a+((b-m)*(b-m)),0)/arr.length; return Math.sqrt(v); } return null; }
-    function computeCalculatedRows(baseRows){ const out=[]; const selectedCalcs=(state.calculatedChannels||[]).filter((c)=>selectedChannelIds.has(`${c.dbId}|${c.name}`)); for(const calc of selectedCalcs){ const dbRows=baseRows.filter((r)=>r.__dbId===calc.dbId); if(calc.kind==="rolling"){ const srcName=(calc.channels&&calc.channels[0])?calc.channels[0].split("|")[1]:""; const srcRows=dbRows.filter((r)=>r.channel_name===srcName); const byTest=new Map(); srcRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); byTest.forEach((rows)=>{ rows.sort((a,b)=>new Date(a.time)-new Date(b.time)); const w=Math.max(1, Number(calc.window||1)); for(let i=0;i<rows.length;i++){ const vals=rows.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x)); const v=rollingCalc(calc.op, vals); if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: rows[i].test_run_id, test_run_code: rows[i].test_run_code, channel_name: calc.name, unit: calc.unit || null, time: rows[i].time, value: Number(v), __dbId: calc.dbId }); } }); continue; } if(calc.kind==="formula"){ const deps=(calc.channels||[]).map((id)=>id.split("|")[1]); if(!deps.length) continue; const compiled=compileFormula(calc.formula||"", deps.length); if(!compiled.ok) continue; const byTest=new Map(); dbRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); byTest.forEach((rows)=>{ const byTime=new Map(); rows.forEach((r)=>{ const t=String(r.time); if(!byTime.has(t)) byTime.set(t,{}); byTime.get(t)[r.channel_name]=Number(r.value); }); const sortedTimes=[...byTime.keys()].sort((a,b)=>new Date(a)-new Date(b)); let prevMs=null; const ctx={dt_s:0,__bpStates:{}}; sortedTimes.forEach((t)=>{ const slot=byTime.get(t); const vals=deps.map((nm)=>slot[nm]); if(vals.some((v)=>!Number.isFinite(v))) return; const currMs=new Date(t).getTime(); ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000); prevMs=currMs; let v=null; try{ v=compiled.evalFn(vals,ctx); }catch{ v=null; } if(v===null||!Number.isFinite(v)) return; const sample=rows.find((x)=>String(x.time)===t); out.push({ test_run_id: sample.test_run_id, test_run_code: sample.test_run_code, channel_name: calc.name, unit: calc.unit || null, time: t, value: Number(v), __dbId: calc.dbId }); }); }); } } return out; }
+    async function computeCalculatedRows(baseRows){ const out=[]; const selectedCalcs=(state.calculatedChannels||[]).filter((c)=>selectedChannelIds.has(`${c.dbId}|${c.name}`)); let workCounter=0; for(const calc of selectedCalcs){ const dbRows=baseRows.filter((r)=>r.__dbId===calc.dbId); if(calc.kind==="rolling"){ const srcName=(calc.channels&&calc.channels[0])?calc.channels[0].split("|")[1]:""; const srcRows=dbRows.filter((r)=>r.channel_name===srcName); const byTest=new Map(); srcRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); for (const rows of byTest.values()){ rows.sort((a,b)=>new Date(a.time)-new Date(b.time)); const w=Math.max(1, Number(calc.window||1)); for(let i=0;i<rows.length;i++){ const vals=rows.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x)); const v=rollingCalc(calc.op, vals); if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: rows[i].test_run_id, test_run_code: rows[i].test_run_code, channel_name: calc.name, unit: calc.unit || null, time: rows[i].time, value: Number(v), __dbId: calc.dbId }); workCounter+=1; if(workCounter%2000===0) await nextPaint(); } } continue; } if(calc.kind==="formula"){ const deps=(calc.channels||[]).map((id)=>id.split("|")[1]); if(!deps.length) continue; const compiled=compileFormula(calc.formula||"", deps.length); if(!compiled.ok) continue; const byTest=new Map(); dbRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); for (const rows of byTest.values()){ const byTime=new Map(); rows.forEach((r)=>{ const t=String(r.time); if(!byTime.has(t)) byTime.set(t,{vals:{}, sample:r}); const slot=byTime.get(t); slot.vals[r.channel_name]=Number(r.value); }); const sortedTimes=[...byTime.keys()].sort((a,b)=>new Date(a)-new Date(b)); let prevMs=null; const ctx={dt_s:0,__bpStates:{}}; for (const t of sortedTimes){ const slot=byTime.get(t); const vals=deps.map((nm)=>slot.vals[nm]); if(vals.some((v)=>!Number.isFinite(v))) continue; const currMs=new Date(t).getTime(); ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000); prevMs=currMs; let v=null; try{ v=compiled.evalFn(vals,ctx); }catch{ v=null; } if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: slot.sample.test_run_id, test_run_code: slot.sample.test_run_code, channel_name: calc.name, unit: calc.unit || null, time: t, value: Number(v), __dbId: calc.dbId }); workCounter+=1; if(workCounter%2000===0) await nextPaint(); } } } } return out; }
     async function loadMetadataForSelection(){
       const allMetadata = [];
       for(const dbId of selectedDatabaseIds){
@@ -300,6 +906,8 @@
     }
     async function loadTimeseries(){
       if(!selectedDatabaseIds.size||!selectedTestIds.size||!selectedChannelIds.size){ setStatus("Select sources, databases, tests, and channels first.",true); return; }
+      setStatus("Loading raw timeseries...");
+      await nextPaint();
       const rowsAll=[];
       for(const dbId of selectedDatabaseIds){
         const db=state.databases.find((d)=>d.id===dbId),src=db?state.sources.find((s)=>s.id===db.sourceId):null;
@@ -318,9 +926,6 @@
           p.append("limit","5000000");
           p.append("db_name",db.name);
           sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
-          const s=byId("startTime").value.trim(),e=byId("endTime").value.trim();
-          if(s) p.append("start_time",s);
-          if(e) p.append("end_time",e);
           const rows=await getJson(`/api/timeseries?${p.toString()}`);
           rows.forEach((r)=>rowsAll.push({...r,__dbId:dbId}));
         } else {
@@ -333,20 +938,450 @@
           rows.forEach((r)=>rowsAll.push({...r,__dbId:dbId}));
         }
       }
-      const calcRows=computeCalculatedRows(rowsAll);
+      setStatus("Computing calculated channels...");
+      await nextPaint();
+      const calcRows=await computeCalculatedRows(rowsAll);
       const selectedNonCalc=rowsAll.filter((r)=>selectedChannelIds.has(`${r.__dbId}|${r.channel_name}`));
-      const finalRows=[...selectedNonCalc,...calcRows];
+      const finalRows=applyMasks([...selectedNonCalc,...calcRows]);
       latestRows=finalRows;
       renderRows(finalRows);
+      setStatus("Rendering plot...");
+      await nextPaint();
       plotRows(finalRows);
+      await nextPaint();
       await loadMetadataForSelection();
       saveState();
-      setStatus(`Loaded ${finalRows.length} rows.`);
+      setStatus(`Loaded ${finalRows.length} rows after masks.`);
     }
-    async function initialize(){ loadState(); await refreshCatalogsForSelections(); renderAll(); setStatus("Ready."); document.querySelectorAll(".collapseBtn").forEach((btn)=>{ const listId=btn.getAttribute("data-collapse"); btn.onclick=()=>{ const key=listId.replace("List",""); state.collapsed[key]=!state.collapsed[key]; const el=byId(listId); el.style.display=state.collapsed[key]?"none":"block"; btn.textContent=state.collapsed[key]?"+":"-"; saveState(); }; if(state.collapsed[listId.replace("List","")]) btn.click(); }); }
-    byId("showPreviewBtn").onclick=()=>{ setPreviewVisible(!previewVisible); saveState(); };
+    function initMenus(){
+      const hideAll=()=>{ document.querySelectorAll(".menuDropdown").forEach((d)=>d.classList.remove("show")); };
+      document.addEventListener("click",(e)=>{ if(!byId("menubar").contains(e.target)) hideAll(); });
+      document.querySelectorAll(".menuItem").forEach((mi)=>{ mi.onclick=(e)=>{ e.stopPropagation(); const id=mi.getAttribute("data-menu"); const dd=byId(`menu_${id}`); const shown=dd.classList.contains("show"); hideAll(); if(!shown) dd.classList.add("show"); }; });
+      byId("help_github").onclick=()=>window.open("https://github.com/tysocks/NOVA","_blank");
+      byId("help_sourceHelp").onclick=()=>setStatus("Use + to add items. Click rows to multi-select. Right-click rows for actions.");
+      byId("view_togglePreview").onclick=()=>{ setPreviewVisible(!previewVisible); saveState(); };
+      byId("edit_showMetadata").onclick=()=>showMetadataModal();
+      byId("view_appearance").onclick=()=>openAppearanceModal();
+      async function saveTextToFile(defaultName, text, mimeType, extension, description, pickerMimeType){
+        const normalizedDefaultName = new RegExp(`\\.${extension}$`, "i").test(defaultName) ? defaultName : `${defaultName}.${extension}`;
+        const acceptMime = pickerMimeType || mimeType;
+        if (window.showSaveFilePicker) {
+          try {
+            let handle = await window.showSaveFilePicker({
+              suggestedName: normalizedDefaultName,
+              excludeAcceptAllOption: true,
+              types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [acceptMime]: [`.${extension}`] } }],
+            });
+            if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) {
+              handle = await window.showSaveFilePicker({
+                suggestedName: `${handle.name || "export"}.${extension}`,
+                excludeAcceptAllOption: true,
+                types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [acceptMime]: [`.${extension}`] } }],
+              });
+              if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) return { ok: false, cancelled: true };
+            }
+            const writable = await handle.createWritable();
+            await writable.write(text);
+            await writable.close();
+            return { ok: true, viaPicker: true };
+          } catch (err) {
+            if (err && err.name === "AbortError") return { ok: false, cancelled: true };
+            setStatus(`Save dialog failed, using download fallback: ${err}`, true);
+          }
+        }
+        try {
+          const blob=new Blob([text],{type:mimeType});
+          const a=document.createElement("a");
+          a.href=URL.createObjectURL(blob);
+          a.download=normalizedDefaultName;
+          a.click();
+          URL.revokeObjectURL(a.href);
+          return { ok: true, viaPicker: false };
+        } catch (err) {
+          setStatus(`Export failed: ${err}`, true);
+          return { ok: false, cancelled: false };
+        }
+      }
+      async function saveJsonToFile(defaultName, payload){
+        const text = JSON.stringify(payload, null, 2);
+        const normalizedDefaultName = /\.json$/i.test(defaultName) ? defaultName : `${defaultName}.json`;
+        if (window.showSaveFilePicker) {
+          try {
+            let handle = await window.showSaveFilePicker({
+              suggestedName: normalizedDefaultName,
+              excludeAcceptAllOption: true,
+              types: [{ description: "JSON files", accept: { "application/json": [".json"] } }],
+            });
+            // Some environments still allow names without suffix; enforce .json.
+            if (!/\.json$/i.test(handle.name || "")) {
+              const enforcedName = `${handle.name || "nova_config"}.json`;
+              setStatus("Please save with .json extension. Reopening save dialog...", true);
+              handle = await window.showSaveFilePicker({
+                suggestedName: enforcedName,
+                excludeAcceptAllOption: true,
+                types: [{ description: "JSON files", accept: { "application/json": [".json"] } }],
+              });
+              if (!/\.json$/i.test(handle.name || "")) {
+                setStatus("Save requires a .json file name.", true);
+                return { ok: false, cancelled: true };
+              }
+            }
+            const writable = await handle.createWritable();
+            await writable.write(text);
+            await writable.close();
+            return { ok: true, viaPicker: true };
+          } catch (err) {
+            if (err && err.name === "AbortError") return { ok: false, cancelled: true };
+            setStatus(`Save dialog failed, using download fallback: ${err}`, true);
+          }
+        }
+        try {
+          const blob=new Blob([text],{type:"application/json"});
+          const a=document.createElement("a");
+          a.href=URL.createObjectURL(blob);
+          a.download=normalizedDefaultName;
+          a.click();
+          URL.revokeObjectURL(a.href);
+          return { ok: true, viaPicker: false };
+        } catch (err) {
+          setStatus(`Config save failed: ${err}`, true);
+          return { ok: false, cancelled: false };
+        }
+      }
+      byId("file_exportPlot").onclick=async()=>{ const p=getActivePlot(); const rows=latestRows||[]; const esc=(v)=>{ const s=String(v??""); return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s; }; const headers=["test_run_id","test_run_code","channel_name","unit","time","value","db_id"]; const csv=[headers.join(",")].concat(rows.map((r)=>[esc(r.test_run_id),esc(r.test_run_code),esc(r.channel_name),esc(r.unit||""),esc(r.time),esc(r.value),esc(r.__dbId)].join(","))).join("\n"); const result=await saveTextToFile(`nova_${(p?.name||"view").replaceAll(" ","_")}.csv`, csv, "text/csv;charset=utf-8", "csv", "CSV files", "text/csv"); if (result.ok && result.viaPicker) setStatus(`Exported ${rows.length} rows to CSV.`); if (result.ok && !result.viaPicker) setStatus(`CSV downloaded (${rows.length} rows).`); if (!result.ok && result.cancelled) setStatus("CSV export cancelled."); };
+      byId("file_saveConfig").onclick=async()=>{
+        const active=getActivePlot();
+        if(active){
+          active.selections=snapshotSelections();
+          active.latestRows=latestRows;
+          active.metadataRows=metadataRows;
+        }
+        const payload={
+          version:2,
+          savedAt:new Date().toISOString(),
+          app:{
+            sources:state.sources,
+            databases:state.databases,
+            masks:state.masks,
+            calculatedChannels:state.calculatedChannels,
+            freqOverrides:state.freqOverrides,
+            collapsed:state.collapsed||{},
+            appearance,
+          },
+          // Includes tests/channels selections and Region values (xAxis/t0/start/end).
+          activeSelections:snapshotSelections(),
+          plots:{
+            activePlotId,
+            tabs:plots.map((p)=>({
+              id:p.id,
+              name:p.name,
+              selections:p.selections||null,
+            })),
+          },
+        };
+        const result = await saveJsonToFile("nova_config.json", payload);
+        if (result.ok && result.viaPicker) setStatus("Config saved.");
+        if (result.ok && !result.viaPicker) setStatus("Config downloaded (save dialog unavailable in this environment).");
+        if (!result.ok && result.cancelled) setStatus("Config save cancelled.");
+      };
+      const picker=byId("filePicker");
+      byId("file_loadConfig").onclick=()=>{
+        picker.accept="application/json";
+        picker.onchange=async()=>{
+          const f=picker.files?.[0];
+          if(!f) return;
+          const txt=await f.text();
+          const obj=JSON.parse(txt);
+
+          // Backward compatibility with older config exports.
+          const app=obj.app||obj;
+          if(app.sources) state.sources=app.sources;
+          if(app.databases) state.databases=app.databases;
+          if(app.masks) state.masks=app.masks;
+          if(app.calculatedChannels) state.calculatedChannels=app.calculatedChannels;
+          if(app.freqOverrides) state.freqOverrides=app.freqOverrides;
+          if(app.collapsed) state.collapsed=app.collapsed;
+          // Intentionally ignore appearance from config imports.
+          // Appearance is persisted globally and should not be overridden by per-config loads.
+
+          const tabs=obj.plots?.tabs;
+          if(Array.isArray(tabs) && tabs.length){
+            plots=tabs.map((p, idx)=>({
+              id:p.id||crypto.randomUUID(),
+              name:p.name||`View ${idx+1}`,
+              selections:p.selections||null,
+              latestRows:[],
+              metadataRows:[],
+            }));
+            const requestedId=obj.plots?.activePlotId;
+            activePlotId=plots.some((p)=>p.id===requestedId)?requestedId:plots[0].id;
+          }
+
+          if(obj.activeSelections) restoreSelections(obj.activeSelections);
+          else if(obj.selections) restoreSelections(obj.selections);
+          selectedMaskIds=new Set((state.masks||[]).map((m)=>m.id));
+
+          clearCatalogCache();
+          await refreshCatalogsForSelections();
+          renderAll();
+          renderPlotTabs();
+          latestRows=[];
+          metadataRows=[];
+          renderRows([]);
+          try { Plotly.purge("plot"); } catch {}
+          savePlots();
+          saveState();
+          setStatus("Config loaded.");
+          picker.value="";
+        };
+        picker.click();
+      };
+    }
+
+    const APPEAR_KEY="nova.appearance.v1";
+    const DEFAULT_APPEARANCE={ uiBg:"#070b11", viewBg:"#000000", accent:"#1e3a8a", plotTheme:"default", plotColors:"#4cc9f0,#f72585,#b8f200,#ff9e00,#9b5de5,#06d6a0,#ef476f,#ffd166,#118ab2,#8338ec" };
+    const PLOT_THEMES={
+      default:"#4cc9f0,#f72585,#b8f200,#ff9e00,#9b5de5,#06d6a0,#ef476f,#ffd166,#118ab2,#8338ec",
+      viridis:"#440154,#472d7b,#3b528b,#2c728e,#21918c,#27ad81,#5cc863,#aadc32,#fde725",
+      thermal:"#0b1021,#1f3b73,#a05195,#d45087,#f95d6a,#ff7c43,#ffa600,#ffe082",
+      plasma:"#0d0887,#5302a3,#8b0aa5,#b83289,#db5c68,#f48849,#febd2a,#f0f921",
+      cividis:"#00224e,#26456e,#4c5f73,#6f7b78,#94956f,#b8b362,#d7d45c,#fdea45",
+      turbo:"#23171b,#4145ab,#2a7fd1,#20b8b8,#5ad45a,#b5de2b,#f9dd25,#f98e09,#dd3d2d",
+      magma:"#000004,#1b0c41,#4f127b,#812581,#b5367a,#e55063,#fb8761,#fec287,#fcfdbf",
+      inferno:"#000004,#1f0c48,#550f6d,#88226a,#b63655,#d8573b,#ee7b1a,#fca50a,#fcffa4",
+      rainbow:"#6e40aa,#4c6edb,#3aa3ec,#35c7c0,#4fd26b,#98d83e,#e5d92b,#fdb32f,#f66b2d,#d7263d",
+      pastel_high_contrast:"#ffd166,#06d6a0,#118ab2,#ef476f,#8338ec,#3a86ff,#ff006e,#fb5607,#ffbe0b,#8ac926",
+      custom:"",
+    };
+    let appearance={ ...DEFAULT_APPEARANCE };
+    function persistAppearance(){
+      localStorage.setItem(APPEAR_KEY, JSON.stringify(appearance));
+      try{
+        const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...s, appearance }));
+      }catch{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ appearance }));
+      }
+      fetch("/api/appearance",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify(appearance),
+      }).catch(()=>{});
+    }
+    async function loadAppearance(){
+      try{
+        const a=JSON.parse(localStorage.getItem(APPEAR_KEY)||"{}");
+        // Backward compatibility for legacy single background key.
+        if(a.bg && !a.uiBg) a.uiBg=a.bg;
+        if(a.bg && !a.viewBg) a.viewBg=a.bg;
+        appearance={...appearance,...a};
+      }catch{}
+      try{
+        const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+        if(s.appearance) appearance={...appearance,...s.appearance};
+      }catch{}
+      try{
+        const r=await fetch("/api/appearance");
+        if(r.ok){
+          const serverAppearance=await r.json();
+          if(serverAppearance && typeof serverAppearance==="object") appearance={...appearance,...serverAppearance};
+        }
+      }catch{}
+      if(!appearance.plotTheme) appearance.plotTheme="default";
+      if(appearance.plotTheme!=="custom" && !PLOT_THEMES[appearance.plotTheme]) appearance.plotTheme="default";
+      if(appearance.plotTheme!=="custom") appearance.plotColors=PLOT_THEMES[appearance.plotTheme]||PLOT_THEMES.default;
+      persistAppearance();
+      applyAppearance();
+    }
+    function applyAppearance(){
+      document.documentElement.style.setProperty("--nova-ui-bg", appearance.uiBg);
+      document.documentElement.style.setProperty("--nova-view-bg", appearance.viewBg);
+      document.documentElement.style.setProperty("--nova-accent", appearance.accent);
+      document.body.style.background = appearance.uiBg;
+      if(latestRows.length) plotRows(latestRows);
+    }
+    function parseColorway(){
+      const fromTheme = appearance.plotTheme && appearance.plotTheme!=="custom" ? (PLOT_THEMES[appearance.plotTheme]||"") : "";
+      const src = fromTheme || appearance.plotColors || PLOT_THEMES.default;
+      return String(src).split(",").map((s)=>s.trim()).filter(Boolean);
+    }
+    function openAppearanceModal(){
+      openModal("Appearance",`
+        <div class="modalGrid">
+          <div>
+            <label>View Background</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="m_app_view_swatch" style="width:16px;height:16px;border:1px solid #334155;background:${appearance.viewBg};display:inline-block;"></span>
+              <input id="m_app_view_bg" type="text" value="${appearance.viewBg}" placeholder="#000000" />
+              <input id="m_app_view_picker" type="color" value="${appearance.viewBg}" style="width:38px;min-width:38px;padding:0;border:none;background:transparent;" />
+            </div>
+          </div>
+          <div>
+            <label>UI Background</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="m_app_ui_swatch" style="width:16px;height:16px;border:1px solid #334155;background:${appearance.uiBg};display:inline-block;"></span>
+              <input id="m_app_ui_bg" type="text" value="${appearance.uiBg}" placeholder="#070b11" />
+              <input id="m_app_ui_picker" type="color" value="${appearance.uiBg}" style="width:38px;min-width:38px;padding:0;border:none;background:transparent;" />
+            </div>
+          </div>
+          <div style="grid-column:1 / -1;">
+            <label>Accent (buttons/active tabs)</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="m_app_accent_swatch" style="width:16px;height:16px;border:1px solid #334155;background:${appearance.accent};display:inline-block;"></span>
+              <input id="m_app_accent" type="text" value="${appearance.accent}" placeholder="#1d4ed8" />
+              <input id="m_app_accent_picker" type="color" value="${appearance.accent}" style="width:38px;min-width:38px;padding:0;border:none;background:transparent;" />
+            </div>
+          </div>
+          <div style="grid-column:1 / -1;">
+            <label>Plot Theme</label>
+            <select id="m_app_theme">
+              <option value="default" ${appearance.plotTheme==="default"?"selected":""}>Default</option>
+              <option value="thermal" ${appearance.plotTheme==="thermal"?"selected":""}>Thermal</option>
+              <option value="viridis" ${appearance.plotTheme==="viridis"?"selected":""}>Viridis</option>
+              <option value="plasma" ${appearance.plotTheme==="plasma"?"selected":""}>Plasma</option>
+              <option value="cividis" ${appearance.plotTheme==="cividis"?"selected":""}>Cividis</option>
+              <option value="turbo" ${appearance.plotTheme==="turbo"?"selected":""}>Turbo</option>
+              <option value="magma" ${appearance.plotTheme==="magma"?"selected":""}>Magma</option>
+              <option value="inferno" ${appearance.plotTheme==="inferno"?"selected":""}>Inferno</option>
+              <option value="rainbow" ${appearance.plotTheme==="rainbow"?"selected":""}>Rainbow</option>
+              <option value="pastel_high_contrast" ${appearance.plotTheme==="pastel_high_contrast"?"selected":""}>Pastel High Contrast</option>
+              <option value="custom" ${appearance.plotTheme==="custom"?"selected":""}>Custom</option>
+            </select>
+          </div>
+          <div id="m_app_plot_wrap" style="grid-column:1 / -1;display:${appearance.plotTheme==="custom"?"block":"none"};">
+            <label>Custom Plot Colors (comma-separated)</label>
+            <input id="m_app_plot" type="text" value="${appearance.plotColors}" placeholder="#1f77b4,#ff7f0e,..." />
+          </div>
+        </div>
+        <div class="modalActions">
+          <button id="m_app_reset" type="button">Reset to Defaults</button>
+          <button id="modalCancelBtn" type="button">Cancel</button>
+          <button id="modalSaveCloseBtn" type="button">Save & Close</button>
+        </div>
+      `, async()=>{
+        appearance.viewBg=(byId("m_app_view_bg").value||"").trim()||appearance.viewBg;
+        appearance.uiBg=(byId("m_app_ui_bg").value||"").trim()||appearance.uiBg;
+        appearance.accent=(byId("m_app_accent").value||"").trim()||appearance.accent;
+        appearance.plotTheme=(byId("m_app_theme").value||"default").trim();
+        if(appearance.plotTheme==="custom") appearance.plotColors=(byId("m_app_plot").value||"").trim()||appearance.plotColors;
+        else appearance.plotColors=PLOT_THEMES[appearance.plotTheme]||PLOT_THEMES.default;
+        persistAppearance();
+        applyAppearance();
+        return true;
+      });
+      const viewTxt=byId("m_app_view_bg"), viewPicker=byId("m_app_view_picker"), viewSwatch=byId("m_app_view_swatch");
+      const uiTxt=byId("m_app_ui_bg"), uiPicker=byId("m_app_ui_picker"), uiSwatch=byId("m_app_ui_swatch");
+      const acTxt=byId("m_app_accent"), acPicker=byId("m_app_accent_picker"), acSwatch=byId("m_app_accent_swatch");
+      const themeSel=byId("m_app_theme"), plotWrap=byId("m_app_plot_wrap");
+      viewPicker.oninput=()=>{ viewTxt.value=viewPicker.value; viewSwatch.style.background=viewPicker.value; };
+      uiPicker.oninput=()=>{ uiTxt.value=uiPicker.value; uiSwatch.style.background=uiPicker.value; };
+      acPicker.oninput=()=>{ acTxt.value=acPicker.value; acSwatch.style.background=acPicker.value; };
+      viewTxt.oninput=()=>{ viewSwatch.style.background=viewTxt.value||"transparent"; };
+      uiTxt.oninput=()=>{ uiSwatch.style.background=uiTxt.value||"transparent"; };
+      acTxt.oninput=()=>{ acSwatch.style.background=acTxt.value||"transparent"; };
+      themeSel.onchange=()=>{ plotWrap.style.display=themeSel.value==="custom"?"block":"none"; };
+      byId("m_app_reset").onclick=()=>{
+        appearance={ ...DEFAULT_APPEARANCE };
+        persistAppearance();
+        applyAppearance();
+        closeModal();
+        setStatus("Appearance reset to defaults.");
+      };
+    }
+
+    function initSidebarResize(){
+      const key="nova.sidebarWidth.v1";
+      const sidebar=byId("sidebar");
+      const saved=Number(localStorage.getItem(key)||"0");
+      if(saved>0) sidebar.style.width=`${saved}px`;
+      const res=byId("sidebarResizer");
+      let dragging=false;
+      let rafLight=0;
+      let rafFull=0;
+      let resizeThrottle=0;
+      const plotGd=()=>{ try{ return document.getElementById("plot"); }catch{ return null; } };
+      const resizePlotOnly=()=>{
+        const el=plotGd();
+        if(!el) return;
+        try{ Plotly.Plots.resize(el); }catch{}
+      };
+      const relayoutPlotMargins=()=>{
+        const el=plotGd();
+        if(!el) return;
+        try{
+          Plotly.relayout(el,{autosize:true});
+        }catch{}
+      };
+      const fullPlotResize=()=>{
+        resizePlotOnly();
+        requestAnimationFrame(()=>relayoutPlotMargins());
+      };
+      const requestPlotResize=()=>{
+        if(rafFull) return;
+        rafFull=requestAnimationFrame(()=>{ rafFull=0; fullPlotResize(); });
+      };
+      const requestPlotResizeThrottled=()=>{
+        const now=typeof performance!=="undefined"?performance.now():Date.now();
+        if(now-resizeThrottle<48) return;
+        resizeThrottle=now;
+        if(rafLight) return;
+        rafLight=requestAnimationFrame(()=>{ rafLight=0; resizePlotOnly(); });
+      };
+      res.addEventListener("mousedown",(e)=>{ dragging=true; document.body.style.cursor="col-resize"; e.preventDefault(); });
+      window.addEventListener("mouseup",()=>{ if(!dragging) return; dragging=false; document.body.style.cursor=""; localStorage.setItem(key,String(parseInt(getComputedStyle(sidebar).width,10))); requestPlotResize(); });
+      window.addEventListener("mousemove",(e)=>{ if(!dragging) return; const minW=Math.max(60, Math.floor(window.innerWidth*0.05)); const w=Math.max(minW, Math.min(900, e.clientX)); sidebar.style.width=`${w}px`; requestPlotResizeThrottled(); });
+      let winResizeT=0;
+      window.addEventListener("resize",()=>{
+        clearTimeout(winResizeT);
+        winResizeT=setTimeout(requestPlotResize,80);
+      });
+    }
+
+    function bindCollapseButtons(){
+      document.querySelectorAll(".collapseBtn").forEach((btn)=>{
+        const targetId=btn.getAttribute("data-collapse");
+        btn.onclick=()=>{
+          const key=String(targetId||"").replace("List","");
+          state.collapsed[key]=!state.collapsed[key];
+          const el=byId(targetId);
+          if(el) el.style.display=state.collapsed[key]?"none":"block";
+          btn.textContent=state.collapsed[key]?"+":"-";
+          saveState();
+        };
+        const key=String(targetId||"").replace("List","");
+        if(state.collapsed[key]){
+          const el=byId(targetId);
+          if(el) el.style.display="none";
+          btn.textContent="+";
+        } else {
+          const el=byId(targetId);
+          if(el) el.style.display="block";
+          btn.textContent="-";
+        }
+      });
+    }
+
+    async function initialize(){
+      loadState();
+      await loadAppearance();
+      loadPlots();
+      initMenus();
+      initSidebarResize();
+      activePlotId = activePlotId || plots[0].id;
+      restoreSelections(getActivePlot()?.selections);
+      latestRows = getActivePlot()?.latestRows || [];
+      metadataRows = getActivePlot()?.metadataRows || [];
+      await refreshCatalogsForSelections();
+      renderAll();
+      renderPlotTabs();
+      bindCollapseButtons();
+      if(latestRows.length){
+        renderRows(latestRows);
+        try { plotRows(latestRows); } catch(e) { setStatus(`Plot render warning: ${e}`, true); }
+      }
+      setStatus("Ready.");
+    }
     byId("hidePreviewBtn").onclick=()=>{ setPreviewVisible(false); saveState(); };
-    byId("sourceHelpBtn").onclick=()=>setStatus("Use + to add items. Click rows to multi-select. Right-click rows for delete/frequency. Press R to toggle ruler.");
     byId("addSourceBtn").addEventListener("mousedown", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -361,13 +1396,16 @@
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     });
     byId("addChannelBtn").onclick=showAddChannelsMenu;
-    byId("plotTabBtn").onclick=()=>setMainTab("plot");
-    byId("metadataTabBtn").onclick=()=>setMainTab("metadata");
+    byId("addMaskBtn").addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    });
+    byId("addMaskBtn").onclick=showAddMasksMenu;
     byId("xAxis").onchange=()=>{ if(latestRows.length) plotRows(latestRows); saveState(); };
     byId("t0Mode").onchange=()=>{ if(latestRows.length) plotRows(latestRows); saveState(); };
-    byId("startTime").onchange=saveState; byId("endTime").onchange=saveState;
     byId("loadBtn").onclick=loadTimeseries;
-    document.addEventListener("keydown",(e)=>{ if(e.key==="Delete"){ e.preventDefault(); deleteFocused(); } if(e.key.toLowerCase()==="r"){ rulerEnabled=!rulerEnabled; setStatus(`Ruler ${rulerEnabled?"enabled":"disabled"}; right-click plot after hover to place points.`);} });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Delete"){ e.preventDefault(); deleteFocused(); } });
     requestAnimationFrame(()=>setTimeout(initialize,0));
   </script>
 </body>

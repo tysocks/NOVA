@@ -1,6 +1,7 @@
 from pathlib import Path
+import json
 
-from fastapi import FastAPI, File, Query, UploadFile
+from fastapi import Body, FastAPI, File, Query, UploadFile
 from fastapi.responses import FileResponse
 
 from .models import ChannelItem, DatabaseItem, HealthResponse, TestRunItem, TimeSeriesPoint
@@ -18,6 +19,7 @@ app = FastAPI(title="NOVA API", version="0.1.0", docs_url=None, redoc_url=None)
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+APPEARANCE_FILE = Path(__file__).resolve().parents[1] / ".nova_appearance.json"
 
 
 @app.get("/", include_in_schema=False)
@@ -193,3 +195,22 @@ async def upload_file(file: UploadFile = File(...)) -> dict:
     content = await file.read()
     out_path.write_bytes(content)
     return {"path": str(out_path)}
+
+
+@app.get("/api/appearance")
+def get_appearance() -> dict:
+    if not APPEARANCE_FILE.exists():
+        return {}
+    try:
+        data = json.loads(APPEARANCE_FILE.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+@app.post("/api/appearance")
+def save_appearance(payload: dict = Body(...)) -> dict:
+    if not isinstance(payload, dict):
+        return {"ok": False}
+    APPEARANCE_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return {"ok": True}
