@@ -62,14 +62,14 @@ def main() -> None:
     profile.setPersistentStoragePath(str(profile_root / "storage"))
     profile.setCachePath(str(profile_root / "cache"))
     profile.setPersistentCookiesPolicy(QWebEngineProfile.ForcePersistentCookies)
-    splash_pix = QPixmap(420, 420)
+    splash_pix = QPixmap(520, 520)
     if icon_path.exists():
         splash_pix.fill(Qt.black)
         icon_pix = QPixmap(str(icon_path))
         if not icon_pix.isNull():
-            icon_pix = icon_pix.scaled(220, 220, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            icon_pix = icon_pix.scaled(390, 390, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             painter = QPainter(splash_pix)
-            painter.drawPixmap((splash_pix.width() - icon_pix.width()) // 2, 92, icon_pix)
+            painter.drawPixmap((splash_pix.width() - icon_pix.width()) // 2, 34, icon_pix)
             painter.end()
     else:
         splash_pix.fill(Qt.black)

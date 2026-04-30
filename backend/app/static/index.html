@@ -12,7 +12,7 @@
     * { box-sizing: border-box; }
     body { margin: 0; font-family: "MiSans", "Segoe UI", "Microsoft YaHei UI", Arial, sans-serif; font-size: 13px; background: var(--nova-ui-bg); color: #e2e8f0; height: 100vh; overflow: hidden; }
     .menubar { display:flex; align-items:center; gap:6px; padding:4px 7px; border-bottom:1px solid #1f2937; background:var(--nova-ui-bg); user-select:none; }
-    .menuItem { position: relative; padding:6px 10px; border:1px solid transparent; cursor:pointer; font-size:0.86rem; }
+    .menuItem { position: relative; padding:6px 10px; border:1px solid transparent; cursor:pointer; font-size:0.74rem; }
     .menuItem:hover { background:#111827; border-color:#334155; }
     .menuDropdown { position:absolute; top:calc(100% + 2px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-ui-bg); border:1px solid #334155; box-shadow:0 10px 24px rgba(0,0,0,0.45); }
     .menuDropdown.show { display:block; }
@@ -21,28 +21,28 @@
     .menuAction:hover { background:#1e293b; }
     .menuSep { height:1px; background:#1f2937; margin:4px 0; }
     .app { display: flex; height: calc(100vh - 28px); width: 100vw; }
-    .sidebar { width: 420px; min-width: 5vw; max-width: 880px; background: var(--nova-ui-bg); border-right: 1px solid #1f2937; padding: 0px; overflow-y: auto; flex: 0 0 auto; }
+    .sidebar { width: 252px; min-width: 5vw; max-width: 704px; background: var(--nova-ui-bg); border-right: 1px solid #1f2937; padding: 0px; overflow-y: auto; flex: 0 0 auto; font-size: 0.8rem; display:flex; flex-direction:column; }
     .sidebarResizer { width: 4px; margin-left: -2px; margin-right: -2px; cursor: col-resize; background: transparent; border-right: none; z-index: 5; }
     .main { flex: 1 1 auto; padding: 0px; background: var(--nova-view-bg); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
     .panel { background: transparent; border: none; border-radius: 0px; padding: 0px; margin-bottom: 0px; }
     .panelHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .panelHeader { background:var(--nova-ui-bg); border-bottom:1px solid #1f2937; padding:4px 6px; margin:0; }
-    .panelHeader h3 { margin: 0; font-size: 0.86rem; color: #cbd5e1; }
-    .addBtn, .collapseBtn { width: 18px; height: 18px; border-radius: 4px; border: 1px solid #334155; background: var(--nova-ui-bg); color: #e2e8f0; padding: 0; font-weight: 800; cursor: pointer; }
+    .panelHeader h3 { margin: 0; font-size: 0.72rem; color: #cbd5e1; }
+    .addBtn, .collapseBtn { width: 16px; height: 16px; border-radius: 4px; border: 1px solid #334155; background: var(--nova-ui-bg); color: #e2e8f0; padding: 0; font-weight: 800; cursor: pointer; }
     .headerBtns { display: flex; gap: 6px; }
-    .list { border: none; border-radius: 0px; background: var(--nova-ui-bg); overflow-y: auto; max-height: 170px; }
-    .item { padding: 5px 6px; border-bottom: 1px solid #1f2937; cursor: pointer; }
+    .list { border: none; border-radius: 0px; background: var(--nova-ui-bg); overflow-y: auto; max-height: 136px; }
+    .item { padding: 4px 5px; border-bottom: 1px solid #1f2937; cursor: pointer; }
     .item:last-child { border-bottom: none; }
     .item.active { background: #1e293b; }
     .item.focused { outline: 1px solid #60a5fa; }
-    .itemPrimary { font-size: 0.84rem; color: #e2e8f0; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .itemMeta { font-size: 0.72rem; color: #94a3b8; margin-top: 1px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .itemPrimary { font-size: 0.72rem; color: #e2e8f0; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .itemMeta { font-size: 0.62rem; color: #94a3b8; margin-top: 1px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .empty { padding: 8px; color: #64748b; font-size: 0.78rem; }
-    label { display: block; margin: 6px 0 3px 0; font-size: 0.78rem; color: #cbd5e1; }
-    input, select, button { width: 100%; border: 1px solid #334155; border-radius: 0px; background: var(--nova-ui-bg); color: #e2e8f0; padding: 6px; }
+    label { display: block; margin: 5px 0 2px 0; font-size: 0.65rem; color: #cbd5e1; }
+    input, select, button { width: 100%; border: 1px solid #334155; border-radius: 0px; background: var(--nova-ui-bg); color: #e2e8f0; padding: 5px; font-size: 0.72rem; }
     button { cursor: pointer; background: var(--nova-accent); border-color: var(--nova-accent); font-weight: 600; }
     .plotTabs { display:flex; align-items:stretch; gap:0; padding:0; border-bottom:1px solid #1f2937; background:var(--nova-ui-bg); min-height:26px; flex: 0 0 auto; overflow-x:auto; }
-    .plotTab { width:auto; min-width:82px; max-width: 195px; background:var(--nova-ui-bg); border-color:#334155; border-top:none; border-bottom:none; border-left:none; border-right:1px solid #334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 0 auto; padding:4px 8px; font-size:0.8rem; }
+    .plotTab { width:auto; min-width:82px; max-width: 195px; background:var(--nova-ui-bg); border-color:#334155; border-top:none; border-bottom:none; border-left:none; border-right:1px solid #334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 0 auto; padding:4px 8px; font-size:0.68rem; }
     .plotTab.active { background:var(--nova-accent); border-color:var(--nova-accent); }
     .plotAdd { width:auto; min-width:24px; max-width:24px; padding:0; font-weight:900; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; border-top:none; border-bottom:none; border-right:none; border-left:none; border-radius:0; }
     #plot { width: 100%; flex: 1 1 auto; min-height: 0; }
@@ -81,6 +81,8 @@
     .contextItem, .miniMenuItem { padding: 8px; cursor: pointer; font-size: 0.82rem; border-bottom: 1px solid #1f2937; }
     .contextItem:last-child, .miniMenuItem:last-child { border-bottom: none; }
     .contextItem:hover, .miniMenuItem:hover { background: #1e293b; }
+    .choochDock { margin-top: auto; padding: 0 0 16px 0; }
+    .choochDock button { border-radius: 0; margin: 0; min-height: 32px; }
   </style>
 </head>
 <body>
@@ -144,8 +146,8 @@
           <label for="xAxis">X Axis</label><select id="xAxis"><option value="time">time</option></select>
           <p id="status" class="status"></p>
         </div>
-        <div style="padding:6px;"><button id="loadBtn">Chooch</button></div>
       </div>
+      <div class="choochDock"><button id="loadBtn">Chooch</button></div>
     </aside>
     <div class="sidebarResizer" id="sidebarResizer" title="Drag to resize"></div>
     <main class="main">
@@ -428,6 +430,8 @@
               side:"right",
               anchor:"x",
               automargin:true,
+              titlefont:{size:11},
+              tickfont:{size:10},
               showticklabels:true,
               ticks:"outside",
               ticklen:4,
@@ -445,6 +449,8 @@
               // Keep spacing readable even in windowed mode.
               shift:axisOffset*axisSpacingPx,
               automargin:true,
+              titlefont:{size:11},
+              tickfont:{size:10},
               showticklabels:true,
               ticks:"outside",
               ticklen:4,
@@ -470,7 +476,8 @@
         plot_bgcolor: appearance?.viewBg || "#000000",
         font:{color:"#e2e8f0"},
         colorway: parseColorway(),
-        xaxis:{title:"",automargin:true},
+        xaxis:{title:"",automargin:true,tickfont:{size:10},titlefont:{size:11}},
+        yaxis:{tickfont:{size:10},titlefont:{size:11}},
         margin:{l:12,r:Math.max(70,56+extraRight*(axisSpacingPx+6)),t:12,b:48},
         legend:{x:0.01,y:0.99,xanchor:"left",yanchor:"top",bgcolor:"rgba(2,6,23,0.55)"},
         ...yLayout
@@ -1329,7 +1336,7 @@
       };
       res.addEventListener("mousedown",(e)=>{ dragging=true; document.body.style.cursor="col-resize"; e.preventDefault(); });
       window.addEventListener("mouseup",()=>{ if(!dragging) return; dragging=false; document.body.style.cursor=""; localStorage.setItem(key,String(parseInt(getComputedStyle(sidebar).width,10))); requestPlotResize(); });
-      window.addEventListener("mousemove",(e)=>{ if(!dragging) return; const minW=Math.max(60, Math.floor(window.innerWidth*0.05)); const w=Math.max(minW, Math.min(900, e.clientX)); sidebar.style.width=`${w}px`; requestPlotResizeThrottled(); });
+      window.addEventListener("mousemove",(e)=>{ if(!dragging) return; const minW=Math.max(60, Math.floor(window.innerWidth*0.05)); const w=Math.max(minW, Math.min(704, e.clientX)); sidebar.style.width=`${w}px`; requestPlotResizeThrottled(); });
       let winResizeT=0;
       window.addEventListener("resize",()=>{
         clearTimeout(winResizeT);
