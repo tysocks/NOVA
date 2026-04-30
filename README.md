@@ -94,37 +94,51 @@ You can edit name, units, input channels, and formula/rolling settings. The exis
 - `backend/app/static/index.html`: full single-page UI (HTML/CSS/JS + Plotly).
 - `backend/desktop_app.py`: PySide6 desktop launcher with splash screen and backend lifecycle.
 
-## Setup
+## Install (Fresh Clone)
 
-From repository root:
+From a new machine/user account:
 
-1. Create a virtual environment:
+1. Clone the repo:
+   - `git clone https://github.com/tysocks/NOVA.git`
+   - `cd NOVA`
+2. Create and activate a virtual environment:
    - `python -m venv .venv`
-2. Install dependencies:
-   - `.\.venv\Scripts\python -m pip install -r backend/requirements.txt`
-3. Create local environment file:
-   - `copy backend\.env.example backend\.env`
-4. Edit `backend\.env` for your database connection (when using PostgreSQL sources).
+   - `.\.venv\Scripts\Activate.ps1`
+3. Install dependencies:
+   - `python -m pip install -r backend/requirements.txt`
+4. Configure database environment (optional if only using file sources):
+   - copy your env file to `backend\.env`
+   - set:
+     - `NOVA_DB_HOST`
+     - `NOVA_DB_PORT`
+     - `NOVA_DB_NAME`
+     - `NOVA_DB_USER`
+     - `NOVA_DB_PASSWORD`
+     - `NOVA_DB_SSLMODE`
 
-Common keys:
-
-- `NOVA_DB_HOST`
-- `NOVA_DB_PORT`
-- `NOVA_DB_NAME`
-- `NOVA_DB_USER`
-- `NOVA_DB_PASSWORD`
-- `NOVA_DB_SSLMODE`
-
-## Running NOVA
+## Run NOVA
 
 ### Desktop mode (recommended)
 
+From repository root:
+
 - `.\.venv\Scripts\python .\backend\desktop_app.py`
 
-or use the provided launchers:
+Or use the launcher scripts:
 
-- `Launch_NOVA.vbs`
-- `Launch_NOVA.bat`
+- `Launch_NOVA.vbs` (silent launch)
+- `Launch_NOVA.bat` (terminal launch)
+
+### Desktop/Start shortcuts
+
+To create/update shortcuts with the NOVA icon:
+
+- `powershell -ExecutionPolicy Bypass -File .\create_desktop_shortcut.ps1`
+
+This creates:
+
+- Desktop shortcut: `NOVA.lnk`
+- Start Menu shortcut: `NOVA.lnk`
 
 ### Backend-only mode
 

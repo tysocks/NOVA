@@ -11,7 +11,7 @@ from pathlib import Path
 from PySide6.QtCore import QUrl, Qt
 from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QIcon, QPainter, QPixmap
 from PySide6.QtWebEngineCore import QWebEngineProfile
 
 
@@ -47,10 +47,13 @@ def main() -> None:
     backend_dir = Path(__file__).resolve().parent
     project_root = backend_dir.parent
     log_path = project_root / "nova_backend.log"
+    icon_path = project_root / "assets" / "NOVA_ICON.png"
     env = os.environ.copy()
     env["PYTHONPATH"] = str(backend_dir)
 
     app = QApplication(sys.argv)
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
     # Force a stable on-disk WebEngine profile so localStorage/cookies persist
     # across launches (important for UI preferences like appearance settings).
     profile_root = project_root / ".nova_profile"
@@ -59,7 +62,20 @@ def main() -> None:
     profile.setPersistentStoragePath(str(profile_root / "storage"))
     profile.setCachePath(str(profile_root / "cache"))
     profile.setPersistentCookiesPolicy(QWebEngineProfile.ForcePersistentCookies)
-    splash = QSplashScreen(QPixmap(500, 240))
+    splash_pix = QPixmap(420, 420)
+    if icon_path.exists():
+        splash_pix.fill(Qt.black)
+        icon_pix = QPixmap(str(icon_path))
+        if not icon_pix.isNull():
+            icon_pix = icon_pix.scaled(220, 220, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            painter = QPainter(splash_pix)
+            painter.drawPixmap((splash_pix.width() - icon_pix.width()) // 2, 92, icon_pix)
+            painter.end()
+    else:
+        splash_pix.fill(Qt.black)
+    splash = QSplashScreen(splash_pix)
+    if icon_path.exists():
+        splash.setWindowIcon(QIcon(str(icon_path)))
     splash.showMessage("Starting NOVA...", alignment=Qt.AlignCenter | Qt.AlignBottom, color=Qt.white)
     splash.show()
     app.processEvents()
@@ -99,6 +115,8 @@ def main() -> None:
 
         view = QWebEngineView()
         view.setWindowTitle("NOVA")
+        if icon_path.exists():
+            view.setWindowIcon(QIcon(str(icon_path)))
         view.resize(1500, 920)
         # Cache-bust static UI so latest frontend changes always load.
         view.setUrl(QUrl(f"http://127.0.0.1:8000/?v={int(time.time())}"))
