@@ -194,6 +194,11 @@
     let maxSampleHzGlobal = null;
     let realtimeRows = [];
     let realtimePrecomputed = null; // [{xFull, yFull, rtFull, xIsNumeric, traceIdx}] | null
+    let overviewRows = [];
+    let overviewEpochStartMs = null;
+    let overviewEpochEndMs = null;
+    let zoomState = "overview"; // "overview" | "detail"
+    let zoomRefetchTimer = null;
     let realtimeTimer = null;
     let realtimeDirection = 1;
     let realtimeCurrentMs = null;
@@ -1419,6 +1424,7 @@
           tests.forEach((id)=>p.append("test_run_ids",id));
           channels.forEach((ch)=>p.append("channel_names",ch));
           p.append("limit","5000000");
+          p.append("max_points","10000");
           p.append("db_name",db.name);
           sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
           const rows=await getJson(`/api/timeseries?${p.toString()}`);
@@ -1440,6 +1446,12 @@
       const finalRows=applyMasks([...selectedNonCalc,...calcRows]);
       finalRows.forEach(r => { r.__ts = Date.parse(r.time); });
       latestRows=finalRows;
+      overviewRows=finalRows;
+      zoomState="overview";
+      let _minMs=Infinity, _maxMs=-Infinity;
+      finalRows.forEach(r=>{ if(r.__ts<_minMs)_minMs=r.__ts; if(r.__ts>_maxMs)_maxMs=r.__ts; });
+      overviewEpochStartMs=_minMs===Infinity?null:_minMs;
+      overviewEpochEndMs=_maxMs===-Infinity?null:_maxMs;
       realtimeRows=[];
       realtimePrecomputed=null;
       stopRealtime();
@@ -1449,6 +1461,7 @@
       await nextPaint();
       plotRows(finalRows);
       await nextPaint();
+      if(!plotHandlersBound){ bindZoomRefetch(); plotHandlersBound=true; }
       await loadMetadataForSelection();
       saveState();
       setStatus(`Loaded ${finalRows.length} rows after masks.`);
@@ -1851,6 +1864,82 @@
         closeModal();
         setStatus("View appearance reset to defaults.");
       };
+    }
+
+    function bindZoomRefetch(){
+      const plotEl=byId("plot");
+      if(!plotEl||typeof plotEl.on!=="function") return;
+      plotEl.on("plotly_relayout",(ev)=>{
+        if(!overviewRows.length||!overviewEpochStartMs||overviewEpochStartMs===overviewEpochEndMs) return;
+        if(byId("t0Mode").value!=="absolute") return;
+
+        const autorange=ev["xaxis.autorange"];
+        if(autorange===true){
+          if(zoomState==="detail"){
+            zoomState="overview";
+            latestRows=overviewRows;
+            plotRows(latestRows);
+            setStatus(`Overview: ${latestRows.length} rows.`);
+          }
+          return;
+        }
+
+        const x0=ev["xaxis.range[0]"], x1=ev["xaxis.range[1]"];
+        if(!x0||!x1) return;
+
+        const visStart=new Date(x0).getTime(), visEnd=new Date(x1).getTime();
+        const visSpan=visEnd-visStart;
+        const totalSpan=overviewEpochEndMs-overviewEpochStartMs;
+        if(totalSpan<=0) return;
+
+        const fraction=visSpan/totalSpan;
+
+        if(fraction<0.2 && zoomState!=="detail"){
+          clearTimeout(zoomRefetchTimer);
+          zoomRefetchTimer=setTimeout(()=>refetchZoomedDetail(new Date(visStart).toISOString(), new Date(visEnd).toISOString()), 300);
+        } else if(fraction>=0.2 && zoomState==="detail"){
+          zoomState="overview";
+          latestRows=overviewRows;
+          plotRows(latestRows);
+          setStatus(`Overview: ${latestRows.length} rows.`);
+        }
+      });
+    }
+
+    async function refetchZoomedDetail(startTime, endTime){
+      setStatus("Loading detail...");
+      const rowsAll=[];
+      for(const dbId of selectedDatabaseIds){
+        const db=state.databases.find((d)=>d.id===dbId), src=db?state.sources.find((s)=>s.id===db.sourceId):null;
+        if(!db||!src||src.type!=="postgres") continue;
+        const tests=[...selectedTestIds].filter((t)=>t.startsWith(`${dbId}|`)).map((t)=>t.split("|")[1]);
+        const selForDb=[...selectedChannelIds].filter((c)=>c.startsWith(`${dbId}|`)).map((c)=>c.split("|")[1]);
+        const calcForDb=(state.calculatedChannels||[]).filter((c)=>c.dbId===dbId&&selForDb.includes(c.name));
+        const channelSet=new Set(selForDb.filter((c)=>!calcForDb.some((x)=>x.name===c)));
+        calcForDb.forEach((c)=>(c.channels||[]).forEach((id)=>channelSet.add(id.split("|")[1])));
+        if(!tests.length||!channelSet.size) continue;
+        const p=new URLSearchParams();
+        tests.forEach((id)=>p.append("test_run_ids",id));
+        [...channelSet].forEach((ch)=>p.append("channel_names",ch));
+        p.append("limit","5000000");
+        p.append("db_name",db.name);
+        p.append("start_time",startTime);
+        p.append("end_time",endTime);
+        sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
+        try{
+          const rows=await getJson(`/api/timeseries?${p.toString()}`);
+          rows.forEach((r)=>{ r.__dbId=dbId; r.__ts=Date.parse(r.time); rowsAll.push(r); });
+        }catch(e){ setStatus(`Detail fetch failed: ${e}`,true); return; }
+      }
+      const calcRows=await computeCalculatedRows(rowsAll);
+      const selNonCalc=rowsAll.filter((r)=>selectedChannelIds.has(`${r.__dbId}|${r.channel_name}`));
+      const finalRows=applyMasks([...selNonCalc,...calcRows]);
+      finalRows.forEach(r=>{ if(!r.__ts) r.__ts=Date.parse(r.time); });
+      zoomState="detail";
+      latestRows=finalRows;
+      realtimeRows=[]; realtimePrecomputed=null;
+      plotRows(finalRows);
+      setStatus(`Detail: ${finalRows.length} rows in window.`);
     }
 
     function initSidebarResize(){
