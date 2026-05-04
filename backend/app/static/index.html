@@ -8,84 +8,109 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <style>
-    :root { color-scheme: dark; --nova-ui-bg:#070b11; --nova-view-bg:#000000; --nova-accent:#1e3a8a; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: "MiSans", "Segoe UI", "Microsoft YaHei UI", Arial, sans-serif; font-size: 13px; background: var(--nova-ui-bg); color: #e2e8f0; height: 100vh; overflow: hidden; }
-    .menubar { display:flex; align-items:center; gap:6px; padding:4px 7px; border-bottom:1px solid #1f2937; background:var(--nova-ui-bg); user-select:none; }
-    .menuItem { position: relative; padding:6px 10px; border:1px solid transparent; cursor:pointer; font-size:0.74rem; }
-    .menuItem:hover { background:#111827; border-color:#334155; }
-    .menuDropdown { position:absolute; top:calc(100% + 2px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-ui-bg); border:1px solid #334155; box-shadow:0 10px 24px rgba(0,0,0,0.45); }
-    .menuDropdown.show { display:block; }
-    .menuAction { padding:8px 10px; border-bottom:1px solid #1f2937; font-size:0.84rem; cursor:pointer; }
-    .menuAction:last-child { border-bottom:none; }
-    .menuAction:hover { background:#1e293b; }
-    .menuSep { height:1px; background:#1f2937; margin:4px 0; }
-    .app { display: flex; height: calc(100vh - 28px); width: 100vw; }
-    .sidebar { width: 252px; min-width: 5vw; max-width: 704px; background: var(--nova-ui-bg); border-right: 1px solid #1f2937; padding: 0px; overflow-y: auto; flex: 0 0 auto; font-size: 0.8rem; display:flex; flex-direction:column; }
-    .sidebarResizer { width: 4px; margin-left: -2px; margin-right: -2px; cursor: col-resize; background: transparent; border-right: none; z-index: 5; }
-    .main { flex: 1 1 auto; padding: 0px; background: var(--nova-view-bg); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
-    .panel { background: transparent; border: none; border-radius: 0px; padding: 0px; margin-bottom: 0px; }
-    .panelHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .panelHeader { background:var(--nova-ui-bg); border-bottom:1px solid #1f2937; padding:4px 6px; margin:0; }
-    .panelHeader h3 { margin: 0; font-size: 0.72rem; color: #cbd5e1; }
-    .addBtn, .collapseBtn { width: 16px; height: 16px; border-radius: 4px; border: 1px solid #334155; background: var(--nova-ui-bg); color: #e2e8f0; padding: 0; font-weight: 800; cursor: pointer; }
-    .headerBtns { display: flex; gap: 6px; }
-    .list { border: none; border-radius: 0px; background: var(--nova-ui-bg); overflow-y: auto; max-height: 136px; }
-    .item { padding: 4px 5px; border-bottom: 1px solid #1f2937; cursor: pointer; }
-    .item:last-child { border-bottom: none; }
-    .item.active { background: #1e293b; }
-    .item.focused { outline: 1px solid #60a5fa; }
-    .itemPrimary { font-size: 0.72rem; color: #e2e8f0; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .itemMeta { font-size: 0.62rem; color: #94a3b8; margin-top: 1px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .empty { padding: 8px; color: #64748b; font-size: 0.78rem; }
-    label { display: block; margin: 5px 0 2px 0; font-size: 0.65rem; color: #cbd5e1; }
-    input, select, button { width: 100%; border: 1px solid #334155; border-radius: 0px; background: var(--nova-ui-bg); color: #e2e8f0; padding: 5px; font-size: 0.72rem; }
-    button { cursor: pointer; background: var(--nova-accent); border-color: var(--nova-accent); font-weight: 600; }
-    .plotTabs { display:flex; align-items:stretch; gap:0; padding:0; border-bottom:1px solid #1f2937; background:var(--nova-ui-bg); min-height:26px; flex: 0 0 auto; overflow-x:auto; }
-    .plotTab { width:auto; min-width:82px; max-width: 195px; background:var(--nova-ui-bg); border-color:#334155; border-top:none; border-bottom:none; border-left:none; border-right:1px solid #334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 0 auto; padding:4px 8px; font-size:0.68rem; }
-    .plotTab.active { background:var(--nova-accent); border-color:var(--nova-accent); }
-    .plotAdd { width:auto; min-width:24px; max-width:24px; padding:0; font-weight:900; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; border-top:none; border-bottom:none; border-right:none; border-left:none; border-radius:0; }
-    #plot { width: 100%; flex: 1 1 auto; min-height: 0; }
-
-    /* Fix global button width:100% for tab/menu buttons */
-    .menuItem { width: auto; }
-    .plotTab, .plotAdd { width: auto !important; }
-    .menubar button { width: auto; }
-
-    /* Hide scrollbars */
-    .sidebar, .list, .modalList, .tableWrap { scrollbar-width: none; }
-    .sidebar::-webkit-scrollbar, .list::-webkit-scrollbar, .modalList::-webkit-scrollbar, .tableWrap::-webkit-scrollbar { width: 0; height: 0; }
-    .status { color: #93c5fd; font-size: 0.85rem; margin-top: 8px; }
-    .error { color: #fda4af; }
-    .drawer { position: fixed; left: 0; right: 0; bottom: 0; background: #111827; border-top: 1px solid #334155; max-height: 44vh; padding: 10px; display: none; z-index: 40; }
-    .drawer.show { display: block; }
-    .tableWrap { overflow: auto; max-height: 34vh; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-    th, td { border-bottom: 1px solid #1f2937; padding: 5px; text-align: left; white-space: nowrap; }
-    .modalBackdrop { position: fixed; inset: 0; background: rgba(2,6,23,0.7); display: none; z-index: 60; align-items: center; justify-content: center; }
-    .modalBackdrop.show { display: flex; }
-    .modal { width: min(760px, 92vw); max-height: 82vh; overflow: auto; background: #111827; border: 1px solid #334155; border-radius: 0px; padding: 10px; }
-    .modalHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .modalTitle { margin: 0; font-size: 0.95rem; color: #e2e8f0; }
-    .modalClose { width: auto; min-width: 28px; padding: 4px 8px; }
-    .modalGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .modalActions { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
-    .modalActions button { width: auto; min-width: 140px; }
-    .modalList { border: 1px solid #334155; border-radius: 6px; background: var(--nova-ui-bg); max-height: 48vh; overflow-y: auto; }
-    .selectRow { padding: 8px; border-bottom: 1px solid #1f2937; cursor: pointer; }
-    .selectRow:last-child { border-bottom: none; }
-    .selectRow.active { background: #1e293b; }
-    .timeRangeRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .timeRangeRow label { margin-top: 0; }
-    .contextMenu, .miniMenu { position: fixed; z-index: 80; display: none; background: #111827; border: 1px solid #334155; border-radius: 6px; min-width: 180px; }
-    .contextItem, .miniMenuItem { padding: 8px; cursor: pointer; font-size: 0.82rem; border-bottom: 1px solid #1f2937; }
-    .contextItem:last-child, .miniMenuItem:last-child { border-bottom: none; }
-    .contextItem:hover, .miniMenuItem:hover { background: #1e293b; }
-    .realtimeBtn { width:28px; height:28px; min-width:28px; border-radius:4px; padding:0; font-size:0.72rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
-    .realtimeBtn.active { border-color:#60a5fa; box-shadow: inset 0 0 0 1px #60a5fa; color:#dbeafe; }
-    #realtimeCloseBtn { border-radius:10px; }
-    .choochDock { margin-top: auto; padding: 0 0 16px 0; }
-    .choochDock button { border-radius: 0; margin: 0; min-height: 32px; }
+    :root { color-scheme:dark; --nova-ui-bg:#0a0a0a; --nova-view-bg:#000000; --nova-accent:#333; --nova-text:#d4d4d4; --nova-text-dim:#404040; --nova-divider:#1c1c1c; --nova-hover:#111111; --nova-active:#141414; --nova-line:#555; }
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family:"MiSans","Segoe UI","Microsoft YaHei UI",Arial,sans-serif; font-size:13px; background:var(--nova-ui-bg); color:var(--nova-text); height:100vh; overflow:hidden; }
+    /* Menubar */
+    .menubar{ display:flex; align-items:center; gap:4px; padding:3px 6px; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); user-select:none; }
+    .menuItem{ position:relative; padding:5px 9px; border:1px solid transparent; cursor:pointer; font-size:0.74rem; }
+    .menuItem:hover{ background:var(--nova-hover); border-color:var(--nova-divider); }
+    .menuDropdown{ position:absolute; top:calc(100% + 1px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-ui-bg); border:1px solid #222; box-shadow:0 8px 20px rgba(0,0,0,0.7); }
+    .menuDropdown.show{ display:block; }
+    .menuAction{ padding:7px 10px; border-bottom:1px solid var(--nova-divider); font-size:0.8rem; cursor:pointer; color:var(--nova-text); }
+    .menuAction:last-child{ border-bottom:none; }
+    .menuAction:hover{ background:var(--nova-hover); }
+    .menuSep{ height:1px; background:var(--nova-divider); margin:2px 0; }
+    /* Layout */
+    .app{ display:flex; height:calc(100vh - 26px); width:100vw; }
+    .sidebar{ width:252px; min-width:5vw; max-width:704px; background:var(--nova-ui-bg); border-right:1px solid var(--nova-divider); overflow-y:auto; flex:0 0 auto; font-size:0.8rem; display:flex; flex-direction:column; }
+    .sidebarResizer{ width:4px; margin-left:-2px; margin-right:-2px; cursor:col-resize; background:transparent; z-index:5; }
+    .main{ flex:1 1 auto; background:var(--nova-view-bg); overflow:hidden; display:flex; flex-direction:column; min-width:0; }
+    /* Panels */
+    .panel{ background:transparent; border:none; }
+    .panelHeader{ display:flex; justify-content:space-between; align-items:center; background:var(--nova-ui-bg); border-bottom:1px solid var(--nova-divider); padding:5px 6px; margin:0; cursor:pointer; }
+    .panelHeader:hover{ background:var(--nova-hover); }
+    .panelHeader h3{ margin:0; font-size:0.60rem; color:var(--nova-text-dim); letter-spacing:0.09em; text-transform:uppercase; font-weight:500; }
+    .headerBtns{ display:flex; gap:3px; }
+    .addBtn,.collapseBtn{ width:14px; height:14px; border-radius:0; border:1px solid var(--nova-divider); background:transparent; color:var(--nova-text-dim); padding:0; font-weight:600; cursor:pointer; font-size:0.60rem; line-height:1; }
+    .addBtn:hover,.collapseBtn:hover{ border-color:var(--nova-line); color:var(--nova-text); }
+    /* Lists */
+    .list{ border:none; background:var(--nova-ui-bg); overflow-y:auto; max-height:136px; }
+    .item{ padding:4px 6px 4px 8px; border-bottom:1px solid #0f0f0f; cursor:pointer; border-left:2px solid transparent; }
+    .item:last-child{ border-bottom:none; }
+    .item.active{ background:var(--nova-active); border-left-color:var(--nova-line); }
+    .item:hover:not(.active){ background:var(--nova-hover); }
+    .item.focused{ outline:none; }
+    .itemPrimary{ font-size:0.72rem; color:var(--nova-text); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .itemMeta{ font-size:0.60rem; color:var(--nova-text-dim); margin-top:1px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .empty{ padding:8px; color:var(--nova-text-dim); font-size:0.70rem; }
+    /* Form elements */
+    label{ display:block; margin:5px 0 2px 0; font-size:0.60rem; color:var(--nova-text-dim); letter-spacing:0.06em; text-transform:uppercase; }
+    input,select,button{ width:100%; border:1px solid var(--nova-divider); border-radius:0; background:#0d0d0d; color:var(--nova-text); padding:5px; font-size:0.72rem; outline:none; }
+    input:focus,select:focus{ border-color:var(--nova-line); }
+    button{ cursor:pointer; background:#111; border:1px solid #2a2a2a; }
+    button:hover{ background:#1a1a1a; border-color:#444; }
+    button:active{ background:#222; }
+    /* Plot tabs */
+    .plotTabs{ display:flex; align-items:stretch; gap:0; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); min-height:26px; flex:0 0 auto; overflow-x:auto; }
+    .plotTab{ width:auto; min-width:82px; max-width:195px; background:var(--nova-ui-bg); border:none; border-right:1px solid var(--nova-divider); border-top:2px solid transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 0 auto; padding:4px 8px; font-size:0.68rem; color:var(--nova-text-dim); }
+    .plotTab.active{ background:#111; border-top-color:var(--nova-line); color:var(--nova-text); }
+    .plotTab:hover:not(.active){ background:var(--nova-hover); color:var(--nova-text); }
+    .plotAdd{ width:auto; min-width:24px; max-width:24px; padding:0; font-weight:900; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:0; background:var(--nova-ui-bg); color:var(--nova-text-dim); }
+    .plotAdd:hover{ color:var(--nova-text); background:var(--nova-hover); }
+    #plot{ width:100%; flex:1 1 auto; min-height:0; }
+    /* Button overrides */
+    .menuItem{ width:auto; }
+    .plotTab,.plotAdd{ width:auto !important; }
+    .menubar button{ width:auto; border:none; background:transparent; }
+    .menubar button:hover{ background:var(--nova-hover); }
+    /* Scrollbars hidden */
+    .sidebar,.list,.modalList,.tableWrap{ scrollbar-width:none; }
+    .sidebar::-webkit-scrollbar,.list::-webkit-scrollbar,.modalList::-webkit-scrollbar,.tableWrap::-webkit-scrollbar{ width:0; height:0; }
+    /* Status bar */
+    #statusBar{ position:fixed; bottom:0; left:0; right:0; height:20px; background:var(--nova-ui-bg); border-top:1px solid var(--nova-divider); padding:2px 8px; font-size:0.65rem; color:#555; z-index:50; display:flex; align-items:center; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    #statusBar.error{ color:#a87070; }
+    /* Drawer */
+    .drawer{ position:fixed; left:0; right:0; bottom:20px; background:#0d0d0d; border-top:1px solid #222; max-height:44vh; padding:8px; display:none; z-index:40; }
+    .drawer.show{ display:block; }
+    .tableWrap{ overflow:auto; max-height:34vh; }
+    table{ width:100%; border-collapse:collapse; font-size:0.74rem; }
+    th,td{ border-bottom:1px solid var(--nova-divider); padding:4px 6px; text-align:left; white-space:nowrap; }
+    th{ color:var(--nova-text-dim); font-weight:500; font-size:0.60rem; letter-spacing:0.06em; text-transform:uppercase; }
+    /* Modal */
+    .modalBackdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.78); display:none; z-index:60; align-items:center; justify-content:center; }
+    .modalBackdrop.show{ display:flex; }
+    .modal{ width:min(760px,92vw); max-height:82vh; overflow:auto; background:#0d0d0d; border:1px solid #222; border-radius:0; padding:0; }
+    .modalHeader{ display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid #222; }
+    .modalTitle{ margin:0; font-size:0.85rem; color:var(--nova-text); }
+    .modalClose{ width:auto; min-width:24px; padding:3px 7px; }
+    .modalGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:10px; }
+    .modalActions{ padding:8px 10px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid var(--nova-divider); margin:0; }
+    .modalActions button{ width:auto; min-width:100px; }
+    .modalList{ border:1px solid var(--nova-divider); border-radius:0; background:#0a0a0a; max-height:48vh; overflow-y:auto; }
+    .selectRow{ padding:7px 8px 7px 10px; border-bottom:1px solid var(--nova-divider); cursor:pointer; border-left:2px solid transparent; }
+    .selectRow:last-child{ border-bottom:none; }
+    .selectRow.active{ background:var(--nova-active); border-left-color:var(--nova-line); }
+    .selectRow:hover:not(.active){ background:var(--nova-hover); }
+    .timeRangeRow{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .timeRangeRow label{ margin-top:0; }
+    /* Menus */
+    .contextMenu,.miniMenu{ position:fixed; z-index:80; display:none; background:#0d0d0d; border:1px solid #222; border-radius:0; min-width:180px; }
+    .contextItem,.miniMenuItem{ padding:7px 10px; cursor:pointer; font-size:0.78rem; border-bottom:1px solid var(--nova-divider); color:var(--nova-text); }
+    .contextItem:last-child,.miniMenuItem:last-child{ border-bottom:none; }
+    .contextItem:hover,.miniMenuItem:hover{ background:var(--nova-hover); }
+    /* Realtime panel */
+    #realtimePanel{ background:#0d0d0d; border:1px solid #222; }
+    .realtimeBtn{ width:26px; height:26px; min-width:26px; border-radius:0; padding:0; font-size:0.72rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--nova-divider); background:transparent; color:var(--nova-text); }
+    .realtimeBtn:hover{ background:var(--nova-hover); border-color:var(--nova-line); }
+    .realtimeBtn.active{ border-color:var(--nova-line); background:var(--nova-active); }
+    #realtimeCloseBtn{ border-radius:0; }
+    /* Load dock */
+    .choochDock{ margin-top:auto; padding:8px; border-top:1px solid var(--nova-divider); }
+    .choochDock button{ border-radius:0; margin:0; min-height:30px; letter-spacing:0.09em; text-transform:uppercase; font-size:0.65rem; font-weight:600; background:#111; border-color:#2a2a2a; }
+    .choochDock button:hover{ background:#1a1a1a; border-color:#555; }
+    /* Region section */
+    #regionBody{ max-height:none !important; padding:6px 8px; }
   </style>
 </head>
 <body>
@@ -150,10 +175,9 @@
         <div id="regionBody" class="list" style="max-height:none;padding:6px;">
           <label for="t0Mode">Time Reference</label><select id="t0Mode"><option value="absolute">Absolute</option><option value="first_index">First Index</option><option value="t0_relative">t0 Relative</option></select>
           <label for="xAxis">X Axis</label><select id="xAxis"><option value="time">time</option></select>
-          <p id="status" class="status"></p>
         </div>
       </div>
-      <div class="choochDock"><button id="loadBtn">Chooch</button></div>
+      <div class="choochDock"><button id="loadBtn">Load</button></div>
     </aside>
     <div class="sidebarResizer" id="sidebarResizer" title="Drag to resize"></div>
     <main class="main">
@@ -224,7 +248,7 @@
     function clearCatalogCache(){ catalogCache.clear(); }
     function nextPaint(){ return new Promise((resolve)=>requestAnimationFrame(()=>resolve())); }
     function runDeferred(fn){ return new Promise((resolve)=>setTimeout(()=>resolve(fn()), 0)); }
-    function setStatus(text, isError = false) { const e = byId("status"); e.textContent = text; e.className = isError ? "status error" : "status"; }
+    function setStatus(text, isError = false) { const e = byId("statusBar"); if(!e) return; e.textContent = text; e.className = isError ? "error" : ""; }
     function sourceConnQuery(src) { if (!src || src.type !== "postgres") return ""; const p = new URLSearchParams(); p.append("db_host", src.host); p.append("db_port", String(src.port)); p.append("db_user", src.user); p.append("db_password", src.password); p.append("db_sslmode", src.sslmode || "disable"); return p.toString(); }
     async function getJson(url) { const r = await fetch(url); if (!r.ok) throw new Error(`Request failed ${r.status}`); return r.json(); }
     function activeSources() { return state.sources.filter((s) => selectedSourceIds.has(s.id)); }
@@ -1717,7 +1741,7 @@
     function applyAppearance(){
       document.documentElement.style.setProperty("--nova-ui-bg", appearance.uiBg);
       document.documentElement.style.setProperty("--nova-view-bg", appearance.viewBg);
-      document.documentElement.style.setProperty("--nova-accent", appearance.accent);
+      document.documentElement.style.setProperty("--nova-accent", appearance.accent||"#333");
       document.body.style.background = appearance.uiBg;
       if(latestRows.length) plotRows(latestRows);
     }
@@ -2062,5 +2086,6 @@
     document.addEventListener("keydown",(e)=>{ if(e.key==="Delete"){ e.preventDefault(); deleteFocused(); } });
     requestAnimationFrame(()=>setTimeout(initialize,0));
   </script>
+  <div id="statusBar"></div>
 </body>
 </html>
