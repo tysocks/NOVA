@@ -81,6 +81,9 @@
     .contextItem, .miniMenuItem { padding: 8px; cursor: pointer; font-size: 0.82rem; border-bottom: 1px solid #1f2937; }
     .contextItem:last-child, .miniMenuItem:last-child { border-bottom: none; }
     .contextItem:hover, .miniMenuItem:hover { background: #1e293b; }
+    .realtimeBtn { width:28px; height:28px; min-width:28px; border-radius:4px; padding:0; font-size:0.72rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
+    .realtimeBtn.active { border-color:#60a5fa; box-shadow: inset 0 0 0 1px #60a5fa; color:#dbeafe; }
+    #realtimeCloseBtn { border-radius:10px; }
     .choochDock { margin-top: auto; padding: 0 0 16px 0; }
     .choochDock button { border-radius: 0; margin: 0; min-height: 32px; }
   </style>
@@ -97,7 +100,9 @@
     </div>
     <div class="menuItem" data-menu="edit">Edit
       <div class="menuDropdown" id="menu_edit">
-        <div class="menuAction" id="edit_showMetadata">Show Metadata (current selection)</div>
+        <div class="menuAction" id="edit_showMetadata">Show Metadata</div>
+        <div class="menuAction" id="edit_setMaxFreq">Set Max Sample Frequency...</div>
+        <div class="menuAction" id="edit_realtimeTraces">Real Time Traces...</div>
         <div class="menuSep"></div>
         <div class="menuAction" style="opacity:0.7;cursor:default;">Analysis tools (coming soon)</div>
       </div>
@@ -106,7 +111,8 @@
       <div class="menuDropdown" id="menu_view">
         <div class="menuAction" id="view_togglePreview">Toggle Data Preview</div>
         <div class="menuSep"></div>
-          <div class="menuAction" id="view_appearance">Appearance...</div>
+          <div class="menuAction" id="view_generalAppearance">General Appearance...</div>
+          <div class="menuAction" id="view_viewAppearance">View Appearance...</div>
       </div>
     </div>
     <div class="menuItem" data-menu="help">Help
@@ -165,6 +171,18 @@
   <div id="sourceAddMenu" class="miniMenu"></div>
   <div id="channelAddMenu" class="miniMenu"></div>
   <div id="maskAddMenu" class="miniMenu"></div>
+  <div id="realtimePanel" style="display:none;position:fixed;right:16px;top:64px;z-index:130;background:#111827;border:1px solid #334155;min-width:214px;">
+    <div id="realtimePanelHeader" style="padding:6px;cursor:move;display:flex;align-items:center;gap:6px;">
+      <button id="realtimePauseBtn" class="realtimeBtn" type="button" title="Pause">&#10074;&#10074;</button>
+      <button id="realtimePlayBtn" class="realtimeBtn" type="button" title="Play">&#9654;</button>
+      <button id="realtimeForwardBtn" class="realtimeBtn" type="button" title="Forward">&#9197;</button>
+      <button id="realtimeReplayBtn" class="realtimeBtn" type="button" title="Replay">&#8635;</button>
+      <button id="realtimeLoopBtn" class="realtimeBtn" type="button" title="Loop">&#128257;</button>
+      <button id="realtimeExportBtn" class="realtimeBtn" type="button" title="Save animation">&#128190;</button>
+      <button id="realtimeCloseBtn" class="realtimeBtn" type="button" title="Close">&#10005;</button>
+    </div>
+    <div id="realtimeStatus" style="padding:0 8px 8px 8px;color:#93c5fd;font-size:0.72rem;">Idle</div>
+  </div>
 
   <script>
     const STORAGE_KEY = "nova.uiState.v6";
@@ -173,6 +191,23 @@
     let latestRows = [], metadataRows = [], testsData = [], channelsData = [], previewVisible = false, focusedItem = null;
     let selectedSourceIds = new Set(), selectedDatabaseIds = new Set(), selectedTestIds = new Set(), selectedChannelIds = new Set(), selectedMaskIds = new Set();
     let addedTestIds = new Set(), addedChannelIds = new Set();
+    let maxSampleHzGlobal = null;
+    let realtimeRows = [];
+    let realtimeTimer = null;
+    let realtimeDirection = 1;
+    let realtimeCurrentMs = null;
+    let realtimeStartDataMs = null;
+    let realtimeStartWallMs = null;
+    let realtimeMinMs = null;
+    let realtimeMaxMs = null;
+    let realtimeLockedXRange = null;
+    let realtimeLockedYRanges = null;
+    let realtimeLoopEnabled = false;
+    let realtimeFrameIndex = 0;
+    let realtimeLastDrawMs = 0;
+    let realtimeFrameStepMs = 16;
+    let realtimeExporting = false;
+    let realtimeExportRenderOptions = null;
     let channelUnitMap = new Map();
     let state = { sources: [], databases: [], masks: [], calculatedChannels: [], freqOverrides: {}, collapsed: {} };
     const lastClickedByKind = {};
@@ -463,25 +498,413 @@
       traces.forEach((t)=>{ t.yaxis=m.get(t._unit||"unitless"); delete t._unit; });
       return layout;
     }
-    function applyFreq(points,chId){ const hz=Number(state.freqOverrides[chId]||0); if(!hz||hz<=0) return points; const bucket=Math.max(1,Math.round(1000/hz)); const bins=new Map(); points.forEach((p)=>{ const ts=new Date(p.time).getTime(),k=Math.floor(ts/bucket)*bucket; if(!bins.has(k)) bins.set(k,{sum:0,n:0,s:p}); const b=bins.get(k); b.sum+=p.value; b.n+=1;}); return [...bins.entries()].sort((a,b)=>a[0]-b[0]).map(([k,v])=>({...v.s,time:new Date(k).toISOString(),value:v.sum/v.n})); }
-    function plotRows(rows){ const xAxis=byId("xAxis").value,t0Mode=byId("t0Mode").value; const grouped=new Map(); rows.forEach((r)=>{ const key=`${r.test_run_code || r.test_run_id} | ${r.channel_name}`; if(!grouped.has(key)) grouped.set(key,[]); grouped.get(key).push(r); }); const t0FirstSample=new Map(); const t0Meta=new Map(); if(t0Mode==="first_index" || t0Mode==="t0_relative"){ rows.forEach((r)=>{ const k=`${r.__dbId}|${r.test_run_id}`; const ts=new Date(r.time).getTime(); if(!t0FirstSample.has(k)||ts<t0FirstSample.get(k)) t0FirstSample.set(k,ts); }); } if(t0Mode==="t0_relative"){ testsData.forEach((t)=>{ const ts=Date.parse(String(t.t0_utc||"")); if(Number.isFinite(ts)) t0Meta.set(`${t.__dbId}|${t.test_run_id}`, ts); }); } const traces=[]; if(xAxis==="time"){ grouped.forEach((pts,name)=>{ const chId=`${pts[0].__dbId}|${pts[0].channel_name}`; const down=applyFreq(pts,chId).sort((a,b)=>new Date(a.time)-new Date(b.time)); traces.push({type:"scattergl",mode:"lines",name,x:down.map((p)=>{ if(t0Mode==="absolute") return p.time; const k=`${p.__dbId}|${p.test_run_id}`; const base=t0Mode==="t0_relative" ? t0Meta.get(k) : t0FirstSample.get(k); return Number.isFinite(base)?(new Date(p.time).getTime()-base)/1000:p.time; }),y:down.map((p)=>p.value),_unit:pts[0]?.unit||channelUnitMap.get(chId)||"unitless"});}); } else { const byTest=new Map(); rows.forEach((r)=>{const tk=`${r.__dbId}|${r.test_run_code}`;if(!byTest.has(tk))byTest.set(tk,new Map());const m=byTest.get(tk);if(!m.has(r.time))m.set(r.time,{});m.get(r.time)[`${r.__dbId}|${r.channel_name}`]=r.value;}); byTest.forEach((timeMap,tk)=>{ [...selectedChannelIds].filter((c)=>c!==xAxis).forEach((chId)=>{const xs=[],ys=[];timeMap.forEach((v)=>{if(v[xAxis]!==undefined&&v[chId]!==undefined){xs.push(v[xAxis]);ys.push(v[chId]);}}); if(xs.length) traces.push({type:"scattergl",mode:"markers",name:`${tk.split("|")[1]||tk} | ${chId.split("|")[1]} vs ${xAxis.split("|")[1]}`,x:xs,y:ys,_unit:channelUnitMap.get(chId)||"unitless"});});}); }
+    function effectiveSampleHz(chId){ const localHz=Number(state.freqOverrides[chId]||0); const globalHz=Number(maxSampleHzGlobal||0); if(localHz>0 && globalHz>0) return Math.min(localHz, globalHz); return localHz>0?localHz:(globalHz>0?globalHz:0); }
+    function applyFreq(points,chId){
+      const hz=effectiveSampleHz(chId);
+      if(!hz||hz<=0) return points;
+      const bucket=Math.max(1,Math.round(1000/hz));
+      const bins=new Map();
+      points.forEach((p)=>{
+        const ts=p.__ts,k=Math.floor(ts/bucket)*bucket;
+        if(!bins.has(k)) bins.set(k,{sum:0,n:0,s:p,maxRt:Number.NEGATIVE_INFINITY});
+        const b=bins.get(k);
+        b.sum+=1*Number(p.value); b.n+=1;
+        const prt=Number(p.__rt);
+        if(Number.isFinite(prt)) b.maxRt=Math.max(b.maxRt, prt);
+      });
+      return [...bins.entries()].sort((a,b)=>a[0]-b[0]).map(([k,v])=>{
+        const o={...v.s,time:new Date(k).toISOString(),value:v.sum/v.n};
+        if(Number.isFinite(v.maxRt)) o.__rt=v.maxRt;
+        return o;
+      });
+    }
+    function stopRealtime(){ if(realtimeTimer){ cancelAnimationFrame(realtimeTimer); realtimeTimer=null; } realtimeLockedXRange=null; realtimeLockedYRanges=null; }
+    function buildRealtimeRows(){ const mode=byId("t0Mode").value; const t0First=new Map(); const t0Meta=new Map(); if(mode!=="absolute"){ latestRows.forEach((r)=>{ const key=`${r.__dbId}|${r.test_run_id}`; const ts=r.__ts; if(!Number.isFinite(ts)) return; if(!t0First.has(key)||ts<t0First.get(key)) t0First.set(key,ts); }); } if(mode==="t0_relative"){ testsData.forEach((t)=>{ const ts=Date.parse(String(t.t0_utc||"")); if(Number.isFinite(ts)) t0Meta.set(`${t.__dbId}|${t.test_run_id}`, ts); }); } return latestRows.map((r)=>{ const ts=r.__ts; let rt=ts/1000; if(mode==="first_index"){ const base=t0First.get(`${r.__dbId}|${r.test_run_id}`); rt=Number.isFinite(base)?(ts-base)/1000:ts/1000; } else if(mode==="t0_relative"){ const k=`${r.__dbId}|${r.test_run_id}`; const base=t0Meta.get(k); const fallback=t0First.get(k); const b=Number.isFinite(base)?base:fallback; rt=Number.isFinite(b)?(ts-b)/1000:ts/1000; } return {...r,__ms:ts,__rt:rt}; }).filter((r)=>Number.isFinite(r.__rt)).sort((a,b)=>a.__rt-b.__rt); }
+    function realtimeFrameRows(){
+      if(realtimeCurrentMs===null) return latestRows||[];
+      let lo=0, hi=realtimeRows.length;
+      while(lo<hi){
+        const mid=(lo+hi)>>1;
+        if(realtimeRows[mid].__rt<=realtimeCurrentMs) lo=mid+1;
+        else hi=mid;
+      }
+      realtimeFrameIndex=lo;
+      const frameRows=realtimeRows.slice(0, lo);
+      if(frameRows.length<=12000) return frameRows;
+      const stride=Math.max(1, Math.ceil(frameRows.length/12000));
+      const sampled=[];
+      for(let i=0;i<frameRows.length;i+=stride) sampled.push(frameRows[i]);
+      if(sampled[sampled.length-1]!==frameRows[frameRows.length-1]) sampled.push(frameRows[frameRows.length-1]);
+      return sampled;
+    }
+    function updateRealtimeStatus(){ const s=byId("realtimeStatus"); if(!s) return; if(realtimeCurrentMs===null){ s.textContent="Idle"; return; } const mode=byId("t0Mode").value; const point=mode==="absolute"?new Date(realtimeCurrentMs*1000).toISOString():`${realtimeCurrentMs.toFixed(3)}s`; s.textContent=`Forward @ ${point}`; }
+    function startRealtime(direction, replay=false, opts={}){
+      if(!latestRows.length){ setStatus("Load data first for real-time traces.", true); return; }
+      const gd=byId("plot");
+      const locked=(gd&&gd.layout&&gd.layout.xaxis&&Array.isArray(gd.layout.xaxis.range)&&gd.layout.xaxis.range.length===2)?[gd.layout.xaxis.range[0],gd.layout.xaxis.range[1]]:null;
+      const lockedY={};
+      if(gd&&gd.layout){
+        Object.keys(gd.layout).forEach((k)=>{
+          if(!/^yaxis\d*$/.test(k)) return;
+          const ax=gd.layout[k];
+          if(ax&&Array.isArray(ax.range)&&ax.range.length===2) lockedY[k]=[ax.range[0],ax.range[1]];
+        });
+      }
+      realtimeDirection = 1;
+      if(!realtimeRows.length){
+        realtimeRows=buildRealtimeRows();
+        if(!realtimeRows.length){ setStatus("No valid timestamps for real-time traces.", true); return; }
+        realtimeMinMs=realtimeRows[0].__rt;
+        realtimeMaxMs=realtimeRows[realtimeRows.length-1].__rt;
+        realtimeCurrentMs=realtimeMinMs;
+      }
+      if(replay || realtimeCurrentMs===null) realtimeCurrentMs=realtimeMinMs;
+      realtimeStartDataMs=realtimeCurrentMs;
+      realtimeStartWallMs=performance.now();
+      realtimeLastDrawMs=0;
+      stopRealtime();
+      realtimeLockedXRange=locked;
+      realtimeLockedYRanges=lockedY;
+      realtimeLoopEnabled=Boolean(opts.forceNoLoop ? false : byId("realtimeLoopBtn")?.classList.contains("active"));
+      const totalRows=realtimeRows.length;
+      realtimeFrameStepMs = totalRows > 120000 ? 80 : (totalRows > 50000 ? 50 : (totalRows > 15000 ? 33 : 16));
+      const tick=(now)=>{
+        const elapsed=(now-realtimeStartWallMs)/1000;
+        let nextMs=realtimeStartDataMs + elapsed;
+        let hitEnd=false;
+        if(nextMs>=realtimeMaxMs){
+          if(realtimeLoopEnabled){
+            const span=Math.max(1e-9, realtimeMaxMs-realtimeMinMs);
+            nextMs=realtimeMinMs + ((nextMs-realtimeMinMs) % span);
+          } else {
+            nextMs=realtimeMaxMs;
+            hitEnd=true;
+          }
+        }
+        realtimeCurrentMs=nextMs;
+        if((now-realtimeLastDrawMs)>=realtimeFrameStepMs || hitEnd){
+          const frameRows=realtimeFrameRows();
+          if(previewVisible){ renderRows(frameRows); }
+          try{ plotRows(frameRows); }catch(e){ setStatus(`Plot render warning: ${e}`, true); }
+          try{ if(typeof opts.onDraw==="function") opts.onDraw(frameRows); }catch{}
+          updateRealtimeStatus();
+          realtimeLastDrawMs=now;
+        }
+        if(hitEnd){
+          try{ if(typeof opts.onComplete==="function") opts.onComplete(); }catch{}
+          stopRealtime();
+          return;
+        }
+        realtimeTimer=requestAnimationFrame(tick);
+      };
+      realtimeTimer=requestAnimationFrame(tick);
+      updateRealtimeStatus();
+    }
+    async function saveBlobToFile(defaultName, blob, mimeType, extension, description){
+      const normalizedDefaultName = new RegExp(`\\.${extension}$`, "i").test(defaultName) ? defaultName : `${defaultName}.${extension}`;
+      if (window.showSaveFilePicker) {
+        try {
+          let handle = await window.showSaveFilePicker({
+            suggestedName: normalizedDefaultName,
+            excludeAcceptAllOption: true,
+            types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [mimeType]: [`.${extension}`] } }],
+          });
+          if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) {
+            handle = await window.showSaveFilePicker({
+              suggestedName: `${handle.name || "nova_export"}.${extension}`,
+              excludeAcceptAllOption: true,
+              types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [mimeType]: [`.${extension}`] } }],
+            });
+            if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) return { ok: false, cancelled: true };
+          }
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          return { ok: true, viaPicker: true };
+        } catch (err) {
+          if (err && err.name === "AbortError") return { ok: false, cancelled: true };
+          setStatus(`Save dialog failed, using download fallback: ${err}`, true);
+        }
+      }
+      try {
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download=normalizedDefaultName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        return { ok: true, viaPicker: false };
+      } catch (err) {
+        setStatus(`Export failed: ${err}`, true);
+        return { ok: false, cancelled: false };
+      }
+    }
+    async function pickSaveFileTarget(defaultName, mimeType, extension, description){
+      const normalizedDefaultName = new RegExp(`\\.${extension}$`, "i").test(defaultName) ? defaultName : `${defaultName}.${extension}`;
+      if (!window.showSaveFilePicker) return { ok:true, viaPicker:false, defaultName: normalizedDefaultName };
+      try {
+        let handle = await window.showSaveFilePicker({
+          suggestedName: normalizedDefaultName,
+          excludeAcceptAllOption: true,
+          types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [mimeType]: [`.${extension}`] } }],
+        });
+        if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) {
+          handle = await window.showSaveFilePicker({
+            suggestedName: `${handle.name || "nova_export"}.${extension}`,
+            excludeAcceptAllOption: true,
+            types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [mimeType]: [`.${extension}`] } }],
+          });
+          if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) return { ok:false, cancelled:true };
+        }
+        return { ok:true, viaPicker:true, handle, defaultName: normalizedDefaultName };
+      } catch (err) {
+        if (err && err.name === "AbortError") return { ok:false, cancelled:true };
+        setStatus(`Save dialog failed, falling back to download: ${err}`, true);
+        return { ok:true, viaPicker:false, defaultName: normalizedDefaultName };
+      }
+    }
+    async function exportRealtimeAnimation(exportCfg={}){
+      if(realtimeExporting){ setStatus("Animation export already running.", true); return; }
+      if(!latestRows.length){ setStatus("Load data first for animation export.", true); return; }
+      if(typeof MediaRecorder==="undefined"){ setStatus("MediaRecorder is not available in this environment.", true); return; }
+      const fileType=(exportCfg.fileType||"webm").toLowerCase();
+      const fps=Math.max(1, Math.min(120, Number(exportCfg.framerate||30)));
+      const transparentBg=Boolean(exportCfg.transparentBg);
+      const axisVisible=exportCfg.axisVisible!==undefined ? Boolean(exportCfg.axisVisible) : true;
+      const gridVisible=exportCfg.gridVisible!==undefined ? Boolean(exportCfg.gridVisible) : true;
+      const plotEl=byId("plot");
+      const width=Math.max(320, Number(plotEl?.clientWidth||0));
+      const height=Math.max(220, Number(plotEl?.clientHeight||0));
+      const dpr=Math.max(1.5, Math.min(3, Number(window.devicePixelRatio||1)*1.5));
+      const captureCanvas=document.createElement("canvas");
+      captureCanvas.width=Math.round(width*dpr);
+      captureCanvas.height=Math.round(height*dpr);
+      const ctx=captureCanvas.getContext("2d",{alpha:true});
+      if(!ctx){ setStatus("Unable to create export canvas.", true); return; }
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.imageSmoothingEnabled=true;
+      ctx.imageSmoothingQuality="high";
+      const stream=captureCanvas.captureStream(fps);
+      const mimeCandidates=fileType==="mp4"
+        ? ["video/mp4;codecs=h264","video/mp4"]
+        : (transparentBg
+          ? ["video/webm;codecs=vp9","video/webm"]
+          : ["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"]);
+      const mimeType=mimeCandidates.find((m)=>MediaRecorder.isTypeSupported?.(m)) || "video/webm";
+      if(fileType==="mp4" && !/^video\/mp4/i.test(mimeType)){
+        setStatus("MP4 export is not supported in this runtime. Use WebM instead.", true);
+        return;
+      }
+      const ext=/^video\/mp4/i.test(mimeType) ? "mp4" : "webm";
+      const saveMime=/^video\/mp4/i.test(mimeType) ? "video/mp4" : "video/webm";
+      const saveDesc=/^video\/mp4/i.test(mimeType) ? "MP4 video" : "WebM video";
+      const p=getActivePlot();
+      const defaultName=`nova_${(p?.name||"view").replaceAll(" ","_")}_animation.${ext}`;
+      const saveTarget=await pickSaveFileTarget(defaultName, saveMime, ext, saveDesc);
+      if(!saveTarget.ok){
+        if(saveTarget.cancelled) setStatus("Animation export cancelled.");
+        return;
+      }
+      const chunks=[];
+      let recorder;
+      const pxCount=Math.max(1, captureCanvas.width*captureCanvas.height);
+      const bitrate=Math.max(14_000_000, Math.min(50_000_000, Math.round(pxCount*fps*0.28)));
+      try {
+        recorder=new MediaRecorder(stream,{mimeType, videoBitsPerSecond: bitrate});
+      } catch (err) {
+        setStatus(`Unable to start recorder: ${err}`, true);
+        return;
+      }
+      let svgOverlayImg=null;
+      let svgOverlayReady=false;
+      let svgOverlayLoading=false;
+      const inlineSvgComputedStyles=(srcRoot, cloneRoot)=>{
+        const props=["fill","fill-opacity","stroke","stroke-opacity","stroke-width","opacity","font-family","font-size","font-weight","shape-rendering","text-rendering","dominant-baseline"];
+        const srcNodes=[srcRoot,...srcRoot.querySelectorAll("*")];
+        const cloneNodes=[cloneRoot,...cloneRoot.querySelectorAll("*")];
+        const n=Math.min(srcNodes.length, cloneNodes.length);
+        for(let i=0;i<n;i+=1){
+          const srcNode=srcNodes[i], dstNode=cloneNodes[i];
+          if(!(srcNode instanceof Element) || !(dstNode instanceof Element)) continue;
+          const cs=getComputedStyle(srcNode);
+          const style=props.map((p)=>`${p}:${cs.getPropertyValue(p)};`).join("");
+          const prev=dstNode.getAttribute("style")||"";
+          dstNode.setAttribute("style", `${prev}${style}`);
+        }
+      };
+      const refreshSvgOverlay=async()=>{
+        if(svgOverlayLoading) return;
+        svgOverlayLoading=true;
+        try{
+          const svg=plotEl.querySelector("svg.main-svg");
+          if(!svg){ svgOverlayReady=false; return; }
+          const svgClone=svg.cloneNode(true);
+          inlineSvgComputedStyles(svg, svgClone);
+          const xml=new XMLSerializer().serializeToString(svgClone);
+          const url=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(xml)}`;
+          const img=new Image();
+          const loaded=new Promise((resolve,reject)=>{ img.onload=()=>resolve(); img.onerror=(e)=>reject(e); });
+          img.src=url;
+          await loaded;
+          svgOverlayImg=img;
+          svgOverlayReady=true;
+        }catch{
+          svgOverlayReady=false;
+        }finally{
+          svgOverlayLoading=false;
+        }
+      };
+      const drawFrame=()=>{
+        const glCanvas=plotEl.querySelector(".gl-container canvas");
+        ctx.clearRect(0,0,width,height);
+        if(!transparentBg){
+          ctx.fillStyle=appearance?.viewBg || "#000000";
+          ctx.fillRect(0,0,width,height);
+        }
+        // Draw layout first (axes/grid/labels), then traces so data stays visible.
+        if(svgOverlayReady && svgOverlayImg) ctx.drawImage(svgOverlayImg,0,0,width,height);
+        if(glCanvas) ctx.drawImage(glCanvas,0,0,width,height);
+      };
+      const donePromise=new Promise((resolve,reject)=>{
+        recorder.ondataavailable=(e)=>{ if(e.data && e.data.size>0) chunks.push(e.data); };
+        recorder.onerror=(e)=>reject(e?.error || new Error("Recorder error"));
+        recorder.onstop=()=>resolve();
+      });
+      const loopBtn=byId("realtimeLoopBtn");
+      const prevLoop=Boolean(loopBtn?.classList.contains("active"));
+      if(loopBtn) loopBtn.classList.remove("active");
+      realtimeExportRenderOptions={ transparentBg, axisVisible, gridVisible };
+      realtimeExporting=true;
+      setStatus("Recording animation export...");
+      await refreshSvgOverlay();
+      recorder.start(250);
+      startRealtime(1, true, {
+        forceNoLoop:true,
+        onDraw:()=>{ drawFrame(); if(!svgOverlayLoading) refreshSvgOverlay(); },
+        onComplete:()=>{
+          Promise.resolve(refreshSvgOverlay()).finally(()=>{
+            drawFrame();
+            if(recorder.state!=="inactive") recorder.stop();
+          });
+        }
+      });
+      try {
+        await donePromise;
+        const blob=new Blob(chunks,{type:mimeType});
+        let result;
+        if(saveTarget.viaPicker && saveTarget.handle){
+          const writable = await saveTarget.handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          result = { ok:true, viaPicker:true };
+        } else {
+          result=await saveBlobToFile(saveTarget.defaultName||defaultName, blob, saveMime, ext, saveDesc);
+        }
+        if (result.ok && result.viaPicker) setStatus(`Animation exported to ${ext.toUpperCase()}.`);
+        if (result.ok && !result.viaPicker) setStatus("Animation downloaded.");
+        if (!result.ok && result.cancelled) setStatus("Animation export cancelled.");
+      } catch (err) {
+        setStatus(`Animation export failed: ${err}`, true);
+      } finally {
+        if(loopBtn) loopBtn.classList.toggle("active", prevLoop);
+        realtimeExportRenderOptions=null;
+        try{ plotRows(realtimeCurrentMs===null ? (latestRows||[]) : realtimeFrameRows()); }catch{}
+        realtimeExporting=false;
+      }
+    }
+    function openRealtimeExportModal(){
+      openModal("Export Animation", `<div class="modalGrid">
+        <div>
+          <label for="m_export_filetype">File Type</label>
+          <select id="m_export_filetype">
+            <option value="webm">WebM</option>
+            <option value="mp4">MP4</option>
+          </select>
+        </div>
+        <div>
+          <label for="m_export_fps">Framerate (fps)</label>
+          <input id="m_export_fps" type="number" min="1" max="120" step="1" value="30" />
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:8px;margin:4px 0;"><input id="m_export_transparent" type="checkbox" style="width:auto;" />Transparent background</label>
+        <label style="display:flex;align-items:center;gap:8px;margin:4px 0;"><input id="m_export_axis" type="checkbox" style="width:auto;" checked />Show axes</label>
+        <label style="display:flex;align-items:center;gap:8px;margin:4px 0;"><input id="m_export_grid" type="checkbox" style="width:auto;" checked />Show grid</label>
+      </div>
+      <div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Export</button></div>`, async()=>{
+        const fileType=(byId("m_export_filetype").value||"webm").toLowerCase();
+        const framerate=Number(byId("m_export_fps").value||30);
+        if(!Number.isFinite(framerate) || framerate<=0){ setStatus("Framerate must be a positive number.", true); return false; }
+        const cfg={
+          fileType,
+          framerate,
+          transparentBg:Boolean(byId("m_export_transparent").checked),
+          axisVisible:Boolean(byId("m_export_axis").checked),
+          gridVisible:Boolean(byId("m_export_grid").checked),
+        };
+        exportRealtimeAnimation(cfg);
+        return true;
+      });
+    }
+    function openMaxFreqModal(){ openModal("Set Max Sample Frequency",`<label>Maximum frequency in Hz (blank = no global cap)</label><input id="m_max_hz" type="number" step="any" value="${maxSampleHzGlobal??""}" placeholder="e.g. 100" /><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply</button></div>`,async()=>{ const raw=(byId("m_max_hz").value||"").trim(); if(!raw){ maxSampleHzGlobal=null; if(latestRows.length) plotRows(latestRows); setStatus("Global max sample frequency cleared."); return true; } const hz=Number(raw); if(!Number.isFinite(hz)||hz<=0){ setStatus("Max sample frequency must be a positive number.", true); return false; } maxSampleHzGlobal=hz; if(latestRows.length) plotRows(latestRows); setStatus(`Global max sample frequency set to ${hz} Hz.`); return true; }); }
+    function initRealtimePanel(){ const panel=byId("realtimePanel"), header=byId("realtimePanelHeader"); let dragging=false, dx=0, dy=0; header.onmousedown=(e)=>{ dragging=true; dx=e.clientX-panel.offsetLeft; dy=e.clientY-panel.offsetTop; e.preventDefault(); }; window.addEventListener("mousemove",(e)=>{ if(!dragging) return; panel.style.left=`${Math.max(0,e.clientX-dx)}px`; panel.style.top=`${Math.max(0,e.clientY-dy)}px`; panel.style.right="auto"; }); window.addEventListener("mouseup",()=>{ dragging=false; }); byId("realtimeCloseBtn").onclick=()=>{ panel.style.display="none"; }; byId("realtimePlayBtn").onclick=()=>startRealtime(1); byId("realtimePauseBtn").onclick=()=>{ stopRealtime(); updateRealtimeStatus(); }; byId("realtimeForwardBtn").onclick=()=>{ startRealtime(1); }; byId("realtimeReplayBtn").onclick=()=>{ startRealtime(1, true); }; byId("realtimeLoopBtn").onclick=()=>{ const b=byId("realtimeLoopBtn"); b.classList.toggle("active"); }; byId("realtimeExportBtn").onclick=()=>{ openRealtimeExportModal(); }; }
+    function plotRows(rows){
+      const xAxis=byId("xAxis").value,t0Mode=byId("t0Mode").value;
+      const useRealtimeFull=Boolean(realtimeTimer && realtimeCurrentMs!==null && xAxis==="time" && Array.isArray(realtimeRows)&&realtimeRows.length);
+      const plotSourceRows=useRealtimeFull?realtimeRows:rows;
+      const rtMaskMs=useRealtimeFull?realtimeCurrentMs:null;
+      const grouped=new Map();
+      plotSourceRows.forEach((r)=>{ const key=`${r.test_run_code || r.test_run_id} | ${r.channel_name}`; if(!grouped.has(key)) grouped.set(key,[]); grouped.get(key).push(r); });
+      const t0FirstSample=new Map(); const t0Meta=new Map();
+      if(t0Mode==="first_index" || t0Mode==="t0_relative"){ plotSourceRows.forEach((r)=>{ const k=`${r.__dbId}|${r.test_run_id}`; const ts=r.__ts; if(!t0FirstSample.has(k)||ts<t0FirstSample.get(k)) t0FirstSample.set(k,ts); }); }
+      if(t0Mode==="t0_relative"){ testsData.forEach((t)=>{ const ts=Date.parse(String(t.t0_utc||"")); if(Number.isFinite(ts)) t0Meta.set(`${t.__dbId}|${t.test_run_id}`, ts); }); }
+      const traces=[];
+      if(xAxis==="time"){
+        grouped.forEach((pts,name)=>{
+          const chId=`${pts[0].__dbId}|${pts[0].channel_name}`;
+          const down=applyFreq(pts,chId).sort((a,b)=>a.__ts-b.__ts);
+          traces.push({
+            type:"scattergl",mode:"lines",connectgaps:false,line:{width:Math.max(0.2, Number(appearance.lineWidth||1.5))},name,
+            x:down.map((p)=>{ if(t0Mode==="absolute") return p.time; const k=`${p.__dbId}|${p.test_run_id}`; const base=t0Mode==="t0_relative" ? t0Meta.get(k) : t0FirstSample.get(k); return Number.isFinite(base)?(p.__ts-base)/1000:p.time; }),
+            y:down.map((p)=>{ if(rtMaskMs===null||!Number.isFinite(p.__rt)) return p.value; return p.__rt<=rtMaskMs?p.value:NaN; }),
+            _unit:pts[0]?.unit||channelUnitMap.get(chId)||"unitless"
+          });
+        });
+      } else {
+        const byTest=new Map();
+        plotSourceRows.forEach((r)=>{const tk=`${r.__dbId}|${r.test_run_code}`;if(!byTest.has(tk))byTest.set(tk,new Map());const m=byTest.get(tk);if(!m.has(r.time))m.set(r.time,{});m.get(r.time)[`${r.__dbId}|${r.channel_name}`]=r.value;});
+        byTest.forEach((timeMap,tk)=>{ [...selectedChannelIds].filter((c)=>c!==xAxis).forEach((chId)=>{const xs=[],ys=[];timeMap.forEach((v)=>{if(v[xAxis]!==undefined&&v[chId]!==undefined){xs.push(v[xAxis]);ys.push(v[chId]);}}); if(xs.length) traces.push({type:"scattergl",mode:"markers",marker:{size:Math.max(3, Number(appearance.lineWidth||1.5)*3)},name:`${tk.split("|")[1]||tk} | ${chId.split("|")[1]} vs ${xAxis.split("|")[1]}`,x:xs,y:ys,_unit:channelUnitMap.get(chId)||"unitless"});});});
+      }
       const plotEl=byId("plot");
       const plotWidth=Math.max(320, Number(plotEl?.clientWidth||window.innerWidth||0));
       const yLayout=buildUnitAxes(traces, plotWidth), unitCount=Object.keys(yLayout).length;
+      if(realtimeLockedYRanges){ Object.keys(realtimeLockedYRanges).forEach((k)=>{ if(yLayout[k]){ yLayout[k].range=realtimeLockedYRanges[k]; yLayout[k].autorange=false; } }); }
       const extraRight=Math.max(0,unitCount-1);
       const axisSpacingPx = plotWidth < 1200 ? 64 : 54;
-      Plotly.react("plot", traces, {
+      const exportOpts=realtimeExportRenderOptions||{};
+      const axisVisible=exportOpts.axisVisible!==undefined ? Boolean(exportOpts.axisVisible) : (appearance.showAxis!==false);
+      const gridVisible=exportOpts.gridVisible!==undefined ? Boolean(exportOpts.gridVisible) : (appearance.showGrid!==false);
+      const bgTransparent=Boolean(exportOpts.transparentBg);
+      Object.keys(yLayout).forEach((k)=>{
+        yLayout[k].visible=axisVisible;
+        yLayout[k].showgrid=gridVisible;
+        yLayout[k].titlefont={size:Number(appearance.axisTitleSize||11)};
+        yLayout[k].tickfont={size:Number(appearance.axisTickSize||10)};
+      });
+      const layoutBase={
         autosize:true,
-        paper_bgcolor: appearance?.viewBg || "#000000",
-        plot_bgcolor: appearance?.viewBg || "#000000",
+        title: appearance.plotTitle ? {text: appearance.plotTitle, x:0.5, xanchor:"center"} : undefined,
+        paper_bgcolor: bgTransparent ? "rgba(0,0,0,0)" : (appearance?.viewBg || "#000000"),
+        plot_bgcolor: bgTransparent ? "rgba(0,0,0,0)" : (appearance?.viewBg || "#000000"),
         font:{color:"#e2e8f0"},
         colorway: parseColorway(),
-        xaxis:{title:"",automargin:true,tickfont:{size:10},titlefont:{size:11}},
-        yaxis:{tickfont:{size:10},titlefont:{size:11}},
+        showlegend: appearance.showLegend!==false,
+        xaxis:{title:"",automargin:true,tickfont:{size:Number(appearance.axisTickSize||10)},titlefont:{size:Number(appearance.axisTitleSize||11)},visible:axisVisible,showgrid:gridVisible,...(realtimeLockedXRange?{range:realtimeLockedXRange,autorange:false}:{})},
+        yaxis:{tickfont:{size:Number(appearance.axisTickSize||10)},titlefont:{size:Number(appearance.axisTitleSize||11)},visible:axisVisible,showgrid:gridVisible},
         margin:{l:12,r:Math.max(70,56+extraRight*(axisSpacingPx+6)),t:12,b:48},
-        legend:{x:0.01,y:0.99,xanchor:"left",yanchor:"top",bgcolor:"rgba(2,6,23,0.55)"},
+        legend:{x:Number(appearance.legendX??0.01),y:Number(appearance.legendY??0.99),xanchor:"left",yanchor:"top",bgcolor:"rgba(2,6,23,0.55)"},
         ...yLayout
-      },{responsive:true,displaylogo:false,scrollZoom:true,editable:true,edits:{legendPosition:true,axisTitleText:false,titleText:false,annotationPosition:false,annotationText:false,shapePosition:false}});
+      };
+      Plotly.react("plot", traces, layoutBase,{responsive:true,displaylogo:false,scrollZoom:true,editable:true,edits:{legendPosition:true,axisTitleText:false,titleText:false,annotationPosition:false,annotationText:false,shapePosition:false}});
     }
     function buildCatalogCacheKey(db, src){
       if (!db || !src) return "";
@@ -661,7 +1084,7 @@
       if(byId("t0Mode").value!=="absolute"){
         rows.forEach((r)=>{
           const key=`${r.__dbId}|${r.test_run_id}`;
-          const ts=Date.parse(String(r.time));
+          const ts=r.__ts;
           if(!Number.isFinite(ts)) return;
           if(!t0ByTest.has(key) || ts<t0ByTest.get(key)) t0ByTest.set(key, ts);
         });
@@ -699,7 +1122,7 @@
             byTestSeries.get(tk).push(r);
           });
           byTestSeries.forEach((series)=>{
-            series.sort((a,b)=>new Date(a.time)-new Date(b.time));
+            series.sort((a,b)=>a.__ts-b.__ts);
             const w=Math.max(1, Number(m.window||1));
             for(let i=0;i<series.length;i+=1){
               const vals=series.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x));
@@ -723,7 +1146,7 @@
               const g=groups.get(k);
               const vals=(m.channels||[]).map((id)=>Number(g.vals[id]));
               if(vals.some((v)=>!Number.isFinite(v))) return;
-              const currMs=Date.parse(String(g.sample.time));
+              const currMs=g.sample.__ts;
               ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000);
               prevMs=currMs;
               let outVal=null;
@@ -748,7 +1171,7 @@
           const { a, b } = parseMaskCompareValues(m, isTimeMask);
           return m.channels.every((chId)=>{
             if(chId==="__time__"){
-              const ts=Date.parse(String(g.sample.time));
+              const ts=g.sample.__ts;
               if(!Number.isFinite(ts)) return false;
               if(byId("t0Mode").value==="absolute") return evalMaskValue(ts, m.op, a, b);
               const key=`${g.sample.__dbId}|${g.sample.test_run_id}`;
@@ -885,12 +1308,12 @@
     async function showAddRollingChannelModal(){ if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; } await refreshCatalogsForSelections(); const dbId=[...selectedDatabaseIds][0]; const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(!sourceChannels.length){ setStatus("No source channels available for rolling calculation.",true); return; } const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}">${c.channel_name}</option>`).join(""); openModal("Rolling Channel Calculation",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="rolling_mean" /></div><div><label>Units</label><input id="m_calc_unit" type="text" placeholder="e.g. N, kg/s, unitless" /></div><div><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="10" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const sourceId=byId("m_calc_source").value; const op=byId("m_calc_op").value; const window=Math.max(1,Number(byId("m_calc_window").value||1)); const rawName=(byId("m_calc_name").value||"rolling_mean").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const name=nextCalcName(dbId, rawName); const unit=(byId("m_calc_unit").value||"").trim(); state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"rolling", dbId, name, unit, channels:[sourceId], op, window }); addedChannelIds.add(`${dbId}|${name}`); selectedChannelIds.add(`${dbId}|${name}`); await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Added rolling calculated channel '${name}'.`); return true; }); }
     async function showAddChannelWiseModal(){ if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; } await refreshCatalogsForSelections(); const dbId=[...selectedDatabaseIds][0]; const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(sourceChannels.length<2){ setStatus("Need at least two source channels for channel-wise calculation.",true); return; } const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`})); const chosen=new Set(); openModal("Channel Wise Calculation",`${searchableRowsHtml("fcm",rows,chosen)}<div style="margin-top:8px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="channel_formula" /><label>Units</label><input id="m_formula_unit" type="text" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const ordered=[...chosen]; if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const rawName=(byId("m_formula_name").value||"channel_formula").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const name=nextCalcName(dbId, rawName); const unit=(byId("m_formula_unit").value||"").trim(); state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"formula", dbId, name, unit, channels:ordered, formula:compiled.expr }); addedChannelIds.add(`${dbId}|${name}`); selectedChannelIds.add(`${dbId}|${name}`); await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Added channel-wise calculated channel '${name}'.`); return true; }); bindSearchableModal("fcm",chosen); const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); const txt=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | "); byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C..."; }; const list=byId("fcm_list"); if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); } refreshHint(); }
     async function editCalculatedChannel(channelId){ const [dbId, channelName] = channelId.split("|"); const calc = (state.calculatedChannels||[]).find((c)=>c.dbId===dbId && c.name===channelName); if(!calc){ setStatus("Only calculated channels can be edited.", true); return; } await refreshCatalogsForSelections(); const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(calc.kind==="rolling"){ if(!sourceChannels.length){ setStatus("No source channels available for rolling calculation.",true); return; } const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}" ${calc.channels&&calc.channels[0]===`${c.__dbId}|${c.channel_name}`?"selected":""}>${c.channel_name}</option>`).join(""); openModal("Edit Rolling Channel",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="${calc.name}" /></div><div><label>Units</label><input id="m_calc_unit" type="text" value="${calc.unit||""}" placeholder="e.g. N, kg/s, unitless" /></div><div><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean" ${calc.op==="mean"?"selected":""}>mean</option><option value="sum" ${calc.op==="sum"?"selected":""}>sum</option><option value="min" ${calc.op==="min"?"selected":""}>min</option><option value="max" ${calc.op==="max"?"selected":""}>max</option><option value="std" ${calc.op==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="${calc.window||10}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,async()=>{ const sourceId=byId("m_calc_source").value; const op=byId("m_calc_op").value; const window=Math.max(1,Number(byId("m_calc_window").value||1)); const rawName=(byId("m_calc_name").value||"rolling_mean").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const oldName=calc.name; const name=nextCalcName(dbId, rawName, oldName); calc.name=name; calc.unit=(byId("m_calc_unit").value||"").trim(); calc.channels=[sourceId]; calc.op=op; calc.window=window; if(addedChannelIds.delete(`${dbId}|${oldName}`)) addedChannelIds.add(`${dbId}|${name}`); if(selectedChannelIds.delete(`${dbId}|${oldName}`)) selectedChannelIds.add(`${dbId}|${name}`); if(byId("xAxis").value===`${dbId}|${oldName}`) byId("xAxis").value=`${dbId}|${name}`; await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Updated calculated channel '${name}'.`); return true; }); return; } const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`})); const chosen=new Set(calc.channels||[]); openModal("Edit Channel Wise Calculation",`${searchableRowsHtml("efcm",rows,chosen)}<div style="margin-top:8px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="${calc.name}" /><label>Units</label><input id="m_formula_unit" type="text" value="${calc.unit||""}" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" value="${calc.formula||""}" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,async()=>{ const ordered=[...chosen]; if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const rawName=(byId("m_formula_name").value||"channel_formula").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const oldName=calc.name; const name=nextCalcName(dbId, rawName, oldName); calc.name=name; calc.unit=(byId("m_formula_unit").value||"").trim(); calc.channels=ordered; calc.formula=compiled.expr; if(addedChannelIds.delete(`${dbId}|${oldName}`)) addedChannelIds.add(`${dbId}|${name}`); if(selectedChannelIds.delete(`${dbId}|${oldName}`)) selectedChannelIds.add(`${dbId}|${name}`); if(byId("xAxis").value===`${dbId}|${oldName}`) byId("xAxis").value=`${dbId}|${name}`; await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Updated calculated channel '${name}'.`); return true; }); bindSearchableModal("efcm",chosen); const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); const txt=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | "); byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C..."; }; const list=byId("efcm_list"); if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); } refreshHint(); }
-    async function showAddDatabaseModal(){ const srcs=activeSources(); if(!srcs.length){ setStatus("Select at least one source first.",true); return; } const rows=[]; for(const src of srcs){ if(src.type==="postgres"){ try{ const dbs=await getJson(`/api/databases?${sourceConnQuery(src)}`); dbs.forEach((d)=>rows.push({id:`${src.id}|${d.name}`,primary:d.name,meta:src.name,sourceId:src.id,sourceType:src.type,name:d.name})); }catch{} } else rows.push({id:`${src.id}|${src.file_path||src.name}`,primary:src.name,meta:`${src.type} source`,sourceId:src.id,sourceType:src.type,name:src.name}); } const chosen=new Set(); openModal("Add Databases",`${searchableRowsHtml("dbm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const newlyAddedIds=[]; [...chosen].forEach((id)=>{ const r=rows.find((x)=>x.id===id); if(!r) return; const existing=state.databases.find((d)=>d.sourceId===r.sourceId&&d.name===r.name); if(existing){ newlyAddedIds.push(existing.id); return; } const entry={id:crypto.randomUUID(),sourceId:r.sourceId,sourceType:r.sourceType,name:r.name}; state.databases.push(entry); newlyAddedIds.push(entry.id); }); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id); }); // Explicitly select every added database after apply/close.
+    async function showAddDatabaseModal(){ const srcs=activeSources(); if(!srcs.length){ setStatus("Select at least one source first.",true); return; } const rows=[]; for(const src of srcs){ if(src.type==="postgres"){ try{ const dbs=await getJson(`/api/databases?${sourceConnQuery(src)}`); dbs.forEach((d)=>rows.push({id:`${src.id}|${d.name}`,primary:d.name,meta:src.name,sourceId:src.id,sourceType:src.type,name:d.name})); }catch(err){ setStatus(`Database discovery failed for source '${src.name}': ${err}`, true); } } else rows.push({id:`${src.id}|${src.file_path||src.name}`,primary:src.name,meta:`${src.type} source`,sourceId:src.id,sourceType:src.type,name:src.name}); } if(!rows.length){ setStatus("No databases were discovered for the selected source(s).", true); } const chosen=new Set(); openModal("Add Databases",`${searchableRowsHtml("dbm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const newlyAddedIds=[]; [...chosen].forEach((id)=>{ const r=rows.find((x)=>x.id===id); if(!r) return; const existing=state.databases.find((d)=>d.sourceId===r.sourceId&&d.name===r.name); if(existing){ newlyAddedIds.push(existing.id); return; } const entry={id:crypto.randomUUID(),sourceId:r.sourceId,sourceType:r.sourceType,name:r.name}; state.databases.push(entry); newlyAddedIds.push(entry.id); }); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id); }); // Explicitly select every added database after apply/close.
       newlyAddedIds.forEach((id)=>selectedDatabaseIds.add(id)); await refreshCatalogsForSelections(); renderAll(); saveState(); return true; }); bindSearchableModal("dbm",chosen); }
     async function showAddTestsModal(){ if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; } await refreshCatalogsForSelections(); const dup={}; testsData.forEach((t)=>dup[`${t.__dbId}|${t.run_code}`]=(dup[`${t.__dbId}|${t.run_code}`]||0)+1); const rows=testsData.map((t)=>({id:`${t.__dbId}|${t.test_run_id}`,primary:dup[`${t.__dbId}|${t.run_code}`]>1?`${t.run_code} (#${t.test_run_id})`:t.run_code,meta:`${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`})); const chosen=new Set(addedTestIds); openModal("Select Tests",`${searchableRowsHtml("tm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ addedTestIds=new Set(chosen); selectedTestIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("tm",chosen); }
     async function showAddChannelsModal(){ if(!addedTestIds.size){ setStatus("Add at least one test first.",true); return; } await refreshCatalogsForSelections(); const rows=[]; const testsByDb=new Map(); [...addedTestIds].forEach((k)=>{ const [dbId,testId]=k.split("|"); if(!testsByDb.has(dbId)) testsByDb.set(dbId,[]); testsByDb.get(dbId).push(testId); }); for(const [dbId,testIds] of testsByDb.entries()){ const db=state.databases.find((d)=>d.id===dbId),src=db?state.sources.find((s)=>s.id===db.sourceId):null; if(!db||!src) continue; if(src.type==="postgres"){ const p=new URLSearchParams(); testIds.forEach((id)=>p.append("test_run_ids",id)); p.append("db_name",db.name); sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }}); try{ const ch=await getJson(`/api/available-channels?${p.toString()}`); ch.forEach((c)=>rows.push({id:`${dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`})); }catch{} } else { try{ const ch=await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}`); ch.forEach((c)=>rows.push({id:`${dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`})); }catch{} } } const dedup=new Map(); rows.forEach((r)=>dedup.set(r.id,r)); const finalRows=[...dedup.values()]; const chosen=new Set(addedChannelIds); openModal("Select Channels",`${searchableRowsHtml("cm",finalRows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ addedChannelIds=new Set(chosen); selectedChannelIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("cm",chosen); }
     function rollingCalc(op, arr){ if(!arr.length) return null; if(op==="mean") return arr.reduce((a,b)=>a+b,0)/arr.length; if(op==="sum") return arr.reduce((a,b)=>a+b,0); if(op==="min") return Math.min(...arr); if(op==="max") return Math.max(...arr); if(op==="std"){ const m=arr.reduce((a,b)=>a+b,0)/arr.length; const v=arr.reduce((a,b)=>a+((b-m)*(b-m)),0)/arr.length; return Math.sqrt(v); } return null; }
-    async function computeCalculatedRows(baseRows){ const out=[]; const selectedCalcs=(state.calculatedChannels||[]).filter((c)=>selectedChannelIds.has(`${c.dbId}|${c.name}`)); let workCounter=0; for(const calc of selectedCalcs){ const dbRows=baseRows.filter((r)=>r.__dbId===calc.dbId); if(calc.kind==="rolling"){ const srcName=(calc.channels&&calc.channels[0])?calc.channels[0].split("|")[1]:""; const srcRows=dbRows.filter((r)=>r.channel_name===srcName); const byTest=new Map(); srcRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); for (const rows of byTest.values()){ rows.sort((a,b)=>new Date(a.time)-new Date(b.time)); const w=Math.max(1, Number(calc.window||1)); for(let i=0;i<rows.length;i++){ const vals=rows.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x)); const v=rollingCalc(calc.op, vals); if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: rows[i].test_run_id, test_run_code: rows[i].test_run_code, channel_name: calc.name, unit: calc.unit || null, time: rows[i].time, value: Number(v), __dbId: calc.dbId }); workCounter+=1; if(workCounter%2000===0) await nextPaint(); } } continue; } if(calc.kind==="formula"){ const deps=(calc.channels||[]).map((id)=>id.split("|")[1]); if(!deps.length) continue; const compiled=compileFormula(calc.formula||"", deps.length); if(!compiled.ok) continue; const byTest=new Map(); dbRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); for (const rows of byTest.values()){ const byTime=new Map(); rows.forEach((r)=>{ const t=String(r.time); if(!byTime.has(t)) byTime.set(t,{vals:{}, sample:r}); const slot=byTime.get(t); slot.vals[r.channel_name]=Number(r.value); }); const sortedTimes=[...byTime.keys()].sort((a,b)=>new Date(a)-new Date(b)); let prevMs=null; const ctx={dt_s:0,__bpStates:{}}; for (const t of sortedTimes){ const slot=byTime.get(t); const vals=deps.map((nm)=>slot.vals[nm]); if(vals.some((v)=>!Number.isFinite(v))) continue; const currMs=new Date(t).getTime(); ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000); prevMs=currMs; let v=null; try{ v=compiled.evalFn(vals,ctx); }catch{ v=null; } if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: slot.sample.test_run_id, test_run_code: slot.sample.test_run_code, channel_name: calc.name, unit: calc.unit || null, time: t, value: Number(v), __dbId: calc.dbId }); workCounter+=1; if(workCounter%2000===0) await nextPaint(); } } } } return out; }
+    async function computeCalculatedRows(baseRows){ const out=[]; const selectedCalcs=(state.calculatedChannels||[]).filter((c)=>selectedChannelIds.has(`${c.dbId}|${c.name}`)); let workCounter=0; for(const calc of selectedCalcs){ const dbRows=baseRows.filter((r)=>r.__dbId===calc.dbId); if(calc.kind==="rolling"){ const srcName=(calc.channels&&calc.channels[0])?calc.channels[0].split("|")[1]:""; const srcRows=dbRows.filter((r)=>r.channel_name===srcName); const byTest=new Map(); srcRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); for (const rows of byTest.values()){ rows.sort((a,b)=>a.__ts-b.__ts); const w=Math.max(1, Number(calc.window||1)); for(let i=0;i<rows.length;i++){ const vals=rows.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x)); const v=rollingCalc(calc.op, vals); if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: rows[i].test_run_id, test_run_code: rows[i].test_run_code, channel_name: calc.name, unit: calc.unit || null, time: rows[i].time, value: Number(v), __dbId: calc.dbId, __ts: rows[i].__ts }); workCounter+=1; if(workCounter%2000===0) await nextPaint(); } } continue; } if(calc.kind==="formula"){ const deps=(calc.channels||[]).map((id)=>id.split("|")[1]); if(!deps.length) continue; const compiled=compileFormula(calc.formula||"", deps.length); if(!compiled.ok) continue; const byTest=new Map(); dbRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); for (const rows of byTest.values()){ const byTime=new Map(); rows.forEach((r)=>{ const t=String(r.time); if(!byTime.has(t)) byTime.set(t,{vals:{}, sample:r}); const slot=byTime.get(t); slot.vals[r.channel_name]=Number(r.value); }); const sortedTimes=[...byTime.keys()].sort((a,b)=>byTime.get(a).sample.__ts-byTime.get(b).sample.__ts); let prevMs=null; const ctx={dt_s:0,__bpStates:{}}; for (const t of sortedTimes){ const slot=byTime.get(t); const vals=deps.map((nm)=>slot.vals[nm]); if(vals.some((v)=>!Number.isFinite(v))) continue; const currMs=slot.sample.__ts; ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000); prevMs=currMs; let v=null; try{ v=compiled.evalFn(vals,ctx); }catch{ v=null; } if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: slot.sample.test_run_id, test_run_code: slot.sample.test_run_code, channel_name: calc.name, unit: calc.unit || null, time: t, value: Number(v), __dbId: calc.dbId, __ts: slot.sample.__ts }); workCounter+=1; if(workCounter%2000===0) await nextPaint(); } } } } return out; }
     async function loadMetadataForSelection(){
       const allMetadata = [];
       for(const dbId of selectedDatabaseIds){
@@ -950,7 +1373,11 @@
       const calcRows=await computeCalculatedRows(rowsAll);
       const selectedNonCalc=rowsAll.filter((r)=>selectedChannelIds.has(`${r.__dbId}|${r.channel_name}`));
       const finalRows=applyMasks([...selectedNonCalc,...calcRows]);
+      finalRows.forEach(r => { r.__ts = Date.parse(r.time); });
       latestRows=finalRows;
+      realtimeRows=[];
+      stopRealtime();
+      realtimeCurrentMs=null;
       renderRows(finalRows);
       setStatus("Rendering plot...");
       await nextPaint();
@@ -968,7 +1395,10 @@
       byId("help_sourceHelp").onclick=()=>setStatus("Use + to add items. Click rows to multi-select. Right-click rows for actions.");
       byId("view_togglePreview").onclick=()=>{ setPreviewVisible(!previewVisible); saveState(); };
       byId("edit_showMetadata").onclick=()=>showMetadataModal();
-      byId("view_appearance").onclick=()=>openAppearanceModal();
+      byId("edit_setMaxFreq").onclick=()=>openMaxFreqModal();
+      byId("edit_realtimeTraces").onclick=()=>{ const p=byId("realtimePanel"); p.style.display="block"; };
+      byId("view_generalAppearance").onclick=()=>openGeneralAppearanceModal();
+      byId("view_viewAppearance").onclick=()=>openViewAppearanceModal();
       async function saveTextToFile(defaultName, text, mimeType, extension, description, pickerMimeType){
         const normalizedDefaultName = new RegExp(`\\.${extension}$`, "i").test(defaultName) ? defaultName : `${defaultName}.${extension}`;
         const acceptMime = pickerMimeType || mimeType;
@@ -1146,7 +1576,7 @@
     }
 
     const APPEAR_KEY="nova.appearance.v1";
-    const DEFAULT_APPEARANCE={ uiBg:"#070b11", viewBg:"#000000", accent:"#1e3a8a", plotTheme:"default", plotColors:"#4cc9f0,#f72585,#b8f200,#ff9e00,#9b5de5,#06d6a0,#ef476f,#ffd166,#118ab2,#8338ec" };
+    const DEFAULT_APPEARANCE={ uiBg:"#070b11", viewBg:"#000000", accent:"#1e3a8a", plotTheme:"default", plotColors:"#4cc9f0,#f72585,#b8f200,#ff9e00,#9b5de5,#06d6a0,#ef476f,#ffd166,#118ab2,#8338ec", plotTitle:"", showLegend:true, legendX:0.01, legendY:0.99, showAxis:true, showGrid:true, axisTitleSize:11, axisTickSize:10, lineWidth:1.5 };
     const PLOT_THEMES={
       default:"#4cc9f0,#f72585,#b8f200,#ff9e00,#9b5de5,#06d6a0,#ef476f,#ffd166,#118ab2,#8338ec",
       viridis:"#440154,#472d7b,#3b528b,#2c728e,#21918c,#27ad81,#5cc863,#aadc32,#fde725",
@@ -1197,6 +1627,11 @@
       if(!appearance.plotTheme) appearance.plotTheme="default";
       if(appearance.plotTheme!=="custom" && !PLOT_THEMES[appearance.plotTheme]) appearance.plotTheme="default";
       if(appearance.plotTheme!=="custom") appearance.plotColors=PLOT_THEMES[appearance.plotTheme]||PLOT_THEMES.default;
+      appearance.legendX=Number.isFinite(Number(appearance.legendX))?Number(appearance.legendX):DEFAULT_APPEARANCE.legendX;
+      appearance.legendY=Number.isFinite(Number(appearance.legendY))?Number(appearance.legendY):DEFAULT_APPEARANCE.legendY;
+      appearance.axisTitleSize=Number.isFinite(Number(appearance.axisTitleSize))?Number(appearance.axisTitleSize):DEFAULT_APPEARANCE.axisTitleSize;
+      appearance.axisTickSize=Number.isFinite(Number(appearance.axisTickSize))?Number(appearance.axisTickSize):DEFAULT_APPEARANCE.axisTickSize;
+      appearance.lineWidth=Number.isFinite(Number(appearance.lineWidth))?Number(appearance.lineWidth):DEFAULT_APPEARANCE.lineWidth;
       persistAppearance();
       applyAppearance();
     }
@@ -1212,8 +1647,8 @@
       const src = fromTheme || appearance.plotColors || PLOT_THEMES.default;
       return String(src).split(",").map((s)=>s.trim()).filter(Boolean);
     }
-    function openAppearanceModal(){
-      openModal("Appearance",`
+    function openGeneralAppearanceModal(){
+      openModal("General Appearance",`
         <div class="modalGrid">
           <div>
             <label>View Background</label>
@@ -1239,9 +1674,45 @@
               <input id="m_app_accent_picker" type="color" value="${appearance.accent}" style="width:38px;min-width:38px;padding:0;border:none;background:transparent;" />
             </div>
           </div>
+        </div>
+        <div class="modalActions">
+          <button id="m_app_reset_general" type="button">Reset General Defaults</button>
+          <button id="modalCancelBtn" type="button">Cancel</button>
+          <button id="modalSaveCloseBtn" type="button">Save & Close</button>
+        </div>
+      `, async()=>{
+        appearance.viewBg=(byId("m_app_view_bg").value||"").trim()||appearance.viewBg;
+        appearance.uiBg=(byId("m_app_ui_bg").value||"").trim()||appearance.uiBg;
+        appearance.accent=(byId("m_app_accent").value||"").trim()||appearance.accent;
+        persistAppearance();
+        applyAppearance();
+        return true;
+      });
+      const viewTxt=byId("m_app_view_bg"), viewPicker=byId("m_app_view_picker"), viewSwatch=byId("m_app_view_swatch");
+      const uiTxt=byId("m_app_ui_bg"), uiPicker=byId("m_app_ui_picker"), uiSwatch=byId("m_app_ui_swatch");
+      const acTxt=byId("m_app_accent"), acPicker=byId("m_app_accent_picker"), acSwatch=byId("m_app_accent_swatch");
+      viewPicker.oninput=()=>{ viewTxt.value=viewPicker.value; viewSwatch.style.background=viewPicker.value; };
+      uiPicker.oninput=()=>{ uiTxt.value=uiPicker.value; uiSwatch.style.background=uiPicker.value; };
+      acPicker.oninput=()=>{ acTxt.value=acPicker.value; acSwatch.style.background=acPicker.value; };
+      viewTxt.oninput=()=>{ viewSwatch.style.background=viewTxt.value||"transparent"; };
+      uiTxt.oninput=()=>{ uiSwatch.style.background=uiTxt.value||"transparent"; };
+      acTxt.oninput=()=>{ acSwatch.style.background=acTxt.value||"transparent"; };
+      byId("m_app_reset_general").onclick=()=>{
+        appearance.uiBg=DEFAULT_APPEARANCE.uiBg;
+        appearance.viewBg=DEFAULT_APPEARANCE.viewBg;
+        appearance.accent=DEFAULT_APPEARANCE.accent;
+        persistAppearance();
+        applyAppearance();
+        closeModal();
+        setStatus("General appearance reset to defaults.");
+      };
+    }
+    function openViewAppearanceModal(){
+      openModal("View Appearance",`
+        <div class="modalGrid">
           <div style="grid-column:1 / -1;">
             <label>Plot Theme</label>
-            <select id="m_app_theme">
+            <select id="m_view_theme">
               <option value="default" ${appearance.plotTheme==="default"?"selected":""}>Default</option>
               <option value="thermal" ${appearance.plotTheme==="thermal"?"selected":""}>Thermal</option>
               <option value="viridis" ${appearance.plotTheme==="viridis"?"selected":""}>Viridis</option>
@@ -1255,44 +1726,64 @@
               <option value="custom" ${appearance.plotTheme==="custom"?"selected":""}>Custom</option>
             </select>
           </div>
-          <div id="m_app_plot_wrap" style="grid-column:1 / -1;display:${appearance.plotTheme==="custom"?"block":"none"};">
+          <div id="m_view_plot_wrap" style="grid-column:1 / -1;display:${appearance.plotTheme==="custom"?"block":"none"};">
             <label>Custom Plot Colors (comma-separated)</label>
-            <input id="m_app_plot" type="text" value="${appearance.plotColors}" placeholder="#1f77b4,#ff7f0e,..." />
+            <input id="m_view_plot" type="text" value="${appearance.plotColors}" placeholder="#1f77b4,#ff7f0e,..." />
           </div>
+          <div style="grid-column:1 / -1;">
+            <label>Plot Title</label>
+            <input id="m_view_title" type="text" value="${appearance.plotTitle||""}" placeholder="Optional title" />
+          </div>
+          <div><label>Legend X (0-1)</label><input id="m_view_legend_x" type="number" step="0.01" min="0" max="1" value="${appearance.legendX}" /></div>
+          <div><label>Legend Y (0-1)</label><input id="m_view_legend_y" type="number" step="0.01" min="0" max="1" value="${appearance.legendY}" /></div>
+          <div><label>Axis Title Size</label><input id="m_view_axis_title_size" type="number" step="1" min="6" max="30" value="${appearance.axisTitleSize}" /></div>
+          <div><label>Tick Font Size</label><input id="m_view_tick_size" type="number" step="1" min="6" max="30" value="${appearance.axisTickSize}" /></div>
+          <div><label>Trace Line Width</label><input id="m_view_line_width" type="number" step="0.1" min="0.2" max="8" value="${appearance.lineWidth}" /></div>
+          <div style="display:flex;align-items:flex-end;"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_view_show_legend" type="checkbox" style="width:auto;" ${appearance.showLegend!==false?"checked":""} />Show legend</label></div>
+          <div style="display:flex;align-items:flex-end;"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_view_show_axis" type="checkbox" style="width:auto;" ${appearance.showAxis!==false?"checked":""} />Show axes</label></div>
+          <div style="display:flex;align-items:flex-end;"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_view_show_grid" type="checkbox" style="width:auto;" ${appearance.showGrid!==false?"checked":""} />Show grid</label></div>
         </div>
         <div class="modalActions">
-          <button id="m_app_reset" type="button">Reset to Defaults</button>
+          <button id="m_app_reset_view" type="button">Reset View Defaults</button>
           <button id="modalCancelBtn" type="button">Cancel</button>
-          <button id="modalSaveCloseBtn" type="button">Save & Close</button>
+          <button id="modalSaveCloseBtn" type="button">Apply & Close</button>
         </div>
       `, async()=>{
-        appearance.viewBg=(byId("m_app_view_bg").value||"").trim()||appearance.viewBg;
-        appearance.uiBg=(byId("m_app_ui_bg").value||"").trim()||appearance.uiBg;
-        appearance.accent=(byId("m_app_accent").value||"").trim()||appearance.accent;
-        appearance.plotTheme=(byId("m_app_theme").value||"default").trim();
-        if(appearance.plotTheme==="custom") appearance.plotColors=(byId("m_app_plot").value||"").trim()||appearance.plotColors;
-        else appearance.plotColors=PLOT_THEMES[appearance.plotTheme]||PLOT_THEMES.default;
+        const theme=(byId("m_view_theme").value||"default").trim();
+        appearance.plotTheme=theme;
+        if(theme==="custom") appearance.plotColors=(byId("m_view_plot").value||"").trim()||appearance.plotColors;
+        else appearance.plotColors=PLOT_THEMES[theme]||PLOT_THEMES.default;
+        appearance.plotTitle=(byId("m_view_title").value||"").trim();
+        appearance.legendX=Math.max(0, Math.min(1, Number(byId("m_view_legend_x").value||DEFAULT_APPEARANCE.legendX)));
+        appearance.legendY=Math.max(0, Math.min(1, Number(byId("m_view_legend_y").value||DEFAULT_APPEARANCE.legendY)));
+        appearance.axisTitleSize=Math.max(6, Math.min(30, Number(byId("m_view_axis_title_size").value||DEFAULT_APPEARANCE.axisTitleSize)));
+        appearance.axisTickSize=Math.max(6, Math.min(30, Number(byId("m_view_tick_size").value||DEFAULT_APPEARANCE.axisTickSize)));
+        appearance.lineWidth=Math.max(0.2, Math.min(8, Number(byId("m_view_line_width").value||DEFAULT_APPEARANCE.lineWidth)));
+        appearance.showLegend=Boolean(byId("m_view_show_legend").checked);
+        appearance.showAxis=Boolean(byId("m_view_show_axis").checked);
+        appearance.showGrid=Boolean(byId("m_view_show_grid").checked);
         persistAppearance();
         applyAppearance();
         return true;
       });
-      const viewTxt=byId("m_app_view_bg"), viewPicker=byId("m_app_view_picker"), viewSwatch=byId("m_app_view_swatch");
-      const uiTxt=byId("m_app_ui_bg"), uiPicker=byId("m_app_ui_picker"), uiSwatch=byId("m_app_ui_swatch");
-      const acTxt=byId("m_app_accent"), acPicker=byId("m_app_accent_picker"), acSwatch=byId("m_app_accent_swatch");
-      const themeSel=byId("m_app_theme"), plotWrap=byId("m_app_plot_wrap");
-      viewPicker.oninput=()=>{ viewTxt.value=viewPicker.value; viewSwatch.style.background=viewPicker.value; };
-      uiPicker.oninput=()=>{ uiTxt.value=uiPicker.value; uiSwatch.style.background=uiPicker.value; };
-      acPicker.oninput=()=>{ acTxt.value=acPicker.value; acSwatch.style.background=acPicker.value; };
-      viewTxt.oninput=()=>{ viewSwatch.style.background=viewTxt.value||"transparent"; };
-      uiTxt.oninput=()=>{ uiSwatch.style.background=uiTxt.value||"transparent"; };
-      acTxt.oninput=()=>{ acSwatch.style.background=acTxt.value||"transparent"; };
+      const themeSel=byId("m_view_theme"), plotWrap=byId("m_view_plot_wrap");
       themeSel.onchange=()=>{ plotWrap.style.display=themeSel.value==="custom"?"block":"none"; };
-      byId("m_app_reset").onclick=()=>{
-        appearance={ ...DEFAULT_APPEARANCE };
+      byId("m_app_reset_view").onclick=()=>{
+        appearance.plotTheme=DEFAULT_APPEARANCE.plotTheme;
+        appearance.plotColors=DEFAULT_APPEARANCE.plotColors;
+        appearance.plotTitle=DEFAULT_APPEARANCE.plotTitle;
+        appearance.showLegend=DEFAULT_APPEARANCE.showLegend;
+        appearance.legendX=DEFAULT_APPEARANCE.legendX;
+        appearance.legendY=DEFAULT_APPEARANCE.legendY;
+        appearance.showAxis=DEFAULT_APPEARANCE.showAxis;
+        appearance.showGrid=DEFAULT_APPEARANCE.showGrid;
+        appearance.axisTitleSize=DEFAULT_APPEARANCE.axisTitleSize;
+        appearance.axisTickSize=DEFAULT_APPEARANCE.axisTickSize;
+        appearance.lineWidth=DEFAULT_APPEARANCE.lineWidth;
         persistAppearance();
         applyAppearance();
         closeModal();
-        setStatus("Appearance reset to defaults.");
+        setStatus("View appearance reset to defaults.");
       };
     }
 
@@ -1379,6 +1870,7 @@
       latestRows = getActivePlot()?.latestRows || [];
       metadataRows = getActivePlot()?.metadataRows || [];
       await refreshCatalogsForSelections();
+      initRealtimePanel();
       renderAll();
       renderPlotTabs();
       bindCollapseButtons();
