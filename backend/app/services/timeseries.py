@@ -173,6 +173,7 @@ def get_timeseries(
     start_time: str | None = None,
     end_time: str | None = None,
     limit: int | None = None,
+    max_points: int | None = None,
     db_name: str | None = None,
     db_host: str | None = None,
     db_port: int | None = None,
@@ -216,7 +217,13 @@ def get_timeseries(
     ) as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(sql, params)
         rows: Sequence[dict] = cur.fetchall()
-    return [TimeSeriesPoint(**row) for row in rows]
+
+    points = [TimeSeriesPoint(**row) for row in rows]
+
+    if max_points and max_points > 0 and len(points) > max_points:
+        points = _downsample_timeseries(points, max_points)
+
+    return points
 
 
 def list_channels_for_tests(
