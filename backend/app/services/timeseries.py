@@ -1,3 +1,4 @@
+from collections import defaultdict
 from collections.abc import Sequence
 
 from psycopg2.extras import RealDictCursor
@@ -5,6 +6,58 @@ from psycopg2.extras import RealDictCursor
 from ..config import settings
 from ..db import get_conn
 from ..models import ChannelItem, DatabaseItem, TestRunItem, TimeSeriesPoint
+
+
+def _lttb_series(points: list, threshold: int) -> list:
+    """Largest-Triangle-Three-Buckets downsampling for a single sorted series."""
+    n = len(points)
+    if n == 0 or threshold <= 0:
+        return points
+    if threshold >= n:
+        return points
+
+    sampled = [points[0]]
+    bucket_size = (n - 2) / (threshold - 2) if threshold > 2 else float(n)
+    a = 0
+
+    for i in range(threshold - 2):
+        avg_range_start = int((i + 1) * bucket_size) + 1
+        avg_range_end = min(int((i + 2) * bucket_size) + 1, n)
+        avg_count = avg_range_end - avg_range_start
+        avg_x = (avg_range_start + avg_range_end - 1) / 2.0
+        avg_y = sum(points[j].value for j in range(avg_range_start, avg_range_end)) / avg_count
+
+        range_start = int(i * bucket_size) + 1
+        range_end = min(int((i + 1) * bucket_size) + 1, n)
+
+        ax = float(a)
+        ay = points[a].value
+        max_area = -1.0
+        next_a = range_start
+
+        for j in range(range_start, range_end):
+            area = abs((ax - avg_x) * (points[j].value - ay) - (ax - j) * (avg_y - ay)) * 0.5
+            if area > max_area:
+                max_area = area
+                next_a = j
+
+        sampled.append(points[next_a])
+        a = next_a
+
+    sampled.append(points[-1])
+    return sampled
+
+
+def _downsample_timeseries(points: list[TimeSeriesPoint], max_points: int) -> list[TimeSeriesPoint]:
+    """Group by (test_run_id, channel_name) and apply LTTB per series."""
+    series: dict[tuple, list[TimeSeriesPoint]] = defaultdict(list)
+    for pt in points:
+        series[(pt.test_run_id, pt.channel_name)].append(pt)
+
+    result: list[TimeSeriesPoint] = []
+    for pts in series.values():
+        result.extend(_lttb_series(pts, max_points))
+    return result
 
 
 def list_databases(
