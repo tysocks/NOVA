@@ -193,6 +193,7 @@
     let addedTestIds = new Set(), addedChannelIds = new Set();
     let maxSampleHzGlobal = null;
     let realtimeRows = [];
+    let realtimePrecomputed = null; // [{xFull, yFull, rtFull, xIsNumeric, traceIdx}] | null
     let realtimeTimer = null;
     let realtimeDirection = 1;
     let realtimeCurrentMs = null;
@@ -214,6 +215,7 @@
     const catalogCache = new Map();
     let plotHandlersBound = false;
     function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
+    function bsearch(arr, target){ let lo=0, hi=arr.length; while(lo<hi){ const mid=(lo+hi)>>1; if(arr[mid]<=target) lo=mid+1; else hi=mid; } return lo; }
     function clearCatalogCache(){ catalogCache.clear(); }
     function nextPaint(){ return new Promise((resolve)=>requestAnimationFrame(()=>resolve())); }
     function runDeferred(fn){ return new Promise((resolve)=>setTimeout(()=>resolve(fn()), 0)); }
@@ -540,6 +542,54 @@
       return sampled;
     }
     function updateRealtimeStatus(){ const s=byId("realtimeStatus"); if(!s) return; if(realtimeCurrentMs===null){ s.textContent="Idle"; return; } const mode=byId("t0Mode").value; const point=mode==="absolute"?new Date(realtimeCurrentMs*1000).toISOString():`${realtimeCurrentMs.toFixed(3)}s`; s.textContent=`Forward @ ${point}`; }
+    function precomputeRealtimeTraces(){
+      realtimePrecomputed=null;
+      if(!realtimeRows.length) return;
+      const t0Mode=byId("t0Mode").value;
+      const xAxisVal=byId("xAxis").value;
+      if(xAxisVal!=="time") return;
+
+      const grouped=new Map();
+      realtimeRows.forEach((r)=>{
+        const key=`${r.test_run_code||r.test_run_id} | ${r.channel_name}`;
+        if(!grouped.has(key)) grouped.set(key,[]);
+        grouped.get(key).push(r);
+      });
+
+      const t0FirstSample=new Map(), t0Meta=new Map();
+      if(t0Mode==="first_index"||t0Mode==="t0_relative"){
+        realtimeRows.forEach((r)=>{ const k=`${r.__dbId}|${r.test_run_id}`; if(!t0FirstSample.has(k)||r.__ts<t0FirstSample.get(k)) t0FirstSample.set(k,r.__ts); });
+      }
+      if(t0Mode==="t0_relative"){
+        testsData.forEach((t)=>{ const ts=Date.parse(String(t.t0_utc||"")); if(Number.isFinite(ts)) t0Meta.set(`${t.__dbId}|${t.test_run_id}`,ts); });
+      }
+
+      const result=[];
+      let traceIdx=0;
+      grouped.forEach((pts)=>{
+        const chId=`${pts[0].__dbId}|${pts[0].channel_name}`;
+        const down=applyFreq(pts,chId).sort((a,b)=>a.__ts-b.__ts);
+        const n=down.length;
+        const xIsNumeric=(t0Mode!=="absolute");
+        const xFull=xIsNumeric ? new Float64Array(n) : new Array(n);
+        const yFull=new Float64Array(n);
+        const rtFull=new Float64Array(n);
+        down.forEach((p,i)=>{
+          yFull[i]=p.value;
+          rtFull[i]=p.__rt;
+          if(t0Mode==="absolute"){
+            xFull[i]=p.time;
+          } else {
+            const k=`${p.__dbId}|${p.test_run_id}`;
+            const base=t0Mode==="t0_relative"?t0Meta.get(k):t0FirstSample.get(k);
+            xFull[i]=Number.isFinite(base)?(p.__ts-base)/1000:p.__ts/1000;
+          }
+        });
+        result.push({xFull,yFull,rtFull,xIsNumeric,traceIdx});
+        traceIdx++;
+      });
+      realtimePrecomputed=result;
+    }
     function startRealtime(direction, replay=false, opts={}){
       if(!latestRows.length){ setStatus("Load data first for real-time traces.", true); return; }
       const gd=byId("plot");
@@ -559,6 +609,7 @@
         realtimeMinMs=realtimeRows[0].__rt;
         realtimeMaxMs=realtimeRows[realtimeRows.length-1].__rt;
         realtimeCurrentMs=realtimeMinMs;
+        precomputeRealtimeTraces();
       }
       if(replay || realtimeCurrentMs===null) realtimeCurrentMs=realtimeMinMs;
       realtimeStartDataMs=realtimeCurrentMs;
@@ -585,10 +636,22 @@
         }
         realtimeCurrentMs=nextMs;
         if((now-realtimeLastDrawMs)>=realtimeFrameStepMs || hitEnd){
-          const frameRows=realtimeFrameRows();
-          if(previewVisible){ renderRows(frameRows); }
-          try{ plotRows(frameRows); }catch(e){ setStatus(`Plot render warning: ${e}`, true); }
-          try{ if(typeof opts.onDraw==="function") opts.onDraw(frameRows); }catch{}
+          if(realtimePrecomputed&&realtimePrecomputed.length){
+            const xUpdates=[], yUpdates=[], indices=[];
+            realtimePrecomputed.forEach((t)=>{
+              const lo=bsearch(t.rtFull,realtimeCurrentMs);
+              xUpdates.push(t.xIsNumeric ? Array.from(t.xFull.subarray(0,lo)) : t.xFull.slice(0,lo));
+              yUpdates.push(Array.from(t.yFull.subarray(0,lo)));
+              indices.push(t.traceIdx);
+            });
+            try{ Plotly.restyle("plot",{x:xUpdates,y:yUpdates},indices); }catch(e){ setStatus(`Plot render warning: ${e}`,true); }
+            if(previewVisible){ renderRows(realtimeFrameRows()); }
+          } else {
+            const frameRows=realtimeFrameRows();
+            if(previewVisible){ renderRows(frameRows); }
+            try{ plotRows(frameRows); }catch(e){ setStatus(`Plot render warning: ${e}`, true); }
+            try{ if(typeof opts.onDraw==="function") opts.onDraw(frameRows); }catch{}
+          }
           updateRealtimeStatus();
           realtimeLastDrawMs=now;
         }
@@ -1378,6 +1441,7 @@
       finalRows.forEach(r => { r.__ts = Date.parse(r.time); });
       latestRows=finalRows;
       realtimeRows=[];
+      realtimePrecomputed=null;
       stopRealtime();
       realtimeCurrentMs=null;
       renderRows(finalRows);
