@@ -119,6 +119,7 @@
       <div class="menuDropdown" id="menu_file">
         <div class="menuAction" id="file_saveConfig">Save Config...</div>
         <div class="menuAction" id="file_loadConfig">Open Config...</div>
+        <div class="menuAction" id="file_configManager">Configuration Manager...</div>
         <div class="menuAction" id="file_defaultSources">Default Sources...</div>
         <div class="menuSep"></div>
         <div class="menuAction" id="file_exportPlot">Export Current View (CSV)...</div>
@@ -393,6 +394,7 @@
       hideMenus();
     });
     const PLOTS_KEY = "nova.plots.v1";
+    const CONFIG_LIBRARY_KEY = "nova.configLibrary.v1";
     let plots = [];
     let activePlotId = null;
     function newPlotInstance(){ return { id: crypto.randomUUID(), name: `View ${plots.length+1}`, selections: null, latestRows: [], metadataRows: [] }; }
@@ -405,6 +407,124 @@
         name: p.name,
         selections: p.selections || null,
       };
+    }
+    function buildConfigPayload(){
+      const active=getActivePlot();
+      if(active){
+        active.selections=snapshotSelections();
+        active.latestRows=latestRows;
+        active.metadataRows=metadataRows;
+      }
+      return {
+        version:2,
+        savedAt:new Date().toISOString(),
+        app:{
+          sources:state.sources,
+          databases:state.databases,
+          masks:state.masks,
+          calculatedChannels:state.calculatedChannels,
+          freqOverrides:state.freqOverrides,
+          collapsed:state.collapsed||{},
+          appearance,
+        },
+        activeSelections:snapshotSelections(),
+        plots:{
+          activePlotId,
+          tabs:plots.map((p)=>({
+            id:p.id,
+            name:p.name,
+            selections:p.selections||null,
+          })),
+        },
+      };
+    }
+    async function applyConfigObject(obj){
+      const app=obj.app||obj;
+      if(app.sources) state.sources=app.sources;
+      if(app.databases) state.databases=app.databases;
+      if(app.masks) state.masks=app.masks;
+      if(app.calculatedChannels) state.calculatedChannels=app.calculatedChannels;
+      if(app.freqOverrides) state.freqOverrides=app.freqOverrides;
+      if(app.collapsed) state.collapsed=app.collapsed;
+      const tabs=obj.plots?.tabs;
+      if(Array.isArray(tabs) && tabs.length){
+        plots=tabs.map((p, idx)=>({
+          id:p.id||crypto.randomUUID(),
+          name:p.name||`View ${idx+1}`,
+          selections:p.selections||null,
+          latestRows:[],
+          metadataRows:[],
+        }));
+        const requestedId=obj.plots?.activePlotId;
+        activePlotId=plots.some((p)=>p.id===requestedId)?requestedId:plots[0].id;
+      }
+      if(obj.activeSelections) restoreSelections(obj.activeSelections);
+      else if(obj.selections) restoreSelections(obj.selections);
+      selectedMaskIds=new Set((state.masks||[]).map((m)=>m.id));
+      clearCatalogCache();
+      await refreshCatalogsForSelections();
+      renderAll();
+      renderPlotTabs();
+      latestRows=[];
+      metadataRows=[];
+      renderRows([]);
+      try { Plotly.purge("plot"); } catch {}
+      savePlots();
+      saveState();
+    }
+    async function loadConfigLibrary(){
+      try{
+        const data=await getJson("/api/config-library");
+        if(Array.isArray(data?.configs)) return data.configs;
+      }catch{}
+      return [];
+    }
+    async function saveConfigLibrary(list){
+      return postJson("/api/config-library",{configs:list||[]});
+    }
+    async function migrateLegacyConfigLibraryIfNeeded(){
+      let legacy=[];
+      try{
+        const raw=JSON.parse(localStorage.getItem(CONFIG_LIBRARY_KEY)||"[]");
+        if(Array.isArray(raw)) legacy=raw;
+      }catch{}
+      if(!legacy.length) return;
+      const current=await loadConfigLibrary();
+      if(current.length) return;
+      try{
+        await saveConfigLibrary(legacy);
+        localStorage.removeItem(CONFIG_LIBRARY_KEY);
+      }catch{}
+    }
+    async function openConfigManagerModal(){
+      await migrateLegacyConfigLibraryIfNeeded();
+      const library=await loadConfigLibrary();
+      const row=(item)=>`<div class="selectRow" data-id="${item.id}" style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;">
+        <div><div class="itemPrimary">${item.name||"Unnamed Config"}</div><div class="itemMeta">${item.savedAt||""}</div></div>
+        <button type="button" data-a="load" style="min-width:70px;">Load</button>
+        <button type="button" data-a="rename" style="min-width:78px;">Rename</button>
+        <button type="button" data-a="delete" style="min-width:70px;">Delete</button>
+      </div>`;
+      openModal("Configuration Manager",`<div style="padding:10px;"><label>Config Name</label><input id="m_cfg_name" type="text" placeholder="e.g. Hotfire Baseline" /><div class="modalActions" style="padding:8px 0;border-top:none;"><button id="m_cfg_save_current" type="button">Save Current To Library</button></div><div id="m_cfg_list" class="modalList">${library.map(row).join("")||"<div class='empty'>No saved configs yet.</div>"}</div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true);
+      const rerender=async()=>{
+        const list=await loadConfigLibrary();
+        const el=byId("m_cfg_list");
+        el.innerHTML=list.map(row).join("")||"<div class='empty'>No saved configs yet.</div>";
+        wireRows();
+      };
+      const wireRows=()=>{ byId("m_cfg_list").querySelectorAll(".selectRow").forEach((r)=>{ const id=r.getAttribute("data-id"); r.querySelectorAll("button[data-a]").forEach((b)=>{ b.onclick=async()=>{ const action=b.getAttribute("data-a"); const list=await loadConfigLibrary(); const idx=list.findIndex((x)=>x.id===id); if(idx<0) return; if(action==="delete"){ list.splice(idx,1); await saveConfigLibrary(list); await rerender(); setStatus("Config removed from library."); return; } if(action==="rename"){ const next=(prompt("Rename config:", list[idx].name||"")||"").trim(); if(!next) return; list[idx].name=next; await saveConfigLibrary(list); await rerender(); setStatus("Config renamed."); return; } if(action==="load"){ try{ await applyConfigObject(list[idx].payload||{}); setStatus(`Loaded config: ${list[idx].name||"Unnamed Config"}.`); closeModal(); }catch(err){ setStatus(`Failed to load config: ${err}`, true); } } }; }); }); };
+      byId("m_cfg_save_current").onclick=()=>{
+        (async()=>{
+          const name=(byId("m_cfg_name").value||"").trim()||`Config ${new Date().toLocaleString()}`;
+          const list=await loadConfigLibrary();
+          list.unshift({ id:crypto.randomUUID(), name, savedAt:new Date().toISOString(), payload:buildConfigPayload() });
+          await saveConfigLibrary(list);
+          byId("m_cfg_name").value="";
+          await rerender();
+          setStatus(`Saved config: ${name}.`);
+        })();
+      };
+      wireRows();
     }
     function savePlots(){
       // Keep tab persistence lightweight; row payloads can be very large.
@@ -1748,37 +1868,10 @@
         }
       }
       byId("file_exportPlot").onclick=async()=>{ const p=getActivePlot(); const rows=latestRows||[]; const esc=(v)=>{ const s=String(v??""); return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s; }; const headers=["test_run_id","test_run_code","channel_name","unit","time","value","db_id"]; const csv=[headers.join(",")].concat(rows.map((r)=>[esc(r.test_run_id),esc(r.test_run_code),esc(r.channel_name),esc(r.unit||""),esc(r.time),esc(r.value),esc(r.__dbId)].join(","))).join("\n"); const result=await saveTextToFile(`nova_${(p?.name||"view").replaceAll(" ","_")}.csv`, csv, "text/csv;charset=utf-8", "csv", "CSV files", "text/csv"); if (result.ok && result.viaPicker) setStatus(`Exported ${rows.length} rows to CSV.`); if (result.ok && !result.viaPicker) setStatus(`CSV downloaded (${rows.length} rows).`); if (!result.ok && result.cancelled) setStatus("CSV export cancelled."); };
+      byId("file_configManager").onclick=()=>openConfigManagerModal();
       byId("file_defaultSources").onclick=()=>openDefaultSourcesModal();
       byId("file_saveConfig").onclick=async()=>{
-        const active=getActivePlot();
-        if(active){
-          active.selections=snapshotSelections();
-          active.latestRows=latestRows;
-          active.metadataRows=metadataRows;
-        }
-        const payload={
-          version:2,
-          savedAt:new Date().toISOString(),
-          app:{
-            sources:state.sources,
-            databases:state.databases,
-            masks:state.masks,
-            calculatedChannels:state.calculatedChannels,
-            freqOverrides:state.freqOverrides,
-            collapsed:state.collapsed||{},
-            appearance,
-          },
-          // Includes tests/channels selections and Region values (xAxis/t0/start/end).
-          activeSelections:snapshotSelections(),
-          plots:{
-            activePlotId,
-            tabs:plots.map((p)=>({
-              id:p.id,
-              name:p.name,
-              selections:p.selections||null,
-            })),
-          },
-        };
+        const payload=buildConfigPayload();
         const result = await saveJsonToFile("nova_config.json", payload);
         if (result.ok && result.viaPicker) setStatus("Config saved.");
         if (result.ok && !result.viaPicker) setStatus("Config downloaded (save dialog unavailable in this environment).");
@@ -1792,45 +1885,7 @@
           if(!f) return;
           const txt=await f.text();
           const obj=JSON.parse(txt);
-
-          // Backward compatibility with older config exports.
-          const app=obj.app||obj;
-          if(app.sources) state.sources=app.sources;
-          if(app.databases) state.databases=app.databases;
-          if(app.masks) state.masks=app.masks;
-          if(app.calculatedChannels) state.calculatedChannels=app.calculatedChannels;
-          if(app.freqOverrides) state.freqOverrides=app.freqOverrides;
-          if(app.collapsed) state.collapsed=app.collapsed;
-          // Intentionally ignore appearance from config imports.
-          // Appearance is persisted globally and should not be overridden by per-config loads.
-
-          const tabs=obj.plots?.tabs;
-          if(Array.isArray(tabs) && tabs.length){
-            plots=tabs.map((p, idx)=>({
-              id:p.id||crypto.randomUUID(),
-              name:p.name||`View ${idx+1}`,
-              selections:p.selections||null,
-              latestRows:[],
-              metadataRows:[],
-            }));
-            const requestedId=obj.plots?.activePlotId;
-            activePlotId=plots.some((p)=>p.id===requestedId)?requestedId:plots[0].id;
-          }
-
-          if(obj.activeSelections) restoreSelections(obj.activeSelections);
-          else if(obj.selections) restoreSelections(obj.selections);
-          selectedMaskIds=new Set((state.masks||[]).map((m)=>m.id));
-
-          clearCatalogCache();
-          await refreshCatalogsForSelections();
-          renderAll();
-          renderPlotTabs();
-          latestRows=[];
-          metadataRows=[];
-          renderRows([]);
-          try { Plotly.purge("plot"); } catch {}
-          savePlots();
-          saveState();
+          await applyConfigObject(obj);
           setStatus("Config loaded.");
           picker.value="";
         };

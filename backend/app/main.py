@@ -24,6 +24,7 @@ UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 APPEARANCE_FILE = Path(__file__).resolve().parents[1] / ".nova_appearance.json"
 SOURCE_DEFAULTS_FILE = Path(__file__).resolve().parents[1] / ".nova_source_defaults.json"
+CONFIG_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_config_library.json"
 
 
 @app.get("/", include_in_schema=False)
@@ -115,6 +116,56 @@ def save_source_defaults(payload: dict = Body(...)) -> dict:
     if not cleaned:
         return {"ok": False, "error": "at least one postgres default is required"}
     SOURCE_DEFAULTS_FILE.write_text(json.dumps({"defaults": cleaned}, indent=2), encoding="utf-8")
+    return {"ok": True, "count": len(cleaned)}
+
+
+@app.get("/api/config-library")
+def get_config_library() -> dict:
+    if not CONFIG_LIBRARY_FILE.exists():
+        return {"configs": []}
+    try:
+        payload = json.loads(CONFIG_LIBRARY_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {"configs": []}
+    rows = payload.get("configs") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return {"configs": []}
+    cleaned: list[dict] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        cleaned.append(
+            {
+                "id": str(row.get("id") or ""),
+                "name": str(row.get("name") or "Unnamed Config"),
+                "savedAt": str(row.get("savedAt") or ""),
+                "payload": row.get("payload") if isinstance(row.get("payload"), dict) else {},
+            }
+        )
+    return {"configs": cleaned}
+
+
+@app.post("/api/config-library")
+def save_config_library(payload: dict = Body(...)) -> dict:
+    rows = payload.get("configs") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return {"ok": False, "error": "configs must be a list"}
+    cleaned: list[dict] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        cfg_payload = row.get("payload")
+        if not isinstance(cfg_payload, dict):
+            continue
+        cleaned.append(
+            {
+                "id": str(row.get("id") or ""),
+                "name": str(row.get("name") or "Unnamed Config"),
+                "savedAt": str(row.get("savedAt") or ""),
+                "payload": cfg_payload,
+            }
+        )
+    CONFIG_LIBRARY_FILE.write_text(json.dumps({"configs": cleaned}, indent=2), encoding="utf-8")
     return {"ok": True, "count": len(cleaned)}
 
 

@@ -11,6 +11,9 @@ backend/.env
 
 # Uploaded and sample runtime files
 backend/uploads/
+backend/.nova_appearance.json
+backend/.nova_source_defaults.json
+backend/.nova_config_library.json
 
 # OS/editor noise
 .DS_Store
