@@ -5,7 +5,15 @@ from psycopg2.extras import RealDictCursor
 
 from ..config import settings
 from ..db import get_conn
-from ..models import ChannelItem, DatabaseItem, TestRunItem, TimeSeriesPoint
+from ..models import (
+    ChannelItem,
+    DatabaseItem,
+    TestRunItem,
+    TimeSeriesDetailHint,
+    TimeSeriesEnvelope,
+    TimeSeriesPoint,
+    TimeSeriesSeriesMeta,
+)
 
 
 def _lttb_series(points: list, threshold: int) -> list:
@@ -60,6 +68,101 @@ def _downsample_timeseries(points: list[TimeSeriesPoint], max_points: int) -> li
     return result
 
 
+def plan_timeseries_points_cap(
+    resolution_px: int | None,
+    aggregation_mode: str | None,
+    max_points: int | None,
+) -> int | None:
+    """
+    Convert frontend viewport intent into a per-series point cap.
+    max_points still hard-overrides for backward compatibility.
+    """
+    if max_points and max_points > 0:
+        return max_points
+    mode = (aggregation_mode or "auto").strip().lower()
+    if mode in {"none", "raw"}:
+        return None
+    if not resolution_px or resolution_px <= 0:
+        return None
+    # 2x oversampling retains visual fidelity while avoiding huge payloads.
+    return max(500, min(resolution_px * 2, 5_000_000))
+
+
+def _build_series_meta(points: list[TimeSeriesPoint]) -> list[TimeSeriesSeriesMeta]:
+    grouped: dict[tuple[int, str], list[TimeSeriesPoint]] = defaultdict(list)
+    for pt in points:
+        grouped[(pt.test_run_id, pt.channel_name)].append(pt)
+    out: list[TimeSeriesSeriesMeta] = []
+    for (test_run_id, channel_name), rows in grouped.items():
+        rows.sort(key=lambda r: r.time)
+        vals = [r.value for r in rows]
+        out.append(
+            TimeSeriesSeriesMeta(
+                test_run_id=test_run_id,
+                channel_name=channel_name,
+                unit=rows[0].unit if rows else None,
+                points=len(rows),
+                min_value=min(vals) if vals else None,
+                max_value=max(vals) if vals else None,
+                first_time=rows[0].time if rows else None,
+                last_time=rows[-1].time if rows else None,
+            )
+        )
+    return out
+
+
+def get_timeseries_envelope(
+    test_run_ids: list[int],
+    channel_names: list[str],
+    start_time: str | None = None,
+    end_time: str | None = None,
+    limit: int | None = None,
+    max_points: int | None = None,
+    resolution_px: int | None = None,
+    aggregation_mode: str | None = None,
+    t0_mode: str | None = None,
+    db_name: str | None = None,
+    db_host: str | None = None,
+    db_port: int | None = None,
+    db_user: str | None = None,
+    db_password: str | None = None,
+    db_sslmode: str | None = None,
+) -> TimeSeriesEnvelope:
+    cap = plan_timeseries_points_cap(
+        resolution_px=resolution_px,
+        aggregation_mode=aggregation_mode,
+        max_points=max_points,
+    )
+    points = get_timeseries(
+        test_run_ids=test_run_ids,
+        channel_names=channel_names,
+        start_time=start_time,
+        end_time=end_time,
+        limit=limit,
+        max_points=cap,
+        db_name=db_name,
+        db_host=db_host,
+        db_port=db_port,
+        db_user=db_user,
+        db_password=db_password,
+        db_sslmode=db_sslmode,
+    )
+    detail_hint = None
+    if cap and len(points) >= cap:
+        detail_hint = TimeSeriesDetailHint(
+            reason="downsampled_for_viewport",
+            recommended_start=points[0].time if points else None,
+            recommended_end=points[-1].time if points else None,
+        )
+    # t0_mode is accepted as part of v2 contract; data transform remains frontend-side.
+    _ = t0_mode
+    return TimeSeriesEnvelope(
+        overview=points,
+        series_meta=_build_series_meta(points),
+        detail_hint=detail_hint,
+    )
+
+
 def list_databases(
     db_host: str | None = None,
     db_port: int | None = None,
@@ -67,12 +170,15 @@ def list_databases(
     db_password: str | None = None,
     db_sslmode: str | None = None,
 ) -> list[DatabaseItem]:
+    # Names come from PostgreSQL's pg_database catalog (cluster-wide), not from
+    # RedscaleDB or another vendor. Every server has template DBs and usually a
+    # `postgres` maintenance database; we hide those from the picker only.
     sql = """
     SELECT datname
     FROM pg_database
     WHERE datistemplate = false
       AND datallowconn = true
-      AND datname NOT IN ('template0', 'template1')
+      AND datname NOT IN ('postgres', 'template0', 'template1')
     ORDER BY datname
     """
     with get_conn(

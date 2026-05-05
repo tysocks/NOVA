@@ -39,3 +39,26 @@ class TimeSeriesPoint(BaseModel):
     unit: str | None = None
     time: datetime
     value: float
+
+
+class TimeSeriesSeriesMeta(BaseModel):
+    test_run_id: int
+    channel_name: str
+    unit: str | None = None
+    points: int
+    min_value: float | None = None
+    max_value: float | None = None
+    first_time: datetime | None = None
+    last_time: datetime | None = None
+
+
+class TimeSeriesDetailHint(BaseModel):
+    reason: str
+    recommended_start: datetime | None = None
+    recommended_end: datetime | None = None
+
+
+class TimeSeriesEnvelope(BaseModel):
+    overview: list[TimeSeriesPoint]
+    series_meta: list[TimeSeriesSeriesMeta]
+    detail_hint: TimeSeriesDetailHint | None = None

@@ -1,0 +1,88 @@
+<h2>UI Direction</h2>
+<p class="subtitle">All three keep the dark theme. Which feel matches "clean minimalism" for NOVA?</p>
+
+<div class="cards" style="grid-template-columns: repeat(3, 1fr);">
+
+  <!-- Option A: Refined Dark -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d1117; padding:12px; font-family:system-ui; border-radius:6px;">
+      <!-- Sidebar mockup -->
+      <div style="display:flex;height:220px;gap:0;">
+        <div style="width:72px;background:#0d1117;border-right:1px solid #21262d;display:flex;flex-direction:column;gap:1px;padding:8px 6px;">
+          <div style="color:#8b949e;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:4px 2px;margin-bottom:6px;">SOURCES</div>
+          <div style="background:#161b22;border:1px solid #30363d;border-radius:4px;padding:5px 7px;color:#e6edf3;font-size:9px;">Postgres</div>
+          <div style="padding:5px 7px;color:#8b949e;font-size:9px;">CSV</div>
+          <div style="color:#8b949e;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:4px 2px;margin-top:8px;margin-bottom:6px;">TESTS</div>
+          <div style="background:#161b22;border:1px solid #30363d;border-radius:4px;padding:5px 7px;color:#e6edf3;font-size:9px;">run_0042</div>
+          <div style="padding:5px 7px;color:#8b949e;font-size:9px;">run_0041</div>
+          <div style="padding:5px 7px;color:#8b949e;font-size:9px;">run_0040</div>
+          <div style="margin-top:auto;background:#1f6feb;border-radius:4px;padding:6px;color:#fff;font-size:9px;text-align:center;font-weight:600;">Load</div>
+        </div>
+        <div style="flex:1;background:#010409;display:flex;align-items:center;justify-content:center;">
+          <div style="color:#4cc9f0;font-size:10px;text-align:center;opacity:0.6;">plot area</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Refined Dark</h3>
+      <p>GitHub-style dark. Subtle depth with layered backgrounds, soft borders, small rounded corners. Same density as today, but polished.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Ultra Minimal -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0a0a; padding:12px; font-family:system-ui; border-radius:6px;">
+      <div style="display:flex;height:220px;gap:0;">
+        <div style="width:80px;background:#0a0a0a;border-right:1px solid #1c1c1c;display:flex;flex-direction:column;padding:10px 8px;gap:0;">
+          <div style="color:#404040;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;padding:2px 0;margin-bottom:4px;">Sources</div>
+          <div style="padding:5px 0;color:#d4d4d4;font-size:9px;border-bottom:1px solid #1c1c1c;">Postgres</div>
+          <div style="padding:5px 0;color:#404040;font-size:9px;border-bottom:1px solid #1c1c1c;">CSV</div>
+          <div style="color:#404040;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;padding:2px 0;margin-top:10px;margin-bottom:4px;">Tests</div>
+          <div style="padding:5px 0;color:#d4d4d4;font-size:9px;border-bottom:1px solid #1c1c1c;">run_0042</div>
+          <div style="padding:5px 0;color:#404040;font-size:9px;border-bottom:1px solid #1c1c1c;">run_0041</div>
+          <div style="margin-top:auto;background:transparent;border:1px solid #333;padding:6px;color:#d4d4d4;font-size:9px;text-align:center;letter-spacing:0.05em;">LOAD</div>
+        </div>
+        <div style="flex:1;background:#000;display:flex;align-items:center;justify-content:center;">
+          <div style="color:#333;font-size:10px;text-align:center;">plot area</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Ultra Minimal</h3>
+      <p>Pure black / near-black. No border-radius. Dividers instead of borders. Text-first hierarchy. Maximum contrast for data.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Structured Panels -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#111318; padding:12px; font-family:system-ui; border-radius:6px;">
+      <div style="display:flex;height:220px;gap:0;">
+        <div style="width:84px;background:#111318;border-right:1px solid #1e2128;display:flex;flex-direction:column;padding:0;gap:0;">
+          <div style="padding:6px 8px;border-bottom:1px solid #1e2128;">
+            <div style="color:#6b7280;font-size:7.5px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">Sources</div>
+            <div style="background:rgba(99,102,241,0.15);border-left:2px solid #6366f1;padding:3px 5px;color:#e2e8f0;font-size:8.5px;border-radius:0 2px 2px 0;">Postgres</div>
+            <div style="padding:3px 5px;color:#6b7280;font-size:8.5px;">CSV</div>
+          </div>
+          <div style="padding:6px 8px;border-bottom:1px solid #1e2128;">
+            <div style="color:#6b7280;font-size:7.5px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">Tests</div>
+            <div style="background:rgba(99,102,241,0.15);border-left:2px solid #6366f1;padding:3px 5px;color:#e2e8f0;font-size:8.5px;border-radius:0 2px 2px 0;">run_0042</div>
+            <div style="padding:3px 5px;color:#6b7280;font-size:8.5px;">run_0041</div>
+          </div>
+          <div style="margin-top:auto;padding:8px;">
+            <div style="background:#6366f1;border-radius:3px;padding:6px;color:#fff;font-size:9px;text-align:center;font-weight:600;">Load</div>
+          </div>
+        </div>
+        <div style="flex:1;background:#0a0b0f;display:flex;align-items:center;justify-content:center;">
+          <div style="color:#6366f1;font-size:10px;text-align:center;opacity:0.4;">plot area</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Structured Panels</h3>
+      <p>Slate-toned dark with indigo accent. Left-border selection indicator, grouped sections. Clean separation without hard borders.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Click your preferred direction — or describe a mix in the terminal.</p>

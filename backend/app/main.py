@@ -4,8 +4,9 @@ import json
 from fastapi import Body, FastAPI, File, Query, UploadFile
 from fastapi.responses import FileResponse
 
-from .models import ChannelItem, DatabaseItem, HealthResponse, TestRunItem, TimeSeriesPoint
+from .models import ChannelItem, DatabaseItem, HealthResponse, TestRunItem, TimeSeriesEnvelope, TimeSeriesPoint
 from .services.timeseries import (
+    get_timeseries_envelope,
     get_timeseries,
     list_channels,
     list_channels_for_tests,
@@ -14,6 +15,7 @@ from .services.timeseries import (
     list_tests,
 )
 from .services.file_sources import file_channels, file_tests, file_timeseries
+from .services.query_router import resolve_source_db_name
 
 app = FastAPI(title="NOVA API", version="0.1.0", docs_url=None, redoc_url=None)
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -135,6 +137,45 @@ def timeseries(
         limit=limit,
         max_points=max_points,
         db_name=db_name,
+        db_host=db_host,
+        db_port=db_port,
+        db_user=db_user,
+        db_password=db_password,
+        db_sslmode=db_sslmode,
+    )
+
+
+@app.get("/api/v2/timeseries", response_model=TimeSeriesEnvelope)
+def timeseries_v2(
+    test_run_ids: list[int] = Query(..., description="One or more test_run_id values."),
+    channel_names: list[str] = Query(..., description="One or more channel names."),
+    start_time: str | None = Query(default=None, description="ISO timestamp inclusive lower bound."),
+    end_time: str | None = Query(default=None, description="ISO timestamp inclusive upper bound."),
+    source: str | None = Query(default="auto", description="Logical source selector: auto, redscale, bluescale, measured, simulation."),
+    t0_mode: str | None = Query(default="absolute", description="absolute, first_index, or t0_relative."),
+    resolution_px: int | None = Query(default=None, ge=1, le=100000, description="Viewport width in pixels for adaptive resolution."),
+    aggregation_mode: str | None = Query(default="auto", description="auto, lttb, raw/none."),
+    limit: int | None = Query(default=None, ge=1, le=5000000),
+    max_points: int | None = Query(default=None, ge=2, le=5000000, description="Optional hard cap per series."),
+    db_name: str | None = Query(default=None, description="Optional database override."),
+    db_host: str | None = Query(default=None),
+    db_port: int | None = Query(default=None),
+    db_user: str | None = Query(default=None),
+    db_password: str | None = Query(default=None),
+    db_sslmode: str | None = Query(default=None),
+) -> TimeSeriesEnvelope:
+    target_db = resolve_source_db_name(source=source, db_name=db_name)
+    return get_timeseries_envelope(
+        test_run_ids=test_run_ids,
+        channel_names=channel_names,
+        start_time=start_time,
+        end_time=end_time,
+        limit=limit,
+        max_points=max_points,
+        resolution_px=resolution_px,
+        aggregation_mode=aggregation_mode,
+        t0_mode=t0_mode,
+        db_name=target_db,
         db_host=db_host,
         db_port=db_port,
         db_user=db_user,

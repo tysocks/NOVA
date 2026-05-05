@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     db_user: str = "pipeline"
     db_password: str = "test"
     db_sslmode: str = "disable"
+    db_name_redscale: str | None = None
+    db_name_bluescale: str | None = None
     default_limit: int = 5000
 
     model_config = SettingsConfigDict(env_prefix="NOVA_", env_file=str(ENV_PATH), extra="ignore")

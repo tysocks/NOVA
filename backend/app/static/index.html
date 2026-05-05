@@ -30,7 +30,7 @@
     .panel{ background:transparent; border:none; }
     .panelHeader{ display:flex; justify-content:space-between; align-items:center; background:var(--nova-ui-bg); border-bottom:1px solid var(--nova-divider); padding:5px 6px; margin:0; cursor:pointer; }
     .panelHeader:hover{ background:var(--nova-hover); }
-    .panelHeader h3{ margin:0; font-size:0.60rem; color:var(--nova-text-dim); letter-spacing:0.09em; text-transform:uppercase; font-weight:500; }
+    .panelHeader h3{ margin:0; font-size:0.60rem; color:color-mix(in srgb, var(--nova-text-dim) 90%, white 10%); letter-spacing:0.09em; text-transform:uppercase; font-weight:500; }
     .headerBtns{ display:flex; gap:3px; }
     .addBtn,.collapseBtn{ width:14px; height:14px; border-radius:0; border:1px solid var(--nova-divider); background:transparent; color:var(--nova-text-dim); padding:0; font-weight:600; cursor:pointer; font-size:0.60rem; line-height:1; }
     .addBtn:hover,.collapseBtn:hover{ border-color:var(--nova-line); color:var(--nova-text); }
@@ -106,7 +106,7 @@
     .realtimeBtn.active{ border-color:var(--nova-line); background:var(--nova-active); }
     #realtimeCloseBtn{ border-radius:0; }
     /* Load dock */
-    .choochDock{ margin-top:auto; padding:8px; border-top:1px solid var(--nova-divider); }
+    .choochDock{ margin-top:auto; margin-bottom:30px; padding:8px; border-top:1px solid var(--nova-divider); }
     .choochDock button{ border-radius:0; margin:0; min-height:30px; letter-spacing:0.09em; text-transform:uppercase; font-size:0.65rem; font-weight:600; background:#111; border-color:#2a2a2a; }
     .choochDock button:hover{ background:#1a1a1a; border-color:#555; }
     /* Region section */
@@ -136,7 +136,6 @@
       <div class="menuDropdown" id="menu_view">
         <div class="menuAction" id="view_togglePreview">Toggle Data Preview</div>
         <div class="menuSep"></div>
-          <div class="menuAction" id="view_generalAppearance">General Appearance...</div>
           <div class="menuAction" id="view_viewAppearance">View Appearance...</div>
       </div>
     </div>
@@ -251,6 +250,29 @@
     function setStatus(text, isError = false) { const e = byId("statusBar"); if(!e) return; e.textContent = text; e.className = isError ? "error" : ""; }
     function sourceConnQuery(src) { if (!src || src.type !== "postgres") return ""; const p = new URLSearchParams(); p.append("db_host", src.host); p.append("db_port", String(src.port)); p.append("db_user", src.user); p.append("db_password", src.password); p.append("db_sslmode", src.sslmode || "disable"); return p.toString(); }
     async function getJson(url) { const r = await fetch(url); if (!r.ok) throw new Error(`Request failed ${r.status}`); return r.json(); }
+    function inferLogicalSource(src){
+      const raw=(String(src?.name||"")+" "+String(src?.file_path||"")).toLowerCase();
+      if(raw.includes("blue")) return "bluescale";
+      if(raw.includes("red")) return "redscale";
+      return "auto";
+    }
+    async function fetchTimeseriesV2({ tests, channels, db, src, startTime=null, endTime=null, maxPoints=null, aggregationMode="auto" }){
+      const p=new URLSearchParams();
+      tests.forEach((id)=>p.append("test_run_ids",id));
+      channels.forEach((ch)=>p.append("channel_names",ch));
+      p.append("limit","5000000");
+      p.append("source", inferLogicalSource(src));
+      p.append("t0_mode", byId("t0Mode").value||"absolute");
+      p.append("resolution_px", String(Math.max(320, Number(byId("plot")?.clientWidth||window.innerWidth||1200))));
+      p.append("aggregation_mode", aggregationMode);
+      if(maxPoints!==null && maxPoints!==undefined) p.append("max_points", String(maxPoints));
+      if(db?.name) p.append("db_name", db.name);
+      if(startTime) p.append("start_time", startTime);
+      if(endTime) p.append("end_time", endTime);
+      sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
+      const envelope=await getJson(`/api/v2/timeseries?${p.toString()}`);
+      return Array.isArray(envelope?.overview) ? envelope.overview : [];
+    }
     function activeSources() { return state.sources.filter((s) => selectedSourceIds.has(s.id)); }
     function setPreviewVisible(v) {
       previewVisible = v;
@@ -480,7 +502,7 @@
     function renderRows(rows){ const b=byId("rows"); b.innerHTML=""; rows.slice(0,200).forEach((r)=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td>${r.test_run_id}</td><td>${r.test_run_code}</td><td>${r.channel_name}</td><td>${r.unit||"unitless"}</td><td>${r.time}</td><td>${Number(r.value).toFixed(4)}</td>`; b.appendChild(tr);}); }
     function renderMetadata(rows){ metadataRows=rows||[]; }
     function showMetadataModal(){ if(!metadataRows.length){ setStatus("No metadata loaded yet. Click Chooch first.", true); return; } const cols=Object.keys(metadataRows[0]); const head=cols.map((c)=>`<th>${c}</th>`).join(""); const body=metadataRows.map((r)=>`<tr>${cols.map((c)=>`<td>${r[c] ?? ""}</td>`).join("")}</tr>`).join(""); openModal("Metadata",`<div class="tableWrap" style="max-height:70vh;"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true); }
-    function renderList(target,items,set,kind,empty){ const root=byId(target); root.innerHTML=""; if(!items.length){ root.innerHTML=`<div class="empty">${empty}</div>`; return;} items.forEach((it,idx)=>{ const row=document.createElement("div"); row.className="item"+(set.has(it.id)?" active":"")+(focusedItem&&focusedItem.kind===kind&&focusedItem.id===it.id?" focused":""); row.innerHTML=`<div class="itemPrimary">${it.primary}</div>${it.meta?`<div class="itemMeta">${it.meta}</div>`:""}`; row.onclick=async(e)=>{focusedItem={kind,id:it.id}; const last=lastClickedByKind[kind]; if(e.shiftKey && Number.isInteger(last) && last>=0 && last<items.length){ const a=Math.min(last,idx), b=Math.max(last,idx); for(let i=a;i<=b;i+=1) set.add(items[i].id); } else { if(set.has(it.id)) set.delete(it.id); else set.add(it.id); lastClickedByKind[kind]=idx; } if(kind==="source"){ state.databases=state.databases.filter((d)=>selectedSourceIds.has(d.sourceId)); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id);}); testsData=[]; channelsData=[]; } if(kind==="database"){ await refreshCatalogsForSelections(); } renderAll(); saveStateDeferred();}; row.oncontextmenu=(e)=>{e.preventDefault(); focusedItem={kind,id:it.id}; const menu=[{label:"Delete",action:deleteFocused}]; if(kind==="channel"){ if(it.isCalculated) menu.push({label:"Edit calculated channel...",action:()=>editCalculatedChannel(it.id)}); menu.push({label:"Set Frequency...",action:()=>setChannelFrequency(it.id)}); } if(kind==="mask"){ menu.unshift({label:"Edit mask...",action:()=>editMask(it.id)}); } showContextMenu(e.clientX,e.clientY,menu);}; root.appendChild(row);}); }
+    function renderList(target,items,set,kind,empty){ const root=byId(target); root.innerHTML=""; if(!items.length){ root.innerHTML=`<div class="empty">${empty}</div>`; return;} items.forEach((it,idx)=>{ const row=document.createElement("div"); row.className="item"+(set.has(it.id)?" active":"")+(focusedItem&&focusedItem.kind===kind&&focusedItem.id===it.id?" focused":""); row.innerHTML=`<div class="itemPrimary">${it.primary}</div>${it.meta?`<div class="itemMeta">${it.meta}</div>`:""}`; row.onclick=async(e)=>{focusedItem={kind,id:it.id}; const last=lastClickedByKind[kind]; if(e.shiftKey && Number.isInteger(last) && last>=0 && last<items.length){ const a=Math.min(last,idx), b=Math.max(last,idx); for(let i=a;i<=b;i+=1) set.add(items[i].id); } else { if(set.has(it.id)) set.delete(it.id); else set.add(it.id); lastClickedByKind[kind]=idx; } if(kind==="database"){ await refreshCatalogsForSelections(); } renderAll(); saveStateDeferred();}; row.oncontextmenu=(e)=>{e.preventDefault(); focusedItem={kind,id:it.id}; const menu=[{label:"Delete",action:deleteFocused}]; if(kind==="channel"){ if(it.isCalculated) menu.push({label:"Edit calculated channel...",action:()=>editCalculatedChannel(it.id)}); menu.push({label:"Set Frequency...",action:()=>setChannelFrequency(it.id)}); } if(kind==="mask"){ menu.unshift({label:"Edit mask...",action:()=>editMask(it.id)}); } showContextMenu(e.clientX,e.clientY,menu);}; root.appendChild(row);}); }
     function buildXAxis(){ const x=byId("xAxis"),prev=x.value; x.innerHTML=`<option value="time">time</option>`; [...selectedChannelIds].forEach((id)=>{ const o=document.createElement("option"); o.value=id; o.textContent=id.split("|")[1]; x.appendChild(o);}); if([...x.options].some((o)=>o.value===prev)) x.value=prev; }
     function buildUnitAxes(traces, plotWidthPx){
       const m=new Map(),layout={};
@@ -552,6 +574,44 @@
       });
     }
     function stopRealtime(){ if(realtimeTimer){ cancelAnimationFrame(realtimeTimer); realtimeTimer=null; } realtimeLockedXRange=null; realtimeLockedYRanges=null; }
+    const PLOT_UIREVISION="nova";
+    function snapshotPlotAxisLocks(gd){
+      const out={ xRange:null, yRanges:{} };
+      if(!gd) return out;
+      const layout=gd.layout||{};
+      const full=gd._fullLayout||{};
+      const xLay=layout.xaxis||full.xaxis;
+      if(xLay&&Array.isArray(xLay.range)&&xLay.range.length===2) out.xRange=[xLay.range[0],xLay.range[1]];
+      const collectY=(container)=>{
+        if(!container) return;
+        Object.keys(container).forEach((k)=>{
+          if(!/^yaxis\d*$/.test(k)) return;
+          const ax=container[k];
+          if(ax&&Array.isArray(ax.range)&&ax.range.length===2) out.yRanges[k]=[ax.range[0],ax.range[1]];
+        });
+      };
+      collectY(layout);
+      if(Object.keys(out.yRanges).length===0) collectY(full);
+      return out;
+    }
+    function buildRealtimeRelayoutPatch(){
+      const patch={};
+      if(realtimeLockedXRange&&realtimeLockedXRange.length===2){
+        patch["xaxis.autorange"]=false;
+        patch["xaxis.range[0]"]=realtimeLockedXRange[0];
+        patch["xaxis.range[1]"]=realtimeLockedXRange[1];
+      }
+      if(realtimeLockedYRanges){
+        Object.keys(realtimeLockedYRanges).forEach((axisKey)=>{
+          const r=realtimeLockedYRanges[axisKey];
+          if(!Array.isArray(r)||r.length!==2) return;
+          patch[`${axisKey}.autorange`]=false;
+          patch[`${axisKey}.range[0]`]=r[0];
+          patch[`${axisKey}.range[1]`]=r[1];
+        });
+      }
+      return patch;
+    }
     function buildRealtimeRows(){ const mode=byId("t0Mode").value; const t0First=new Map(); const t0Meta=new Map(); if(mode!=="absolute"){ latestRows.forEach((r)=>{ const key=`${r.__dbId}|${r.test_run_id}`; const ts=r.__ts; if(!Number.isFinite(ts)) return; if(!t0First.has(key)||ts<t0First.get(key)) t0First.set(key,ts); }); } if(mode==="t0_relative"){ testsData.forEach((t)=>{ const ts=Date.parse(String(t.t0_utc||"")); if(Number.isFinite(ts)) t0Meta.set(`${t.__dbId}|${t.test_run_id}`, ts); }); } return latestRows.map((r)=>{ const ts=r.__ts; let rt=ts/1000; if(mode==="first_index"){ const base=t0First.get(`${r.__dbId}|${r.test_run_id}`); rt=Number.isFinite(base)?(ts-base)/1000:ts/1000; } else if(mode==="t0_relative"){ const k=`${r.__dbId}|${r.test_run_id}`; const base=t0Meta.get(k); const fallback=t0First.get(k); const b=Number.isFinite(base)?base:fallback; rt=Number.isFinite(b)?(ts-b)/1000:ts/1000; } return {...r,__ms:ts,__rt:rt}; }).filter((r)=>Number.isFinite(r.__rt)).sort((a,b)=>a.__rt-b.__rt); }
     function realtimeFrameRows(){
       if(realtimeCurrentMs===null) return latestRows||[];
@@ -622,15 +682,9 @@
     function startRealtime(direction, replay=false, opts={}){
       if(!latestRows.length){ setStatus("Load data first for real-time traces.", true); return; }
       const gd=byId("plot");
-      const locked=(gd&&gd.layout&&gd.layout.xaxis&&Array.isArray(gd.layout.xaxis.range)&&gd.layout.xaxis.range.length===2)?[gd.layout.xaxis.range[0],gd.layout.xaxis.range[1]]:null;
-      const lockedY={};
-      if(gd&&gd.layout){
-        Object.keys(gd.layout).forEach((k)=>{
-          if(!/^yaxis\d*$/.test(k)) return;
-          const ax=gd.layout[k];
-          if(ax&&Array.isArray(ax.range)&&ax.range.length===2) lockedY[k]=[ax.range[0],ax.range[1]];
-        });
-      }
+      const snapStart=snapshotPlotAxisLocks(gd);
+      const locked=snapStart.xRange;
+      const lockedY=snapStart.yRanges;
       realtimeDirection = 1;
       if(!realtimeRows.length){
         realtimeRows=buildRealtimeRows();
@@ -673,7 +727,21 @@
               yUpdates.push(Array.from(t.yFull.subarray(0,lo)));
               indices.push(t.traceIdx);
             });
-            try{ Plotly.restyle("plot",{x:xUpdates,y:yUpdates},indices); }catch(e){ setStatus(`Plot render warning: ${e}`,true); }
+            try{
+              Plotly.restyle("plot",{x:xUpdates,y:yUpdates},indices);
+              const gdPlot=byId("plot");
+              const needY=!realtimeLockedYRanges||Object.keys(realtimeLockedYRanges).length===0;
+              if(!realtimeLockedXRange||needY){
+                const snap=snapshotPlotAxisLocks(gdPlot);
+                if(!realtimeLockedXRange&&snap.xRange) realtimeLockedXRange=snap.xRange;
+                if(needY&&snap.yRanges&&Object.keys(snap.yRanges).length){
+                  realtimeLockedYRanges=realtimeLockedYRanges||{};
+                  Object.assign(realtimeLockedYRanges,snap.yRanges);
+                }
+              }
+              const patch=buildRealtimeRelayoutPatch();
+              if(Object.keys(patch).length) Plotly.relayout(gdPlot,patch);
+            }catch(e){ setStatus(`Plot render warning: ${e}`,true); }
             if(previewVisible){ renderRows(realtimeFrameRows()); }
           } else {
             const frameRows=realtimeFrameRows();
@@ -985,6 +1053,7 @@
         yLayout[k].tickfont={size:Number(appearance.axisTickSize||10)};
       });
       const layoutBase={
+        uirevision:PLOT_UIREVISION,
         autosize:true,
         title: appearance.plotTitle ? {text: appearance.plotTitle, x:0.5, xanchor:"center"} : undefined,
         paper_bgcolor: bgTransparent ? "rgba(0,0,0,0)" : (appearance?.viewBg || "#000000"),
@@ -999,6 +1068,20 @@
         ...yLayout
       };
       Plotly.react("plot", traces, layoutBase,{responsive:true,displaylogo:false,scrollZoom:true,editable:true,edits:{legendPosition:true,axisTitleText:false,titleText:false,annotationPosition:false,annotationText:false,shapePosition:false}});
+      if(useRealtimeFull){
+        const gdR=byId("plot");
+        const needY=!realtimeLockedYRanges||Object.keys(realtimeLockedYRanges).length===0;
+        if(!realtimeLockedXRange||needY){
+          const snap=snapshotPlotAxisLocks(gdR);
+          if(!realtimeLockedXRange&&snap.xRange) realtimeLockedXRange=snap.xRange;
+          if(needY&&snap.yRanges&&Object.keys(snap.yRanges).length){
+            realtimeLockedYRanges=realtimeLockedYRanges||{};
+            Object.assign(realtimeLockedYRanges,snap.yRanges);
+          }
+          const patch=buildRealtimeRelayoutPatch();
+          if(Object.keys(patch).length) try{ Plotly.relayout(gdR,patch); }catch{}
+        }
+      }
     }
     function buildCatalogCacheKey(db, src){
       if (!db || !src) return "";
@@ -1269,7 +1352,9 @@
               if(!Number.isFinite(ts)) return false;
               if(byId("t0Mode").value==="absolute") return evalMaskValue(ts, m.op, a, b);
               const key=`${g.sample.__dbId}|${g.sample.test_run_id}`;
-              const t0=byId("t0Mode").value==="t0_relative" ? t0MetaByTest.get(key) : t0ByTest.get(key);
+              const relMode=byId("t0Mode").value;
+              let t0=relMode==="t0_relative" ? t0MetaByTest.get(key) : t0ByTest.get(key);
+              if(relMode==="t0_relative" && !Number.isFinite(t0)) t0=t0ByTest.get(key);
               if(!Number.isFinite(t0)) return false;
               const rel=(ts-t0)/1000;
               return evalMaskValue(rel, m.op, a, b);
@@ -1444,14 +1529,14 @@
         const channels=[...channelsSet];
         if(!tests.length||!channels.length) continue;
         if(src.type==="postgres"){
-          const p=new URLSearchParams();
-          tests.forEach((id)=>p.append("test_run_ids",id));
-          channels.forEach((ch)=>p.append("channel_names",ch));
-          p.append("limit","5000000");
-          p.append("max_points","10000");
-          p.append("db_name",db.name);
-          sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
-          const rows=await getJson(`/api/timeseries?${p.toString()}`);
+          const rows=await fetchTimeseriesV2({
+            tests,
+            channels,
+            db,
+            src,
+            maxPoints:10000,
+            aggregationMode:"auto",
+          });
           rows.forEach((r)=>rowsAll.push({...r,__dbId:dbId}));
         } else {
           const p=new URLSearchParams();
@@ -1463,6 +1548,7 @@
           rows.forEach((r)=>rowsAll.push({...r,__dbId:dbId}));
         }
       }
+      rowsAll.forEach((r)=>{ if(!Number.isFinite(r.__ts)) r.__ts=Date.parse(r.time); });
       setStatus("Computing calculated channels...");
       await nextPaint();
       const calcRows=await computeCalculatedRows(rowsAll);
@@ -1500,7 +1586,6 @@
       byId("edit_showMetadata").onclick=()=>showMetadataModal();
       byId("edit_setMaxFreq").onclick=()=>openMaxFreqModal();
       byId("edit_realtimeTraces").onclick=()=>{ const p=byId("realtimePanel"); p.style.display="block"; };
-      byId("view_generalAppearance").onclick=()=>openGeneralAppearanceModal();
       byId("view_viewAppearance").onclick=()=>openViewAppearanceModal();
       async function saveTextToFile(defaultName, text, mimeType, extension, description, pickerMimeType){
         const normalizedDefaultName = new RegExp(`\\.${extension}$`, "i").test(defaultName) ? defaultName : `${defaultName}.${extension}`;
@@ -1750,66 +1835,6 @@
       const src = fromTheme || appearance.plotColors || PLOT_THEMES.default;
       return String(src).split(",").map((s)=>s.trim()).filter(Boolean);
     }
-    function openGeneralAppearanceModal(){
-      openModal("General Appearance",`
-        <div class="modalGrid">
-          <div>
-            <label>View Background</label>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <span id="m_app_view_swatch" style="width:16px;height:16px;border:1px solid #334155;background:${appearance.viewBg};display:inline-block;"></span>
-              <input id="m_app_view_bg" type="text" value="${appearance.viewBg}" placeholder="#000000" />
-              <input id="m_app_view_picker" type="color" value="${appearance.viewBg}" style="width:38px;min-width:38px;padding:0;border:none;background:transparent;" />
-            </div>
-          </div>
-          <div>
-            <label>UI Background</label>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <span id="m_app_ui_swatch" style="width:16px;height:16px;border:1px solid #334155;background:${appearance.uiBg};display:inline-block;"></span>
-              <input id="m_app_ui_bg" type="text" value="${appearance.uiBg}" placeholder="#070b11" />
-              <input id="m_app_ui_picker" type="color" value="${appearance.uiBg}" style="width:38px;min-width:38px;padding:0;border:none;background:transparent;" />
-            </div>
-          </div>
-          <div style="grid-column:1 / -1;">
-            <label>Accent (buttons/active tabs)</label>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <span id="m_app_accent_swatch" style="width:16px;height:16px;border:1px solid #334155;background:${appearance.accent};display:inline-block;"></span>
-              <input id="m_app_accent" type="text" value="${appearance.accent}" placeholder="#1d4ed8" />
-              <input id="m_app_accent_picker" type="color" value="${appearance.accent}" style="width:38px;min-width:38px;padding:0;border:none;background:transparent;" />
-            </div>
-          </div>
-        </div>
-        <div class="modalActions">
-          <button id="m_app_reset_general" type="button">Reset General Defaults</button>
-          <button id="modalCancelBtn" type="button">Cancel</button>
-          <button id="modalSaveCloseBtn" type="button">Save & Close</button>
-        </div>
-      `, async()=>{
-        appearance.viewBg=(byId("m_app_view_bg").value||"").trim()||appearance.viewBg;
-        appearance.uiBg=(byId("m_app_ui_bg").value||"").trim()||appearance.uiBg;
-        appearance.accent=(byId("m_app_accent").value||"").trim()||appearance.accent;
-        persistAppearance();
-        applyAppearance();
-        return true;
-      });
-      const viewTxt=byId("m_app_view_bg"), viewPicker=byId("m_app_view_picker"), viewSwatch=byId("m_app_view_swatch");
-      const uiTxt=byId("m_app_ui_bg"), uiPicker=byId("m_app_ui_picker"), uiSwatch=byId("m_app_ui_swatch");
-      const acTxt=byId("m_app_accent"), acPicker=byId("m_app_accent_picker"), acSwatch=byId("m_app_accent_swatch");
-      viewPicker.oninput=()=>{ viewTxt.value=viewPicker.value; viewSwatch.style.background=viewPicker.value; };
-      uiPicker.oninput=()=>{ uiTxt.value=uiPicker.value; uiSwatch.style.background=uiPicker.value; };
-      acPicker.oninput=()=>{ acTxt.value=acPicker.value; acSwatch.style.background=acPicker.value; };
-      viewTxt.oninput=()=>{ viewSwatch.style.background=viewTxt.value||"transparent"; };
-      uiTxt.oninput=()=>{ uiSwatch.style.background=uiTxt.value||"transparent"; };
-      acTxt.oninput=()=>{ acSwatch.style.background=acTxt.value||"transparent"; };
-      byId("m_app_reset_general").onclick=()=>{
-        appearance.uiBg=DEFAULT_APPEARANCE.uiBg;
-        appearance.viewBg=DEFAULT_APPEARANCE.viewBg;
-        appearance.accent=DEFAULT_APPEARANCE.accent;
-        persistAppearance();
-        applyAppearance();
-        closeModal();
-        setStatus("General appearance reset to defaults.");
-      };
-    }
     function openViewAppearanceModal(){
       openModal("View Appearance",`
         <div class="modalGrid">
@@ -1894,7 +1919,14 @@
       const plotEl=byId("plot");
       if(!plotEl||typeof plotEl.on!=="function") return;
       plotEl.on("plotly_relayout",(ev)=>{
-        if(!overviewRows.length||!overviewEpochStartMs||overviewEpochStartMs===overviewEpochEndMs) return;
+        if(realtimeTimer){
+          const gd=byId("plot");
+          const snap=snapshotPlotAxisLocks(gd);
+          realtimeLockedXRange=snap.xRange;
+          realtimeLockedYRanges=snap.yRanges;
+          return;
+        }
+        if(!overviewRows.length||!overviewEpochStartMs||overviewEpochEndMs===overviewEpochStartMs) return;
         if(byId("t0Mode").value!=="absolute") return;
 
         const autorange=ev["xaxis.autorange"];
@@ -1942,16 +1974,16 @@
         const channelSet=new Set(selForDb.filter((c)=>!calcForDb.some((x)=>x.name===c)));
         calcForDb.forEach((c)=>(c.channels||[]).forEach((id)=>channelSet.add(id.split("|")[1])));
         if(!tests.length||!channelSet.size) continue;
-        const p=new URLSearchParams();
-        tests.forEach((id)=>p.append("test_run_ids",id));
-        [...channelSet].forEach((ch)=>p.append("channel_names",ch));
-        p.append("limit","5000000");
-        p.append("db_name",db.name);
-        p.append("start_time",startTime);
-        p.append("end_time",endTime);
-        sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
         try{
-          const rows=await getJson(`/api/timeseries?${p.toString()}`);
+          const rows=await fetchTimeseriesV2({
+            tests,
+            channels:[...channelSet],
+            db,
+            src,
+            startTime,
+            endTime,
+            aggregationMode:"raw",
+          });
           rows.forEach((r)=>{ r.__dbId=dbId; r.__ts=Date.parse(r.time); rowsAll.push(r); });
         }catch(e){ setStatus(`Detail fetch failed: ${e}`,true); return; }
       }

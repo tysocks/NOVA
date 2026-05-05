@@ -1,0 +1,65 @@
+<h2>Three Approaches</h2>
+<p class="subtitle">All three include the Ultra Minimal UI redesign. They differ in how deep the performance fixes go.</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Client-Only Optimization</h3>
+      <p><strong>No backend changes.</strong> Fix the hot paths entirely in the browser.</p>
+      <ul style="margin:8px 0 0 0;padding-left:16px;font-size:0.85em;line-height:1.7;">
+        <li><strong>Real-time fix (0.5fps → ~30fps):</strong> Pre-compute traces once when real-time starts, store x/y as Float64Arrays, use <code>Plotly.restyle()</code> per-frame to update only the visible slice — no full rebuild each tick</li>
+        <li><strong>Hot loop fix:</strong> Pre-cache <code>__ts</code> (ms timestamp) on every row at load time — eliminates <code>new Date()</code> calls inside <code>applyFreq</code>, <code>plotRows</code>, sorting, and masking</li>
+        <li><strong>Debounce saveState:</strong> Currently serializes everything on every click; debounce to 150ms</li>
+        <li><strong>Lightweight list rendering:</strong> DOM virtualization for channel/test lists &gt;100 items</li>
+        <li><strong>Ultra Minimal UI redesign</strong></li>
+      </ul>
+      <div class="pros-cons" style="margin-top:10px;">
+        <div class="pros"><h4>Pros</h4><ul><li>No backend risk</li><li>Real-time becomes genuinely usable</li><li>Fast to ship</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Still transfers raw 100k–1M rows over the wire on every Chooch</li><li>DB query + JSON serialization stays slow for large tests</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Client + Server Downsampling <span style="font-size:0.75em;opacity:0.6;">(recommended)</span></h3>
+      <p><strong>Adds LTTB downsampling to the backend.</strong> Cuts data transfer by 100x for typical loads.</p>
+      <ul style="margin:8px 0 0 0;padding-left:16px;font-size:0.85em;line-height:1.7;">
+        <li><strong>Everything in Option A</strong></li>
+        <li><strong>LTTB downsampling endpoint:</strong> New <code>max_points</code> param on <code>/api/timeseries</code> (default 5000 per channel). Largest-Triangle-Three-Buckets is visually lossless — a 500k-point trace is indistinguishable from a 5k-point one on screen</li>
+        <li><strong>Result:</strong> Chooch goes from transferring ~80MB of JSON to ~800KB. DB query unchanged but serialization and network become negligible</li>
+        <li><strong>Full-res export still works:</strong> CSV export bypasses downsampling and exports raw rows already in memory (or re-fetches with <code>max_points=unlimited</code>)</li>
+        <li><strong>Ultra Minimal UI redesign</strong></li>
+      </ul>
+      <div class="pros-cons" style="margin-top:10px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Load time drops dramatically</li><li>Real-time becomes smooth</li><li>UI interactions snappy</li><li>Visually indistinguishable from raw data</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Small backend change (Python LTTB, ~30 lines)</li><li>User loses sub-pixel detail (irrelevant on screen)</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Option B + Web Worker Processing</h3>
+      <p><strong>Moves mask/calc computation off the main thread.</strong> Eliminates UI freezes during heavy processing.</p>
+      <ul style="margin:8px 0 0 0;padding-left:16px;font-size:0.85em;line-height:1.7;">
+        <li><strong>Everything in Option B</strong></li>
+        <li><strong>Web Worker:</strong> <code>computeCalculatedRows()</code>, <code>applyMasks()</code>, and <code>applyFreq()</code> moved off main thread — UI stays interactive while data crunches</li>
+        <li><strong>Transferable TypedArrays:</strong> Data shared with Worker via zero-copy transfer, not JSON clone</li>
+        <li>Biggest win when masks + calculated channels are active on 500k+ rows</li>
+        <li><strong>Ultra Minimal UI redesign</strong></li>
+      </ul>
+      <div class="pros-cons" style="margin-top:10px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Fully non-blocking UI in all scenarios</li><li>Best long-term architecture</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Largest refactor — Worker/main thread comms adds complexity</li><li>State management more involved</li><li>Marginal gain if LTTB keeps row counts low</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Click your choice or respond in the terminal.</p>
