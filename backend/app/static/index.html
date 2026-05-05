@@ -32,8 +32,8 @@
     .panelHeader:hover{ background:var(--nova-hover); }
     .panelHeader h3{ margin:0; font-size:0.60rem; color:color-mix(in srgb, var(--nova-text-dim) 90%, white 10%); letter-spacing:0.09em; text-transform:uppercase; font-weight:500; }
     .headerBtns{ display:flex; gap:3px; }
-    .addBtn,.collapseBtn{ width:14px; height:14px; border-radius:0; border:1px solid var(--nova-divider); background:transparent; color:var(--nova-text-dim); padding:0; font-weight:600; cursor:pointer; font-size:0.60rem; line-height:1; }
-    .addBtn:hover,.collapseBtn:hover{ border-color:var(--nova-line); color:var(--nova-text); }
+    .addBtn,.collapseBtn{ width:14px; height:14px; border-radius:0; border:none; background:transparent; color:var(--nova-text-dim); padding:0; font-weight:600; cursor:pointer; font-size:0.60rem; line-height:1; }
+    .addBtn:hover,.collapseBtn:hover{ color:var(--nova-text); }
     /* Lists */
     .list{ border:none; background:var(--nova-ui-bg); overflow-y:auto; max-height:136px; }
     .item{ padding:4px 6px 4px 8px; border-bottom:1px solid #0f0f0f; cursor:pointer; border-left:2px solid transparent; }
@@ -48,9 +48,11 @@
     label{ display:block; margin:5px 0 2px 0; font-size:0.60rem; color:var(--nova-text-dim); letter-spacing:0.06em; text-transform:uppercase; }
     input,select,button{ width:100%; border:1px solid var(--nova-divider); border-radius:0; background:#0d0d0d; color:var(--nova-text); padding:5px; font-size:0.72rem; outline:none; }
     input:focus,select:focus{ border-color:var(--nova-line); }
-    button{ cursor:pointer; background:#111; border:1px solid #2a2a2a; }
-    button:hover{ background:#1a1a1a; border-color:#444; }
+    button{ cursor:pointer; background:#111; border:1px solid transparent; }
+    button:hover{ background:#1a1a1a; }
     button:active{ background:#222; }
+    .iconBtn{ width:22px; height:22px; min-width:22px; border-radius:0; border:none; background:transparent; color:var(--nova-text-dim); padding:0; font-size:0.82rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+    .iconBtn:hover{ color:var(--nova-text); background:var(--nova-hover); }
     /* Plot tabs */
     .plotTabs{ display:flex; align-items:stretch; gap:0; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); min-height:26px; flex:0 0 auto; overflow-x:auto; }
     .plotTab{ width:auto; min-width:82px; max-width:195px; background:var(--nova-ui-bg); border:none; border-right:1px solid var(--nova-divider); border-top:2px solid transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 0 auto; padding:4px 8px; font-size:0.68rem; color:var(--nova-text-dim); }
@@ -351,7 +353,7 @@
         <div><label>User</label><input data-k="user" type="text" value="${r.user||"pipeline"}" /></div>
         <div><label>Port</label><input data-k="port" type="number" value="${Number(r.port||5432)}" /></div>
         <div><label>SSL</label><input data-k="sslmode" type="text" value="${r.sslmode||"disable"}" /></div>
-        <div><button type="button" data-del="${i}" style="min-width:80px;">Delete</button></div>
+        <div><button type="button" class="iconBtn" data-del="${i}" title="Delete">&#10005;</button></div>
         <div style="grid-column:1 / -1;"><label>Password</label><input data-k="password" type="password" value="${r.password||""}" /></div>
       </div>`;
       openModal("Default Sources",`<div id="defaultSourcesWrap">${rows.map((r,i)=>rowHtml(r,i)).join("")}</div><div class="modalActions"><button id="m_add_default_source" type="button">Add Source</button><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{
@@ -499,11 +501,11 @@
     async function openConfigManagerModal(){
       await migrateLegacyConfigLibraryIfNeeded();
       const library=await loadConfigLibrary();
-      const row=(item)=>`<div class="selectRow" data-id="${item.id}" style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;">
-        <div><div class="itemPrimary">${item.name||"Unnamed Config"}</div><div class="itemMeta">${item.savedAt||""}</div></div>
-        <button type="button" data-a="load" style="min-width:70px;">Load</button>
-        <button type="button" data-a="rename" style="min-width:78px;">Rename</button>
-        <button type="button" data-a="delete" style="min-width:70px;">Delete</button>
+      const row=(item)=>`<div class="selectRow" data-id="${item.id}" style="display:flex;align-items:center;gap:4px;">
+        <div style="flex:1;min-width:0;"><div class="itemPrimary">${item.name||"Unnamed Config"}</div><div class="itemMeta">${item.savedAt||""}</div></div>
+        <button type="button" class="iconBtn" data-a="load" title="Load">&#9654;</button>
+        <button type="button" class="iconBtn" data-a="rename" title="Rename">&#9998;</button>
+        <button type="button" class="iconBtn" data-a="delete" title="Delete">&#10005;</button>
       </div>`;
       openModal("Configuration Manager",`<div class="modalGrid" style="grid-template-columns:1fr auto;align-items:flex-end;"><div><label>Config Name</label><input id="m_cfg_name" type="text" placeholder="e.g. Hotfire Baseline" /></div><div><button id="m_cfg_save_current" type="button" style="width:auto;min-width:160px;">Save to Library</button></div></div><div style="padding:0 10px 10px;"><div id="m_cfg_list" class="modalList">${library.map(row).join("")||"<div class='empty'>No saved configs yet.</div>"}</div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true);
       const rerender=async()=>{
