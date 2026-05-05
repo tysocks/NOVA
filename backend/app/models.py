@@ -44,6 +44,8 @@ class TimeSeriesPoint(BaseModel):
 class TimeSeriesSeriesMeta(BaseModel):
     test_run_id: int
     channel_name: str
+    source: str | None = None
+    database: str | None = None
     unit: str | None = None
     points: int
     min_value: float | None = None

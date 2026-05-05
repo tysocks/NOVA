@@ -15,13 +15,15 @@ from .services.timeseries import (
     list_tests,
 )
 from .services.file_sources import file_channels, file_tests, file_timeseries
-from .services.query_router import resolve_source_db_name
+from .services.query_router import resolve_overlay_targets
+from .config import settings
 
 app = FastAPI(title="NOVA API", version="0.1.0", docs_url=None, redoc_url=None)
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 APPEARANCE_FILE = Path(__file__).resolve().parents[1] / ".nova_appearance.json"
+SOURCE_DEFAULTS_FILE = Path(__file__).resolve().parents[1] / ".nova_source_defaults.json"
 
 
 @app.get("/", include_in_schema=False)
@@ -32,6 +34,88 @@ def nova_app() -> FileResponse:
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(ok=True, app="NOVA")
+
+
+@app.get("/api/source-defaults")
+def source_defaults() -> dict:
+    defaults = [
+        {
+            "key": "redscale",
+            "name": "RedScale",
+            "type": "postgres",
+            "host": settings.redscale_host,
+            "port": settings.redscale_port,
+            "user": settings.redscale_user,
+            "password": settings.redscale_password,
+            "sslmode": settings.redscale_sslmode,
+        },
+        {
+            "key": "bluescale",
+            "name": "BlueScale",
+            "type": "postgres",
+            "host": settings.bluescale_host,
+            "port": settings.bluescale_port,
+            "user": settings.bluescale_user,
+            "password": settings.bluescale_password,
+            "sslmode": settings.bluescale_sslmode,
+        },
+    ]
+    if SOURCE_DEFAULTS_FILE.exists():
+        try:
+            payload = json.loads(SOURCE_DEFAULTS_FILE.read_text(encoding="utf-8"))
+            from_file = payload.get("defaults") if isinstance(payload, dict) else None
+            if isinstance(from_file, list):
+                cleaned = []
+                for row in from_file:
+                    if not isinstance(row, dict):
+                        continue
+                    if row.get("type", "postgres") != "postgres":
+                        continue
+                    cleaned.append(
+                        {
+                            "key": str(row.get("key") or f"src_{len(cleaned)+1}"),
+                            "name": str(row.get("name") or "PostgreSQL Source"),
+                            "type": "postgres",
+                            "host": str(row.get("host") or "localhost"),
+                            "port": int(row.get("port") or 5432),
+                            "user": str(row.get("user") or "pipeline"),
+                            "password": str(row.get("password") or ""),
+                            "sslmode": str(row.get("sslmode") or "disable"),
+                        }
+                    )
+                defaults = cleaned or defaults
+        except Exception:
+            pass
+    return {"defaults": defaults}
+
+
+@app.post("/api/source-defaults")
+def save_source_defaults(payload: dict = Body(...)) -> dict:
+    rows = payload.get("defaults") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return {"ok": False, "error": "defaults must be a list"}
+    cleaned = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if row.get("type", "postgres") != "postgres":
+            continue
+        cleaned.append(
+            {
+                "key": str(row.get("key") or f"src_{len(cleaned)+1}"),
+                "name": str(row.get("name") or "PostgreSQL Source"),
+                "type": "postgres",
+                "host": str(row.get("host") or "localhost"),
+                "port": int(row.get("port") or 5432),
+                "user": str(row.get("user") or "pipeline"),
+                "password": str(row.get("password") or ""),
+                "sslmode": str(row.get("sslmode") or "disable"),
+            }
+        )
+    if not cleaned:
+        return {"ok": False, "error": "at least one postgres default is required"}
+    SOURCE_DEFAULTS_FILE.write_text(json.dumps({"defaults": cleaned}, indent=2), encoding="utf-8")
+    return {"ok": True, "count": len(cleaned)}
 
 
 @app.get("/api/databases", response_model=list[DatabaseItem])
@@ -152,6 +236,7 @@ def timeseries_v2(
     start_time: str | None = Query(default=None, description="ISO timestamp inclusive lower bound."),
     end_time: str | None = Query(default=None, description="ISO timestamp inclusive upper bound."),
     source: str | None = Query(default="auto", description="Logical source selector: auto, redscale, bluescale, measured, simulation."),
+    overlay_mode: str | None = Query(default="single", description="single or both (overlay)."),
     t0_mode: str | None = Query(default="absolute", description="absolute, first_index, or t0_relative."),
     resolution_px: int | None = Query(default=None, ge=1, le=100000, description="Viewport width in pixels for adaptive resolution."),
     aggregation_mode: str | None = Query(default="auto", description="auto, lttb, raw/none."),
@@ -164,23 +249,40 @@ def timeseries_v2(
     db_password: str | None = Query(default=None),
     db_sslmode: str | None = Query(default=None),
 ) -> TimeSeriesEnvelope:
-    target_db = resolve_source_db_name(source=source, db_name=db_name)
-    return get_timeseries_envelope(
-        test_run_ids=test_run_ids,
-        channel_names=channel_names,
-        start_time=start_time,
-        end_time=end_time,
-        limit=limit,
-        max_points=max_points,
-        resolution_px=resolution_px,
-        aggregation_mode=aggregation_mode,
-        t0_mode=t0_mode,
-        db_name=target_db,
-        db_host=db_host,
-        db_port=db_port,
-        db_user=db_user,
-        db_password=db_password,
-        db_sslmode=db_sslmode,
+    targets = resolve_overlay_targets(source=source, overlay_mode=overlay_mode, db_name=db_name)
+    combined_overview: list[TimeSeriesPoint] = []
+    combined_meta = []
+    detail_hint = None
+    for src_label, target_db in targets:
+        env = get_timeseries_envelope(
+            test_run_ids=test_run_ids,
+            channel_names=channel_names,
+            start_time=start_time,
+            end_time=end_time,
+            limit=limit,
+            max_points=max_points,
+            resolution_px=resolution_px,
+            aggregation_mode=aggregation_mode,
+            t0_mode=t0_mode,
+            db_name=target_db,
+            db_host=db_host,
+            db_port=db_port,
+            db_user=db_user,
+            db_password=db_password,
+            db_sslmode=db_sslmode,
+        )
+        combined_overview.extend(env.overview)
+        for m in env.series_meta:
+            m.source = src_label
+            m.database = target_db
+            combined_meta.append(m)
+        if detail_hint is None and env.detail_hint is not None:
+            detail_hint = env.detail_hint
+    combined_overview.sort(key=lambda p: p.time)
+    return TimeSeriesEnvelope(
+        overview=combined_overview,
+        series_meta=combined_meta,
+        detail_hint=detail_hint,
     )
 
 

@@ -9,10 +9,12 @@ NOVA supports multiple data source types in one session:
 - PostgreSQL/TimescaleDB sources (browse databases, tests, channels, and timeseries).
 - Local CSV sources (uploaded via the app).
 - Local TDMS sources (uploaded via the app).
+- Configurable default PostgreSQL sources (managed in-app via File menu).
 
 The UI lets you:
 
 - Add multiple sources, then add databases/tests/channels from those sources.
+- Use `File -> Default Sources...` to add/edit/delete reusable default PostgreSQL source entries.
 - Use the `+` button in Channels with a dropdown:
   - `Add channels from source`
   - `Rolling channel calculations`
@@ -21,6 +23,7 @@ The UI lets you:
 - Use either `time` or a selected channel on the X axis.
 - Switch time reference between `Raw Time` and `t0 = First Point (per test)`.
 - Apply optional start/end time filtering for database-backed timeseries.
+- Add RedScale / BlueScale from the Sources `+` menu using configured defaults.
 - Downsample channels using per-channel frequency overrides.
 - Show/hide an in-app data preview drawer.
 - Use a simple ruler tool (`R` key + right-click after hover) for delta and slope checks.
@@ -115,6 +118,21 @@ From a new machine/user account:
      - `NOVA_DB_USER`
      - `NOVA_DB_PASSWORD`
      - `NOVA_DB_SSLMODE`
+   - optional default source envs for one-click source creation:
+     - `NOVA_REDSCALE_HOST`
+     - `NOVA_REDSCALE_PORT`
+     - `NOVA_REDSCALE_USER`
+     - `NOVA_REDSCALE_PASSWORD`
+     - `NOVA_REDSCALE_SSLMODE`
+     - `NOVA_BLUESCALE_HOST`
+     - `NOVA_BLUESCALE_PORT`
+     - `NOVA_BLUESCALE_USER`
+     - `NOVA_BLUESCALE_PASSWORD`
+     - `NOVA_BLUESCALE_SSLMODE`
+     - `NOVA_DB_NAME_REDSCALE` (optional, API abstraction use)
+     - `NOVA_DB_NAME_BLUESCALE` (optional, API abstraction use)
+
+Default source entries are persisted to `backend/.nova_source_defaults.json` once edited via `File -> Default Sources...`.
 
 ## Run NOVA
 
@@ -167,6 +185,9 @@ Example template:
 - `GET /api/channels`
 - `GET /api/available-channels`
 - `GET /api/timeseries`
+- `GET /api/v2/timeseries`
+- `GET /api/source-defaults`
+- `POST /api/source-defaults`
 - `GET /api/file/tests`
 - `GET /api/file/channels`
 - `GET /api/file/timeseries`

@@ -111,6 +111,18 @@ def _build_series_meta(points: list[TimeSeriesPoint]) -> list[TimeSeriesSeriesMe
     return out
 
 
+def build_series_meta(
+    points: list[TimeSeriesPoint],
+    source: str | None = None,
+    database: str | None = None,
+) -> list[TimeSeriesSeriesMeta]:
+    meta = _build_series_meta(points)
+    for row in meta:
+        row.source = source
+        row.database = database
+    return meta
+
+
 def get_timeseries_envelope(
     test_run_ids: list[int],
     channel_names: list[str],
@@ -158,7 +170,7 @@ def get_timeseries_envelope(
     _ = t0_mode
     return TimeSeriesEnvelope(
         overview=points,
-        series_meta=_build_series_meta(points),
+        series_meta=build_series_meta(points, source=None, database=db_name),
         detail_hint=detail_hint,
     )
 

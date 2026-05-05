@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from app.models import TimeSeriesPoint
+from app.services.query_router import resolve_overlay_targets
 from app.services.timeseries import _build_series_meta, plan_timeseries_points_cap
 
 
@@ -52,3 +53,14 @@ def test_build_series_meta_groups_by_test_and_channel():
     assert keyed[(1, "ch_a")].min_value == 10.0
     assert keyed[(1, "ch_a")].max_value == 20.0
     assert keyed[(2, "ch_b")].points == 1
+
+
+def test_resolve_overlay_targets_single_mode_uses_source():
+    targets = resolve_overlay_targets(source="redscale", overlay_mode="single", db_name=None)
+    assert len(targets) == 1
+    assert targets[0][0] == "redscale"
+
+
+def test_resolve_overlay_targets_explicit_db_wins():
+    targets = resolve_overlay_targets(source="auto", overlay_mode="both", db_name="manual_db")
+    assert targets == [("explicit", "manual_db")]

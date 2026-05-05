@@ -16,6 +16,16 @@ class Settings(BaseSettings):
     db_sslmode: str = "disable"
     db_name_redscale: str | None = None
     db_name_bluescale: str | None = None
+    redscale_host: str = "localhost"
+    redscale_port: int = 5432
+    redscale_user: str = "pipeline"
+    redscale_password: str = "test"
+    redscale_sslmode: str = "disable"
+    bluescale_host: str = "localhost"
+    bluescale_port: int = 5433
+    bluescale_user: str = "analyst"
+    bluescale_password: str = "test"
+    bluescale_sslmode: str = "disable"
     default_limit: int = 5000
 
     model_config = SettingsConfigDict(env_prefix="NOVA_", env_file=str(ENV_PATH), extra="ignore")

@@ -119,6 +119,7 @@
       <div class="menuDropdown" id="menu_file">
         <div class="menuAction" id="file_saveConfig">Save Config...</div>
         <div class="menuAction" id="file_loadConfig">Open Config...</div>
+        <div class="menuAction" id="file_defaultSources">Default Sources...</div>
         <div class="menuSep"></div>
         <div class="menuAction" id="file_exportPlot">Export Current View (CSV)...</div>
       </div>
@@ -242,6 +243,7 @@
     const lastClickedByKind = {};
     const catalogCache = new Map();
     let plotHandlersBound = false;
+    let sourceDefaults = null;
     function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
     function bsearch(arr, target){ let lo=0, hi=arr.length; while(lo<hi){ const mid=(lo+hi)>>1; if(arr[mid]<=target) lo=mid+1; else hi=mid; } return lo; }
     function clearCatalogCache(){ catalogCache.clear(); }
@@ -250,6 +252,17 @@
     function setStatus(text, isError = false) { const e = byId("statusBar"); if(!e) return; e.textContent = text; e.className = isError ? "error" : ""; }
     function sourceConnQuery(src) { if (!src || src.type !== "postgres") return ""; const p = new URLSearchParams(); p.append("db_host", src.host); p.append("db_port", String(src.port)); p.append("db_user", src.user); p.append("db_password", src.password); p.append("db_sslmode", src.sslmode || "disable"); return p.toString(); }
     async function getJson(url) { const r = await fetch(url); if (!r.ok) throw new Error(`Request failed ${r.status}`); return r.json(); }
+    async function postJson(url, payload){ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); if(!r.ok) throw new Error(`Request failed ${r.status}`); return r.json(); }
+    async function loadSourceDefaults(){
+      if(sourceDefaults) return sourceDefaults;
+      try{
+        const data=await getJson("/api/source-defaults");
+        if(Array.isArray(data?.defaults)) sourceDefaults=data.defaults;
+        else if(data&&typeof data==="object") sourceDefaults=Object.keys(data).map((k)=>({key:k,...data[k]}));
+        else sourceDefaults=[];
+      }catch{ sourceDefaults=[]; }
+      return sourceDefaults;
+    }
     function inferLogicalSource(src){
       const raw=(String(src?.name||"")+" "+String(src?.file_path||"")).toLowerCase();
       if(raw.includes("blue")) return "bluescale";
@@ -305,7 +318,68 @@
     function closeModal() { byId("modalBackdrop").classList.remove("show"); byId("modalBody").innerHTML = ""; }
     function hideMenus() { byId("contextMenu").style.display = "none"; byId("sourceAddMenu").style.display = "none"; byId("channelAddMenu").style.display = "none"; byId("maskAddMenu").style.display = "none"; }
     function showContextMenu(x,y,items){ const m=byId("contextMenu"); m.innerHTML=items.map((i,idx)=>`<div class="contextItem" data-i="${idx}">${i.label}</div>`).join(""); m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".contextItem").forEach((el)=>el.onclick=()=>{items[Number(el.getAttribute("data-i"))].action(); hideMenus();}); }
-    function showSourceAddMenu(x,y){ const m=byId("sourceAddMenu"); m.innerHTML=`<div class="miniMenuItem" data-t="postgres">Add PostgreSQL</div><div class="miniMenuItem" data-t="csv">Add CSV</div><div class="miniMenuItem" data-t="tdms">Add TDMS</div>`; m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="postgres")showAddPostgresModal(); if(t==="csv")showAddCsvModal(); if(t==="tdms")showAddTdmsModal();}); }
+    function getDefaultSourceByKey(kind){
+      if(!Array.isArray(sourceDefaults)) return null;
+      return sourceDefaults.find((x)=>String(x.key||"").toLowerCase()===String(kind||"").toLowerCase())||null;
+    }
+    function addDefaultPostgresSource(kind){
+      const defs=getDefaultSourceByKey(kind);
+      if(!defs){ setStatus(`No ${kind} defaults available.`, true); return; }
+      const existing=state.sources.find((s)=>s.type==="postgres"&&s.host===defs.host&&Number(s.port)===Number(defs.port)&&s.user===defs.user&&s.name===defs.name);
+      if(existing){ selectedSourceIds.add(existing.id); renderAll(); saveState(); setStatus(`${defs.name} source already exists.`); return; }
+      const entry={ id:crypto.randomUUID(), type:"postgres", name:defs.name||"PostgreSQL Source", host:defs.host||"localhost", port:Number(defs.port||5432), user:defs.user||"pipeline", password:defs.password||"test", sslmode:defs.sslmode||"disable", file_path:"" };
+      state.sources.push(entry);
+      clearCatalogCache();
+      selectedSourceIds.add(entry.id);
+      renderAll();
+      saveState();
+      setStatus(`${entry.name} source added.`);
+    }
+    function showSourceAddMenu(x,y){
+      const m=byId("sourceAddMenu");
+      m.innerHTML=`<div class="miniMenuItem" data-t="redscale">Add RedScale</div><div class="miniMenuItem" data-t="bluescale">Add BlueScale</div><div class="miniMenuItem" data-t="postgres">Add PostgreSQL</div><div class="miniMenuItem" data-t="csv">Add CSV</div><div class="miniMenuItem" data-t="tdms">Add TDMS</div>`;
+      m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block";
+      m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="redscale")addDefaultPostgresSource("redscale"); if(t==="bluescale")addDefaultPostgresSource("bluescale"); if(t==="postgres")showAddPostgresModal(); if(t==="csv")showAddCsvModal(); if(t==="tdms")showAddTdmsModal();});
+    }
+    function openDefaultSourcesModal(){
+      const rows=Array.isArray(sourceDefaults)?sourceDefaults:[];
+      const rowHtml=(r,i)=>`<div class="modalGrid" data-def-row="${i}" style="grid-template-columns:1fr 1fr 1fr 1fr 0.9fr 1fr auto;align-items:end;border-bottom:1px solid var(--nova-divider);padding:8px 0;">
+        <div><label>Name</label><input data-k="name" type="text" value="${r.name||""}" /></div>
+        <div><label>Key</label><input data-k="key" type="text" value="${r.key||""}" /></div>
+        <div><label>Host</label><input data-k="host" type="text" value="${r.host||"localhost"}" /></div>
+        <div><label>User</label><input data-k="user" type="text" value="${r.user||"pipeline"}" /></div>
+        <div><label>Port</label><input data-k="port" type="number" value="${Number(r.port||5432)}" /></div>
+        <div><label>SSL</label><input data-k="sslmode" type="text" value="${r.sslmode||"disable"}" /></div>
+        <div><button type="button" data-del="${i}" style="min-width:80px;">Delete</button></div>
+        <div style="grid-column:1 / -1;"><label>Password</label><input data-k="password" type="password" value="${r.password||""}" /></div>
+      </div>`;
+      openModal("Default Sources",`<div id="defaultSourcesWrap">${rows.map((r,i)=>rowHtml(r,i)).join("")}</div><div class="modalActions"><button id="m_add_default_source" type="button">Add Source</button><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{
+        const wrap=byId("defaultSourcesWrap");
+        const defs=[...wrap.querySelectorAll("[data-def-row]")].map((row)=>{
+          const get=(k)=>row.querySelector(`[data-k="${k}"]`)?.value?.trim()||"";
+          return { type:"postgres", name:get("name")||"PostgreSQL Source", key:get("key")||`src_${Math.random().toString(36).slice(2,8)}`, host:get("host")||"localhost", port:Number(get("port")||"5432"), user:get("user")||"pipeline", password:get("password")||"", sslmode:get("sslmode")||"disable" };
+        }).filter((d)=>d.name&&d.host&&d.user&&Number.isFinite(d.port)&&d.port>0);
+        if(!defs.length){ setStatus("Add at least one valid default source.", true); return false; }
+        try{
+          const saved=await postJson("/api/source-defaults",{defaults:defs});
+          if(!saved?.ok){ setStatus(saved?.error||"Failed to save defaults.", true); return false; }
+          sourceDefaults=defs;
+          setStatus(`Saved ${defs.length} default source(s).`);
+          return true;
+        }catch(err){
+          setStatus(`Failed to save defaults: ${err}`, true);
+          return false;
+        }
+      });
+      const wireDeletes=()=>{ byId("defaultSourcesWrap").querySelectorAll("[data-del]").forEach((b)=>b.onclick=()=>{ const row=b.closest("[data-def-row]"); if(row) row.remove(); }); };
+      byId("m_add_default_source").onclick=()=>{
+        const wrap=byId("defaultSourcesWrap");
+        const idx=wrap.querySelectorAll("[data-def-row]").length;
+        wrap.insertAdjacentHTML("beforeend", rowHtml({name:"PostgreSQL Source",key:`src_${idx+1}`,host:"localhost",port:5432,user:"pipeline",password:"",sslmode:"disable"}, idx));
+        wireDeletes();
+      };
+      wireDeletes();
+    }
     function showChannelAddMenu(x,y){ const m=byId("channelAddMenu"); m.innerHTML=`<div class="miniMenuItem" data-t="source">Add channels from source</div><div class="miniMenuItem" data-t="rolling">Rolling channel calculations</div><div class="miniMenuItem" data-t="formula">Channel wise calculations</div>`; m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="source")showAddChannelsModal(); if(t==="rolling")showAddRollingChannelModal(); if(t==="formula")showAddChannelWiseModal();}); }
     function showMaskAddMenu(x,y){ const m=byId("maskAddMenu"); m.innerHTML=`<div class="miniMenuItem" data-t="source">Add mask from channel/time</div><div class="miniMenuItem" data-t="rolling">Rolling mask calculation</div><div class="miniMenuItem" data-t="formula">Channel wise mask calculation</div>`; m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="source")showAddMaskModal(); if(t==="rolling")showAddRollingMaskModal(); if(t==="formula")showAddChannelWiseMaskModal();}); }
     document.addEventListener("click", (e) => {
@@ -1674,6 +1748,7 @@
         }
       }
       byId("file_exportPlot").onclick=async()=>{ const p=getActivePlot(); const rows=latestRows||[]; const esc=(v)=>{ const s=String(v??""); return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s; }; const headers=["test_run_id","test_run_code","channel_name","unit","time","value","db_id"]; const csv=[headers.join(",")].concat(rows.map((r)=>[esc(r.test_run_id),esc(r.test_run_code),esc(r.channel_name),esc(r.unit||""),esc(r.time),esc(r.value),esc(r.__dbId)].join(","))).join("\n"); const result=await saveTextToFile(`nova_${(p?.name||"view").replaceAll(" ","_")}.csv`, csv, "text/csv;charset=utf-8", "csv", "CSV files", "text/csv"); if (result.ok && result.viaPicker) setStatus(`Exported ${rows.length} rows to CSV.`); if (result.ok && !result.viaPicker) setStatus(`CSV downloaded (${rows.length} rows).`); if (!result.ok && result.cancelled) setStatus("CSV export cancelled."); };
+      byId("file_defaultSources").onclick=()=>openDefaultSourcesModal();
       byId("file_saveConfig").onclick=async()=>{
         const active=getActivePlot();
         if(active){
@@ -2072,6 +2147,7 @@
 
     async function initialize(){
       loadState();
+      await loadSourceDefaults();
       await loadAppearance();
       loadPlots();
       initMenus();
