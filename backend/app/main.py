@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
 
-from fastapi import Body, FastAPI, File, Query, UploadFile
+from fastapi import Body, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
 from .models import ChannelItem, DatabaseItem, HealthResponse, TestRunItem, TimeSeriesEnvelope, TimeSeriesPoint
@@ -12,6 +12,7 @@ from .services.timeseries import (
     list_channels_for_tests,
     list_databases,
     list_test_metadata,
+    list_test_tables,
     list_tests,
 )
 from .services.file_sources import file_channels, file_tests, file_timeseries
@@ -189,6 +190,7 @@ def databases(
 @app.get("/api/tests", response_model=list[TestRunItem])
 def tests(
     limit: int | None = Query(default=None, ge=1, le=5000000),
+    test_table: str | None = Query(default=None, description="Optional test table override (default: test_runs)."),
     db_name: str | None = Query(default=None, description="Optional database override."),
     db_host: str | None = Query(default=None),
     db_port: int | None = Query(default=None),
@@ -198,6 +200,26 @@ def tests(
 ) -> list[TestRunItem]:
     return list_tests(
         limit=limit,
+        test_table=test_table,
+        db_name=db_name,
+        db_host=db_host,
+        db_port=db_port,
+        db_user=db_user,
+        db_password=db_password,
+        db_sslmode=db_sslmode,
+    )
+
+
+@app.get("/api/test-tables", response_model=list[str])
+def test_tables(
+    db_name: str | None = Query(default=None, description="Optional database override."),
+    db_host: str | None = Query(default=None),
+    db_port: int | None = Query(default=None),
+    db_user: str | None = Query(default=None),
+    db_password: str | None = Query(default=None),
+    db_sslmode: str | None = Query(default=None),
+) -> list[str]:
+    return list_test_tables(
         db_name=db_name,
         db_host=db_host,
         db_port=db_port,
@@ -231,6 +253,7 @@ def channels(
 @app.get("/api/available-channels", response_model=list[ChannelItem])
 def available_channels(
     test_run_ids: list[int] = Query(..., description="One or more selected test ids."),
+    test_table: str | None = Query(default=None, description="Optional test table override (default: test_runs)."),
     db_name: str | None = Query(default=None, description="Optional database override."),
     db_host: str | None = Query(default=None),
     db_port: int | None = Query(default=None),
@@ -240,6 +263,7 @@ def available_channels(
 ) -> list[ChannelItem]:
     return list_channels_for_tests(
         test_run_ids=test_run_ids,
+        test_table=test_table,
         db_name=db_name,
         db_host=db_host,
         db_port=db_port,
@@ -257,6 +281,7 @@ def timeseries(
     end_time: str | None = Query(default=None, description="ISO timestamp inclusive upper bound."),
     limit: int | None = Query(default=None, ge=1, le=5000000),
     max_points: int | None = Query(default=None, ge=2, le=5000000, description="Max points per series (LTTB). Omit for full resolution."),
+    test_table: str | None = Query(default=None, description="Optional test table override (default: test_runs)."),
     db_name: str | None = Query(default=None, description="Optional database override."),
     db_host: str | None = Query(default=None),
     db_port: int | None = Query(default=None),
@@ -271,6 +296,7 @@ def timeseries(
         end_time=end_time,
         limit=limit,
         max_points=max_points,
+        test_table=test_table,
         db_name=db_name,
         db_host=db_host,
         db_port=db_port,
@@ -293,6 +319,7 @@ def timeseries_v2(
     aggregation_mode: str | None = Query(default="auto", description="auto, lttb, raw/none."),
     limit: int | None = Query(default=None, ge=1, le=5000000),
     max_points: int | None = Query(default=None, ge=2, le=5000000, description="Optional hard cap per series."),
+    test_table: str | None = Query(default=None, description="Optional test table override (default: test_runs)."),
     db_name: str | None = Query(default=None, description="Optional database override."),
     db_host: str | None = Query(default=None),
     db_port: int | None = Query(default=None),
@@ -315,6 +342,7 @@ def timeseries_v2(
             resolution_px=resolution_px,
             aggregation_mode=aggregation_mode,
             t0_mode=t0_mode,
+            test_table=test_table,
             db_name=target_db,
             db_host=db_host,
             db_port=db_port,
@@ -340,6 +368,7 @@ def timeseries_v2(
 @app.get("/api/metadata")
 def metadata(
     test_run_ids: list[int] = Query(..., description="One or more test_run_id values."),
+    test_table: str | None = Query(default=None, description="Optional test table override (default: test_runs)."),
     db_name: str | None = Query(default=None, description="Optional database override."),
     db_host: str | None = Query(default=None),
     db_port: int | None = Query(default=None),
@@ -349,6 +378,7 @@ def metadata(
 ) -> list[dict]:
     return list_test_metadata(
         test_run_ids=test_run_ids,
+        test_table=test_table,
         db_name=db_name,
         db_host=db_host,
         db_port=db_port,
@@ -360,28 +390,47 @@ def metadata(
 
 @app.get("/api/file/tests", response_model=list[TestRunItem])
 def file_tests_api(
-    source_type: str = Query(..., description="csv or tdms"),
+    source_type: str = Query(..., description="csv or tdms or h5"),
     file_path: str = Query(..., description="Absolute file path."),
+    units_in_headers: bool = Query(default=False, description="If true (CSV only), parse units from column headers."),
 ) -> list[TestRunItem]:
-    return file_tests(source_type=source_type, file_path=file_path)
+    try:
+        _ = units_in_headers
+        return file_tests(source_type=source_type, file_path=file_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/file/channels", response_model=list[ChannelItem])
 def file_channels_api(
-    source_type: str = Query(..., description="csv or tdms"),
+    source_type: str = Query(..., description="csv or tdms or h5"),
     file_path: str = Query(..., description="Absolute file path."),
+    units_in_headers: bool = Query(default=False, description="If true (CSV only), parse units from column headers."),
 ) -> list[ChannelItem]:
-    return file_channels(source_type=source_type, file_path=file_path)
+    try:
+        return file_channels(source_type=source_type, file_path=file_path, units_in_headers=units_in_headers)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/file/timeseries", response_model=list[TimeSeriesPoint])
 def file_timeseries_api(
-    source_type: str = Query(..., description="csv or tdms"),
+    source_type: str = Query(..., description="csv or tdms or h5"),
     file_path: str = Query(..., description="Absolute file path."),
     channel_names: list[str] = Query(...),
     limit: int | None = Query(default=5000000, ge=1, le=5000000),
+    units_in_headers: bool = Query(default=False, description="If true (CSV only), parse units from column headers."),
 ) -> list[TimeSeriesPoint]:
-    return file_timeseries(source_type=source_type, file_path=file_path, channel_names=channel_names, limit=limit or 5000000)
+    try:
+        return file_timeseries(
+            source_type=source_type,
+            file_path=file_path,
+            channel_names=channel_names,
+            limit=limit or 5000000,
+            units_in_headers=units_in_headers,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/file/upload")

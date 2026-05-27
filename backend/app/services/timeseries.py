@@ -1,6 +1,7 @@
 from collections import defaultdict
 from collections.abc import Sequence
 
+from psycopg2 import sql
 from psycopg2.extras import RealDictCursor
 
 from ..config import settings
@@ -14,6 +15,69 @@ from ..models import (
     TimeSeriesPoint,
     TimeSeriesSeriesMeta,
 )
+
+
+def _test_table_ident(test_table: str | None) -> sql.Identifier:
+    table = _safe_ident(test_table or "test_runs")
+    parts = table.split(".")
+    return sql.Identifier(parts[0], parts[1]) if len(parts) == 2 else sql.Identifier(parts[0])
+
+
+def _safe_ident(name: str) -> str:
+    """
+    Restrict dynamic identifiers to reduce SQL injection risk.
+    Allows schema-qualified names like public.test_runs.
+    """
+    txt = str(name or "").strip()
+    if not txt:
+        raise ValueError("Identifier is required.")
+    parts = txt.split(".")
+    if len(parts) > 2:
+        raise ValueError("Invalid identifier.")
+    for p in parts:
+        if not p.replace("_", "").isalnum():
+            raise ValueError("Invalid identifier.")
+    return txt
+
+
+def list_test_tables(
+    *,
+    db_name: str | None = None,
+    db_host: str | None = None,
+    db_port: int | None = None,
+    db_user: str | None = None,
+    db_password: str | None = None,
+    db_sslmode: str | None = None,
+) -> list[str]:
+    """
+    Discover candidate test tables (Phase 2).
+    Heuristic: tables in public schema that contain at least columns:
+      - id
+      - run_code
+      - start_time
+    Always includes 'test_runs' if present.
+    """
+    sql_txt = """
+    SELECT table_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND column_name IN ('id', 'run_code', 'start_time')
+    GROUP BY table_name
+    HAVING COUNT(DISTINCT column_name) = 3
+    ORDER BY table_name
+    """
+    with get_conn(
+        db_name=db_name,
+        db_host=db_host,
+        db_port=db_port,
+        db_user=db_user,
+        db_password=db_password,
+        db_sslmode=db_sslmode,
+    ) as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql_txt)
+        rows: Sequence[dict] = cur.fetchall()
+    out = [str(r["table_name"]) for r in rows if isinstance(r, dict) and r.get("table_name")]
+    return out
 
 
 def _lttb_series(points: list, threshold: int) -> list:
@@ -133,6 +197,7 @@ def get_timeseries_envelope(
     resolution_px: int | None = None,
     aggregation_mode: str | None = None,
     t0_mode: str | None = None,
+    test_table: str | None = None,
     db_name: str | None = None,
     db_host: str | None = None,
     db_port: int | None = None,
@@ -152,6 +217,7 @@ def get_timeseries_envelope(
         end_time=end_time,
         limit=limit,
         max_points=cap,
+        test_table=test_table,
         db_name=db_name,
         db_host=db_host,
         db_port=db_port,
@@ -211,6 +277,7 @@ def list_databases(
 
 def list_tests(
     limit: int | None = None,
+    test_table: str | None = None,
     db_name: str | None = None,
     db_host: str | None = None,
     db_port: int | None = None,
@@ -219,7 +286,9 @@ def list_tests(
     db_sslmode: str | None = None,
 ) -> list[TestRunItem]:
     query_limit = max(1, min(limit or settings.default_limit, 5000000))
-    sql = """
+    table_ident = _test_table_ident(test_table)
+    query = sql.SQL(
+        """
     SELECT
       tr.id AS test_run_id,
       tr.run_code,
@@ -227,7 +296,7 @@ def list_tests(
       tr.end_time,
       tr.duration_s,
       t0.first_time AS t0_utc
-    FROM test_runs tr
+    FROM {test_table} tr
     LEFT JOIN (
       SELECT test_run_id, MIN(time) AS first_time
       FROM sensor_readings
@@ -236,6 +305,7 @@ def list_tests(
     ORDER BY start_time DESC
     LIMIT %s
     """
+    ).format(test_table=table_ident)
     with get_conn(
         db_name=db_name,
         db_host=db_host,
@@ -244,7 +314,7 @@ def list_tests(
         db_password=db_password,
         db_sslmode=db_sslmode,
     ) as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql, (query_limit,))
+        cur.execute(query, (query_limit,))
         rows: Sequence[dict] = cur.fetchall()
     return [TestRunItem(**row) for row in rows]
 
@@ -292,6 +362,7 @@ def get_timeseries(
     end_time: str | None = None,
     limit: int | None = None,
     max_points: int | None = None,
+    test_table: str | None = None,
     db_name: str | None = None,
     db_host: str | None = None,
     db_port: int | None = None,
@@ -305,7 +376,9 @@ def get_timeseries(
         return []
 
     query_limit = max(1, min(limit or settings.default_limit, 5000000))
-    sql = """
+    test_ident = _test_table_ident(test_table)
+    query = sql.SQL(
+        """
     SELECT
       sr.test_run_id,
       tr.run_code AS test_run_code,
@@ -315,7 +388,7 @@ def get_timeseries(
       sr.value
     FROM sensor_readings sr
     INNER JOIN channels c ON c.id = sr.channel_id
-    INNER JOIN test_runs tr ON tr.id = sr.test_run_id
+    INNER JOIN {test_table} tr ON tr.id = sr.test_run_id
     WHERE sr.test_run_id = ANY(%s)
       AND c.channel_name = ANY(%s)
       AND (%s::timestamptz IS NULL OR sr.time >= %s::timestamptz)
@@ -323,6 +396,7 @@ def get_timeseries(
     ORDER BY sr.time ASC
     LIMIT %s
     """
+    ).format(test_table=test_ident)
     params = (test_run_ids, channel_names, start_time, start_time, end_time, end_time, query_limit)
 
     with get_conn(
@@ -333,7 +407,7 @@ def get_timeseries(
         db_password=db_password,
         db_sslmode=db_sslmode,
     ) as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql, params)
+        cur.execute(query, params)
         rows: Sequence[dict] = cur.fetchall()
 
     points = [TimeSeriesPoint(**row) for row in rows]
@@ -346,6 +420,7 @@ def get_timeseries(
 
 def list_channels_for_tests(
     test_run_ids: list[int],
+    test_table: str | None = None,
     db_name: str | None = None,
     db_host: str | None = None,
     db_port: int | None = None,
@@ -355,7 +430,9 @@ def list_channels_for_tests(
 ) -> list[ChannelItem]:
     if not test_run_ids:
         return []
-    sql = """
+    test_ident = _test_table_ident(test_table)
+    query = sql.SQL(
+        """
     SELECT DISTINCT
       c.id AS channel_id,
       c.channel_name,
@@ -366,9 +443,11 @@ def list_channels_for_tests(
       c.valid_max
     FROM sensor_readings sr
     INNER JOIN channels c ON c.id = sr.channel_id
+    INNER JOIN {test_table} tr ON tr.id = sr.test_run_id
     WHERE sr.test_run_id = ANY(%s)
     ORDER BY c.channel_name
     """
+    ).format(test_table=test_ident)
     with get_conn(
         db_name=db_name,
         db_host=db_host,
@@ -377,13 +456,14 @@ def list_channels_for_tests(
         db_password=db_password,
         db_sslmode=db_sslmode,
     ) as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql, (test_run_ids,))
+        cur.execute(query, (test_run_ids,))
         rows: Sequence[dict] = cur.fetchall()
     return [ChannelItem(**row) for row in rows]
 
 
 def list_test_metadata(
     test_run_ids: list[int],
+    test_table: str | None = None,
     db_name: str | None = None,
     db_host: str | None = None,
     db_port: int | None = None,
@@ -393,12 +473,15 @@ def list_test_metadata(
 ) -> list[dict]:
     if not test_run_ids:
         return []
-    sql = """
+    table_ident = _test_table_ident(test_table)
+    query = sql.SQL(
+        """
     SELECT tr.*
-    FROM test_runs tr
+    FROM {test_table} tr
     WHERE tr.id = ANY(%s)
     ORDER BY tr.start_time DESC NULLS LAST, tr.id DESC
     """
+    ).format(test_table=table_ident)
     with get_conn(
         db_name=db_name,
         db_host=db_host,
@@ -407,6 +490,6 @@ def list_test_metadata(
         db_password=db_password,
         db_sslmode=db_sslmode,
     ) as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql, (test_run_ids,))
+        cur.execute(query, (test_run_ids,))
         rows: Sequence[dict] = cur.fetchall()
     return list(rows)

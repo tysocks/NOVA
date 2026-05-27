@@ -8,14 +8,29 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <style>
-    :root { color-scheme:dark; --nova-ui-bg:#0a0a0a; --nova-view-bg:#000000; --nova-accent:#333; --nova-text:#d4d4d4; --nova-text-dim:#404040; --nova-divider:#1c1c1c; --nova-hover:#111111; --nova-active:#141414; --nova-line:#555; }
+    :root {
+      color-scheme:dark;
+      --nova-ui-bg:#0a0a0a;
+      --nova-view-bg:#000000;
+      --nova-accent:#333;
+      --nova-text:#d4d4d4;
+      --nova-text-dim:#404040;
+      --nova-divider:#1c1c1c;
+      --nova-hover:#111111;
+      --nova-active:#141414;
+      --nova-line:#555;
+      --nova-radius-xs:3px;
+      --nova-radius-sm:5px;
+      --nova-radius-md:8px;
+      --nova-radius-lg:10px;
+    }
     *{ box-sizing:border-box; }
     body{ margin:0; font-family:"MiSans","Segoe UI","Microsoft YaHei UI",Arial,sans-serif; font-size:13px; background:var(--nova-ui-bg); color:var(--nova-text); height:100vh; overflow:hidden; }
     /* Menubar */
     .menubar{ display:flex; align-items:center; gap:4px; padding:3px 6px; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); user-select:none; }
-    .menuItem{ position:relative; padding:5px 9px; border:1px solid transparent; cursor:pointer; font-size:0.74rem; }
+    .menuItem{ position:relative; padding:5px 9px; border:1px solid transparent; border-radius:var(--nova-radius-xs); cursor:pointer; font-size:0.74rem; }
     .menuItem:hover{ background:var(--nova-hover); border-color:var(--nova-divider); }
-    .menuDropdown{ position:absolute; top:calc(100% + 1px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-ui-bg); border:1px solid #222; box-shadow:0 8px 20px rgba(0,0,0,0.7); }
+    .menuDropdown{ position:absolute; top:calc(100% + 4px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-ui-bg); border:1px solid #222; border-radius:var(--nova-radius-sm); box-shadow:0 8px 20px rgba(0,0,0,0.7); overflow:hidden; }
     .menuDropdown.show{ display:block; }
     .menuAction{ padding:7px 10px; border-bottom:1px solid var(--nova-divider); font-size:0.8rem; cursor:pointer; color:var(--nova-text); }
     .menuAction:last-child{ border-bottom:none; }
@@ -32,11 +47,11 @@
     .panelHeader:hover{ background:var(--nova-hover); }
     .panelHeader h3{ margin:0; font-size:0.60rem; color:color-mix(in srgb, var(--nova-text-dim) 90%, white 10%); letter-spacing:0.09em; text-transform:uppercase; font-weight:500; }
     .headerBtns{ display:flex; gap:3px; }
-    .addBtn,.collapseBtn{ width:14px; height:14px; border-radius:0; border:none; background:transparent; color:var(--nova-text-dim); padding:0; font-weight:600; cursor:pointer; font-size:0.60rem; line-height:1; }
+    .addBtn,.collapseBtn{ width:14px; height:14px; border-radius:var(--nova-radius-xs); border:none; background:transparent; color:var(--nova-text-dim); padding:0; font-weight:600; cursor:pointer; font-size:0.60rem; line-height:1; }
     .addBtn:hover,.collapseBtn:hover{ color:var(--nova-text); }
     /* Lists */
-    .list{ border:none; background:var(--nova-ui-bg); overflow-y:auto; max-height:136px; }
-    .item{ padding:4px 6px 4px 8px; border-bottom:1px solid #0f0f0f; cursor:pointer; border-left:2px solid transparent; }
+    .list{ border:none; background:var(--nova-ui-bg); overflow-y:auto; max-height:136px; user-select:none; -webkit-user-select:none; }
+    .item{ padding:4px 6px 4px 8px; border-bottom:1px solid #0f0f0f; cursor:pointer; border-left:2px solid transparent; user-select:none; -webkit-user-select:none; }
     .item:last-child{ border-bottom:none; }
     .item.active{ background:var(--nova-active); border-left-color:var(--nova-line); }
     .item:hover:not(.active){ background:var(--nova-hover); }
@@ -46,19 +61,19 @@
     .empty{ padding:8px; color:var(--nova-text-dim); font-size:0.70rem; }
     /* Form elements */
     label{ display:block; margin:5px 0 2px 0; font-size:0.60rem; color:var(--nova-text-dim); letter-spacing:0.06em; text-transform:uppercase; }
-    input,select,button{ width:100%; border:1px solid var(--nova-divider); border-radius:0; background:#0d0d0d; color:var(--nova-text); padding:5px; font-size:0.72rem; outline:none; }
+    input,select,button{ width:100%; border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); background:#0d0d0d; color:var(--nova-text); padding:5px; font-size:0.72rem; outline:none; }
     input:focus,select:focus{ border-color:var(--nova-line); }
     button{ cursor:pointer; background:#111; border:1px solid transparent; }
     button:hover{ background:#1a1a1a; }
     button:active{ background:#222; }
-    .iconBtn{ width:22px; height:22px; min-width:22px; border-radius:0; border:none; background:transparent; color:var(--nova-text-dim); padding:0; font-size:0.82rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+    .iconBtn{ width:22px; height:22px; min-width:22px; border-radius:var(--nova-radius-sm); border:none; background:transparent; color:var(--nova-text-dim); padding:0; font-size:0.82rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
     .iconBtn:hover{ color:var(--nova-text); background:var(--nova-hover); }
     /* Plot tabs */
     .plotTabs{ display:flex; align-items:stretch; gap:0; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); min-height:26px; flex:0 0 auto; overflow-x:auto; }
     .plotTab{ width:auto; min-width:82px; max-width:195px; background:var(--nova-ui-bg); border:none; border-right:1px solid var(--nova-divider); border-top:2px solid transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 0 auto; padding:4px 8px; font-size:0.68rem; color:var(--nova-text-dim); }
     .plotTab.active{ background:#111; border-top-color:var(--nova-line); color:var(--nova-text); }
     .plotTab:hover:not(.active){ background:var(--nova-hover); color:var(--nova-text); }
-    .plotAdd{ width:auto; min-width:24px; max-width:24px; padding:0; font-weight:900; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:0; background:var(--nova-ui-bg); color:var(--nova-text-dim); }
+    .plotAdd{ width:auto; min-width:24px; max-width:24px; padding:0; font-weight:900; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:var(--nova-radius-xs); background:var(--nova-ui-bg); color:var(--nova-text-dim); }
     .plotAdd:hover{ color:var(--nova-text); background:var(--nova-hover); }
     #plot{ width:100%; flex:1 1 auto; min-height:0; }
     /* Button overrides */
@@ -73,7 +88,7 @@
     #statusBar{ position:fixed; bottom:0; left:0; right:0; height:20px; background:var(--nova-ui-bg); border-top:1px solid var(--nova-divider); padding:2px 8px; font-size:0.65rem; color:#555; z-index:50; display:flex; align-items:center; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     #statusBar.error{ color:#a87070; }
     /* Drawer */
-    .drawer{ position:fixed; left:0; right:0; bottom:20px; background:#0d0d0d; border-top:1px solid #222; max-height:44vh; padding:8px; display:none; z-index:40; }
+    .drawer{ position:fixed; left:8px; right:8px; bottom:28px; background:#0d0d0d; border:1px solid #222; border-radius:var(--nova-radius-md) var(--nova-radius-md) 0 0; max-height:44vh; padding:8px; display:none; z-index:40; box-shadow:0 -4px 24px rgba(0,0,0,0.45); }
     .drawer.show{ display:block; }
     .tableWrap{ overflow:auto; max-height:34vh; }
     table{ width:100%; border-collapse:collapse; font-size:0.74rem; }
@@ -82,37 +97,63 @@
     /* Modal */
     .modalBackdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.78); display:none; z-index:60; align-items:center; justify-content:center; }
     .modalBackdrop.show{ display:flex; }
-    .modal{ width:min(760px,92vw); max-height:82vh; overflow:auto; background:#0d0d0d; border:1px solid #222; border-radius:0; padding:0; }
+    .modal{ width:min(760px,92vw); max-height:82vh; overflow-x:hidden; overflow-y:auto; background:#0d0d0d; border:1px solid #222; border-radius:var(--nova-radius-md); padding:0; box-shadow:0 12px 40px rgba(0,0,0,0.55); }
+    .modal.modalScale{ width:min(420px,94vw); overflow-x:hidden; }
+    .modal.modalChannels{ width:min(480px,94vw); overflow-x:hidden; }
+    .modal.modalNarrow{ width:min(220px,88vw); }
+    .modal.modalMask{ width:min(340px,92vw); }
+    .modal.modalCompact .modalHeader{ padding:5px 8px; }
+    .modal.modalCompact .modalTitle{ font-size:0.80rem; }
+    .modal.modalCompact .modalGrid{ padding:6px 8px; gap:6px; }
+    .modal.modalCompact .modalActions{ padding:5px 8px; gap:6px; }
+    .modal.modalCompact .modalActions button{ min-width:72px; padding:4px 8px; }
+    .modal.modalCompact .modalBodyPad{ padding:6px 8px; }
+    .modal.modalCompact .modalList{ max-height:44vh; }
+    .modal.modalCompact .selectRow{ padding:4px 6px 4px 8px; }
+    .modal.modalMask .modalGrid{ grid-template-columns:1fr; }
+    .modal.modalMask .maskFormPad{ padding:4px 8px 2px; }
+    .modal.modalMask .maskSearchPad{ padding:4px 8px 2px; }
+    .modal.modalMask .maskListPad{ padding:0 8px 4px; }
+    .scalePickerGrid{ display:grid; grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr); gap:6px; width:100%; min-width:0; }
+    .scalePickerCol{ min-width:0; display:flex; flex-direction:column; }
+    .scalePickerCol label{ margin:0 0 3px 1px; }
+    .scalePickerCol .modalList{ max-height:48vh; overflow-x:hidden; min-width:0; }
+    .scalePickerCol select{ margin-bottom:4px; padding:4px; font-size:0.70rem; }
+    .channelTransferGrid{ display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:6px; align-items:stretch; width:100%; min-width:0; }
+    .channelTransferBtns{ display:flex; flex-direction:column; gap:4px; justify-content:center; }
+    .channelTransferBtns button{ min-width:32px !important; width:32px !important; padding:4px 0 !important; border-radius:var(--nova-radius-sm) !important; }
     .modalHeader{ display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid #222; }
     .modalTitle{ margin:0; font-size:0.85rem; color:var(--nova-text); }
-    .modalClose{ width:auto; min-width:24px; padding:3px 7px; }
+    .modalClose{ width:auto; min-width:24px; padding:3px 7px; border-radius:var(--nova-radius-xs); }
     .modalGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:10px; }
     .modalActions{ padding:8px 10px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid var(--nova-divider); margin:0; }
     .modalActions button{ width:auto; min-width:100px; }
-    .modalList{ border:1px solid var(--nova-divider); border-radius:0; background:#0a0a0a; max-height:48vh; overflow-y:auto; }
+    .modalList{ border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); background:#0a0a0a; max-height:48vh; overflow-x:hidden; overflow-y:auto; }
     .selectRow{ padding:7px 8px 7px 10px; border-bottom:1px solid var(--nova-divider); cursor:pointer; border-left:2px solid transparent; }
     .selectRow:last-child{ border-bottom:none; }
     .selectRow.active{ background:var(--nova-active); border-left-color:var(--nova-line); }
     .selectRow:hover:not(.active){ background:var(--nova-hover); }
+    .selectRow.disabled{ opacity:0.7; }
     .timeRangeRow{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
     .timeRangeRow label{ margin-top:0; }
     /* Menus */
-    .contextMenu,.miniMenu{ position:fixed; z-index:80; display:none; background:#0d0d0d; border:1px solid #222; border-radius:0; min-width:180px; }
+    .contextMenu,.miniMenu{ position:fixed; z-index:80; display:none; background:#0d0d0d; border:1px solid #222; border-radius:var(--nova-radius-sm); min-width:180px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
     .contextItem,.miniMenuItem{ padding:7px 10px; cursor:pointer; font-size:0.78rem; border-bottom:1px solid var(--nova-divider); color:var(--nova-text); }
     .contextItem:last-child,.miniMenuItem:last-child{ border-bottom:none; }
     .contextItem:hover,.miniMenuItem:hover{ background:var(--nova-hover); }
     /* Realtime panel */
-    #realtimePanel{ background:#0d0d0d; border:1px solid #222; }
-    .realtimeBtn{ width:26px; height:26px; min-width:26px; border-radius:0; padding:0; font-size:0.72rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--nova-text-dim); }
+    #realtimePanel{ background:#0d0d0d; border:1px solid #222; border-radius:var(--nova-radius-sm); }
+    .realtimeBtn{ width:26px; height:26px; min-width:26px; border-radius:var(--nova-radius-sm); padding:0; font-size:0.72rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--nova-text-dim); }
     .realtimeBtn:hover{ background:var(--nova-hover); color:var(--nova-text); }
     .realtimeBtn.active{ background:var(--nova-active); color:var(--nova-text); }
-    #realtimeCloseBtn{ border-radius:0; }
+    #realtimeCloseBtn{ border-radius:var(--nova-radius-sm); }
     /* Load dock */
     .choochDock{ margin-top:auto; margin-bottom:30px; padding:8px; border-top:1px solid var(--nova-divider); }
-    .choochDock button{ border-radius:0; margin:0; min-height:30px; letter-spacing:0.09em; text-transform:uppercase; font-size:0.65rem; font-weight:600; background:#111; border-color:#2a2a2a; }
+    .choochDock button{ border-radius:var(--nova-radius-sm); margin:0; min-height:30px; letter-spacing:0.09em; text-transform:uppercase; font-size:0.65rem; font-weight:600; background:#111; border-color:#2a2a2a; }
     .choochDock button:hover{ background:#1a1a1a; border-color:#555; }
     /* Region section */
     #regionBody{ max-height:none !important; padding:6px 8px; }
+    .panel-legacy{ display:none !important; }
   </style>
 </head>
 <body>
@@ -157,11 +198,11 @@
         <div class="panelHeader"><h3>Sources</h3><div class="headerBtns"><button data-collapse="sourcesList" class="collapseBtn" type="button">-</button><button id="addSourceBtn" class="addBtn" type="button">+</button></div></div>
         <div id="sourcesList" class="list"></div>
       </div>
-      <div class="panel">
+      <div class="panel panel-legacy">
         <div class="panelHeader"><h3>Databases</h3><div class="headerBtns"><button data-collapse="databasesList" class="collapseBtn" type="button">-</button><button id="addDatabaseBtn" class="addBtn" type="button">+</button></div></div>
         <div id="databasesList" class="list"></div>
       </div>
-      <div class="panel">
+      <div class="panel panel-legacy">
         <div class="panelHeader"><h3>Tests</h3><div class="headerBtns"><button data-collapse="testsList" class="collapseBtn" type="button">-</button><button id="addTestBtn" class="addBtn" type="button">+</button></div></div>
         <div id="testsList" class="list"></div>
       </div>
@@ -212,7 +253,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "nova.uiState.v6";
+    const STORAGE_KEY = "nova.uiState.v7";
     const byId = (id) => document.getElementById(id);
     const toIso = (v) => (v ? new Date(v).toISOString() : "n/a");
     let latestRows = [], metadataRows = [], testsData = [], channelsData = [], previewVisible = false, focusedItem = null;
@@ -242,7 +283,7 @@
     let realtimeExporting = false;
     let realtimeExportRenderOptions = null;
     let channelUnitMap = new Map();
-    let state = { sources: [], databases: [], masks: [], calculatedChannels: [], freqOverrides: {}, collapsed: {} };
+    let state = { sources: [], databases: [], masks: [], calculatedChannels: [], freqOverrides: {}, unitOverrides: {}, collapsed: {} };
     const lastClickedByKind = {};
     const catalogCache = new Map();
     let plotHandlersBound = false;
@@ -254,7 +295,26 @@
     function runDeferred(fn){ return new Promise((resolve)=>setTimeout(()=>resolve(fn()), 0)); }
     function setStatus(text, isError = false) { const e = byId("statusBar"); if(!e) return; e.textContent = text; e.className = isError ? "error" : ""; }
     function sourceConnQuery(src) { if (!src || src.type !== "postgres") return ""; const p = new URLSearchParams(); p.append("db_host", src.host); p.append("db_port", String(src.port)); p.append("db_user", src.user); p.append("db_password", src.password); p.append("db_sslmode", src.sslmode || "disable"); return p.toString(); }
-    async function getJson(url) { const r = await fetch(url); if (!r.ok) throw new Error(`Request failed ${r.status}`); return r.json(); }
+    function resolveChannelUnit(chId, fallbackUnit){
+      const override = state.unitOverrides ? state.unitOverrides[chId] : "";
+      if (typeof override === "string" && override.trim()) return override.trim();
+      return fallbackUnit || null;
+    }
+    function channelSourceType(chId){
+      const dbId = String(chId || "").split("|")[0];
+      const db = state.databases.find((d)=>d.id===dbId);
+      if(!db) return "";
+      const src = state.sources.find((s)=>s.id===db.sourceId);
+      return src?.type || "";
+    }
+    function canSetChannelUnit(chId){
+      const ch = channelsData.find((c)=>`${c.__dbId}|${c.channel_name}`===chId);
+      if(!ch || ch.__isCalculated) return false;
+      const sourceType = channelSourceType(chId);
+      if(sourceType==="csv" || sourceType==="h5" || sourceType==="tdms") return true;
+      return !(ch.unit || "").trim();
+    }
+    async function getJson(url) { const r = await fetch(url); if (!r.ok) { let detail = ""; try { const body = await r.json(); detail = body?.detail ? `: ${body.detail}` : ""; } catch { try { const text = await r.text(); if (text) detail = `: ${text}`; } catch {} } throw new Error(`Request failed ${r.status}${detail}`); } return r.json(); }
     async function postJson(url, payload){ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); if(!r.ok) throw new Error(`Request failed ${r.status}`); return r.json(); }
     async function loadSourceDefaults(){
       if(sourceDefaults) return sourceDefaults;
@@ -272,20 +332,138 @@
       if(raw.includes("red")) return "redscale";
       return "auto";
     }
+    function isPostgresTestLeaf(s){ return s && s.leaf_kind==="postgres_test"; }
+    function isPostgresConnSource(s){ return s && s.type==="postgres" && !isPostgresTestLeaf(s); }
+    function isFileSourceType(t){ return t==="csv" || t==="h5" || t==="tdms"; }
+    function isFileSource(s){ return s && isFileSourceType(s.type); }
+    function postgresConnForSource(src){
+      if(!src) return null;
+      if(isPostgresTestLeaf(src)){
+        return state.sources.find((x)=>x.id===src.parent_source_id) || src;
+      }
+      return src;
+    }
+    function getOrCreatePostgresParent(defs){
+      const existing=state.sources.find((s)=>isPostgresConnSource(s)&&s.host===defs.host&&Number(s.port)===Number(defs.port)&&s.user===defs.user&&s.name===defs.name);
+      if(existing) return existing;
+      const entry={ id:crypto.randomUUID(), type:"postgres", name:defs.name||"PostgreSQL Source", host:defs.host||"localhost", port:Number(defs.port||5432), user:defs.user||"pipeline", password:defs.password||"", sslmode:defs.sslmode||"disable", file_path:"" };
+      state.sources.push(entry);
+      return entry;
+    }
+    function ensureFileSourceCatalog(src){
+      if(!src || !isFileSource(src)) return null;
+      let db=state.databases.find((d)=>d.sourceId===src.id);
+      if(!db){
+        db={ id:crypto.randomUUID(), sourceId:src.id, sourceType:src.type, name:src.name||src.type };
+        state.databases.push(db);
+      }
+      const testKey=`${db.id}|1`;
+      addedTestIds.add(testKey);
+      selectedTestIds.add(testKey);
+      selectedDatabaseIds.add(db.id);
+      selectedSourceIds.add(src.id);
+      return db;
+    }
+    function addPostgresTestLeaf({ parentSrc, db_name, test_table, test_run_id, run_code }){
+      const displayName=`${db_name}/${run_code || String(test_run_id)}`;
+      const existing=state.sources.find((s)=>isPostgresTestLeaf(s)&&s.parent_source_id===parentSrc.id&&s.db_name===db_name&&s.test_table===test_table&&String(s.test_run_id)===String(test_run_id));
+      if(existing){
+        selectedSourceIds.add(existing.id);
+        return existing;
+      }
+      let dbEntry=state.databases.find((d)=>d.sourceId===parentSrc.id&&d.name===db_name&&d.test_table===test_table);
+      if(!dbEntry){
+        dbEntry={ id:crypto.randomUUID(), sourceId:parentSrc.id, sourceType:"postgres", name:db_name, test_table };
+        state.databases.push(dbEntry);
+      }
+      const testKey=`${dbEntry.id}|${test_run_id}`;
+      addedTestIds.add(testKey);
+      selectedTestIds.add(testKey);
+      selectedDatabaseIds.add(dbEntry.id);
+      const leaf={
+        id:crypto.randomUUID(),
+        leaf_kind:"postgres_test",
+        type:"postgres",
+        name:displayName,
+        parent_source_id:parentSrc.id,
+        host:parentSrc.host,
+        port:parentSrc.port,
+        user:parentSrc.user,
+        password:parentSrc.password,
+        sslmode:parentSrc.sslmode,
+        db_name,
+        test_table,
+        test_run_id,
+        run_code: run_code || String(test_run_id),
+        db_entry_id: dbEntry.id,
+        file_path:""
+      };
+      state.sources.push(leaf);
+      selectedSourceIds.add(leaf.id);
+      clearCatalogCache();
+      return leaf;
+    }
+    function sourcesListItems(){
+      const items=[];
+      state.sources.forEach((s)=>{
+        if(isPostgresConnSource(s)){
+          const hasLeaves=state.sources.some((l)=>isPostgresTestLeaf(l)&&l.parent_source_id===s.id);
+          if(hasLeaves) return;
+        }
+        if(isPostgresTestLeaf(s)){
+          items.push({ id:s.id, primary:s.name, meta:s.test_table ? String(s.test_table) : "" });
+        } else if(isFileSource(s)){
+          items.push({ id:s.id, primary:s.name, meta:`${s.type}: ${s.file_path||"no file"}` });
+        } else if(s.type==="postgres"){
+          items.push({ id:s.id, primary:s.name, meta:`${s.user}@${s.host}:${s.port}` });
+        } else {
+          items.push({ id:s.id, primary:s.name, meta:`${s.type||"source"}` });
+        }
+      });
+      return items;
+    }
+    function effectiveSelectedSourceIds(){
+      return effectiveIds({ selected: selectedSourceIds, all: state.sources.map((s)=>s.id) });
+    }
+    function resolveDbSource(dbId){
+      const db=state.databases.find((d)=>d.id===dbId);
+      if(!db) return { db:null, src:null, connSrc:null };
+      let src=state.sources.find((s)=>s.id===db.sourceId);
+      const leaf=state.sources.find((s)=>isPostgresTestLeaf(s)&&s.db_entry_id===dbId);
+      if(leaf) src=leaf;
+      return { db, src, connSrc:postgresConnForSource(src) };
+    }
+    function collectDatabaseIdsForSources(sourceIds){
+      const out=new Set();
+      sourceIds.forEach((sid)=>{
+        const s=state.sources.find((x)=>x.id===sid);
+        if(!s) return;
+        if(isPostgresTestLeaf(s) && s.db_entry_id) out.add(s.db_entry_id);
+        else if(isFileSource(s)){
+          const db=ensureFileSourceCatalog(s);
+          if(db) out.add(db.id);
+        } else if(isPostgresConnSource(s)){
+          state.databases.filter((d)=>d.sourceId===s.id).forEach((d)=>out.add(d.id));
+        }
+      });
+      return [...out];
+    }
     async function fetchTimeseriesV2({ tests, channels, db, src, startTime=null, endTime=null, maxPoints=null, aggregationMode="auto" }){
       const p=new URLSearchParams();
       tests.forEach((id)=>p.append("test_run_ids",id));
       channels.forEach((ch)=>p.append("channel_names",ch));
       p.append("limit","5000000");
-      p.append("source", inferLogicalSource(src));
       p.append("t0_mode", byId("t0Mode").value||"absolute");
       p.append("resolution_px", String(Math.max(320, Number(byId("plot")?.clientWidth||window.innerWidth||1200))));
       p.append("aggregation_mode", aggregationMode);
       if(maxPoints!==null && maxPoints!==undefined) p.append("max_points", String(maxPoints));
       if(db?.name) p.append("db_name", db.name);
+      if(db?.test_table) p.append("test_table", db.test_table);
       if(startTime) p.append("start_time", startTime);
       if(endTime) p.append("end_time", endTime);
-      sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
+      const connSrc=postgresConnForSource(src);
+      p.set("source", inferLogicalSource(connSrc||src));
+      sourceConnQuery(connSrc).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
       const envelope=await getJson(`/api/v2/timeseries?${p.toString()}`);
       return Array.isArray(envelope?.overview) ? envelope.overview : [];
     }
@@ -298,19 +476,39 @@
     }
     function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, appearance, selectedSourceIds:[...selectedSourceIds], selectedDatabaseIds:[...selectedDatabaseIds], selectedTestIds:[...selectedTestIds], selectedChannelIds:[...selectedChannelIds], selectedMaskIds:[...selectedMaskIds], addedTestIds:[...addedTestIds], addedChannelIds:[...addedChannelIds], xAxis:byId("xAxis").value, t0Mode:byId("t0Mode").value, previewVisible })); localStorage.setItem(APPEAR_KEY, JSON.stringify(appearance)); }
     const saveStateDeferred = debounce(saveState, 150);
-    function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:s.calculatedChannels || [], freqOverrides:s.freqOverrides || {}, collapsed:s.collapsed || {} }; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = new Set(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = new Set(s.addedChannelIds || []); byId("xAxis").value = s.xAxis || "time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "absolute")); byId("t0Mode").value = nextT0; previewVisible = Boolean(s.previewVisible); } catch {} }
-    function openModal(title, bodyHtml, onSave) {
+    function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:s.calculatedChannels || [], freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {} }; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = new Set(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = new Set(s.addedChannelIds || []); byId("xAxis").value = s.xAxis || "time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "absolute")); byId("t0Mode").value = nextT0; previewVisible = Boolean(s.previewVisible); } catch {} }
+    const MODAL_SIZE_CLASSES=["modalScale","modalChannels","modalNarrow","modalMask","modalCompact"];
+    function setModalLayout(sizeClass, compact){
+      const modalEl=byId("modalBackdrop")?.querySelector(".modal");
+      if(!modalEl) return;
+      MODAL_SIZE_CLASSES.forEach((c)=>modalEl.classList.remove(c));
+      if(sizeClass) modalEl.classList.add(sizeClass);
+      if(compact) modalEl.classList.add("modalCompact");
+    }
+    function isModalLayoutArg(v){
+      return v && typeof v==="object" && !Array.isArray(v) && (v.size || v.compact !== undefined);
+    }
+    function openModal(title, bodyHtml, onSave, layout) {
+      let saveFn=onSave;
+      let layoutOpts=layout;
+      if(isModalLayoutArg(onSave)){
+        layoutOpts=onSave;
+        saveFn=typeof layout==="function" ? layout : (async()=>true);
+      }
+      const sizeClass=layoutOpts?.size||null;
+      const compact=Boolean(layoutOpts?.compact);
       byId("modalTitle").textContent = title;
       byId("modalBody").innerHTML = bodyHtml;
       byId("modalBackdrop").classList.add("show");
+      setModalLayout(sizeClass, compact);
       byId("modalCloseBtn").onclick = closeModal;
 
       const applyBtn = byId("modalSaveBtn");
-      if (applyBtn) applyBtn.onclick = async () => { await onSave(); };
+      if (applyBtn) applyBtn.onclick = async () => { await saveFn(); };
 
       const applyCloseBtn = byId("modalSaveCloseBtn");
       if (applyCloseBtn) applyCloseBtn.onclick = async () => {
-        const ok = await onSave();
+        const ok = await saveFn();
         if (ok === false) return;
         closeModal();
       };
@@ -318,7 +516,11 @@
       const c = byId("modalCancelBtn");
       if (c) c.onclick = closeModal;
     }
-    function closeModal() { byId("modalBackdrop").classList.remove("show"); byId("modalBody").innerHTML = ""; }
+    function closeModal() {
+      byId("modalBackdrop").classList.remove("show");
+      setModalLayout(null, false);
+      byId("modalBody").innerHTML = "";
+    }
     function hideMenus() { byId("contextMenu").style.display = "none"; byId("sourceAddMenu").style.display = "none"; byId("channelAddMenu").style.display = "none"; byId("maskAddMenu").style.display = "none"; }
     function showContextMenu(x,y,items){ const m=byId("contextMenu"); m.innerHTML=items.map((i,idx)=>`<div class="contextItem" data-i="${idx}">${i.label}</div>`).join(""); m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".contextItem").forEach((el)=>el.onclick=()=>{items[Number(el.getAttribute("data-i"))].action(); hideMenus();}); }
     function getDefaultSourceByKey(kind){
@@ -340,9 +542,299 @@
     }
     function showSourceAddMenu(x,y){
       const m=byId("sourceAddMenu");
-      m.innerHTML=`<div class="miniMenuItem" data-t="redscale">Add RedScale</div><div class="miniMenuItem" data-t="bluescale">Add BlueScale</div><div class="miniMenuItem" data-t="postgres">Add PostgreSQL</div><div class="miniMenuItem" data-t="csv">Add CSV</div><div class="miniMenuItem" data-t="tdms">Add TDMS</div>`;
+      m.innerHTML=`<div class="miniMenuItem" data-t="redscale">Add RedScale</div><div class="miniMenuItem" data-t="bluescale">Add BlueScale</div><div class="miniMenuItem" data-t="postgres">Add PostgreSQL</div><div class="miniMenuItem" data-t="csv">Add CSV</div><div class="miniMenuItem" data-t="tdms">Add TDMS</div><div class="miniMenuItem" data-t="h5">Add H5</div>`;
       m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block";
-      m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="redscale")addDefaultPostgresSource("redscale"); if(t==="bluescale")addDefaultPostgresSource("bluescale"); if(t==="postgres")showAddPostgresModal(); if(t==="csv")showAddCsvModal(); if(t==="tdms")showAddTdmsModal();});
+      m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="redscale")addDefaultPostgresSource("redscale"); if(t==="bluescale")addDefaultPostgresSource("bluescale"); if(t==="postgres")showAddPostgresModal(); if(t==="csv")showAddCsvModal(); if(t==="tdms")showAddTdmsModal(); if(t==="h5")showAddH5Modal();});
+    }
+
+    function openAddSourceModal(){
+      // Phase 1: single modal (no dropdown) for source type selection.
+      // Phase 3/4 will refine TDMS/Data Files flows; for now we reuse existing modals.
+      const body = `
+        <div class="modalList" id="asm_list" style="margin:6px 8px;">
+          <div class="selectRow" data-t="redscale"><div class="itemPrimary">RedScale</div></div>
+          <div class="selectRow" data-t="bluescale"><div class="itemPrimary">BlueScale</div></div>
+          <div class="selectRow" data-t="postgres"><div class="itemPrimary">PostgreSQL</div></div>
+          <div class="selectRow" data-t="tdms"><div class="itemPrimary">TDMS</div></div>
+          <div class="selectRow" data-t="datafiles"><div class="itemPrimary">Data Files</div></div>
+        </div>
+        <div class="modalActions">
+          <button id="modalCancelBtn" type="button">Close</button>
+        </div>
+      `;
+      openModal("Add Source", body, async()=>true, { size:"modalNarrow", compact:true });
+      const list = byId("asm_list");
+      if(!list) return;
+      list.querySelectorAll("[data-t]").forEach((row)=>{
+        row.onclick=()=>{
+          const t = row.getAttribute("data-t");
+          closeModal();
+          if(t==="redscale") showAddScaleTestsModal("redscale");
+          else if(t==="bluescale") showAddScaleTestsModal("bluescale");
+          else if(t==="postgres") showAddPostgresModal();
+          else if(t==="tdms") showAddTdmsModal();
+          else if(t==="datafiles") showAddDataFilesModal();
+        };
+      });
+    }
+
+    async function showAddScaleTestsModal(kind, parentSrcIn){
+      let parentSrc = parentSrcIn || null;
+      if(kind==="redscale" || kind==="bluescale"){
+        await loadSourceDefaults();
+        const defs=getDefaultSourceByKey(kind);
+        if(!defs){ setStatus(`No ${kind} defaults available. Use File → Default Sources...`, true); return; }
+        parentSrc=getOrCreatePostgresParent(defs);
+      }
+      if(!parentSrc || parentSrc.type!=="postgres"){
+        setStatus("PostgreSQL connection is required.", true);
+        return;
+      }
+
+      const conn = sourceConnQuery(parentSrc);
+      let dbRows = [];
+      try{
+        const dbs = await getJson(`/api/databases?${conn}`);
+        dbRows = (dbs||[]).map((d)=>({ id:String(d.name), primary:String(d.name), meta:"" }));
+      }catch(err){
+        setStatus(`Database discovery failed: ${err}`, true);
+        return;
+      }
+      if(!dbRows.length){ setStatus("No databases discovered.", true); return; }
+
+      let selectedDb = dbRows[0].id;
+      let tableRows = [];
+      let selectedTable = "test_runs";
+      let testRows = [];
+      const selectedTests = new Set(); // holds test_run_id strings
+
+      let dbAnchor=-1, testAnchor=-1;
+
+      const renderListSimple = (containerId, rows, activeId, setActive, anchorRefName)=>{
+        const root=byId(containerId);
+        if(!root) return;
+        root.innerHTML="";
+        rows.forEach((r, idx)=>{
+          const el=document.createElement("div");
+          const active = (activeId===r.id);
+          el.className="selectRow"+(active?" active":"");
+          el.innerHTML=`<div class="itemPrimary">${r.primary}</div>${r.meta?`<div class="itemMeta">${r.meta}</div>`:""}`;
+          el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
+          el.onclick=(ev)=>{
+            if(ev&&ev.preventDefault) ev.preventDefault();
+            if(ev&&ev.stopPropagation) ev.stopPropagation();
+            if(ev && ev.shiftKey){
+              // Shift on single-select lists just keeps last clicked (no-op range).
+              setActive(r.id);
+            } else {
+              setActive(r.id);
+            }
+            if(anchorRefName==="db") dbAnchor=idx;
+          };
+          root.appendChild(el);
+        });
+      };
+
+      const renderTestList = ()=>{
+        const root=byId("st_tests");
+        if(!root) return;
+        root.innerHTML="";
+        testRows.forEach((r, idx)=>{
+          const id=r.id;
+          const active = selectedTests.has(id);
+          const el=document.createElement("div");
+          el.className="selectRow"+(active?" active":"");
+          el.innerHTML=`<div class="itemPrimary">${r.primary}</div>${r.meta?`<div class="itemMeta">${r.meta}</div>`:""}`;
+          el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
+          el.onclick=(ev)=>{
+            if(ev&&ev.preventDefault) ev.preventDefault();
+            if(ev&&ev.stopPropagation) ev.stopPropagation();
+            const meta = hasMetaOrCtrlKey(ev);
+            const shift = Boolean(ev && ev.shiftKey);
+            if(shift && Number.isInteger(testAnchor) && testAnchor>=0 && testAnchor<testRows.length){
+              const a=Math.min(testAnchor, idx), b=Math.max(testAnchor, idx);
+              for(let i=a;i<=b;i+=1) selectedTests.add(testRows[i].id);
+            } else if(meta){
+              if(selectedTests.has(id)) selectedTests.delete(id); else selectedTests.add(id);
+              testAnchor=idx;
+            } else {
+              selectedTests.clear();
+              selectedTests.add(id);
+              testAnchor=idx;
+            }
+            renderAllScaleModal();
+          };
+          root.appendChild(el);
+        });
+      };
+
+      const refreshTables = async()=>{
+        try{
+          const rows = await getJson(`/api/test-tables?db_name=${encodeURIComponent(selectedDb)}&${conn}`);
+          tableRows = (rows||[]).map((t)=>({ id:String(t), primary:String(t), meta:"" }));
+          if(!tableRows.some((r)=>r.id===selectedTable)) selectedTable = tableRows[0]?.id || "test_runs";
+        }catch{
+          tableRows = [{id:"test_runs", primary:"test_runs", meta:""}];
+          selectedTable = "test_runs";
+        }
+      };
+
+      const refreshTests = async()=>{
+        selectedTests.clear();
+        testRows = [];
+        try{
+          const url = `/api/tests?limit=5000000&db_name=${encodeURIComponent(selectedDb)}&test_table=${encodeURIComponent(selectedTable)}&${conn}`;
+          const tests = await getJson(url);
+          const dup = {};
+          (tests||[]).forEach((t)=>{ const k=String(t.run_code); dup[k]=(dup[k]||0)+1; });
+          testRows = (tests||[]).map((t)=>({
+            id:String(t.test_run_id),
+            primary: (dup[String(t.run_code)]>1) ? `${t.run_code} (#${t.test_run_id})` : String(t.run_code),
+            meta: ""
+          }));
+        }catch(err){
+          setStatus(`Failed to load tests: ${err}`, true);
+        }
+      };
+
+      const updateTableSelect = ()=>{
+        const sel=byId("st_table_sel");
+        if(!sel) return;
+        if(tableRows.length<=1){
+          sel.style.display="none";
+          sel.innerHTML="";
+          return;
+        }
+        sel.style.display="block";
+        sel.innerHTML=tableRows.map((r)=>`<option value="${r.id}" ${r.id===selectedTable?"selected":""}>${r.primary}</option>`).join("");
+      };
+
+      const renderAllScaleModal = ()=>{
+        renderListSimple("st_dbs", dbRows, selectedDb, (id)=>{ selectedDb=id; refreshTables().then(()=>refreshTests().then(renderAllScaleModal)); }, "db");
+        updateTableSelect();
+        renderTestList();
+        const btn=byId("st_apply");
+        if(btn) btn.disabled = selectedTests.size===0;
+      };
+
+      const modalTitle = kind==="redscale" ? "Add RedScale Tests" : (kind==="bluescale" ? "Add BlueScale Tests" : "Add PostgreSQL Tests");
+      openModal(modalTitle,`
+        <div class="modalBodyPad" style="width:100%;max-width:100%;overflow-x:hidden;box-sizing:border-box;">
+          <div class="scalePickerGrid">
+            <div class="scalePickerCol"><label>Database</label><div class="modalList" id="st_dbs"></div></div>
+            <div class="scalePickerCol"><label>Tests</label><select id="st_table_sel" style="display:none;"></select><div class="modalList" id="st_tests"></div></div>
+          </div>
+        </div>
+        <div class="modalActions">
+          <button id="modalCancelBtn" type="button">Cancel</button>
+          <button id="st_apply" type="button">Apply</button>
+        </div>
+      `, async()=>true, { size:"modalScale", compact:true });
+      const tableSel=byId("st_table_sel");
+      if(tableSel) tableSel.onchange=()=>{ selectedTable=tableSel.value; refreshTests().then(renderAllScaleModal); };
+
+      await refreshTables();
+      await refreshTests();
+      renderAllScaleModal();
+
+      byId("st_apply").onclick=async()=>{
+        if(!selectedTests.size) return;
+        let added=0;
+        [...selectedTests].forEach((tid)=>{
+          const row=testRows.find((r)=>r.id===tid);
+          const before=state.sources.length;
+          addPostgresTestLeaf({
+            parentSrc,
+            db_name:selectedDb,
+            test_table:selectedTable,
+            test_run_id:tid,
+            run_code:row ? row.primary.replace(/\s*\(#\d+\)\s*$/,"") : String(tid)
+          });
+          if(state.sources.length>before) added+=1;
+        });
+        await refreshCatalogsForSelections();
+        renderAll();
+        saveState();
+        closeModal();
+        setStatus(`Added ${added} source(s).`);
+      };
+    }
+
+    function showAddDataFilesModal(){
+      // Phase 4: unified flow for CSV/H5 with a config step.
+      openModal("Add Data Files",`
+        <div class="modalGrid">
+          <div style="grid-column:1 / -1;">
+            <input id="m_df_file" type="file" accept=".csv,text/csv,.h5,.hdf5,application/x-hdf" />
+          </div>
+        </div>
+        <div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button></div>
+      `, async()=>true);
+
+      const input = byId("m_df_file");
+      if(!input) return;
+      input.onchange = async()=>{
+        try{
+          const file = (input.files && input.files[0]) ? input.files[0] : null;
+          if(!file){ setStatus("Pick a file first.", true); return; }
+          const fileName = file.name || "datafile";
+          const lower = String(fileName).toLowerCase();
+          const fileType = (lower.endsWith(".csv")) ? "csv" : ((lower.endsWith(".h5") || lower.endsWith(".hdf5")) ? "h5" : "");
+          if(!fileType){ setStatus("Unsupported file type. Use .csv or .h5/.hdf5.", true); return; }
+
+          const uploadedPath = await uploadSelectedFile("m_df_file");
+          if(!uploadedPath){ setStatus("Upload failed.", true); return; }
+
+          const stem = fileName.replace(/\.[^.]+$/, "");
+          const defaultName = stem || fileName;
+          const showUnits = fileType === "csv";
+          openModal("Configure Data File Source",`
+            <div class="modalGrid">
+              <div><label>Source name</label><input id="m_df_name" type="text" value="${defaultName}" /></div>
+              <div><label>File type</label><input id="m_df_type" type="text" value="${fileType.toUpperCase()}" disabled /></div>
+              <div style="grid-column:1 / -1;"><label>Source file path</label><input id="m_df_path" type="text" value="${uploadedPath}" disabled /></div>
+              <div style="grid-column:1 / -1; display:${showUnits ? "block" : "none"};">
+                <label style="display:flex; gap:8px; align-items:center; text-transform:none; letter-spacing:normal; font-size:0.72rem; color:var(--nova-text);">
+                  <input id="m_df_units" type="checkbox" style="width:auto; margin:0;" />
+                  Units are in CSV headers (e.g. <code>THRUST (N)</code> or <code>P[psi]</code>)
+                </label>
+              </div>
+            </div>
+            <div class="modalActions">
+              <button id="modalCancelBtn" type="button">Cancel</button>
+              <button id="modalSaveCloseBtn" type="button">Add</button>
+            </div>
+          `, async()=>{
+            const name = (byId("m_df_name").value || "").trim();
+            if(!name){ setStatus("Source name is required.", true); return false; }
+            const unitsInHeaders = showUnits ? Boolean(byId("m_df_units")?.checked) : false;
+            state.sources.push({
+              id:crypto.randomUUID(),
+              type:fileType,
+              name,
+              host:"",
+              port:0,
+              user:"",
+              password:"",
+              sslmode:"",
+              file_path:uploadedPath,
+              units_in_headers: unitsInHeaders
+            });
+            clearCatalogCache();
+            const entry=state.sources[state.sources.length-1];
+            ensureFileSourceCatalog(entry);
+            selectedSourceIds.add(entry.id);
+            renderAll();
+            saveState();
+            setStatus(`Added ${fileType.toUpperCase()} source '${name}'.`);
+            return true;
+          });
+        }catch(err){
+          setStatus(`Failed to add data file: ${err}`, true);
+        }
+      };
+
+      setTimeout(()=>{ try{ input.click(); }catch{} }, 0);
     }
     function openDefaultSourcesModal(){
       const rows=Array.isArray(sourceDefaults)?sourceDefaults:[];
@@ -426,6 +918,7 @@
           masks:state.masks,
           calculatedChannels:state.calculatedChannels,
           freqOverrides:state.freqOverrides,
+          unitOverrides:state.unitOverrides,
           collapsed:state.collapsed||{},
           appearance,
         },
@@ -447,6 +940,7 @@
       if(app.masks) state.masks=app.masks;
       if(app.calculatedChannels) state.calculatedChannels=app.calculatedChannels;
       if(app.freqOverrides) state.freqOverrides=app.freqOverrides;
+      if(app.unitOverrides) state.unitOverrides=app.unitOverrides;
       if(app.collapsed) state.collapsed=app.collapsed;
       const tabs=obj.plots?.tabs;
       if(Array.isArray(tabs) && tabs.length){
@@ -695,11 +1189,136 @@
       });
       renderAll();
     }
-    function renderRows(rows){ const b=byId("rows"); b.innerHTML=""; rows.slice(0,200).forEach((r)=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td>${r.test_run_id}</td><td>${r.test_run_code}</td><td>${r.channel_name}</td><td>${r.unit||"unitless"}</td><td>${r.time}</td><td>${Number(r.value).toFixed(4)}</td>`; b.appendChild(tr);}); }
+    function renderRows(rows){ const b=byId("rows"); b.innerHTML=""; rows.slice(0,200).forEach((r)=>{ const tr=document.createElement("tr"); const chId=`${r.__dbId}|${r.channel_name}`; tr.innerHTML=`<td>${r.test_run_id}</td><td>${r.test_run_code}</td><td>${r.channel_name}</td><td>${resolveChannelUnit(chId, r.unit)||"unitless"}</td><td>${r.time}</td><td>${Number(r.value).toFixed(4)}</td>`; b.appendChild(tr);}); }
     function renderMetadata(rows){ metadataRows=rows||[]; }
     function showMetadataModal(){ if(!metadataRows.length){ setStatus("No metadata loaded yet. Click Chooch first.", true); return; } const cols=Object.keys(metadataRows[0]); const head=cols.map((c)=>`<th>${c}</th>`).join(""); const body=metadataRows.map((r)=>`<tr>${cols.map((c)=>`<td>${r[c] ?? ""}</td>`).join("")}</tr>`).join(""); openModal("Metadata",`<div class="tableWrap" style="max-height:70vh;"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true); }
-    function renderList(target,items,set,kind,empty){ const root=byId(target); root.innerHTML=""; if(!items.length){ root.innerHTML=`<div class="empty">${empty}</div>`; return;} items.forEach((it,idx)=>{ const row=document.createElement("div"); row.className="item"+(set.has(it.id)?" active":"")+(focusedItem&&focusedItem.kind===kind&&focusedItem.id===it.id?" focused":""); row.innerHTML=`<div class="itemPrimary">${it.primary}</div>${it.meta?`<div class="itemMeta">${it.meta}</div>`:""}`; row.onclick=async(e)=>{focusedItem={kind,id:it.id}; const last=lastClickedByKind[kind]; if(e.shiftKey && Number.isInteger(last) && last>=0 && last<items.length){ const a=Math.min(last,idx), b=Math.max(last,idx); for(let i=a;i<=b;i+=1) set.add(items[i].id); } else { if(set.has(it.id)) set.delete(it.id); else set.add(it.id); lastClickedByKind[kind]=idx; } if(kind==="database"){ await refreshCatalogsForSelections(); } renderAll(); saveStateDeferred();}; row.oncontextmenu=(e)=>{e.preventDefault(); focusedItem={kind,id:it.id}; const menu=[{label:"Delete",action:deleteFocused}]; if(kind==="channel"){ if(it.isCalculated) menu.push({label:"Edit calculated channel...",action:()=>editCalculatedChannel(it.id)}); menu.push({label:"Set Frequency...",action:()=>setChannelFrequency(it.id)}); } if(kind==="mask"){ menu.unshift({label:"Edit mask...",action:()=>editMask(it.id)}); } showContextMenu(e.clientX,e.clientY,menu);}; root.appendChild(row);}); }
-    function buildXAxis(){ const x=byId("xAxis"),prev=x.value; x.innerHTML=`<option value="time">time</option>`; [...selectedChannelIds].forEach((id)=>{ const o=document.createElement("option"); o.value=id; o.textContent=id.split("|")[1]; x.appendChild(o);}); if([...x.options].some((o)=>o.value===prev)) x.value=prev; }
+
+    function hasMetaOrCtrlKey(ev){ return Boolean(ev && (ev.ctrlKey || ev.metaKey)); }
+    function applyExplorerSelection({ items, set, kind, clickIndex, ev }){
+      const ids = items.map((x)=>x.id);
+      const id = ids[clickIndex];
+      if(!id) return;
+      const anchor = lastClickedByKind[kind];
+      const shift = Boolean(ev && ev.shiftKey);
+      const meta = hasMetaOrCtrlKey(ev);
+
+      if(shift && Number.isInteger(anchor) && anchor >= 0 && anchor < ids.length){
+        const a = Math.min(anchor, clickIndex);
+        const b = Math.max(anchor, clickIndex);
+        // Shift-click extends selection; if nothing is selected yet, start from anchor range anyway.
+        for(let i=a;i<=b;i+=1) set.add(ids[i]);
+        return;
+      }
+
+      if(meta){
+        if(set.has(id)) set.delete(id);
+        else set.add(id);
+        lastClickedByKind[kind] = clickIndex;
+        return;
+      }
+
+      // Plain click selects only the clicked item (even if it was already selected).
+      set.clear();
+      set.add(id);
+      lastClickedByKind[kind] = clickIndex;
+    }
+
+    function renderList(target,items,set,kind,empty){
+      const root=byId(target);
+      root.innerHTML="";
+      if(!items.length){
+        root.innerHTML=`<div class="empty">${empty}</div>`;
+        return;
+      }
+
+      // Click whitespace to clear selection (like file explorer).
+      root.onclick=(ev)=>{
+        if(ev.target !== root) return;
+        set.clear();
+        focusedItem=null;
+        renderAll();
+        saveStateDeferred();
+      };
+
+      items.forEach((it,idx)=>{
+        const row=document.createElement("div");
+        row.className="item"+(set.has(it.id)?" active":"")+(focusedItem&&focusedItem.kind===kind&&focusedItem.id===it.id?" focused":"");
+        row.innerHTML=`<div class="itemPrimary">${it.primary}</div>${it.meta?`<div class="itemMeta">${it.meta}</div>`:""}`;
+        row.onmousedown=(ev)=>{
+          // Prevent shift+click from selecting/highlighting text ranges.
+          if(ev && ev.preventDefault) ev.preventDefault();
+        };
+        row.onclick=async(ev)=>{
+          if(ev.stopPropagation) ev.stopPropagation();
+          focusedItem={kind,id:it.id};
+          applyExplorerSelection({ items, set, kind, clickIndex: idx, ev });
+          if(kind==="database"){
+            await refreshCatalogsForSelections();
+          }
+          renderAll();
+          saveStateDeferred();
+        };
+        row.oncontextmenu=(ev)=>{
+          ev.preventDefault();
+          if(ev.stopPropagation) ev.stopPropagation();
+          focusedItem={kind,id:it.id};
+          const menu=[{label:"Delete",action:deleteFocused}];
+          if(kind==="source"){
+            menu.unshift({label:"Edit source...",action:()=>editSource(it.id)});
+            menu.unshift({label:"Rename...",action:()=>renameSource(it.id)});
+          }
+          if(kind==="channel"){
+            if(it.isCalculated) menu.push({label:"Edit calculated channel...",action:()=>editCalculatedChannel(it.id)});
+            if(canSetChannelUnit(it.id)) menu.push({label:"Set Unit...",action:()=>setChannelUnit(it.id)});
+            menu.push({label:"Set Frequency...",action:()=>setChannelFrequency(it.id)});
+          }
+          if(kind==="mask"){
+            menu.unshift({label:"Edit mask...",action:()=>editMask(it.id)});
+          }
+          showContextMenu(ev.clientX,ev.clientY,menu);
+        };
+        row.ondblclick=()=>{
+          if(kind==="source") renameSource(it.id);
+        };
+        root.appendChild(row);
+      });
+    }
+
+    function effectiveIds({ selected, all }){
+      const s = selected instanceof Set ? selected : new Set(selected || []);
+      if(s.size) return [...s];
+      return all || [];
+    }
+    function effectiveSelectedDatabaseIds(){
+      const fromSources=collectDatabaseIdsForSources(effectiveSelectedSourceIds());
+      return effectiveIds({ selected: selectedDatabaseIds, all: fromSources.length ? fromSources : state.databases.map((d)=>d.id) });
+    }
+    function effectiveSelectedTestIds(){
+      const tests=new Set();
+      effectiveSelectedSourceIds().forEach((sid)=>{
+        const s=state.sources.find((x)=>x.id===sid);
+        if(isPostgresTestLeaf(s)) tests.add(`${s.db_entry_id}|${s.test_run_id}`);
+      });
+      if(tests.size) return [...tests];
+      return effectiveIds({ selected: selectedTestIds, all: [...addedTestIds] });
+    }
+    function effectiveSelectedChannelIds(){
+      // Channels list contains only added channels; empty selection means "use all added".
+      return effectiveIds({ selected: selectedChannelIds, all: [...addedChannelIds] });
+    }
+
+    function buildXAxis(){
+      const x=byId("xAxis"),prev=x.value;
+      x.innerHTML=`<option value="time">time</option>`;
+      effectiveSelectedChannelIds().forEach((id)=>{
+        const o=document.createElement("option");
+        o.value=id;
+        o.textContent=id.split("|")[1];
+        x.appendChild(o);
+      });
+      if([...x.options].some((o)=>o.value===prev)) x.value=prev;
+      else x.value="time";
+    }
     function buildUnitAxes(traces, plotWidthPx){
       const m=new Map(),layout={};
       const axisSpacingPx = plotWidthPx < 1200 ? 64 : 54;
@@ -1263,7 +1882,14 @@
         legend:{x:Number(appearance.legendX??0.01),y:Number(appearance.legendY??0.99),xanchor:"left",yanchor:"top",bgcolor:"rgba(2,6,23,0.55)"},
         ...yLayout
       };
-      Plotly.react("plot", traces, layoutBase,{responsive:true,displaylogo:false,scrollZoom:true,editable:true,edits:{legendPosition:true,axisTitleText:false,titleText:false,annotationPosition:false,annotationText:false,shapePosition:false}});
+      Plotly.react("plot", traces, layoutBase,{
+        responsive:true,
+        displaylogo:false,
+        displayModeBar:false,
+        scrollZoom:true,
+        editable:true,
+        edits:{legendPosition:true,axisTitleText:false,titleText:false,annotationPosition:false,annotationText:false,shapePosition:false}
+      });
       if(useRealtimeFull){
         const gdR=byId("plot");
         const needY=!realtimeLockedYRanges||Object.keys(realtimeLockedYRanges).length===0;
@@ -1305,12 +1931,14 @@
       if (key && catalogCache.has(key)) return catalogCache.get(key);
       let tests = [], channels = [];
       if(src.type==="postgres"){
-        const conn=sourceConnQuery(src);
-        tests = await getJson(`/api/tests?limit=5000000&db_name=${encodeURIComponent(db.name)}&${conn}`);
+        const conn=sourceConnQuery(postgresConnForSource(src));
+        const tt = db.test_table ? `&test_table=${encodeURIComponent(db.test_table)}` : "";
+        tests = await getJson(`/api/tests?limit=5000000&db_name=${encodeURIComponent(db.name)}${tt}&${conn}`);
         channels = await getJson(`/api/channels?limit=5000000&db_name=${encodeURIComponent(db.name)}&${conn}`);
       } else {
-        tests = await getJson(`/api/file/tests?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}`);
-        channels = await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}`);
+        const uh = (src.type==="csv" && src.units_in_headers) ? "&units_in_headers=true" : "";
+        tests = await getJson(`/api/file/tests?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}${uh}`);
+        channels = await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}${uh}`);
       }
       const packed = { tests, channels };
       if (key) catalogCache.set(key, packed);
@@ -1319,19 +1947,24 @@
 
     async function refreshCatalogsForSelections(){
       testsData=[]; channelsData=[];
-      for(const dbId of selectedDatabaseIds){
-        const db=state.databases.find((d)=>d.id===dbId), src=db?state.sources.find((s)=>s.id===db.sourceId):null;
+      state.sources.filter(isFileSource).forEach(ensureFileSourceCatalog);
+      for(const dbId of effectiveSelectedDatabaseIds()){
+        const { db, connSrc:src }=resolveDbSource(dbId);
         if(!db||!src) continue;
-        const { tests, channels } = await fetchCatalogRows(db, src);
-        tests.forEach((x)=>testsData.push({...x,__dbId:db.id}));
-        channels.forEach((x)=>channelsData.push({...x,__dbId:db.id}));
+        try{
+          const { tests, channels } = await fetchCatalogRows(db, src);
+          tests.forEach((x)=>testsData.push({...x,__dbId:db.id}));
+          channels.forEach((x)=>{ const chId=`${db.id}|${x.channel_name}`; channelsData.push({...x,unit:resolveChannelUnit(chId, x.unit),__dbId:db.id}); });
+        }catch(err){
+          setStatus(`Failed to load catalog for '${db.name}' (${src.type}): ${err}`, true);
+        }
       }
       const selectedDbSet=new Set([...selectedDatabaseIds]);
       (state.calculatedChannels||[]).forEach((calc)=>{
         if(!selectedDbSet.has(calc.dbId)) return;
         channelsData.push({ channel_id: calc.id, channel_name: calc.name, display_name: calc.name, unit: calc.unit || null, sample_rate_hz: null, valid_min: null, valid_max: null, __dbId: calc.dbId, __isCalculated: true, __calcKind: calc.kind });
       });
-      channelUnitMap=new Map(channelsData.map((c)=>[`${c.__dbId}|${c.channel_name}`,c.unit||"unitless"]));
+      channelUnitMap=new Map(channelsData.map((c)=>{ const chId=`${c.__dbId}|${c.channel_name}`; return [chId,resolveChannelUnit(chId, c.unit)||"unitless"]; }));
     }
     function renderAll() {
       const dup = {};
@@ -1341,11 +1974,7 @@
 
       renderList(
         "sourcesList",
-        state.sources.map((s) => ({
-          id: s.id,
-          primary: s.name,
-          meta: s.type === "postgres" ? `${s.user}@${s.host}:${s.port}` : `${s.type}: ${s.file_path || "no file"}`
-        })),
+        sourcesListItems(),
         selectedSourceIds,
         "source",
         "No sources added yet."
@@ -1383,8 +2012,8 @@
             id: `${c.__dbId}|${c.channel_name}`,
             primary: c.channel_name,
             meta: c.__isCalculated
-              ? `calculated (${c.__calcKind === "rolling" ? "rolling" : "channel-wise"}) | unit ${c.unit || "unitless"}`
-              : `unit ${c.unit || "unitless"} | min ${c.valid_min ?? "n/a"} | max ${c.valid_max ?? "n/a"} | rate ${state.freqOverrides[`${c.__dbId}|${c.channel_name}`] || c.sample_rate_hz || "n/a"}Hz`,
+              ? `calculated (${c.__calcKind === "rolling" ? "rolling" : "channel-wise"}) | unit ${resolveChannelUnit(`${c.__dbId}|${c.channel_name}`, c.unit) || "unitless"}`
+              : `unit ${resolveChannelUnit(`${c.__dbId}|${c.channel_name}`, c.unit) || "unitless"} | min ${c.valid_min ?? "n/a"} | max ${c.valid_max ?? "n/a"} | rate ${state.freqOverrides[`${c.__dbId}|${c.channel_name}`] || c.sample_rate_hz || "n/a"}Hz`,
             isCalculated: Boolean(c.__isCalculated),
             calcKind: c.__calcKind || null
           })),
@@ -1418,10 +2047,55 @@
       });
       renderPlotTabs();
     }
-    function deleteFocused(){ if(!focusedItem) return; const {kind,id}=focusedItem; if(kind==="source"){ state.sources=state.sources.filter((s)=>s.id!==id); selectedSourceIds.delete(id); state.databases=state.databases.filter((d)=>d.sourceId!==id); [...selectedDatabaseIds].forEach((db)=>{ if(!state.databases.some((d)=>d.id===db)) selectedDatabaseIds.delete(db);}); clearCatalogCache(); } else if(kind==="database"){ state.databases=state.databases.filter((d)=>d.id!==id); selectedDatabaseIds.delete(id); clearCatalogCache(); } else if(kind==="test"){ selectedTestIds.delete(id); addedTestIds.delete(id); } else if(kind==="channel"){ selectedChannelIds.delete(id); addedChannelIds.delete(id); const [dbId,channelName]=id.split("|"); state.calculatedChannels=(state.calculatedChannels||[]).filter((c)=>!(c.dbId===dbId&&c.name===channelName)); } else if(kind==="mask"){ state.masks=(state.masks||[]).filter((m)=>m.id!==id); selectedMaskIds.delete(id); } focusedItem=null; renderAll(); saveStateDeferred(); }
+    function deleteFocused(){
+      if(!focusedItem) return;
+      const {kind,id}=focusedItem;
+      if(kind==="source"){
+        const s=state.sources.find((x)=>x.id===id);
+        if(isPostgresTestLeaf(s)){
+          const testKey=`${s.db_entry_id}|${s.test_run_id}`;
+          const stillUsed=state.sources.some((x)=>x.id!==id&&isPostgresTestLeaf(x)&&`${x.db_entry_id}|${x.test_run_id}`===testKey);
+          if(!stillUsed){
+            addedTestIds.delete(testKey);
+            selectedTestIds.delete(testKey);
+          }
+          const dbStillUsed=state.sources.some((x)=>x.id!==id&&isPostgresTestLeaf(x)&&x.db_entry_id===s.db_entry_id);
+          if(!dbStillUsed){
+            state.databases=state.databases.filter((d)=>d.id!==s.db_entry_id);
+            selectedDatabaseIds.delete(s.db_entry_id);
+          }
+        } else {
+          state.sources=state.sources.filter((x)=>x.id!==id && x.parent_source_id!==id);
+          state.databases=state.databases.filter((d)=>d.sourceId!==id);
+          [...selectedDatabaseIds].forEach((db)=>{ if(!state.databases.some((d)=>d.id===db)) selectedDatabaseIds.delete(db);});
+        }
+        state.sources=state.sources.filter((x)=>x.id!==id);
+        selectedSourceIds.delete(id);
+        clearCatalogCache();
+      } else if(kind==="database"){ state.databases=state.databases.filter((d)=>d.id!==id); selectedDatabaseIds.delete(id); clearCatalogCache(); } else if(kind==="test"){ selectedTestIds.delete(id); addedTestIds.delete(id); } else if(kind==="channel"){ selectedChannelIds.delete(id); addedChannelIds.delete(id); const [dbId,channelName]=id.split("|"); state.calculatedChannels=(state.calculatedChannels||[]).filter((c)=>!(c.dbId===dbId&&c.name===channelName)); } else if(kind==="mask"){ state.masks=(state.masks||[]).filter((m)=>m.id!==id); selectedMaskIds.delete(id); } focusedItem=null; renderAll(); saveStateDeferred(); }
     async function uploadSelectedFile(inputId){ const input=byId(inputId); const file=(input&&input.files&&input.files[0])?input.files[0]:null; if(!file) return ""; const fd=new FormData(); fd.append("file",file); const r=await fetch("/api/file/upload",{method:"POST",body:fd}); if(!r.ok) throw new Error(`Upload failed (${r.status})`); const out=await r.json(); return out.path||""; }
     function setChannelFrequency(chId){ const current=state.freqOverrides[chId]||""; const next=prompt(`Set target frequency (Hz) for ${chId.split("|")[1]}. Leave empty to clear.`,String(current)); if(next===null) return; const cleaned=next.trim(); if(!cleaned) delete state.freqOverrides[chId]; else { const hz=Number(cleaned); if(!Number.isFinite(hz)||hz<=0){ setStatus("Frequency must be a positive number.",true); return;} state.freqOverrides[chId]=hz; } if(latestRows.length) plotRows(latestRows); renderAll(); saveStateDeferred(); }
-    function searchableRowsHtml(prefix,rows,set){ return `<div style="padding:8px 10px 6px;"><input id="${prefix}_search" type="text" placeholder="Search..." /></div><div style="padding:0 10px;"><div id="${prefix}_list" class="modalList">${rows.map((r)=>`<div class="selectRow${set.has(r.id)?" active":""}" data-id="${r.id}"><div class="itemPrimary">${r.primary}</div>${r.meta?`<div class="itemMeta">${r.meta}</div>`:""}</div>`).join("")}</div></div>`; }
+    function setChannelUnit(chId){
+      const channelName=chId.split("|")[1]||"channel";
+      const current=state.unitOverrides[chId]||"";
+      const next=prompt(`Set unit for ${channelName}. Leave empty to clear override.`, String(current));
+      if(next===null) return;
+      const cleaned=next.trim();
+      if(!cleaned) delete state.unitOverrides[chId];
+      else state.unitOverrides[chId]=cleaned;
+      if(latestRows.length){
+        latestRows=latestRows.map((r)=>{
+          const key=`${r.__dbId}|${r.channel_name}`;
+          if(key!==chId) return r;
+          return { ...r, unit: resolveChannelUnit(key, r.unit) };
+        });
+        plotRows(latestRows);
+      }
+      renderAll();
+      saveStateDeferred();
+    }
+    function searchableRowsHtml(prefix,rows,set){ return `<div class="maskSearchPad"><input id="${prefix}_search" type="text" placeholder="Search..." /></div><div class="maskListPad"><div id="${prefix}_list" class="modalList">${rows.map((r)=>`<div class="selectRow${set.has(r.id)?" active":""}" data-id="${r.id}"><div class="itemPrimary">${r.primary}</div>${r.meta?`<div class="itemMeta">${r.meta}</div>`:""}</div>`).join("")}</div></div>`; }
+    const MASK_MODAL_LAYOUT={ size:"modalMask", compact:true };
     function bindSearchableModal(prefix,chosen){ const search=byId(`${prefix}_search`), list=byId(`${prefix}_list`), rows=[...list.querySelectorAll(".selectRow")]; rows.forEach((row)=>row.onclick=()=>{ const id=row.getAttribute("data-id"); if(chosen.has(id)){ chosen.delete(id); row.classList.remove("active"); } else { chosen.add(id); row.classList.add("active"); }}); search.oninput=()=>{ const q=search.value.toLowerCase(); rows.forEach((r)=>r.style.display=r.textContent.toLowerCase().includes(q)?"block":"none"); }; }
     function maskOpNeedsTwoValues(op){ return op==="between" || op==="outside"; }
     function evalMaskValue(v, op, a, b){
@@ -1567,7 +2241,7 @@
       await refreshCatalogsForSelections();
       const rows=[{id:"__time__",primary:"time",meta:"Uses UTC in Absolute mode, seconds from t0 in relative modes"}, ...channelsData.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`DB ${c.__dbId.slice(0,8)} | unit ${c.unit||"unitless"}`}))];
       const chosen=new Set();
-      openModal("Add Mask",`${searchableRowsHtml("mm",rows,chosen)}<div style="padding:6px 10px 2px;"><label>Condition</label><select id="m_mask_op"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select><label id="m_mask_a_label">Value A</label><input id="m_mask_a" type="number" step="any" placeholder="e.g. 0" /><div id="m_mask_b_wrap" style="display:none;"><label id="m_mask_b_label">Value B</label><input id="m_mask_b" type="number" step="any" placeholder="e.g. 100" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const channels=[...chosen]; if(!channels.length){ setStatus("Select at least one channel for the mask.",true); return false; } const op=byId("m_mask_op").value; const isTimeMask=channels.every((ch)=>ch==="__time__"); const rawA=byId("m_mask_a").value.trim(); const rawB=byId("m_mask_b").value.trim(); const needsB=maskOpNeedsTwoValues(op); const parsedA=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawA) : Number(rawA); const parsedB=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawB) : Number(rawB); if(!Number.isFinite(parsedA)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value A must be valid UTC time.":"Value A is required.",true); return false; } if(needsB && !Number.isFinite(parsedB)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value B must be valid UTC time.":"Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), channels, op, valueA:rawA, valueB:needsB?rawB:null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Mask added."); return true; });
+      openModal("Add Mask",`${searchableRowsHtml("mm",rows,chosen)}<div class="maskFormPad"><label>Condition</label><select id="m_mask_op"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select><label id="m_mask_a_label">Value A</label><input id="m_mask_a" type="number" step="any" placeholder="e.g. 0" /><div id="m_mask_b_wrap" style="display:none;"><label id="m_mask_b_label">Value B</label><input id="m_mask_b" type="number" step="any" placeholder="e.g. 100" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(!channels.length){ setStatus("Select at least one channel for the mask.",true); return false; } const op=byId("m_mask_op").value; const isTimeMask=channels.every((ch)=>ch==="__time__"); const rawA=byId("m_mask_a").value.trim(); const rawB=byId("m_mask_b").value.trim(); const needsB=maskOpNeedsTwoValues(op); const parsedA=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawA) : Number(rawA); const parsedB=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawB) : Number(rawB); if(!Number.isFinite(parsedA)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value A must be valid UTC time.":"Value A is required.",true); return false; } if(needsB && !Number.isFinite(parsedB)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value B must be valid UTC time.":"Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), channels, op, valueA:rawA, valueB:needsB?rawB:null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Mask added."); return true; });
       bindSearchableModal("mm",chosen);
       const opSel=byId("m_mask_op"), bWrap=byId("m_mask_b_wrap");
       const aInput=byId("m_mask_a"), bInput=byId("m_mask_b"), aLabel=byId("m_mask_a_label"), bLabel=byId("m_mask_b_label");
@@ -1584,7 +2258,7 @@
       const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
       if(!sourceChannels.length){ setStatus("No source channels available for rolling mask.",true); return; }
       const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}">${c.channel_name}</option>`).join("");
-      openModal("Rolling Mask Calculation",`<div class="modalGrid"><div><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="10" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" /></div><div id="m_mask_val_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const sourceChannel=byId("m_mask_src").value; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"rolling", dbId, sourceChannel, rollingOp, window, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Rolling mask added."); return true; });
+      openModal("Rolling Mask Calculation",`<div class="modalGrid"><div><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="10" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" /></div><div id="m_mask_val_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const sourceChannel=byId("m_mask_src").value; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"rolling", dbId, sourceChannel, rollingOp, window, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Rolling mask added."); return true; });
       const cond=byId("m_mask_cond"), wrap=byId("m_mask_val_b_wrap");
       cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
     }
@@ -1596,7 +2270,7 @@
       if(sourceChannels.length<2){ setStatus("Need at least two source channels for channel-wise mask.",true); return; }
       const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`}));
       const chosen=new Set();
-      openModal("Channel Wise Mask Calculation",`${searchableRowsHtml("mfm",rows,chosen)}<div style="padding:6px 10px 2px;"><label>Formula</label><input id="m_mask_formula" type="text" placeholder="A + B" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" /><div id="m_mask_formula_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"formula", dbId, channels, formula:compiled.expr, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Channel-wise mask added."); return true; });
+      openModal("Channel Wise Mask Calculation",`${searchableRowsHtml("mfm",rows,chosen)}<div class="maskFormPad"><label>Formula</label><input id="m_mask_formula" type="text" placeholder="A + B" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" /><div id="m_mask_formula_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"formula", dbId, channels, formula:compiled.expr, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Channel-wise mask added."); return true; });
       bindSearchableModal("mfm",chosen);
       const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); byId("m_mask_formula_hint").textContent=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | ")||"Select channels to map A, B, C..."; };
       const list=byId("mfm_list");
@@ -1613,7 +2287,7 @@
         const dbId=mask.dbId || [...selectedDatabaseIds][0];
         const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
         const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}" ${mask.sourceChannel===`${c.__dbId}|${c.channel_name}`?"selected":""}>${c.channel_name}</option>`).join("");
-        openModal("Edit Rolling Mask",`<div class="modalGrid"><div><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean" ${mask.rollingOp==="mean"?"selected":""}>mean</option><option value="sum" ${mask.rollingOp==="sum"?"selected":""}>sum</option><option value="min" ${mask.rollingOp==="min"?"selected":""}>min</option><option value="max" ${mask.rollingOp==="max"?"selected":""}>max</option><option value="std" ${mask.rollingOp==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="${mask.window||10}" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" value="${mask.valueA??""}" /></div><div id="m_mask_val_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{ const sourceChannel=byId("m_mask_src").value; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.sourceChannel=sourceChannel; mask.rollingOp=rollingOp; mask.window=window; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Rolling mask updated."); return true; });
+        openModal("Edit Rolling Mask",`<div class="modalGrid"><div><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean" ${mask.rollingOp==="mean"?"selected":""}>mean</option><option value="sum" ${mask.rollingOp==="sum"?"selected":""}>sum</option><option value="min" ${mask.rollingOp==="min"?"selected":""}>min</option><option value="max" ${mask.rollingOp==="max"?"selected":""}>max</option><option value="std" ${mask.rollingOp==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="${mask.window||10}" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" value="${mask.valueA??""}" /></div><div id="m_mask_val_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const sourceChannel=byId("m_mask_src").value; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.sourceChannel=sourceChannel; mask.rollingOp=rollingOp; mask.window=window; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Rolling mask updated."); return true; });
         const cond=byId("m_mask_cond"), wrap=byId("m_mask_val_b_wrap");
         cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
         return;
@@ -1624,7 +2298,7 @@
         const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
         const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`}));
         const chosen=new Set(mask.channels||[]);
-        openModal("Edit Channel Wise Mask",`${searchableRowsHtml("emfm",rows,chosen)}<div style="padding:6px 10px 2px;"><label>Formula</label><input id="m_mask_formula" type="text" value="${mask.formula||""}" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" value="${mask.valueA??""}" /><div id="m_mask_formula_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.channels=channels; mask.formula=compiled.expr; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Channel-wise mask updated."); return true; });
+        openModal("Edit Channel Wise Mask",`${searchableRowsHtml("emfm",rows,chosen)}<div class="maskFormPad"><label>Formula</label><input id="m_mask_formula" type="text" value="${mask.formula||""}" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" value="${mask.valueA??""}" /><div id="m_mask_formula_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.channels=channels; mask.formula=compiled.expr; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Channel-wise mask updated."); return true; });
         bindSearchableModal("emfm",chosen);
         const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); byId("m_mask_formula_hint").textContent=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | ")||"Select channels to map A, B, C..."; };
         const list=byId("emfm_list");
@@ -1637,7 +2311,7 @@
       await refreshCatalogsForSelections();
       const rows=[{id:"__time__",primary:"time",meta:"Uses UTC in Absolute mode, seconds from t0 in relative modes"}, ...channelsData.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`DB ${c.__dbId.slice(0,8)} | unit ${c.unit||"unitless"}`}))];
       const chosen=new Set(mask.channels||[]);
-      openModal("Edit Mask",`${searchableRowsHtml("emm",rows,chosen)}<div style="padding:6px 10px 2px;"><label>Condition</label><select id="m_mask_op"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select><label id="m_mask_a_label">Value A</label><input id="m_mask_a" type="number" step="any" value="${mask.valueA??""}" /><div id="m_mask_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label id="m_mask_b_label">Value B</label><input id="m_mask_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{ const channels=[...chosen]; if(!channels.length){ setStatus("Select at least one channel for the mask.",true); return false; } const op=byId("m_mask_op").value; const isTimeMask=channels.every((ch)=>ch==="__time__"); const rawA=byId("m_mask_a").value.trim(); const rawB=byId("m_mask_b").value.trim(); const needsB=maskOpNeedsTwoValues(op); const parsedA=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawA) : Number(rawA); const parsedB=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawB) : Number(rawB); if(!Number.isFinite(parsedA)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value A must be valid UTC time.":"Value A is required.",true); return false; } if(needsB && !Number.isFinite(parsedB)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value B must be valid UTC time.":"Value B is required for this condition.",true); return false; } mask.channels=channels; mask.op=op; mask.valueA=rawA; mask.valueB=needsB?rawB:null; renderAll(); saveState(); setStatus("Mask updated."); return true; });
+      openModal("Edit Mask",`${searchableRowsHtml("emm",rows,chosen)}<div class="maskFormPad"><label>Condition</label><select id="m_mask_op"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select><label id="m_mask_a_label">Value A</label><input id="m_mask_a" type="number" step="any" value="${mask.valueA??""}" /><div id="m_mask_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label id="m_mask_b_label">Value B</label><input id="m_mask_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(!channels.length){ setStatus("Select at least one channel for the mask.",true); return false; } const op=byId("m_mask_op").value; const isTimeMask=channels.every((ch)=>ch==="__time__"); const rawA=byId("m_mask_a").value.trim(); const rawB=byId("m_mask_b").value.trim(); const needsB=maskOpNeedsTwoValues(op); const parsedA=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawA) : Number(rawA); const parsedB=isTimeMask && byId("t0Mode").value==="absolute" ? parseUtcInput(rawB) : Number(rawB); if(!Number.isFinite(parsedA)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value A must be valid UTC time.":"Value A is required.",true); return false; } if(needsB && !Number.isFinite(parsedB)){ setStatus(isTimeMask&&byId("t0Mode").value==="absolute"?"Value B must be valid UTC time.":"Value B is required for this condition.",true); return false; } mask.channels=channels; mask.op=op; mask.valueA=rawA; mask.valueB=needsB?rawB:null; renderAll(); saveState(); setStatus("Mask updated."); return true; });
       bindSearchableModal("emm",chosen);
       const opSel=byId("m_mask_op"), bWrap=byId("m_mask_b_wrap");
       const aInput=byId("m_mask_a"), bInput=byId("m_mask_b"), aLabel=byId("m_mask_a_label"), bLabel=byId("m_mask_b_label");
@@ -1647,17 +2321,130 @@
       if(mmList) mmList.addEventListener("click",()=>setTimeout(refreshMaskInputs,0));
       refreshMaskInputs();
     }
-    function showAddPostgresModal(){ openModal("Add PostgreSQL Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="PostgreSQL Source" /></div><div><label>Host</label><input id="m_host" type="text" value="localhost" /></div><div><label>Port</label><input id="m_port" type="number" value="5432" /></div><div><label>User</label><input id="m_user" type="text" value="pipeline" /></div><div><label>Password</label><input id="m_password" type="password" value="test" /></div><div><label>SSL Mode</label><input id="m_ssl" type="text" value="disable" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ state.sources.push({id:crypto.randomUUID(),type:"postgres",name:byId("m_sourceName").value||"PostgreSQL Source",host:byId("m_host").value||"localhost",port:Number(byId("m_port").value||"5432"),user:byId("m_user").value||"pipeline",password:byId("m_password").value||"",sslmode:byId("m_ssl").value||"disable",file_path:""}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
+    function showAddPostgresModal(){
+      openModal("Add PostgreSQL Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="PostgreSQL Source" /></div><div><label>Host</label><input id="m_host" type="text" value="localhost" /></div><div><label>Port</label><input id="m_port" type="number" value="5432" /></div><div><label>User</label><input id="m_user" type="text" value="pipeline" /></div><div><label>Password</label><input id="m_password" type="password" value="test" /></div><div><label>SSL Mode</label><input id="m_ssl" type="text" value="disable" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Connect & Pick Tests</button></div>`,async()=>{
+        const parent={
+          id:crypto.randomUUID(),
+          type:"postgres",
+          name:byId("m_sourceName").value||"PostgreSQL Source",
+          host:byId("m_host").value||"localhost",
+          port:Number(byId("m_port").value||"5432"),
+          user:byId("m_user").value||"pipeline",
+          password:byId("m_password").value||"",
+          sslmode:byId("m_ssl").value||"disable",
+          file_path:""
+        };
+        state.sources.push(parent);
+        clearCatalogCache();
+        closeModal();
+        showAddScaleTestsModal(null, parent);
+        return true;
+      });
+    }
     function showAddCsvModal(){ openModal("Add CSV Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="CSV Source" /></div><div><label>CSV File</label><input id="m_fileUpload" type="file" accept=".csv,text/csv" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick a CSV file first.",true); return false; } state.sources.push({id:crypto.randomUUID(),type:"csv",name:byId("m_sourceName").value||"CSV Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
-    function showAddTdmsModal(){ openModal("Add TDMS Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="TDMS Source" /></div><div><label>TDMS File</label><input id="m_fileUpload" type="file" accept=".tdms,application/octet-stream" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick a TDMS file first.",true); return false; } state.sources.push({id:crypto.randomUUID(),type:"tdms",name:byId("m_sourceName").value||"TDMS Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
+    function showAddTdmsModal(){
+      const input=byId("filePicker");
+      if(!input) return;
+      input.accept=".tdms,application/octet-stream";
+      input.value="";
+      input.onchange=async()=>{
+        const file=input.files && input.files[0] ? input.files[0] : null;
+        if(!file) return;
+        try{
+          const fd=new FormData();
+          fd.append("file", file);
+          const r=await fetch("/api/file/upload",{method:"POST",body:fd});
+          if(!r.ok) throw new Error(`Upload failed (${r.status})`);
+          const out=await r.json();
+          const uploadedPath=out.path||"";
+          if(!uploadedPath){ setStatus("Upload failed.", true); return; }
+          const name=String(file.name).replace(/\.[^.]+$/, "") || file.name;
+          const entry={id:crypto.randomUUID(),type:"tdms",name,host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath};
+          state.sources.push(entry);
+          ensureFileSourceCatalog(entry);
+          clearCatalogCache();
+          renderAll();
+          saveState();
+          setStatus(`Added TDMS source '${name}'.`);
+        }catch(err){
+          setStatus(`Failed to add TDMS source: ${err}`, true);
+        }
+      };
+      input.click();
+    }
+    function showAddH5Modal(){ openModal("Add H5 Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="H5 Source" /></div><div><label>H5 File</label><input id="m_fileUpload" type="file" accept=".h5,.hdf5,application/x-hdf" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick an H5 file first.",true); return false; } state.sources.push({id:crypto.randomUUID(),type:"h5",name:byId("m_sourceName").value||"H5 Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
     function showAddSourceMenu(ev){
       if (ev) {
         ev.preventDefault();
         ev.stopPropagation();
         if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
       }
-      const rect = byId("addSourceBtn").getBoundingClientRect();
-      showSourceAddMenu(rect.left, rect.bottom + 4);
+      hideMenus();
+      openAddSourceModal();
+    }
+
+    function renameSource(sourceId){
+      const src = state.sources.find((s)=>s.id===sourceId);
+      if(!src){ setStatus("Source not found.", true); return; }
+      const next = (prompt("Rename source:", src.name||"") || "").trim();
+      if(!next) return;
+      src.name = next;
+      if(isFileSource(src)){
+        const db=state.databases.find((d)=>d.sourceId===src.id);
+        if(db) db.name=next;
+      }
+      renderAll();
+      saveState();
+      setStatus("Source renamed.");
+    }
+    function editSource(sourceId){
+      const src=state.sources.find((s)=>s.id===sourceId);
+      if(!src){ setStatus("Source not found.", true); return; }
+      if(isPostgresTestLeaf(src)){
+        renameSource(sourceId);
+        return;
+      }
+      if(isFileSource(src)){
+        openModal("Edit Data File Source",`<div class="modalGrid">
+          <div><label>Name</label><input id="m_edit_name" type="text" value="${src.name||""}" /></div>
+          <div style="grid-column:1 / -1;"><label>File path</label><input id="m_edit_path" type="text" value="${src.file_path||""}" disabled /></div>
+          ${src.type==="csv" ? `<div style="grid-column:1 / -1;"><label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);"><input id="m_edit_units" type="checkbox" style="width:auto;margin:0;" ${src.units_in_headers?"checked":""} /> Units in CSV headers</label></div>` : ""}
+        </div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{
+          src.name=(byId("m_edit_name").value||"").trim()||src.name;
+          if(src.type==="csv") src.units_in_headers=Boolean(byId("m_edit_units")?.checked);
+          const db=state.databases.find((d)=>d.sourceId===src.id);
+          if(db) db.name=src.name;
+          clearCatalogCache();
+          renderAll();
+          saveState();
+          return true;
+        });
+        return;
+      }
+      if(isPostgresConnSource(src)){
+        openModal("Edit PostgreSQL Connection",`<div class="modalGrid">
+          <div><label>Name</label><input id="m_edit_name" type="text" value="${src.name||""}" /></div>
+          <div><label>Host</label><input id="m_edit_host" type="text" value="${src.host||""}" /></div>
+          <div><label>Port</label><input id="m_edit_port" type="number" value="${Number(src.port||5432)}" /></div>
+          <div><label>User</label><input id="m_edit_user" type="text" value="${src.user||""}" /></div>
+          <div><label>Password</label><input id="m_edit_password" type="password" value="${src.password||""}" /></div>
+          <div><label>SSL Mode</label><input id="m_edit_ssl" type="text" value="${src.sslmode||"disable"}" /></div>
+        </div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{
+          src.name=byId("m_edit_name").value||src.name;
+          src.host=byId("m_edit_host").value||src.host;
+          src.port=Number(byId("m_edit_port").value||5432);
+          src.user=byId("m_edit_user").value||src.user;
+          src.password=byId("m_edit_password").value||"";
+          src.sslmode=byId("m_edit_ssl").value||"disable";
+          state.sources.filter((s)=>isPostgresTestLeaf(s)&&s.parent_source_id===src.id).forEach((leaf)=>{
+            leaf.host=src.host; leaf.port=src.port; leaf.user=src.user; leaf.password=src.password; leaf.sslmode=src.sslmode;
+          });
+          clearCatalogCache();
+          renderAll();
+          saveState();
+          return true;
+        });
+      }
     }
     function showAddChannelsMenu(ev){
       if (ev) {
@@ -1686,20 +2473,184 @@
     async function showAddDatabaseModal(){ const srcs=activeSources(); if(!srcs.length){ setStatus("Select at least one source first.",true); return; } const rows=[]; for(const src of srcs){ if(src.type==="postgres"){ try{ const dbs=await getJson(`/api/databases?${sourceConnQuery(src)}`); dbs.forEach((d)=>rows.push({id:`${src.id}|${d.name}`,primary:d.name,meta:src.name,sourceId:src.id,sourceType:src.type,name:d.name})); }catch(err){ setStatus(`Database discovery failed for source '${src.name}': ${err}`, true); } } else rows.push({id:`${src.id}|${src.file_path||src.name}`,primary:src.name,meta:`${src.type} source`,sourceId:src.id,sourceType:src.type,name:src.name}); } if(!rows.length){ setStatus("No databases were discovered for the selected source(s).", true); } const chosen=new Set(); openModal("Add Databases",`${searchableRowsHtml("dbm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const newlyAddedIds=[]; [...chosen].forEach((id)=>{ const r=rows.find((x)=>x.id===id); if(!r) return; const existing=state.databases.find((d)=>d.sourceId===r.sourceId&&d.name===r.name); if(existing){ newlyAddedIds.push(existing.id); return; } const entry={id:crypto.randomUUID(),sourceId:r.sourceId,sourceType:r.sourceType,name:r.name}; state.databases.push(entry); newlyAddedIds.push(entry.id); }); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id); }); // Explicitly select every added database after apply/close.
       newlyAddedIds.forEach((id)=>selectedDatabaseIds.add(id)); await refreshCatalogsForSelections(); renderAll(); saveState(); return true; }); bindSearchableModal("dbm",chosen); }
     async function showAddTestsModal(){ if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; } await refreshCatalogsForSelections(); const dup={}; testsData.forEach((t)=>dup[`${t.__dbId}|${t.run_code}`]=(dup[`${t.__dbId}|${t.run_code}`]||0)+1); const rows=testsData.map((t)=>({id:`${t.__dbId}|${t.test_run_id}`,primary:dup[`${t.__dbId}|${t.run_code}`]>1?`${t.run_code} (#${t.test_run_id})`:t.run_code,meta:`${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`})); const chosen=new Set(addedTestIds); openModal("Select Tests",`${searchableRowsHtml("tm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ addedTestIds=new Set(chosen); selectedTestIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("tm",chosen); }
-    async function showAddChannelsModal(){ if(!addedTestIds.size){ setStatus("Add at least one test first.",true); return; } await refreshCatalogsForSelections(); const rows=[]; const testsByDb=new Map(); [...addedTestIds].forEach((k)=>{ const [dbId,testId]=k.split("|"); if(!testsByDb.has(dbId)) testsByDb.set(dbId,[]); testsByDb.get(dbId).push(testId); }); for(const [dbId,testIds] of testsByDb.entries()){ const db=state.databases.find((d)=>d.id===dbId),src=db?state.sources.find((s)=>s.id===db.sourceId):null; if(!db||!src) continue; if(src.type==="postgres"){ const p=new URLSearchParams(); testIds.forEach((id)=>p.append("test_run_ids",id)); p.append("db_name",db.name); sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }}); try{ const ch=await getJson(`/api/available-channels?${p.toString()}`); ch.forEach((c)=>rows.push({id:`${dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`})); }catch{} } else { try{ const ch=await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}`); ch.forEach((c)=>rows.push({id:`${dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`})); }catch{} } } const dedup=new Map(); rows.forEach((r)=>dedup.set(r.id,r)); const finalRows=[...dedup.values()]; const chosen=new Set(addedChannelIds); openModal("Select Channels",`${searchableRowsHtml("cm",finalRows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ addedChannelIds=new Set(chosen); selectedChannelIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("cm",chosen); }
+    async function showAddChannelsModal(){
+      state.sources.filter(isFileSource).forEach(ensureFileSourceCatalog);
+      if(!addedTestIds.size && !state.sources.some(isPostgresTestLeaf)){
+        setStatus("Add at least one source/test first.",true);
+        return;
+      }
+      await refreshCatalogsForSelections();
+
+      // Build the available channel rows (same discovery logic as before).
+      const rows=[];
+      const testsByDb=new Map();
+      const testKeys=[...new Set([...addedTestIds, ...effectiveSelectedTestIds()])];
+      testKeys.forEach((k)=>{
+        const [dbId,testId]=k.split("|");
+        if(!dbId||!testId) return;
+        if(!testsByDb.has(dbId)) testsByDb.set(dbId,[]);
+        testsByDb.get(dbId).push(testId);
+      });
+      if(!testKeys.length){
+        setStatus("No tests available for channel discovery.", true);
+        return;
+      }
+
+      for(const [dbId,testIds] of testsByDb.entries()){
+        const { db, src, connSrc }=resolveDbSource(dbId);
+        if(!db||!src) continue;
+        if(src.type==="postgres"){
+          const p=new URLSearchParams();
+          testIds.forEach((id)=>p.append("test_run_ids",id));
+          p.append("db_name",db.name);
+          if(db.test_table) p.append("test_table", db.test_table);
+          sourceConnQuery(connSrc||src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
+          try{
+            const ch=await getJson(`/api/available-channels?${p.toString()}`);
+            ch.forEach((c)=>rows.push({
+              id:`${dbId}|${c.channel_name}`,
+              primary:c.channel_name,
+              meta:`unit ${resolveChannelUnit(`${dbId}|${c.channel_name}`, c.unit)||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`
+            }));
+          }catch{}
+        } else {
+          try{
+            const fileSrc=isFileSource(src) ? src : state.sources.find((s)=>s.id===db.sourceId);
+            if(!fileSrc) continue;
+            const p=new URLSearchParams();
+            p.append("source_type", fileSrc.type);
+            p.append("file_path", fileSrc.file_path||"");
+            if(fileSrc.type==="csv" && fileSrc.units_in_headers) p.append("units_in_headers","true");
+            const ch=await getJson(`/api/file/channels?${p.toString()}`);
+            ch.forEach((c)=>rows.push({
+              id:`${dbId}|${c.channel_name}`,
+              primary:c.channel_name,
+              meta:`unit ${resolveChannelUnit(`${dbId}|${c.channel_name}`, c.unit)||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`
+            }));
+          }catch{}
+        }
+      }
+
+      const dedup=new Map();
+      rows.forEach((r)=>dedup.set(r.id,r));
+      const allRows=[...dedup.values()].sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
+
+      // Two-column transfer state.
+      // Available list always shows ALL channels; Selected is a subset.
+      // Use Sets so double-adding never duplicates.
+      const selected = new Set(addedChannelIds);
+      const availActive = new Set();
+      const selActive = new Set();
+      let availAnchor = -1;
+      let selAnchor = -1;
+
+      const applyTransferSelection = ({ listRows, activeSet, idx, ev, kind })=>{
+        const ids = listRows.map((r)=>r.id);
+        const anchor = (kind==="avail") ? availAnchor : selAnchor;
+        if(ev && ev.shiftKey && Number.isInteger(anchor) && anchor >= 0 && anchor < ids.length){
+          const a = Math.min(anchor, idx);
+          const b = Math.max(anchor, idx);
+          for(let i=a;i<=b;i+=1) activeSet.add(ids[i]);
+          return;
+        }
+        if(hasMetaOrCtrlKey(ev)){
+          const id = ids[idx];
+          if(activeSet.has(id)) activeSet.delete(id); else activeSet.add(id);
+          if(kind==="avail") availAnchor = idx; else selAnchor = idx;
+          return;
+        }
+        activeSet.clear();
+        activeSet.add(ids[idx]);
+        if(kind==="avail") availAnchor = idx; else selAnchor = idx;
+      };
+
+      const renderTransferList = (containerId, listRows, activeSet, kind)=>{
+        const root = byId(containerId);
+        if(!root) return;
+        root.innerHTML="";
+        listRows.forEach((r)=>{
+          const el=document.createElement("div");
+          const isSelected = selected.has(r.id);
+          el.className="selectRow"+(activeSet.has(r.id)?" active":"")+(kind==="avail" && isSelected ? " disabled" : "");
+          const meta = r.meta ? r.meta : "";
+          const extra = (kind==="avail" && isSelected) ? " | selected" : "";
+          el.innerHTML=`<div class="itemPrimary">${r.primary}</div>${(meta||extra)?`<div class="itemMeta">${meta}${extra}</div>`:""}`;
+          el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
+          el.onclick=(ev)=>{
+            if(ev&&ev.preventDefault) ev.preventDefault();
+            if(ev&&ev.stopPropagation) ev.stopPropagation();
+            const idx = listRows.findIndex((x)=>x.id===r.id);
+            applyTransferSelection({ listRows, activeSet, idx, ev, kind });
+            renderAllTransfer();
+          };
+          root.appendChild(el);
+        });
+      };
+
+      const selectedRows = ()=> allRows.filter((r)=>selected.has(r.id));
+
+      const renderAllTransfer = ()=>{
+        renderTransferList("cm_avail", allRows, availActive, "avail");
+        renderTransferList("cm_sel", selectedRows(), selActive, "sel");
+        const btnR = byId("cm_to_sel");
+        const btnL = byId("cm_to_avail");
+        if(btnR) btnR.disabled = availActive.size===0;
+        if(btnL) btnL.disabled = selActive.size===0;
+      };
+
+      openModal("Channels",`
+        <div class="modalBodyPad">
+          <div class="channelTransferGrid">
+            <div class="scalePickerCol"><label>Available</label><div class="modalList" id="cm_avail"></div></div>
+            <div class="channelTransferBtns">
+              <button id="cm_to_sel" type="button">→</button>
+              <button id="cm_to_avail" type="button">←</button>
+            </div>
+            <div class="scalePickerCol"><label>Selected</label><div class="modalList" id="cm_sel"></div></div>
+          </div>
+        </div>
+        <div class="modalActions">
+          <button id="modalCancelBtn" type="button">Cancel</button>
+          <button id="modalSaveCloseBtn" type="button">Apply</button>
+        </div>
+      `, async()=>{
+        addedChannelIds = new Set(selected);
+        selectedChannelIds = new Set(selected);
+        renderAll();
+        saveState();
+        setStatus(`Selected ${selected.size} channel(s).`);
+        return true;
+      }, { size:"modalChannels", compact:true });
+
+      byId("cm_to_sel").onclick=()=>{
+        const toMove=[...availActive];
+        toMove.forEach((id)=>selected.add(id));
+        availActive.clear();
+        renderAllTransfer();
+      };
+      byId("cm_to_avail").onclick=()=>{
+        const toMove=[...selActive];
+        toMove.forEach((id)=>selected.delete(id));
+        selActive.clear();
+        renderAllTransfer();
+      };
+
+      renderAllTransfer();
+    }
     function rollingCalc(op, arr){ if(!arr.length) return null; if(op==="mean") return arr.reduce((a,b)=>a+b,0)/arr.length; if(op==="sum") return arr.reduce((a,b)=>a+b,0); if(op==="min") return Math.min(...arr); if(op==="max") return Math.max(...arr); if(op==="std"){ const m=arr.reduce((a,b)=>a+b,0)/arr.length; const v=arr.reduce((a,b)=>a+((b-m)*(b-m)),0)/arr.length; return Math.sqrt(v); } return null; }
     async function computeCalculatedRows(baseRows){ const out=[]; const selectedCalcs=(state.calculatedChannels||[]).filter((c)=>selectedChannelIds.has(`${c.dbId}|${c.name}`)); let workCounter=0; for(const calc of selectedCalcs){ const dbRows=baseRows.filter((r)=>r.__dbId===calc.dbId); if(calc.kind==="rolling"){ const srcName=(calc.channels&&calc.channels[0])?calc.channels[0].split("|")[1]:""; const srcRows=dbRows.filter((r)=>r.channel_name===srcName); const byTest=new Map(); srcRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); for (const rows of byTest.values()){ rows.sort((a,b)=>a.__ts-b.__ts); const w=Math.max(1, Number(calc.window||1)); for(let i=0;i<rows.length;i++){ const vals=rows.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x)); const v=rollingCalc(calc.op, vals); if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: rows[i].test_run_id, test_run_code: rows[i].test_run_code, channel_name: calc.name, unit: calc.unit || null, time: rows[i].time, value: Number(v), __dbId: calc.dbId, __ts: rows[i].__ts }); workCounter+=1; if(workCounter%2000===0) await nextPaint(); } } continue; } if(calc.kind==="formula"){ const deps=(calc.channels||[]).map((id)=>id.split("|")[1]); if(!deps.length) continue; const compiled=compileFormula(calc.formula||"", deps.length); if(!compiled.ok) continue; const byTest=new Map(); dbRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); for (const rows of byTest.values()){ const byTime=new Map(); rows.forEach((r)=>{ const t=String(r.time); if(!byTime.has(t)) byTime.set(t,{vals:{}, sample:r}); const slot=byTime.get(t); slot.vals[r.channel_name]=Number(r.value); }); const sortedTimes=[...byTime.keys()].sort((a,b)=>byTime.get(a).sample.__ts-byTime.get(b).sample.__ts); let prevMs=null; const ctx={dt_s:0,__bpStates:{}}; for (const t of sortedTimes){ const slot=byTime.get(t); const vals=deps.map((nm)=>slot.vals[nm]); if(vals.some((v)=>!Number.isFinite(v))) continue; const currMs=slot.sample.__ts; ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000); prevMs=currMs; let v=null; try{ v=compiled.evalFn(vals,ctx); }catch{ v=null; } if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: slot.sample.test_run_id, test_run_code: slot.sample.test_run_code, channel_name: calc.name, unit: calc.unit || null, time: t, value: Number(v), __dbId: calc.dbId, __ts: slot.sample.__ts }); workCounter+=1; if(workCounter%2000===0) await nextPaint(); } } } } return out; }
     async function loadMetadataForSelection(){
       const allMetadata = [];
-      for(const dbId of selectedDatabaseIds){
-        const db=state.databases.find((d)=>d.id===dbId),src=db?state.sources.find((s)=>s.id===db.sourceId):null;
+      for(const dbId of effectiveSelectedDatabaseIds()){
+        const { db, src, connSrc }=resolveDbSource(dbId);
         if(!db||!src||src.type!=="postgres") continue;
-        const tests=[...selectedTestIds].filter((t)=>t.startsWith(`${dbId}|`)).map((t)=>t.split("|")[1]);
+        const tests=effectiveSelectedTestIds().filter((t)=>t.startsWith(`${dbId}|`)).map((t)=>t.split("|")[1]);
         if(!tests.length) continue;
         const p=new URLSearchParams();
         tests.forEach((id)=>p.append("test_run_ids",id));
         p.append("db_name",db.name);
-        sourceConnQuery(src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
+        if(db.test_table) p.append("test_table", db.test_table);
+        sourceConnQuery(connSrc||src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
         try{
           const rows=await getJson(`/api/metadata?${p.toString()}`);
           rows.forEach((r)=>allMetadata.push({...r,__dbId:dbId,__database:db.name}));
@@ -1710,15 +2661,20 @@
       renderMetadata(allMetadata);
     }
     async function loadTimeseries(){
-      if(!selectedDatabaseIds.size||!selectedTestIds.size||!selectedChannelIds.size){ setStatus("Select sources, databases, tests, and channels first.",true); return; }
+      const dbIds = effectiveSelectedDatabaseIds();
+      const testIdsAll = effectiveSelectedTestIds();
+      const channelIdsAll = effectiveSelectedChannelIds();
+      if(!dbIds.length){ setStatus("Add at least one database/source first.", true); return; }
+      if(!testIdsAll.length){ setStatus("Add at least one test first.", true); return; }
+      if(!channelIdsAll.length){ setStatus("Add at least one channel first.", true); return; }
       setStatus("Loading raw timeseries...");
       await nextPaint();
       const rowsAll=[];
-      for(const dbId of selectedDatabaseIds){
-        const db=state.databases.find((d)=>d.id===dbId),src=db?state.sources.find((s)=>s.id===db.sourceId):null;
+      for(const dbId of dbIds){
+        const { db, src }=resolveDbSource(dbId);
         if(!db||!src) continue;
-        const tests=[...selectedTestIds].filter((t)=>t.startsWith(`${dbId}|`)).map((t)=>t.split("|")[1]);
-        const selectedForDb=[...selectedChannelIds].filter((c)=>c.startsWith(`${dbId}|`)).map((c)=>c.split("|")[1]);
+        const tests=testIdsAll.filter((t)=>t.startsWith(`${dbId}|`)).map((t)=>t.split("|")[1]);
+        const selectedForDb=channelIdsAll.filter((c)=>c.startsWith(`${dbId}|`)).map((c)=>c.split("|")[1]);
         const calcForDb=(state.calculatedChannels||[]).filter((c)=>c.dbId===dbId&&selectedForDb.includes(c.name));
         const channelsSet=new Set(selectedForDb.filter((c)=>!calcForDb.some((x)=>x.name===c)));
         calcForDb.forEach((c)=> (c.channels||[]).forEach((id)=>channelsSet.add(id.split("|")[1])));
@@ -1738,6 +2694,7 @@
           const p=new URLSearchParams();
           p.append("source_type",src.type);
           p.append("file_path",src.file_path||"");
+          if(src.type==="csv" && src.units_in_headers) p.append("units_in_headers","true");
           p.append("limit","5000000");
           channels.forEach((ch)=>p.append("channel_names",ch));
           const rows=await getJson(`/api/file/timeseries?${p.toString()}`);
@@ -1748,7 +2705,9 @@
       setStatus("Computing calculated channels...");
       await nextPaint();
       const calcRows=await computeCalculatedRows(rowsAll);
-      const selectedNonCalc=rowsAll.filter((r)=>selectedChannelIds.has(`${r.__dbId}|${r.channel_name}`));
+      // Empty channel selection means "all added channels", already resolved into channelIdsAll.
+      const channelIdSet = new Set(channelIdsAll);
+      const selectedNonCalc=rowsAll.filter((r)=>channelIdSet.has(`${r.__dbId}|${r.channel_name}`));
       const finalRows=applyMasks([...selectedNonCalc,...calcRows]);
       finalRows.forEach(r => { r.__ts = Date.parse(r.time); });
       latestRows=finalRows;
@@ -1777,7 +2736,7 @@
       document.addEventListener("click",(e)=>{ if(!byId("menubar").contains(e.target)) hideAll(); });
       document.querySelectorAll(".menuItem").forEach((mi)=>{ mi.onclick=(e)=>{ e.stopPropagation(); const id=mi.getAttribute("data-menu"); const dd=byId(`menu_${id}`); const shown=dd.classList.contains("show"); hideAll(); if(!shown) dd.classList.add("show"); }; });
       byId("help_github").onclick=()=>window.open("https://github.com/tysocks/NOVA","_blank");
-      byId("help_sourceHelp").onclick=()=>setStatus("Use + to add items. Click rows to multi-select. Right-click rows for actions.");
+      byId("help_sourceHelp").onclick=()=>setStatus("Sources +: add RedScale/BlueScale/PostgreSQL/TDMS/Data Files. Postgres tests appear as database/run_code. Click/Ctrl/Shift to select; empty = all. Right-click to edit/rename/delete.");
       byId("view_togglePreview").onclick=()=>{ setPreviewVisible(!previewVisible); saveState(); };
       byId("edit_showMetadata").onclick=()=>showMetadataModal();
       byId("edit_setMaxFreq").onclick=()=>openMaxFreqModal();
@@ -2097,11 +3056,11 @@
     async function refetchZoomedDetail(startTime, endTime){
       setStatus("Loading detail...");
       const rowsAll=[];
-      for(const dbId of selectedDatabaseIds){
-        const db=state.databases.find((d)=>d.id===dbId), src=db?state.sources.find((s)=>s.id===db.sourceId):null;
+      for(const dbId of effectiveSelectedDatabaseIds()){
+        const { db, src }=resolveDbSource(dbId);
         if(!db||!src||src.type!=="postgres") continue;
-        const tests=[...selectedTestIds].filter((t)=>t.startsWith(`${dbId}|`)).map((t)=>t.split("|")[1]);
-        const selForDb=[...selectedChannelIds].filter((c)=>c.startsWith(`${dbId}|`)).map((c)=>c.split("|")[1]);
+        const tests=effectiveSelectedTestIds().filter((t)=>t.startsWith(`${dbId}|`)).map((t)=>t.split("|")[1]);
+        const selForDb=effectiveSelectedChannelIds().filter((c)=>c.startsWith(`${dbId}|`)).map((c)=>c.split("|")[1]);
         const calcForDb=(state.calculatedChannels||[]).filter((c)=>c.dbId===dbId&&selForDb.includes(c.name));
         const channelSet=new Set(selForDb.filter((c)=>!calcForDb.some((x)=>x.name===c)));
         calcForDb.forEach((c)=>(c.channels||[]).forEach((id)=>channelSet.add(id.split("|")[1])));

@@ -1,9 +1,11 @@
 .venv/
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *.pyo
 *.pyd
 *.log
+.nova_backend_port
 
 # Local environment secrets
 .env
@@ -18,6 +20,10 @@ backend/.nova_config_library.json
 # OS/editor noise
 .DS_Store
 Thumbs.db
+.claude/
+
+# Cursor / local IDE
+.cursor/
 
 # Git worktrees
 .worktrees/

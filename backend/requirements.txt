@@ -6,3 +6,4 @@ pydantic-settings
 PySide6
 pandas
 nptdms
+h5py

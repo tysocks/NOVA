@@ -6,20 +6,22 @@ NOVA is a desktop-first data viewer for test telemetry. It runs a local FastAPI 
 
 NOVA supports multiple data source types in one session:
 
-- PostgreSQL/TimescaleDB sources (browse databases, tests, channels, and timeseries).
-- Local CSV sources (uploaded via the app).
-- Local TDMS sources (uploaded via the app).
-- Configurable default PostgreSQL sources (managed in-app via File menu).
+- **RedScale / BlueScale / PostgreSQL** — connect once, then pick database, test table, and tests in a 3-column picker. Each selected test appears in **Sources** as `database_name/run_code` (e.g. `hfr_test_data/HFR-0010`).
+- **Data Files** (CSV or H5) — pick a file, set name/path/units-in-headers (CSV), then add channels from the file catalog.
+- **TDMS** — file picker adds the source immediately (rename via double-click or right-click).
+- Configurable default PostgreSQL sources (`File -> Default Sources...`).
 
 The UI lets you:
 
-- Add multiple sources, then add databases/tests/channels from those sources.
-- Use `File -> Default Sources...` to add/edit/delete reusable default PostgreSQL source entries.
+- Add sources from the **Sources `+`** modal (no dropdown).
+- Edit or rename sources (right-click or double-click on Sources).
+- Add channels via a two-column transfer dialog (available → selected).
+- Use explorer-style selection in Sources/Channels (click, Ctrl/Cmd toggle, Shift range; empty selection = all).
 - Use the `+` button in Channels with a dropdown:
   - `Add channels from source`
   - `Rolling channel calculations`
   - `Channel wise calculations`
-- Multi-select tests/channels and plot in Plotly.
+- Plot in Plotly (toolbar hidden; zoom still refetches detail for Postgres).
 - Use either `time` or a selected channel on the X axis.
 - Switch time reference between `Raw Time` and `t0 = First Point (per test)`.
 - Apply optional start/end time filtering for database-backed timeseries.
@@ -163,6 +165,8 @@ This creates:
 - `.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000` (run from `backend`)
 
 Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+The desktop launcher (`Launch_NOVA.bat` / `Launch_NOVA.vbs`) automatically uses the first free port in **8000–8010** if another app is already bound to 8000, and reuses an existing NOVA backend when `/health` reports `app: NOVA`.
 
 ## CSV Expectations
 
