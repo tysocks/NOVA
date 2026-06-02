@@ -10,6 +10,7 @@
   <style>
     :root {
       color-scheme:dark;
+      --nova-base-font-size:14px;
       --nova-ui-bg:#0a0a0a;
       --nova-view-bg:#000000;
       --nova-accent:#333;
@@ -19,18 +20,35 @@
       --nova-hover:#111111;
       --nova-active:#141414;
       --nova-line:#555;
+      --nova-surface:#0d0d0d;
+      --nova-input-bg:#0d0d0d;
+      --nova-btn-bg:#111;
       --nova-radius-xs:3px;
       --nova-radius-sm:5px;
       --nova-radius-md:8px;
       --nova-radius-lg:10px;
     }
+    html.light-mode {
+      color-scheme:light;
+      --nova-ui-bg:#f3f3f3;
+      --nova-view-bg:#ffffff;
+      --nova-text:#1a1a1a;
+      --nova-text-dim:#666666;
+      --nova-divider:#d0d0d0;
+      --nova-hover:#e8e8e8;
+      --nova-active:#dedede;
+      --nova-line:#888888;
+      --nova-surface:#ffffff;
+      --nova-input-bg:#ffffff;
+      --nova-btn-bg:#e8e8e8;
+    }
     *{ box-sizing:border-box; }
-    body{ margin:0; font-family:"MiSans","Segoe UI","Microsoft YaHei UI",Arial,sans-serif; font-size:13px; background:var(--nova-ui-bg); color:var(--nova-text); height:100vh; overflow:hidden; }
+    body{ margin:0; font-family:var(--nova-font-family,"MiSans","Segoe UI","Microsoft YaHei UI",Arial,sans-serif); font-size:var(--nova-base-font-size); background:var(--nova-ui-bg); color:var(--nova-text); height:100vh; overflow:hidden; }
     /* Menubar */
     .menubar{ display:flex; align-items:center; gap:4px; padding:3px 6px; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); user-select:none; }
     .menuItem{ position:relative; padding:5px 9px; border:1px solid transparent; border-radius:var(--nova-radius-xs); cursor:pointer; font-size:0.74rem; }
     .menuItem:hover{ background:var(--nova-hover); border-color:var(--nova-divider); }
-    .menuDropdown{ position:absolute; top:calc(100% + 4px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-ui-bg); border:1px solid #222; border-radius:var(--nova-radius-sm); box-shadow:0 8px 20px rgba(0,0,0,0.7); overflow:hidden; }
+    .menuDropdown{ position:absolute; top:calc(100% + 4px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-ui-bg); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); box-shadow:0 8px 20px rgba(0,0,0,0.7); overflow:hidden; }
     .menuDropdown.show{ display:block; }
     .menuAction{ padding:7px 10px; border-bottom:1px solid var(--nova-divider); font-size:0.8rem; cursor:pointer; color:var(--nova-text); }
     .menuAction:last-child{ border-bottom:none; }
@@ -51,6 +69,8 @@
     .addBtn:hover,.collapseBtn:hover{ color:var(--nova-text); }
     /* Lists */
     .list{ border:none; background:var(--nova-ui-bg); overflow-y:auto; max-height:136px; user-select:none; -webkit-user-select:none; }
+    /* Show more channels by default (user request). */
+    #channelsList{ max-height:260px; }
     .item{ padding:4px 6px 4px 8px; border-bottom:1px solid #0f0f0f; cursor:pointer; border-left:2px solid transparent; user-select:none; -webkit-user-select:none; }
     .item:last-child{ border-bottom:none; }
     .item.active{ background:var(--nova-active); border-left-color:var(--nova-line); }
@@ -61,17 +81,17 @@
     .empty{ padding:8px; color:var(--nova-text-dim); font-size:0.70rem; }
     /* Form elements */
     label{ display:block; margin:5px 0 2px 0; font-size:0.60rem; color:var(--nova-text-dim); letter-spacing:0.06em; text-transform:uppercase; }
-    input,select,button{ width:100%; border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); background:#0d0d0d; color:var(--nova-text); padding:5px; font-size:0.72rem; outline:none; }
+    input,select,button{ width:100%; border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); background:var(--nova-input-bg); color:var(--nova-text); padding:5px; font-size:0.72rem; outline:none; }
     input:focus,select:focus{ border-color:var(--nova-line); }
-    button{ cursor:pointer; background:#111; border:1px solid transparent; }
-    button:hover{ background:#1a1a1a; }
-    button:active{ background:#222; }
+    button{ cursor:pointer; background:var(--nova-btn-bg); border:1px solid transparent; }
+    button:hover{ background:var(--nova-hover); }
+    button:active{ background:var(--nova-active); }
     .iconBtn{ width:22px; height:22px; min-width:22px; border-radius:var(--nova-radius-sm); border:none; background:transparent; color:var(--nova-text-dim); padding:0; font-size:0.82rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
     .iconBtn:hover{ color:var(--nova-text); background:var(--nova-hover); }
     /* Plot tabs */
     .plotTabs{ display:flex; align-items:stretch; gap:0; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); min-height:26px; flex:0 0 auto; overflow-x:auto; }
     .plotTab{ width:auto; min-width:82px; max-width:195px; background:var(--nova-ui-bg); border:none; border-right:1px solid var(--nova-divider); border-top:2px solid transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 0 auto; padding:4px 8px; font-size:0.68rem; color:var(--nova-text-dim); }
-    .plotTab.active{ background:#111; border-top-color:var(--nova-line); color:var(--nova-text); }
+    .plotTab.active{ background:var(--nova-active); border-top-color:var(--nova-line); color:var(--nova-text); }
     .plotTab:hover:not(.active){ background:var(--nova-hover); color:var(--nova-text); }
     .plotAdd{ width:auto; min-width:24px; max-width:24px; padding:0; font-weight:900; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:var(--nova-radius-xs); background:var(--nova-ui-bg); color:var(--nova-text-dim); }
     .plotAdd:hover{ color:var(--nova-text); background:var(--nova-hover); }
@@ -88,7 +108,7 @@
     #statusBar{ position:fixed; bottom:0; left:0; right:0; height:20px; background:var(--nova-ui-bg); border-top:1px solid var(--nova-divider); padding:2px 8px; font-size:0.65rem; color:#555; z-index:50; display:flex; align-items:center; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     #statusBar.error{ color:#a87070; }
     /* Drawer */
-    .drawer{ position:fixed; left:8px; right:8px; bottom:28px; background:#0d0d0d; border:1px solid #222; border-radius:var(--nova-radius-md) var(--nova-radius-md) 0 0; max-height:44vh; padding:8px; display:none; z-index:40; box-shadow:0 -4px 24px rgba(0,0,0,0.45); }
+    .drawer{ position:fixed; left:8px; right:8px; bottom:28px; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md) var(--nova-radius-md) 0 0; max-height:44vh; padding:8px; display:none; z-index:40; box-shadow:0 -4px 24px rgba(0,0,0,0.45); }
     .drawer.show{ display:block; }
     .tableWrap{ overflow:auto; max-height:34vh; }
     table{ width:100%; border-collapse:collapse; font-size:0.74rem; }
@@ -97,7 +117,7 @@
     /* Modal */
     .modalBackdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.78); display:none; z-index:60; align-items:center; justify-content:center; }
     .modalBackdrop.show{ display:flex; }
-    .modal{ width:min(760px,92vw); max-height:82vh; overflow-x:hidden; overflow-y:auto; background:#0d0d0d; border:1px solid #222; border-radius:var(--nova-radius-md); padding:0; box-shadow:0 12px 40px rgba(0,0,0,0.55); }
+    .modal{ width:min(760px,92vw); max-height:82vh; overflow-x:hidden; overflow-y:auto; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); padding:0; box-shadow:0 12px 40px rgba(0,0,0,0.55); }
     .modal.modalScale{ width:min(420px,94vw); overflow-x:hidden; }
     .modal.modalChannels{ width:min(480px,94vw); overflow-x:hidden; }
     .modal.modalNarrow{ width:min(220px,88vw); }
@@ -122,13 +142,13 @@
     .channelTransferGrid{ display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:6px; align-items:stretch; width:100%; min-width:0; }
     .channelTransferBtns{ display:flex; flex-direction:column; gap:4px; justify-content:center; }
     .channelTransferBtns button{ min-width:32px !important; width:32px !important; padding:4px 0 !important; border-radius:var(--nova-radius-sm) !important; }
-    .modalHeader{ display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid #222; }
+    .modalHeader{ display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid var(--nova-divider); }
     .modalTitle{ margin:0; font-size:0.85rem; color:var(--nova-text); }
     .modalClose{ width:auto; min-width:24px; padding:3px 7px; border-radius:var(--nova-radius-xs); }
     .modalGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:10px; }
     .modalActions{ padding:8px 10px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid var(--nova-divider); margin:0; }
     .modalActions button{ width:auto; min-width:100px; }
-    .modalList{ border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); background:#0a0a0a; max-height:48vh; overflow-x:hidden; overflow-y:auto; }
+    .modalList{ border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); background:var(--nova-ui-bg); max-height:48vh; overflow-x:hidden; overflow-y:auto; }
     .selectRow{ padding:7px 8px 7px 10px; border-bottom:1px solid var(--nova-divider); cursor:pointer; border-left:2px solid transparent; }
     .selectRow:last-child{ border-bottom:none; }
     .selectRow.active{ background:var(--nova-active); border-left-color:var(--nova-line); }
@@ -137,12 +157,12 @@
     .timeRangeRow{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
     .timeRangeRow label{ margin-top:0; }
     /* Menus */
-    .contextMenu,.miniMenu{ position:fixed; z-index:80; display:none; background:#0d0d0d; border:1px solid #222; border-radius:var(--nova-radius-sm); min-width:180px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
+    .contextMenu,.miniMenu{ position:fixed; z-index:80; display:none; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); min-width:180px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
     .contextItem,.miniMenuItem{ padding:7px 10px; cursor:pointer; font-size:0.78rem; border-bottom:1px solid var(--nova-divider); color:var(--nova-text); }
     .contextItem:last-child,.miniMenuItem:last-child{ border-bottom:none; }
     .contextItem:hover,.miniMenuItem:hover{ background:var(--nova-hover); }
     /* Realtime panel */
-    #realtimePanel{ background:#0d0d0d; border:1px solid #222; border-radius:var(--nova-radius-sm); }
+    #realtimePanel{ background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); }
     .realtimeBtn{ width:26px; height:26px; min-width:26px; border-radius:var(--nova-radius-sm); padding:0; font-size:0.72rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--nova-text-dim); }
     .realtimeBtn:hover{ background:var(--nova-hover); color:var(--nova-text); }
     .realtimeBtn.active{ background:var(--nova-active); color:var(--nova-text); }
@@ -154,14 +174,40 @@
     /* Region section */
     #regionBody{ max-height:none !important; padding:6px 8px; }
     .panel-legacy{ display:none !important; }
+    .cfgManagerToolbar{ display:flex; align-items:center; gap:6px; padding:8px 10px 4px; }
+    .cfgManagerToolbar input{ flex:1; min-width:0; }
+    .cfgMenuBtn{ width:28px; height:28px; min-width:28px; font-size:1.1rem; letter-spacing:0.02em; }
+    #appWindowLayer{ position:fixed; inset:0; pointer-events:none; z-index:110; }
+    .appWindow{ position:fixed; pointer-events:auto; display:flex; flex-direction:column; min-width:220px; min-height:140px; max-width:96vw; max-height:96vh; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); box-shadow:0 12px 40px rgba(0,0,0,0.55); overflow:hidden; z-index:111; }
+    .appWindow.modalScale{ width:420px; height:520px; }
+    .appWindow.modalChannels{ width:480px; height:560px; }
+    .appWindow.modalMask{ width:360px; height:500px; }
+    .appWindow.modalNarrow{ width:260px; height:340px; }
+    .appWindowHeader{ display:flex; align-items:center; gap:6px; cursor:move; flex:0 0 auto; user-select:none; padding-right:8px; }
+    .appWindowHeader .modalTitle{ flex:1; min-width:0; margin:0; }
+    .appWindowBody{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+    .appWindowContent{ flex:1 1 auto; min-height:0; overflow:auto; display:flex; flex-direction:column; }
+    .appWindowBody>.modalActions{ flex:0 0 auto; }
+    .appWindow .appWindowContent .modalBodyPad{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+    .appWindow .appWindowContent .scalePickerGrid,
+    .appWindow .appWindowContent .channelTransferGrid{ flex:1 1 auto; min-height:0; }
+    .appWindow .appWindowContent .scalePickerCol{ flex:1 1 auto; min-height:0; }
+    .appWindow .appWindowContent .maskListPad{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+    .appWindow .appWindowContent .maskSearchPad,
+    .appWindow .appWindowContent .maskFormPad,
+    .appWindow .appWindowContent .cfgManagerToolbar{ flex:0 0 auto; }
+    .appWindow .appWindowContent .modalList{ max-height:none !important; flex:1 1 auto; min-height:0; }
+    .appWindow.modalCompact .appWindowContent .modalList{ max-height:none !important; }
+    .appWindow .appWindowContent .scalePickerCol .modalList{ max-height:none !important; }
+    .appWindow .appWindowContent>div:has(>.modalList){ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; padding-bottom:0 !important; }
+    .appWindowResize{ position:absolute; right:0; bottom:0; width:14px; height:14px; cursor:nwse-resize; z-index:2; background:linear-gradient(135deg, transparent 50%, var(--nova-text-dim) 50%); opacity:0.45; }
+    .appWindowResize:hover{ opacity:0.85; }
   </style>
 </head>
 <body>
   <div class="menubar" id="menubar">
     <div class="menuItem" data-menu="file">File
       <div class="menuDropdown" id="menu_file">
-        <div class="menuAction" id="file_saveConfig">Save Config...</div>
-        <div class="menuAction" id="file_loadConfig">Open Config...</div>
         <div class="menuAction" id="file_configManager">Configuration Manager...</div>
         <div class="menuAction" id="file_defaultSources">Default Sources...</div>
         <div class="menuSep"></div>
@@ -181,6 +227,7 @@
       <div class="menuDropdown" id="menu_view">
         <div class="menuAction" id="view_togglePreview">Toggle Data Preview</div>
         <div class="menuSep"></div>
+        <div class="menuAction" id="view_preferences">Preferences...</div>
           <div class="menuAction" id="view_viewAppearance">View Appearance...</div>
       </div>
     </div>
@@ -235,6 +282,7 @@
     <div class="tableWrap"><table><thead><tr><th>test_run_id</th><th>test_run_code</th><th>channel_name</th><th>unit</th><th>time</th><th>value</th></tr></thead><tbody id="rows"></tbody></table></div>
   </div>
   <div id="modalBackdrop" class="modalBackdrop"><div class="modal"><div class="modalHeader"><h4 id="modalTitle" class="modalTitle"></h4><button id="modalCloseBtn" class="modalClose" type="button">X</button></div><div id="modalBody"></div></div></div>
+  <div id="appWindowLayer"></div>
   <div id="contextMenu" class="contextMenu"></div>
   <div id="sourceAddMenu" class="miniMenu"></div>
   <div id="channelAddMenu" class="miniMenu"></div>
@@ -254,7 +302,17 @@
 
   <script>
     const STORAGE_KEY = "nova.uiState.v7";
-    const byId = (id) => document.getElementById(id);
+    let appWindowStack=[];
+    let appWindowZ=110;
+    const byId = (id) => {
+      for(let i=appWindowStack.length-1;i>=0;i-=1){
+        const root=appWindowStack[i].root;
+        if(!root) continue;
+        const el=root.querySelector(`#${CSS.escape(id)}`);
+        if(el) return el;
+      }
+      return document.getElementById(id);
+    };
     const toIso = (v) => (v ? new Date(v).toISOString() : "n/a");
     let latestRows = [], metadataRows = [], testsData = [], channelsData = [], previewVisible = false, focusedItem = null;
     let selectedSourceIds = new Set(), selectedDatabaseIds = new Set(), selectedTestIds = new Set(), selectedChannelIds = new Set(), selectedMaskIds = new Set();
@@ -266,7 +324,8 @@
     let overviewEpochStartMs = null;
     let overviewEpochEndMs = null;
     let zoomState = "overview"; // "overview" | "detail"
-    let zoomRefetchTimer = null;
+    let zoomRelayoutDebounceTimer = null;
+    const ZOOM_RELOCAL_DEBOUNCE_MS = 500;
     let realtimeTimer = null;
     let realtimeDirection = 1;
     let realtimeCurrentMs = null;
@@ -299,6 +358,160 @@
       const override = state.unitOverrides ? state.unitOverrides[chId] : "";
       if (typeof override === "string" && override.trim()) return override.trim();
       return fallbackUnit || null;
+    }
+    function rebuildChannelUnitMap(){
+      channelUnitMap = new Map();
+      channelsData.forEach((c)=>{
+        const chId=`${c.__dbId}|${c.channel_name}`;
+        channelUnitMap.set(chId, resolveChannelUnit(chId, c.unit) || "unitless");
+      });
+      addedChannelIds.forEach((chId)=>{
+        if(!channelUnitMap.has(chId)){
+          channelUnitMap.set(chId, resolveChannelUnit(chId, null) || "unitless");
+        }
+      });
+    }
+    function applyRowUnits(rows){
+      return (rows||[]).map((r)=>{
+        const chId=`${r.__dbId}|${r.channel_name}`;
+        return { ...r, unit: resolveChannelUnit(chId, r.unit) };
+      });
+    }
+    function plotLayoutRevision(){
+      const parts=Object.entries(state.unitOverrides || {}).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>`${k}=${v}`);
+      return parts.length ? parts.join("|") : "nova";
+    }
+    function channelPickerSourceOptions(){
+      state.sources.filter(isFileSource).forEach(ensureFileSourceCatalog);
+      const activeIds=new Set(effectiveSelectedSourceIds());
+      const out=[];
+      state.sources.forEach((s)=>{
+        if(!activeIds.has(s.id)) return;
+        if(isFileSource(s)){
+          const db=state.databases.find((d)=>d.sourceId===s.id) || ensureFileSourceCatalog(s);
+          if(db) out.push({ sourceId:s.id, dbId:db.id, label:s.name||s.type, kind:"file" });
+        } else if(isPostgresTestLeaf(s)){
+          out.push({ sourceId:s.id, dbId:s.db_entry_id, label:s.name, kind:"postgres" });
+        }
+      });
+      return out;
+    }
+    function defaultChannelPickerSourceId(options){
+      if(!options.length) return null;
+      const selSet=new Set(effectiveSelectedSourceIds());
+      const topSourceId=sourcesListItems().map((it)=>it.id).find((id)=>selSet.has(id)&&options.some((o)=>o.sourceId===id));
+      if(topSourceId) return topSourceId;
+      return options[0].sourceId;
+    }
+    function sourceLabelForDbId(dbId){
+      const { src, db }=resolveDbSource(dbId);
+      if(isPostgresTestLeaf(src)) return src.name||"PostgreSQL test";
+      if(src?.name) return src.name;
+      return db?.name||String(dbId).slice(0,8);
+    }
+    function defaultFormulaSourceLabel(channelIds){
+      const labels=[], seen=new Set();
+      (channelIds||[]).forEach((id)=>{
+        const dbId=id.split("|")[0];
+        const lab=sourceLabelForDbId(dbId);
+        if(seen.has(lab)) return;
+        seen.add(lab);
+        labels.push(lab);
+      });
+      return labels.join(" + ");
+    }
+    function legendSourceForCalc(calc){
+      const custom=String(calc?.sourceLabel||"").trim();
+      if(custom) return custom;
+      if(calc?.kind==="formula") return defaultFormulaSourceLabel(calc.channels||[]);
+      return sourceLabelForDbId(calc.dbId);
+    }
+    function traceLegendName(r){
+      if(r.__legendSource) return `${r.__legendSource} | ${r.channel_name}`;
+      const srcLabel=sourceLabelForDbId(r.__dbId);
+      const { src }=resolveDbSource(r.__dbId);
+      if(isFileSource(src)||isPostgresTestLeaf(src)) return `${srcLabel} | ${r.channel_name}`;
+      const run=r.test_run_code??r.test_run_id;
+      if(run!=null && run!=="" && !String(srcLabel).includes(String(run))) return `${srcLabel} / ${run} | ${r.channel_name}`;
+      return `${srcLabel} | ${r.channel_name}`;
+    }
+    async function ensureCalcSourceChannelsLoaded(){
+      if(!state.sources.length){
+        setStatus("Add at least one source first.",true);
+        return null;
+      }
+      await refreshCatalogsForSelections();
+      const dbIds=new Set(collectDatabaseIdsForSources(effectiveSelectedSourceIds()));
+      const sourceChannels=channelsData
+        .filter((c)=>!c.__isCalculated && dbIds.has(c.__dbId))
+        .sort((a,b)=>{
+          const bySource=sourceLabelForDbId(a.__dbId).localeCompare(sourceLabelForDbId(b.__dbId));
+          if(bySource!==0) return bySource;
+          return String(a.channel_name).localeCompare(String(b.channel_name));
+        });
+      if(!sourceChannels.length){
+        setStatus("No source channels available for the selected sources.",true);
+        return null;
+      }
+      return sourceChannels;
+    }
+    function calcChannelPickerRows(sourceChannels){
+      return sourceChannels.map((c)=>({
+        id:`${c.__dbId}|${c.channel_name}`,
+        primary:c.channel_name,
+        meta:`${sourceLabelForDbId(c.__dbId)} | unit ${c.unit||"unitless"}`,
+      }));
+    }
+    function rollingSourceChannelOptions(sourceChannels, selectedId){
+      return sourceChannels.map((c)=>{
+        const id=`${c.__dbId}|${c.channel_name}`;
+        const selected=selectedId===id?" selected":"";
+        return `<option value="${id}"${selected}>${sourceLabelForDbId(c.__dbId)} / ${c.channel_name}</option>`;
+      }).join("");
+    }
+    async function fetchChannelsForDb(dbId){
+      const rows=[];
+      const { db, src, connSrc }=resolveDbSource(dbId);
+      if(!db||!src) return rows;
+      if(src.type==="postgres"){
+        const testIds=[...new Set([...addedTestIds, ...effectiveSelectedTestIds()]
+          .filter((k)=>k.startsWith(`${dbId}|`))
+          .map((k)=>k.split("|")[1]))];
+        if(!testIds.length) return rows;
+        const p=new URLSearchParams();
+        testIds.forEach((id)=>p.append("test_run_ids",id));
+        p.append("db_name",db.name);
+        if(db.test_table) p.append("test_table", db.test_table);
+        sourceConnQuery(connSrc||src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
+        try{
+          const ch=await getJson(`/api/available-channels?${p.toString()}`);
+          ch.forEach((c)=>rows.push({
+            id:`${dbId}|${c.channel_name}`,
+            primary:c.channel_name,
+            meta:`unit ${resolveChannelUnit(`${dbId}|${c.channel_name}`, c.unit)||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`
+          }));
+        }catch(err){
+          setStatus(`Failed to load channels for '${db.name}': ${err}`, true);
+        }
+      } else {
+        const fileSrc=isFileSource(src) ? src : state.sources.find((s)=>s.id===db.sourceId);
+        if(!fileSrc) return rows;
+        try{
+          const p=new URLSearchParams();
+          p.append("source_type", fileSrc.type);
+          p.append("file_path", fileSrc.file_path||"");
+          if(fileSrc.type==="csv" && fileSrc.units_in_headers) p.append("units_in_headers","true");
+          const ch=await getJson(`/api/file/channels?${p.toString()}`);
+          ch.forEach((c)=>rows.push({
+            id:`${dbId}|${c.channel_name}`,
+            primary:c.channel_name,
+            meta:`unit ${resolveChannelUnit(`${dbId}|${c.channel_name}`, c.unit)||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`
+          }));
+        }catch(err){
+          setStatus(`Failed to load channels for '${fileSrc.name||fileSrc.type}': ${err}`, true);
+        }
+      }
+      return rows.sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
     }
     function channelSourceType(chId){
       const dbId = String(chId || "").split("|")[0];
@@ -356,12 +569,12 @@
       if(!db){
         db={ id:crypto.randomUUID(), sourceId:src.id, sourceType:src.type, name:src.name||src.type };
         state.databases.push(db);
+        const testKey=`${db.id}|1`;
+        addedTestIds.add(testKey);
+        selectedTestIds.add(testKey);
+        selectedDatabaseIds.add(db.id);
+        selectedSourceIds.add(src.id);
       }
-      const testKey=`${db.id}|1`;
-      addedTestIds.add(testKey);
-      selectedTestIds.add(testKey);
-      selectedDatabaseIds.add(db.id);
-      selectedSourceIds.add(src.id);
       return db;
     }
     function addPostgresTestLeaf({ parentSrc, db_name, test_table, test_run_id, run_code }){
@@ -467,7 +680,10 @@
       const envelope=await getJson(`/api/v2/timeseries?${p.toString()}`);
       return Array.isArray(envelope?.overview) ? envelope.overview : [];
     }
-    function activeSources() { return state.sources.filter((s) => selectedSourceIds.has(s.id)); }
+    function activeSources() {
+      const ids=new Set(effectiveSelectedSourceIds());
+      return state.sources.filter((s)=>ids.has(s.id));
+    }
     function setPreviewVisible(v) {
       previewVisible = v;
       byId("previewDrawer").className = v ? "drawer show" : "drawer";
@@ -478,15 +694,160 @@
     const saveStateDeferred = debounce(saveState, 150);
     function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:s.calculatedChannels || [], freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {} }; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = new Set(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = new Set(s.addedChannelIds || []); byId("xAxis").value = s.xAxis || "time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "absolute")); byId("t0Mode").value = nextT0; previewVisible = Boolean(s.previewVisible); } catch {} }
     const MODAL_SIZE_CLASSES=["modalScale","modalChannels","modalNarrow","modalMask","modalCompact"];
-    function setModalLayout(sizeClass, compact){
-      const modalEl=byId("modalBackdrop")?.querySelector(".modal");
-      if(!modalEl) return;
-      MODAL_SIZE_CLASSES.forEach((c)=>modalEl.classList.remove(c));
-      if(sizeClass) modalEl.classList.add(sizeClass);
-      if(compact) modalEl.classList.add("modalCompact");
+    const WF={ floating:true };
+    const WF_SCALE={ floating:true, size:"modalScale", compact:true };
+    const WF_CHANNELS={ floating:true, size:"modalChannels", compact:true };
+    const WF_NARROW={ floating:true, size:"modalNarrow", compact:true };
+    const WF_CFG={ floating:true, size:"default", compact:true };
+    const dialogCloseStack=[];
+    const APP_WINDOW_SIZES={ modalScale:[420,520], modalChannels:[480,560], modalMask:[360,500], modalNarrow:[260,340], default:[520,560] };
+    function removeAppWindowEntry(dialogId){
+      const idx=appWindowStack.findIndex((e)=>e.dialogId===dialogId);
+      if(idx>=0) appWindowStack.splice(idx,1);
+    }
+    function centerInViewport(w,h){
+      return {
+        left:Math.max(8,Math.round((window.innerWidth-w)/2)),
+        top:Math.max(8,Math.round((window.innerHeight-h)/2)),
+      };
+    }
+    function bringAppWindowToFront(el){
+      appWindowZ+=1;
+      el.style.zIndex=String(appWindowZ);
+    }
+    function initAppWindowDragResize(entry){
+      const el=entry.el;
+      const header=el.querySelector(".appWindowHeader");
+      const resizeHandle=el.querySelector(".appWindowResize");
+      let dragging=false, resizing=false, dx=0, dy=0, startW=0, startH=0, startX=0, startY=0;
+      header.addEventListener("mousedown",(e)=>{
+        dragging=true;
+        const rect=el.getBoundingClientRect();
+        dx=e.clientX-rect.left;
+        dy=e.clientY-rect.top;
+        bringAppWindowToFront(el);
+        e.preventDefault();
+      });
+      resizeHandle.addEventListener("mousedown",(e)=>{
+        resizing=true;
+        startW=el.offsetWidth;
+        startH=el.offsetHeight;
+        startX=e.clientX;
+        startY=e.clientY;
+        bringAppWindowToFront(el);
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      const onMove=(e)=>{
+        if(dragging){
+          el.style.left=`${Math.max(0,Math.min(window.innerWidth-80,e.clientX-dx))}px`;
+          el.style.top=`${Math.max(0,Math.min(window.innerHeight-40,e.clientY-dy))}px`;
+        }
+        if(resizing){
+          el.style.width=`${Math.max(220,startW+(e.clientX-startX))}px`;
+          el.style.height=`${Math.max(140,startH+(e.clientY-startY))}px`;
+        }
+      };
+      const onUp=()=>{ dragging=false; resizing=false; };
+      window.addEventListener("mousemove",onMove);
+      window.addEventListener("mouseup",onUp);
+      entry._cleanupDrag=()=>{
+        window.removeEventListener("mousemove",onMove);
+        window.removeEventListener("mouseup",onUp);
+      };
+    }
+    function layoutAppWindowBody(root){
+      if(!root) return;
+      const actions=root.querySelector(":scope > .modalActions");
+      if(!actions||root.querySelector(":scope > .appWindowContent")) return;
+      const content=document.createElement("div");
+      content.className="appWindowContent";
+      [...root.childNodes].forEach((node)=>{ if(node!==actions) content.appendChild(node); });
+      root.insertBefore(content, actions);
+    }
+    function openAppWindow(title,bodyHtml,saveFn,layoutOpts){
+      const layer=byId("appWindowLayer");
+      const dialogId=crypto.randomUUID();
+      const sizeKey=layoutOpts?.size||"default";
+      const [defW,defH]=APP_WINDOW_SIZES[sizeKey]||APP_WINDOW_SIZES.default;
+      const cascade=appWindowStack.length;
+      const center=centerInViewport(defW,defH);
+      const left=center.left+(cascade%6)*22;
+      const top=center.top+(cascade%6)*22;
+      const el=document.createElement("div");
+      el.className="appWindow modal"+(layoutOpts?.size?` ${layoutOpts.size}`:"")+(layoutOpts?.compact?" modalCompact":"");
+      el.style.width=`${defW}px`;
+      el.style.height=`${defH}px`;
+      el.style.left=`${left}px`;
+      el.style.top=`${top}px`;
+      el.innerHTML=`<div class="appWindowHeader modalHeader"><h4 class="modalTitle"></h4></div><div class="appWindowBody"></div><div class="appWindowResize" title="Resize"></div>`;
+      el.querySelector(".modalTitle").textContent=title;
+      const root=el.querySelector(".appWindowBody");
+      root.innerHTML=bodyHtml;
+      layoutAppWindowBody(root);
+      const entry={
+        dialogId,
+        title,
+        el,
+        root,
+        close:()=>{
+          if(entry._cleanupDrag) entry._cleanupDrag();
+          removeAppWindowEntry(dialogId);
+          unregisterDialogClose(entry.close);
+          el.remove();
+        },
+      };
+      appWindowStack.push(entry);
+      dialogCloseStack.push({ close:entry.close });
+      wireModalActions(root,saveFn);
+      initAppWindowDragResize(entry);
+      el.addEventListener("mousedown",()=>bringAppWindowToFront(el));
+      bringAppWindowToFront(el);
+      layer.appendChild(el);
+      return entry;
+    }
+    function setModalLayout(sizeClass, compact, modalEl){
+      const target=modalEl||byId("modalBackdrop")?.querySelector(".modal");
+      if(!target) return;
+      MODAL_SIZE_CLASSES.forEach((c)=>target.classList.remove(c));
+      if(sizeClass) target.classList.add(sizeClass);
+      if(compact) target.classList.add("modalCompact");
+    }
+    function closeBackdropModal(){
+      byId("modalBackdrop").classList.remove("show");
+      setModalLayout(null, false);
+      byId("modalBody").innerHTML="";
+    }
+    function unregisterDialogClose(closeFn){
+      const idx=dialogCloseStack.findIndex((e)=>e.close===closeFn);
+      if(idx>=0) dialogCloseStack.splice(idx,1);
+    }
+    function closeModal(){
+      for(let i=dialogCloseStack.length-1;i>=0;i-=1){
+        const entry=dialogCloseStack[i];
+        if(entry?.close){
+          entry.close();
+          dialogCloseStack.splice(i,1);
+          return;
+        }
+      }
+      closeBackdropModal();
+    }
+    function wireModalActions(scopeEl, saveFn){
+      if(!scopeEl) return;
+      const applyBtn=scopeEl.querySelector("#modalSaveBtn");
+      if(applyBtn) applyBtn.onclick=async()=>{ await saveFn(); };
+      const applyCloseBtn=scopeEl.querySelector("#modalSaveCloseBtn");
+      if(applyCloseBtn) applyCloseBtn.onclick=async()=>{
+        const ok=await saveFn();
+        if(ok===false) return;
+        closeModal();
+      };
+      const cancelBtn=scopeEl.querySelector("#modalCancelBtn");
+      if(cancelBtn) cancelBtn.onclick=closeModal;
     }
     function isModalLayoutArg(v){
-      return v && typeof v==="object" && !Array.isArray(v) && (v.size || v.compact !== undefined);
+      return v && typeof v==="object" && !Array.isArray(v) && (v.size || v.compact !== undefined || v.floating !== undefined);
     }
     function openModal(title, bodyHtml, onSave, layout) {
       let saveFn=onSave;
@@ -495,6 +856,9 @@
         layoutOpts=onSave;
         saveFn=typeof layout==="function" ? layout : (async()=>true);
       }
+      if(layoutOpts?.floating){
+        return openAppWindow(title, bodyHtml, saveFn, layoutOpts);
+      }
       const sizeClass=layoutOpts?.size||null;
       const compact=Boolean(layoutOpts?.compact);
       byId("modalTitle").textContent = title;
@@ -502,24 +866,11 @@
       byId("modalBackdrop").classList.add("show");
       setModalLayout(sizeClass, compact);
       byId("modalCloseBtn").onclick = closeModal;
-
-      const applyBtn = byId("modalSaveBtn");
-      if (applyBtn) applyBtn.onclick = async () => { await saveFn(); };
-
-      const applyCloseBtn = byId("modalSaveCloseBtn");
-      if (applyCloseBtn) applyCloseBtn.onclick = async () => {
-        const ok = await saveFn();
-        if (ok === false) return;
-        closeModal();
-      };
-
-      const c = byId("modalCancelBtn");
-      if (c) c.onclick = closeModal;
-    }
-    function closeModal() {
-      byId("modalBackdrop").classList.remove("show");
-      setModalLayout(null, false);
-      byId("modalBody").innerHTML = "";
+      wireModalActions(byId("modalBody"), saveFn);
+      for(let i=dialogCloseStack.length-1;i>=0;i-=1){
+        if(dialogCloseStack[i]?.backdrop) dialogCloseStack.splice(i,1);
+      }
+      dialogCloseStack.push({ close:closeBackdropModal, backdrop:true });
     }
     function hideMenus() { byId("contextMenu").style.display = "none"; byId("sourceAddMenu").style.display = "none"; byId("channelAddMenu").style.display = "none"; byId("maskAddMenu").style.display = "none"; }
     function showContextMenu(x,y,items){ const m=byId("contextMenu"); m.innerHTML=items.map((i,idx)=>`<div class="contextItem" data-i="${idx}">${i.label}</div>`).join(""); m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".contextItem").forEach((el)=>el.onclick=()=>{items[Number(el.getAttribute("data-i"))].action(); hideMenus();}); }
@@ -562,7 +913,7 @@
           <button id="modalCancelBtn" type="button">Close</button>
         </div>
       `;
-      openModal("Add Source", body, async()=>true, { size:"modalNarrow", compact:true });
+      openModal("Add Source", body, async()=>true, WF_NARROW);
       const list = byId("asm_list");
       if(!list) return;
       list.querySelectorAll("[data-t]").forEach((row)=>{
@@ -729,7 +1080,7 @@
           <button id="modalCancelBtn" type="button">Cancel</button>
           <button id="st_apply" type="button">Apply</button>
         </div>
-      `, async()=>true, { size:"modalScale", compact:true });
+      `, async()=>true, WF_SCALE);
       const tableSel=byId("st_table_sel");
       if(tableSel) tableSel.onchange=()=>{ selectedTable=tableSel.value; refreshTests().then(renderAllScaleModal); };
 
@@ -769,8 +1120,7 @@
           </div>
         </div>
         <div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button></div>
-      `, async()=>true);
-
+      `, async()=>true, WF);
       const input = byId("m_df_file");
       if(!input) return;
       input.onchange = async()=>{
@@ -804,7 +1154,7 @@
               <button id="modalCancelBtn" type="button">Cancel</button>
               <button id="modalSaveCloseBtn" type="button">Add</button>
             </div>
-          `, async()=>{
+          `, WF, async()=>{
             const name = (byId("m_df_name").value || "").trim();
             if(!name){ setStatus("Source name is required.", true); return false; }
             const unitsInHeaders = showUnits ? Boolean(byId("m_df_units")?.checked) : false;
@@ -992,35 +1342,145 @@
         localStorage.removeItem(CONFIG_LIBRARY_KEY);
       }catch{}
     }
+    async function saveJsonToFile(defaultName, payload){
+      const text = JSON.stringify(payload, null, 2);
+      const normalizedDefaultName = /\.json$/i.test(defaultName) ? defaultName : `${defaultName}.json`;
+      if (window.showSaveFilePicker) {
+        try {
+          let handle = await window.showSaveFilePicker({
+            suggestedName: normalizedDefaultName,
+            excludeAcceptAllOption: true,
+            types: [{ description: "JSON files", accept: { "application/json": [".json"] } }],
+          });
+          if (!/\.json$/i.test(handle.name || "")) {
+            const enforcedName = `${handle.name || "nova_config"}.json`;
+            setStatus("Please save with .json extension. Reopening save dialog...", true);
+            handle = await window.showSaveFilePicker({
+              suggestedName: enforcedName,
+              excludeAcceptAllOption: true,
+              types: [{ description: "JSON files", accept: { "application/json": [".json"] } }],
+            });
+            if (!/\.json$/i.test(handle.name || "")) {
+              setStatus("Save requires a .json file name.", true);
+              return { ok: false, cancelled: true };
+            }
+          }
+          const writable = await handle.createWritable();
+          await writable.write(text);
+          await writable.close();
+          return { ok: true, viaPicker: true };
+        } catch (err) {
+          if (err && err.name === "AbortError") return { ok: false, cancelled: true };
+          setStatus(`Save dialog failed, using download fallback: ${err}`, true);
+        }
+      }
+      try {
+        const blob=new Blob([text],{type:"application/json"});
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download=normalizedDefaultName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        return { ok: true, viaPicker: false };
+      } catch (err) {
+        setStatus(`Config save failed: ${err}`, true);
+        return { ok: false, cancelled: false };
+      }
+    }
+    function pickConfigJsonFile(){
+      return new Promise((resolve)=>{
+        const picker=byId("filePicker");
+        picker.accept="application/json";
+        picker.value="";
+        picker.onchange=async()=>{
+          const f=picker.files?.[0];
+          if(!f){ resolve(null); return; }
+          try{
+            const obj=JSON.parse(await f.text());
+            picker.value="";
+            resolve(obj);
+          }catch(err){
+            setStatus(`Invalid config file: ${err}`, true);
+            picker.value="";
+            resolve(null);
+          }
+        };
+        picker.click();
+      });
+    }
     async function openConfigManagerModal(){
       await migrateLegacyConfigLibraryIfNeeded();
-      const library=await loadConfigLibrary();
+      let library=await loadConfigLibrary();
       const row=(item)=>`<div class="selectRow" data-id="${item.id}" style="display:flex;align-items:center;gap:4px;">
         <div style="flex:1;min-width:0;"><div class="itemPrimary">${item.name||"Unnamed Config"}</div><div class="itemMeta">${item.savedAt||""}</div></div>
         <button type="button" class="iconBtn" data-a="load" title="Load">&#9654;</button>
+        <button type="button" class="iconBtn" data-a="update" title="Update to current scope">&#8635;</button>
         <button type="button" class="iconBtn" data-a="rename" title="Rename">&#9998;</button>
         <button type="button" class="iconBtn" data-a="delete" title="Delete">&#10005;</button>
       </div>`;
-      openModal("Configuration Manager",`<div class="modalGrid" style="grid-template-columns:1fr auto;align-items:flex-end;"><div><label>Config Name</label><input id="m_cfg_name" type="text" placeholder="e.g. Hotfire Baseline" /></div><div><button id="m_cfg_save_current" type="button" style="width:auto;min-width:160px;">Save to Library</button></div></div><div style="padding:0 10px 10px;"><div id="m_cfg_list" class="modalList">${library.map(row).join("")||"<div class='empty'>No saved configs yet.</div>"}</div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true);
-      const rerender=async()=>{
-        const list=await loadConfigLibrary();
+      const filterList=(list)=>{
+        const q=(byId("m_cfg_search")?.value||"").trim().toLowerCase();
+        if(!q) return list;
+        return list.filter((item)=>{
+          const name=(item.name||"").toLowerCase();
+          const savedAt=(item.savedAt||"").toLowerCase();
+          return name.includes(q)||savedAt.includes(q);
+        });
+      };
+      const wireRows=()=>{ byId("m_cfg_list").querySelectorAll(".selectRow").forEach((r)=>{ const id=r.getAttribute("data-id"); r.querySelectorAll("button[data-a]").forEach((b)=>{ b.onclick=async()=>{ const action=b.getAttribute("data-a"); const idx=library.findIndex((x)=>x.id===id); if(idx<0) return; if(action==="delete"){ library.splice(idx,1); await saveConfigLibrary(library); await refreshLibrary(); setStatus("Config removed from library."); return; } if(action==="rename"){ const next=(prompt("Rename config:", library[idx].name||"")||"").trim(); if(!next) return; library[idx].name=next; await saveConfigLibrary(library); await refreshLibrary(); setStatus("Config renamed."); return; } if(action==="update"){ library[idx].payload=buildConfigPayload(); library[idx].savedAt=new Date().toISOString(); await saveConfigLibrary(library); await refreshLibrary(); setStatus(`Updated config: ${library[idx].name||"Unnamed Config"}.`); return; } if(action==="load"){ try{ await applyConfigObject(library[idx].payload||{}); setStatus(`Loaded config: ${library[idx].name||"Unnamed Config"}.`); closeModal(); }catch(err){ setStatus(`Failed to load config: ${err}`, true); } } }; }); }); };
+      const renderList=()=>{
+        const filtered=filterList(library);
         const el=byId("m_cfg_list");
-        el.innerHTML=list.map(row).join("")||"<div class='empty'>No saved configs yet.</div>";
+        el.innerHTML=filtered.map(row).join("")||`<div class="empty">${library.length?"No matching configs.":"No saved configs yet."}</div>`;
         wireRows();
       };
-      const wireRows=()=>{ byId("m_cfg_list").querySelectorAll(".selectRow").forEach((r)=>{ const id=r.getAttribute("data-id"); r.querySelectorAll("button[data-a]").forEach((b)=>{ b.onclick=async()=>{ const action=b.getAttribute("data-a"); const list=await loadConfigLibrary(); const idx=list.findIndex((x)=>x.id===id); if(idx<0) return; if(action==="delete"){ list.splice(idx,1); await saveConfigLibrary(list); await rerender(); setStatus("Config removed from library."); return; } if(action==="rename"){ const next=(prompt("Rename config:", list[idx].name||"")||"").trim(); if(!next) return; list[idx].name=next; await saveConfigLibrary(list); await rerender(); setStatus("Config renamed."); return; } if(action==="load"){ try{ await applyConfigObject(list[idx].payload||{}); setStatus(`Loaded config: ${list[idx].name||"Unnamed Config"}.`); closeModal(); }catch(err){ setStatus(`Failed to load config: ${err}`, true); } } }; }); }); };
-      byId("m_cfg_save_current").onclick=()=>{
-        (async()=>{
-          const name=(byId("m_cfg_name").value||"").trim()||`Config ${new Date().toLocaleString()}`;
-          const list=await loadConfigLibrary();
-          list.unshift({ id:crypto.randomUUID(), name, savedAt:new Date().toISOString(), payload:buildConfigPayload() });
-          await saveConfigLibrary(list);
-          byId("m_cfg_name").value="";
-          await rerender();
-          setStatus(`Saved config: ${name}.`);
-        })();
+      openModal("Configuration Manager",`<div class="cfgManagerToolbar"><input id="m_cfg_search" type="text" placeholder="Search configs..." /><button id="m_cfg_menu_btn" type="button" class="iconBtn cfgMenuBtn" title="Config actions">&#8943;</button></div><div style="padding:0 10px 10px;"><div id="m_cfg_list" class="modalList"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true, WF_CFG);
+      const refreshLibrary=async()=>{
+        library=await loadConfigLibrary();
+        renderList();
       };
-      wireRows();
+      const createNewConfig=async()=>{
+        const name=(prompt("Config name:", `Config ${new Date().toLocaleString()}`)||"").trim();
+        if(!name) return;
+        library.unshift({ id:crypto.randomUUID(), name, savedAt:new Date().toISOString(), payload:buildConfigPayload() });
+        await saveConfigLibrary(library);
+        await refreshLibrary();
+        setStatus(`Saved config: ${name}.`);
+      };
+      const importConfig=async()=>{
+        const obj=await pickConfigJsonFile();
+        if(!obj) return;
+        const defaultName=obj.name||obj.app?.name||"Imported Config";
+        const name=(prompt("Library name for imported config:", defaultName)||"").trim()||defaultName;
+        library.unshift({ id:crypto.randomUUID(), name, savedAt:new Date().toISOString(), payload:obj });
+        await saveConfigLibrary(library);
+        try{
+          await applyConfigObject(obj);
+          setStatus(`Imported and loaded config: ${name}.`);
+          closeModal();
+        }catch(err){
+          await refreshLibrary();
+          setStatus(`Imported to library but failed to load: ${err}`, true);
+        }
+      };
+      const exportConfig=async()=>{
+        const payload=buildConfigPayload();
+        const result=await saveJsonToFile("nova_config.json", payload);
+        if (result.ok && result.viaPicker) setStatus("Config exported.");
+        if (result.ok && !result.viaPicker) setStatus("Config downloaded (save dialog unavailable in this environment).");
+        if (!result.ok && result.cancelled) setStatus("Config export cancelled.");
+      };
+      byId("m_cfg_menu_btn").onclick=(ev)=>{
+        ev.stopPropagation();
+        const rect=ev.currentTarget.getBoundingClientRect();
+        showContextMenu(rect.right-180, rect.bottom+2, [
+          { label:"Create new config", action:()=>createNewConfig() },
+          { label:"Import config...", action:()=>importConfig() },
+          { label:"Export config...", action:()=>exportConfig() },
+        ]);
+      };
+      renderList();
+      byId("m_cfg_search").oninput=()=>renderList();
     }
     function savePlots(){
       // Keep tab persistence lightweight; row payloads can be very large.
@@ -1252,7 +1712,7 @@
           if(ev.stopPropagation) ev.stopPropagation();
           focusedItem={kind,id:it.id};
           applyExplorerSelection({ items, set, kind, clickIndex: idx, ev });
-          if(kind==="database"){
+          if(kind==="source"||kind==="database"){
             await refreshCatalogsForSelections();
           }
           renderAll();
@@ -1269,8 +1729,8 @@
           }
           if(kind==="channel"){
             if(it.isCalculated) menu.push({label:"Edit calculated channel...",action:()=>editCalculatedChannel(it.id)});
-            if(canSetChannelUnit(it.id)) menu.push({label:"Set Unit...",action:()=>setChannelUnit(it.id)});
-            menu.push({label:"Set Frequency...",action:()=>setChannelFrequency(it.id)});
+            menu.push({label:"Set Unit...",action:()=>bulkSetChannelUnit(it.id)});
+            menu.push({label:"Set Frequency...",action:()=>bulkSetChannelFrequency(it.id)});
           }
           if(kind==="mask"){
             menu.unshift({label:"Edit mask...",action:()=>editMask(it.id)});
@@ -1291,20 +1751,36 @@
     }
     function effectiveSelectedDatabaseIds(){
       const fromSources=collectDatabaseIdsForSources(effectiveSelectedSourceIds());
-      return effectiveIds({ selected: selectedDatabaseIds, all: fromSources.length ? fromSources : state.databases.map((d)=>d.id) });
+      const sourceDbSet=new Set(fromSources);
+      if(selectedSourceIds.size>0){
+        if(selectedDatabaseIds.size){
+          return [...selectedDatabaseIds].filter((id)=>sourceDbSet.has(id));
+        }
+        return fromSources;
+      }
+      return effectiveIds({
+        selected:selectedDatabaseIds,
+        all:fromSources.length?fromSources:state.databases.map((d)=>d.id),
+      });
     }
     function effectiveSelectedTestIds(){
-      const tests=new Set();
+      const dbIds=new Set(effectiveSelectedDatabaseIds());
+      const leafTests=[];
       effectiveSelectedSourceIds().forEach((sid)=>{
         const s=state.sources.find((x)=>x.id===sid);
-        if(isPostgresTestLeaf(s)) tests.add(`${s.db_entry_id}|${s.test_run_id}`);
+        if(isPostgresTestLeaf(s)&&dbIds.has(s.db_entry_id)) leafTests.push(`${s.db_entry_id}|${s.test_run_id}`);
       });
-      if(tests.size) return [...tests];
-      return effectiveIds({ selected: selectedTestIds, all: [...addedTestIds] });
+      if(leafTests.length) return leafTests;
+      const scopedAll=[...addedTestIds].filter((t)=>dbIds.has(t.split("|")[0]));
+      const scopedSel=[...selectedTestIds].filter((t)=>dbIds.has(t.split("|")[0]));
+      return effectiveIds({ selected:scopedSel, all:scopedAll });
     }
     function effectiveSelectedChannelIds(){
-      // Channels list contains only added channels; empty selection means "use all added".
-      return effectiveIds({ selected: selectedChannelIds, all: [...addedChannelIds] });
+      const dbIds=new Set(effectiveSelectedDatabaseIds());
+      const inScope=(chId)=>dbIds.has(chId.split("|")[0]);
+      const scopedAll=[...addedChannelIds].filter(inScope);
+      const scopedSel=[...selectedChannelIds].filter(inScope);
+      return effectiveIds({ selected:scopedSel, all:scopedAll });
     }
 
     function buildXAxis(){
@@ -1389,7 +1865,6 @@
       });
     }
     function stopRealtime(){ if(realtimeTimer){ cancelAnimationFrame(realtimeTimer); realtimeTimer=null; } realtimeLockedXRange=null; realtimeLockedYRanges=null; }
-    const PLOT_UIREVISION="nova";
     function snapshotPlotAxisLocks(gd){
       const out={ xRange:null, yRanges:{} };
       if(!gd) return out;
@@ -1408,6 +1883,41 @@
       collectY(layout);
       if(Object.keys(out.yRanges).length===0) collectY(full);
       return out;
+    }
+    function isPlotRangeRelayoutEvent(ev){
+      if(!ev||typeof ev!=="object") return false;
+      return Object.keys(ev).some((k)=>/^(x|y)axis\d*\.(range(\[\d+\])?|autorange)$/.test(k));
+    }
+    function applyPlotAxisLocks(gd, locks){
+      if(!gd||!locks) return;
+      const patch={};
+      if(locks.xRange&&locks.xRange.length===2){
+        patch["xaxis.autorange"]=false;
+        patch["xaxis.range[0]"]=locks.xRange[0];
+        patch["xaxis.range[1]"]=locks.xRange[1];
+      }
+      if(locks.yRanges){
+        Object.keys(locks.yRanges).forEach((axisKey)=>{
+          const r=locks.yRanges[axisKey];
+          if(!r||r.length!==2) return;
+          patch[`${axisKey}.autorange`]=false;
+          patch[`${axisKey}.range[0]`]=r[0];
+          patch[`${axisKey}.range[1]`]=r[1];
+        });
+      }
+      if(Object.keys(patch).length) try{ Plotly.relayout(gd,patch); }catch{}
+    }
+    function mergeAxisLocksIntoLayout(layoutBase, locks){
+      if(!locks) return;
+      if(locks.xRange&&locks.xRange.length===2&&!realtimeLockedXRange){
+        layoutBase.xaxis={...layoutBase.xaxis, range:[...locks.xRange], autorange:false};
+      }
+      if(locks.yRanges){
+        Object.entries(locks.yRanges).forEach(([axisKey,r])=>{
+          if(!layoutBase[axisKey]||!r||r.length!==2) return;
+          layoutBase[axisKey]={...layoutBase[axisKey], range:[...r], autorange:false};
+        });
+      }
     }
     function buildRealtimeRelayoutPatch(){
       const patch={};
@@ -1455,7 +1965,7 @@
 
       const grouped=new Map();
       realtimeRows.forEach((r)=>{
-        const key=`${r.test_run_code||r.test_run_id} | ${r.channel_name}`;
+        const key=traceLegendName(r);
         if(!grouped.has(key)) grouped.set(key,[]);
         grouped.get(key).push(r);
       });
@@ -1824,13 +2334,16 @@
     }
     function openMaxFreqModal(){ openModal("Set Max Sample Frequency",`<div class="modalGrid" style="grid-template-columns:1fr;"><div><label>Maximum frequency in Hz (blank = no global cap)</label><input id="m_max_hz" type="number" step="any" value="${maxSampleHzGlobal??""}" placeholder="e.g. 100" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply</button></div>`,async()=>{ const raw=(byId("m_max_hz").value||"").trim(); if(!raw){ maxSampleHzGlobal=null; if(latestRows.length) plotRows(latestRows); setStatus("Global max sample frequency cleared."); return true; } const hz=Number(raw); if(!Number.isFinite(hz)||hz<=0){ setStatus("Max sample frequency must be a positive number.", true); return false; } maxSampleHzGlobal=hz; if(latestRows.length) plotRows(latestRows); setStatus(`Global max sample frequency set to ${hz} Hz.`); return true; }); }
     function initRealtimePanel(){ const panel=byId("realtimePanel"), header=byId("realtimePanelHeader"); let dragging=false, dx=0, dy=0; header.onmousedown=(e)=>{ dragging=true; dx=e.clientX-panel.offsetLeft; dy=e.clientY-panel.offsetTop; e.preventDefault(); }; window.addEventListener("mousemove",(e)=>{ if(!dragging) return; panel.style.left=`${Math.max(0,e.clientX-dx)}px`; panel.style.top=`${Math.max(0,e.clientY-dy)}px`; panel.style.right="auto"; }); window.addEventListener("mouseup",()=>{ dragging=false; }); byId("realtimeCloseBtn").onclick=()=>{ panel.style.display="none"; }; byId("realtimePlayBtn").onclick=()=>startRealtime(1); byId("realtimePauseBtn").onclick=()=>{ stopRealtime(); updateRealtimeStatus(); }; byId("realtimeForwardBtn").onclick=()=>{ startRealtime(1); }; byId("realtimeReplayBtn").onclick=()=>{ startRealtime(1, true); }; byId("realtimeLoopBtn").onclick=()=>{ const b=byId("realtimeLoopBtn"); b.classList.toggle("active"); }; byId("realtimeExportBtn").onclick=()=>{ openRealtimeExportModal(); }; }
-    function plotRows(rows){
+    function plotRows(rows, plotOpts={}){
       const xAxis=byId("xAxis").value,t0Mode=byId("t0Mode").value;
       const useRealtimeFull=Boolean(realtimeTimer && realtimeCurrentMs!==null && xAxis==="time" && Array.isArray(realtimeRows)&&realtimeRows.length);
+      const preserveUi=plotOpts.preserveUi!==false && !useRealtimeFull;
+      const gdExisting=byId("plot");
+      const uiLocks=preserveUi&&gdExisting?.layout ? snapshotPlotAxisLocks(gdExisting) : null;
       const plotSourceRows=useRealtimeFull?realtimeRows:rows;
       const rtMaskMs=useRealtimeFull?realtimeCurrentMs:null;
       const grouped=new Map();
-      plotSourceRows.forEach((r)=>{ const key=`${r.test_run_code || r.test_run_id} | ${r.channel_name}`; if(!grouped.has(key)) grouped.set(key,[]); grouped.get(key).push(r); });
+      plotSourceRows.forEach((r)=>{ const key=traceLegendName(r); if(!grouped.has(key)) grouped.set(key,[]); grouped.get(key).push(r); });
       const t0FirstSample=new Map(); const t0Meta=new Map();
       if(t0Mode==="first_index" || t0Mode==="t0_relative"){ plotSourceRows.forEach((r)=>{ const k=`${r.__dbId}|${r.test_run_id}`; const ts=r.__ts; if(!t0FirstSample.has(k)||ts<t0FirstSample.get(k)) t0FirstSample.set(k,ts); }); }
       if(t0Mode==="t0_relative"){ testsData.forEach((t)=>{ const ts=Date.parse(String(t.t0_utc||"")); if(Number.isFinite(ts)) t0Meta.set(`${t.__dbId}|${t.test_run_id}`, ts); }); }
@@ -1843,13 +2356,13 @@
             type:"scattergl",mode:"lines",connectgaps:false,line:{width:Math.max(0.2, Number(appearance.lineWidth||1.5))},name,
             x:down.map((p)=>{ if(t0Mode==="absolute") return p.time; const k=`${p.__dbId}|${p.test_run_id}`; const base=t0Mode==="t0_relative" ? t0Meta.get(k) : t0FirstSample.get(k); return Number.isFinite(base)?(p.__ts-base)/1000:p.time; }),
             y:down.map((p)=>{ if(rtMaskMs===null||!Number.isFinite(p.__rt)) return p.value; return p.__rt<=rtMaskMs?p.value:NaN; }),
-            _unit:pts[0]?.unit||channelUnitMap.get(chId)||"unitless"
+            _unit:channelUnitMap.get(chId) || resolveChannelUnit(chId, pts[0]?.unit) || "unitless"
           });
         });
       } else {
         const byTest=new Map();
         plotSourceRows.forEach((r)=>{const tk=`${r.__dbId}|${r.test_run_code}`;if(!byTest.has(tk))byTest.set(tk,new Map());const m=byTest.get(tk);if(!m.has(r.time))m.set(r.time,{});m.get(r.time)[`${r.__dbId}|${r.channel_name}`]=r.value;});
-        byTest.forEach((timeMap,tk)=>{ [...selectedChannelIds].filter((c)=>c!==xAxis).forEach((chId)=>{const xs=[],ys=[];timeMap.forEach((v)=>{if(v[xAxis]!==undefined&&v[chId]!==undefined){xs.push(v[xAxis]);ys.push(v[chId]);}}); if(xs.length) traces.push({type:"scattergl",mode:"markers",marker:{size:Math.max(3, Number(appearance.lineWidth||1.5)*3)},name:`${tk.split("|")[1]||tk} | ${chId.split("|")[1]} vs ${xAxis.split("|")[1]}`,x:xs,y:ys,_unit:channelUnitMap.get(chId)||"unitless"});});});
+        byTest.forEach((timeMap,tk)=>{ const dbId=tk.split("|")[0]; const srcLabel=sourceLabelForDbId(dbId); [...selectedChannelIds].filter((c)=>c!==xAxis).forEach((chId)=>{const xs=[],ys=[];timeMap.forEach((v)=>{if(v[xAxis]!==undefined&&v[chId]!==undefined){xs.push(v[xAxis]);ys.push(v[chId]);}}); if(xs.length) traces.push({type:"scattergl",mode:"markers",marker:{size:Math.max(3, Number(appearance.lineWidth||1.5)*3)},name:`${srcLabel} | ${chId.split("|")[1]} vs ${xAxis.split("|")[1]}`,x:xs,y:ys,_unit:channelUnitMap.get(chId) || resolveChannelUnit(chId, null) || "unitless"});});});
       }
       const plotEl=byId("plot");
       const plotWidth=Math.max(320, Number(plotEl?.clientWidth||window.innerWidth||0));
@@ -1868,7 +2381,7 @@
         yLayout[k].tickfont={size:Number(appearance.axisTickSize||10)};
       });
       const layoutBase={
-        uirevision:PLOT_UIREVISION,
+        uirevision:plotLayoutRevision(),
         autosize:true,
         title: appearance.plotTitle ? {text: appearance.plotTitle, x:0.5, xanchor:"center"} : undefined,
         paper_bgcolor: bgTransparent ? "rgba(0,0,0,0)" : (appearance?.viewBg || "#000000"),
@@ -1882,11 +2395,13 @@
         legend:{x:Number(appearance.legendX??0.01),y:Number(appearance.legendY??0.99),xanchor:"left",yanchor:"top",bgcolor:"rgba(2,6,23,0.55)"},
         ...yLayout
       };
+      mergeAxisLocksIntoLayout(layoutBase, uiLocks);
+      const scrollZoom=unitCount>1 ? "x" : true;
       Plotly.react("plot", traces, layoutBase,{
         responsive:true,
         displaylogo:false,
         displayModeBar:false,
-        scrollZoom:true,
+        scrollZoom,
         editable:true,
         edits:{legendPosition:true,axisTitleText:false,titleText:false,annotationPosition:false,annotationText:false,shapePosition:false}
       });
@@ -1959,12 +2474,12 @@
           setStatus(`Failed to load catalog for '${db.name}' (${src.type}): ${err}`, true);
         }
       }
-      const selectedDbSet=new Set([...selectedDatabaseIds]);
+      const effectiveDbSet=new Set(effectiveSelectedDatabaseIds());
       (state.calculatedChannels||[]).forEach((calc)=>{
-        if(!selectedDbSet.has(calc.dbId)) return;
+        if(!effectiveDbSet.has(calc.dbId)) return;
         channelsData.push({ channel_id: calc.id, channel_name: calc.name, display_name: calc.name, unit: calc.unit || null, sample_rate_hz: null, valid_min: null, valid_max: null, __dbId: calc.dbId, __isCalculated: true, __calcKind: calc.kind });
       });
-      channelUnitMap=new Map(channelsData.map((c)=>{ const chId=`${c.__dbId}|${c.channel_name}`; return [chId,resolveChannelUnit(chId, c.unit)||"unitless"]; }));
+      rebuildChannelUnitMap();
     }
     function renderAll() {
       const dup = {};
@@ -1980,10 +2495,12 @@
         "No sources added yet."
       );
 
+      const activeSourceIdSet=new Set(effectiveSelectedSourceIds());
+      const activeDbIdSet=new Set(effectiveSelectedDatabaseIds());
       renderList(
         "databasesList",
         state.databases
-          .filter((d) => selectedSourceIds.has(d.sourceId))
+          .filter((d) => activeSourceIdSet.has(d.sourceId))
           .map((d) => ({ id: d.id, primary: d.name, meta: d.sourceType })),
         selectedDatabaseIds,
         "database",
@@ -1993,7 +2510,7 @@
       renderList(
         "testsList",
         testsData
-          .filter((t) => addedTestIds.has(`${t.__dbId}|${t.test_run_id}`))
+          .filter((t) => addedTestIds.has(`${t.__dbId}|${t.test_run_id}`) && activeDbIdSet.has(t.__dbId))
           .map((t) => ({
             id: `${t.__dbId}|${t.test_run_id}`,
             primary: dup[`${t.__dbId}|${t.run_code}`] > 1 ? `${t.run_code} (#${t.test_run_id})` : t.run_code,
@@ -2007,7 +2524,7 @@
       renderList(
         "channelsList",
         channelsData
-          .filter((c) => addedChannelIds.has(`${c.__dbId}|${c.channel_name}`))
+          .filter((c) => addedChannelIds.has(`${c.__dbId}|${c.channel_name}`) && activeDbIdSet.has(c.__dbId))
           .map((c) => ({
             id: `${c.__dbId}|${c.channel_name}`,
             primary: c.channel_name,
@@ -2084,18 +2601,60 @@
       if(!cleaned) delete state.unitOverrides[chId];
       else state.unitOverrides[chId]=cleaned;
       if(latestRows.length){
-        latestRows=latestRows.map((r)=>{
-          const key=`${r.__dbId}|${r.channel_name}`;
-          if(key!==chId) return r;
-          return { ...r, unit: resolveChannelUnit(key, r.unit) };
-        });
+        latestRows=applyRowUnits(latestRows);
         plotRows(latestRows);
       }
+      rebuildChannelUnitMap();
       renderAll();
       saveStateDeferred();
     }
+    function selectedChannelTargets(defaultId){
+      const inScope=new Set(effectiveSelectedChannelIds());
+      const selected=[...selectedChannelIds].filter((id)=>addedChannelIds.has(id)&&inScope.has(id));
+      if(selected.length) return selected;
+      if(defaultId&&inScope.has(defaultId)) return [defaultId];
+      return [];
+    }
+    function bulkSetChannelUnit(defaultId){
+      const targets = selectedChannelTargets(defaultId);
+      if(!targets.length){ setStatus("Select one or more channels first.", true); return; }
+      const current=(state.unitOverrides && state.unitOverrides[targets[0]]) ? state.unitOverrides[targets[0]] : "";
+      const next=prompt(`Set unit for ${targets.length} channel(s). Leave empty to clear override.`, String(current||""));
+      if(next===null) return;
+      const cleaned=next.trim();
+      targets.forEach((chId)=>{ if(!cleaned) delete state.unitOverrides[chId]; else state.unitOverrides[chId]=cleaned; });
+      if(latestRows.length){
+        latestRows=applyRowUnits(latestRows);
+        plotRows(latestRows);
+      }
+      rebuildChannelUnitMap();
+      renderAll();
+      saveStateDeferred();
+      setStatus(!cleaned ? `Cleared unit override for ${targets.length} channel(s).` : `Set unit to '${cleaned}' for ${targets.length} channel(s).`);
+    }
+    function bulkSetChannelFrequency(defaultId){
+      const targets = selectedChannelTargets(defaultId);
+      if(!targets.length){ setStatus("Select one or more channels first.", true); return; }
+      const current=(state.freqOverrides && state.freqOverrides[targets[0]]) ? state.freqOverrides[targets[0]] : "";
+      const next=prompt(`Set target frequency (Hz) for ${targets.length} channel(s). Leave empty to clear.`, String(current||""));
+      if(next===null) return;
+      const cleaned=next.trim();
+      if(!cleaned){
+        targets.forEach((chId)=>{ delete state.freqOverrides[chId]; });
+        if(latestRows.length) plotRows(latestRows);
+        renderAll(); saveStateDeferred();
+        setStatus(`Cleared frequency override for ${targets.length} channel(s).`);
+        return;
+      }
+      const hz=Number(cleaned);
+      if(!Number.isFinite(hz)||hz<=0){ setStatus("Frequency must be a positive number.",true); return; }
+      targets.forEach((chId)=>{ state.freqOverrides[chId]=hz; });
+      if(latestRows.length) plotRows(latestRows);
+      renderAll(); saveStateDeferred();
+      setStatus(`Set frequency to ${hz} Hz for ${targets.length} channel(s).`);
+    }
     function searchableRowsHtml(prefix,rows,set){ return `<div class="maskSearchPad"><input id="${prefix}_search" type="text" placeholder="Search..." /></div><div class="maskListPad"><div id="${prefix}_list" class="modalList">${rows.map((r)=>`<div class="selectRow${set.has(r.id)?" active":""}" data-id="${r.id}"><div class="itemPrimary">${r.primary}</div>${r.meta?`<div class="itemMeta">${r.meta}</div>`:""}</div>`).join("")}</div></div>`; }
-    const MASK_MODAL_LAYOUT={ size:"modalMask", compact:true };
+    const MASK_MODAL_LAYOUT={ floating:true, size:"modalMask", compact:true };
     function bindSearchableModal(prefix,chosen){ const search=byId(`${prefix}_search`), list=byId(`${prefix}_list`), rows=[...list.querySelectorAll(".selectRow")]; rows.forEach((row)=>row.onclick=()=>{ const id=row.getAttribute("data-id"); if(chosen.has(id)){ chosen.delete(id); row.classList.remove("active"); } else { chosen.add(id); row.classList.add("active"); }}); search.oninput=()=>{ const q=search.value.toLowerCase(); rows.forEach((r)=>r.style.display=r.textContent.toLowerCase().includes(q)?"block":"none"); }; }
     function maskOpNeedsTwoValues(op){ return op==="between" || op==="outside"; }
     function evalMaskValue(v, op, a, b){
@@ -2182,25 +2741,33 @@
           return;
         }
         if(m.kind==="formula"){
-          const deps=(m.channels||[]).map((id)=>id.split("|")[1]);
+          const deps=(m.channels||[]).map((id)=>parseChannelRef(id, m.dbId));
           const compiled=compileFormula(m.formula||"", deps.length);
           if(!compiled.ok) return;
-          groupsByTest.forEach((keys)=>{
-            const sorted=keys.slice().sort((a,b)=>new Date(groups.get(a).sample.time)-new Date(groups.get(b).sample.time));
-            let prevMs=null;
-            const ctx={dt_s:0,__bpStates:{}};
-            sorted.forEach((k)=>{
-              const g=groups.get(k);
-              const vals=(m.channels||[]).map((id)=>Number(g.vals[id]));
-              if(vals.some((v)=>!Number.isFinite(v))) return;
-              const currMs=g.sample.__ts;
-              ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000);
-              prevMs=currMs;
-              let outVal=null;
-              try{ outVal=compiled.evalFn(vals,ctx); }catch{ outVal=null; }
-              if(!Number.isFinite(outVal)) return;
-              out.set(k, Number(outVal));
+          const byTime=new Map();
+          deps.forEach((dep, idx)=>{
+            rows.filter((r)=>r.__dbId===dep.dbId && r.channel_name===dep.name).forEach((r)=>{
+              const t=String(r.time);
+              const k=`${r.__dbId}|${r.test_run_id}|${t}`;
+              if(!byTime.has(t)) byTime.set(t,{ vals:Array(deps.length).fill(NaN), keys:new Set(), ts:r.__ts??Date.parse(r.time) });
+              const slot=byTime.get(t);
+              slot.vals[idx]=Number(r.value);
+              slot.keys.add(k);
             });
+          });
+          const sortedTimes=[...byTime.keys()].sort((a,b)=>(byTime.get(a).ts||0)-(byTime.get(b).ts||0));
+          let prevMs=null;
+          const ctx={dt_s:0,__bpStates:{}};
+          sortedTimes.forEach((t)=>{
+            const slot=byTime.get(t);
+            if(slot.vals.some((v)=>!Number.isFinite(v))) return;
+            const currMs=slot.ts;
+            ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000);
+            prevMs=currMs;
+            let outVal=null;
+            try{ outVal=compiled.evalFn(slot.vals,ctx); }catch{ outVal=null; }
+            if(!Number.isFinite(outVal)) return;
+            slot.keys.forEach((k)=>out.set(k, Number(outVal)));
           });
         }
       });
@@ -2252,27 +2819,22 @@
       refreshMaskInputs();
     }
     async function showAddRollingMaskModal(){
-      if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; }
-      await refreshCatalogsForSelections();
-      const dbId=[...selectedDatabaseIds][0];
-      const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
-      if(!sourceChannels.length){ setStatus("No source channels available for rolling mask.",true); return; }
-      const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}">${c.channel_name}</option>`).join("");
-      openModal("Rolling Mask Calculation",`<div class="modalGrid"><div><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="10" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" /></div><div id="m_mask_val_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const sourceChannel=byId("m_mask_src").value; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"rolling", dbId, sourceChannel, rollingOp, window, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Rolling mask added."); return true; });
+      const sourceChannels=await ensureCalcSourceChannelsLoaded();
+      if(!sourceChannels) return;
+      const options=rollingSourceChannelOptions(sourceChannels);
+      openModal("Rolling Mask Calculation",`<div class="modalGrid"><div style="grid-column:1 / -1;"><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="10" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" /></div><div id="m_mask_val_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const sourceChannel=byId("m_mask_src").value; const dbId=sourceChannel.split("|")[0]; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"rolling", dbId, sourceChannel, rollingOp, window, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Rolling mask added."); return true; });
       const cond=byId("m_mask_cond"), wrap=byId("m_mask_val_b_wrap");
       cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
     }
     async function showAddChannelWiseMaskModal(){
-      if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; }
-      await refreshCatalogsForSelections();
-      const dbId=[...selectedDatabaseIds][0];
-      const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
+      const sourceChannels=await ensureCalcSourceChannelsLoaded();
+      if(!sourceChannels) return;
       if(sourceChannels.length<2){ setStatus("Need at least two source channels for channel-wise mask.",true); return; }
-      const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`}));
+      const rows=calcChannelPickerRows(sourceChannels);
       const chosen=new Set();
-      openModal("Channel Wise Mask Calculation",`${searchableRowsHtml("mfm",rows,chosen)}<div class="maskFormPad"><label>Formula</label><input id="m_mask_formula" type="text" placeholder="A + B" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" /><div id="m_mask_formula_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"formula", dbId, channels, formula:compiled.expr, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Channel-wise mask added."); return true; });
+      openModal("Channel Wise Mask Calculation",`${searchableRowsHtml("mfm",rows,chosen)}<div class="maskFormPad"><label>Formula</label><input id="m_mask_formula" type="text" placeholder="A + B" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" /><div id="m_mask_formula_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const dbId=channels[0].split("|")[0]; const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"formula", dbId, channels, formula:compiled.expr, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Channel-wise mask added."); return true; });
       bindSearchableModal("mfm",chosen);
-      const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); byId("m_mask_formula_hint").textContent=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | ")||"Select channels to map A, B, C..."; };
+      const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); byId("m_mask_formula_hint").textContent=ordered.map((id,i)=>`${letters[i]}=${sourceLabelForDbId(id.split("|")[0])}/${id.split("|")[1]}`).join(" | ")||"Select channels to map A, B, C..."; };
       const list=byId("mfm_list");
       if(list) list.addEventListener("click",()=>setTimeout(refreshHint,0));
       refreshHint();
@@ -2283,24 +2845,23 @@
       const mask=(state.masks||[]).find((m)=>m.id===maskId);
       if(!mask){ setStatus("Mask not found.", true); return; }
       if(mask.kind==="rolling"){
-        await refreshCatalogsForSelections();
-        const dbId=mask.dbId || [...selectedDatabaseIds][0];
-        const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
-        const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}" ${mask.sourceChannel===`${c.__dbId}|${c.channel_name}`?"selected":""}>${c.channel_name}</option>`).join("");
-        openModal("Edit Rolling Mask",`<div class="modalGrid"><div><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean" ${mask.rollingOp==="mean"?"selected":""}>mean</option><option value="sum" ${mask.rollingOp==="sum"?"selected":""}>sum</option><option value="min" ${mask.rollingOp==="min"?"selected":""}>min</option><option value="max" ${mask.rollingOp==="max"?"selected":""}>max</option><option value="std" ${mask.rollingOp==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="${mask.window||10}" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" value="${mask.valueA??""}" /></div><div id="m_mask_val_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const sourceChannel=byId("m_mask_src").value; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.sourceChannel=sourceChannel; mask.rollingOp=rollingOp; mask.window=window; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Rolling mask updated."); return true; });
+        const sourceChannels=await ensureCalcSourceChannelsLoaded();
+        if(!sourceChannels) return;
+        const selectedId=mask.sourceChannel||null;
+        const options=rollingSourceChannelOptions(sourceChannels, selectedId);
+        openModal("Edit Rolling Mask",`<div class="modalGrid"><div style="grid-column:1 / -1;"><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean" ${mask.rollingOp==="mean"?"selected":""}>mean</option><option value="sum" ${mask.rollingOp==="sum"?"selected":""}>sum</option><option value="min" ${mask.rollingOp==="min"?"selected":""}>min</option><option value="max" ${mask.rollingOp==="max"?"selected":""}>max</option><option value="std" ${mask.rollingOp==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="${mask.window||10}" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" value="${mask.valueA??""}" /></div><div id="m_mask_val_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const sourceChannel=byId("m_mask_src").value; mask.dbId=sourceChannel.split("|")[0]; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.sourceChannel=sourceChannel; mask.rollingOp=rollingOp; mask.window=window; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Rolling mask updated."); return true; });
         const cond=byId("m_mask_cond"), wrap=byId("m_mask_val_b_wrap");
         cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
         return;
       }
       if(mask.kind==="formula"){
-        await refreshCatalogsForSelections();
-        const dbId=mask.dbId || [...selectedDatabaseIds][0];
-        const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated);
-        const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`}));
+        const sourceChannels=await ensureCalcSourceChannelsLoaded();
+        if(!sourceChannels) return;
+        const rows=calcChannelPickerRows(sourceChannels);
         const chosen=new Set(mask.channels||[]);
-        openModal("Edit Channel Wise Mask",`${searchableRowsHtml("emfm",rows,chosen)}<div class="maskFormPad"><label>Formula</label><input id="m_mask_formula" type="text" value="${mask.formula||""}" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" value="${mask.valueA??""}" /><div id="m_mask_formula_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.channels=channels; mask.formula=compiled.expr; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Channel-wise mask updated."); return true; });
+        openModal("Edit Channel Wise Mask",`${searchableRowsHtml("emfm",rows,chosen)}<div class="maskFormPad"><label>Formula</label><input id="m_mask_formula" type="text" value="${mask.formula||""}" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" value="${mask.valueA??""}" /><div id="m_mask_formula_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } mask.dbId=channels[0].split("|")[0]; const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.channels=channels; mask.formula=compiled.expr; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Channel-wise mask updated."); return true; });
         bindSearchableModal("emfm",chosen);
-        const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); byId("m_mask_formula_hint").textContent=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | ")||"Select channels to map A, B, C..."; };
+        const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); byId("m_mask_formula_hint").textContent=ordered.map((id,i)=>`${letters[i]}=${sourceLabelForDbId(id.split("|")[0])}/${id.split("|")[1]}`).join(" | ")||"Select channels to map A, B, C..."; };
         const list=byId("emfm_list");
         if(list) list.addEventListener("click",()=>setTimeout(refreshHint,0));
         refreshHint();
@@ -2322,7 +2883,7 @@
       refreshMaskInputs();
     }
     function showAddPostgresModal(){
-      openModal("Add PostgreSQL Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="PostgreSQL Source" /></div><div><label>Host</label><input id="m_host" type="text" value="localhost" /></div><div><label>Port</label><input id="m_port" type="number" value="5432" /></div><div><label>User</label><input id="m_user" type="text" value="pipeline" /></div><div><label>Password</label><input id="m_password" type="password" value="test" /></div><div><label>SSL Mode</label><input id="m_ssl" type="text" value="disable" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Connect & Pick Tests</button></div>`,async()=>{
+      openModal("Add PostgreSQL Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="PostgreSQL Source" /></div><div><label>Host</label><input id="m_host" type="text" value="localhost" /></div><div><label>Port</label><input id="m_port" type="number" value="5432" /></div><div><label>User</label><input id="m_user" type="text" value="pipeline" /></div><div><label>Password</label><input id="m_password" type="password" value="test" /></div><div><label>SSL Mode</label><input id="m_ssl" type="text" value="disable" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Connect & Pick Tests</button></div>`,WF,async()=>{
         const parent={
           id:crypto.randomUUID(),
           type:"postgres",
@@ -2341,7 +2902,7 @@
         return true;
       });
     }
-    function showAddCsvModal(){ openModal("Add CSV Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="CSV Source" /></div><div><label>CSV File</label><input id="m_fileUpload" type="file" accept=".csv,text/csv" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick a CSV file first.",true); return false; } state.sources.push({id:crypto.randomUUID(),type:"csv",name:byId("m_sourceName").value||"CSV Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
+    function showAddCsvModal(){ openModal("Add CSV Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="CSV Source" /></div><div><label>CSV File</label><input id="m_fileUpload" type="file" accept=".csv,text/csv" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick a CSV file first.",true); return false; } state.sources.push({id:crypto.randomUUID(),type:"csv",name:byId("m_sourceName").value||"CSV Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
     function showAddTdmsModal(){
       const input=byId("filePicker");
       if(!input) return;
@@ -2372,7 +2933,7 @@
       };
       input.click();
     }
-    function showAddH5Modal(){ openModal("Add H5 Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="H5 Source" /></div><div><label>H5 File</label><input id="m_fileUpload" type="file" accept=".h5,.hdf5,application/x-hdf" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick an H5 file first.",true); return false; } state.sources.push({id:crypto.randomUUID(),type:"h5",name:byId("m_sourceName").value||"H5 Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
+    function showAddH5Modal(){ openModal("Add H5 Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="H5 Source" /></div><div><label>H5 File</label><input id="m_fileUpload" type="file" accept=".h5,.hdf5,application/x-hdf" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick an H5 file first.",true); return false; } state.sources.push({id:crypto.randomUUID(),type:"h5",name:byId("m_sourceName").value||"H5 Source",host:"",port:0,user:"",password:"",sslmode:"",file_path:uploadedPath}); clearCatalogCache(); selectedSourceIds.add(state.sources[state.sources.length-1].id); renderAll(); saveState(); return true; }); }
     function showAddSourceMenu(ev){
       if (ev) {
         ev.preventDefault();
@@ -2409,7 +2970,7 @@
           <div><label>Name</label><input id="m_edit_name" type="text" value="${src.name||""}" /></div>
           <div style="grid-column:1 / -1;"><label>File path</label><input id="m_edit_path" type="text" value="${src.file_path||""}" disabled /></div>
           ${src.type==="csv" ? `<div style="grid-column:1 / -1;"><label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);"><input id="m_edit_units" type="checkbox" style="width:auto;margin:0;" ${src.units_in_headers?"checked":""} /> Units in CSV headers</label></div>` : ""}
-        </div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{
+        </div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,WF,async()=>{
           src.name=(byId("m_edit_name").value||"").trim()||src.name;
           if(src.type==="csv") src.units_in_headers=Boolean(byId("m_edit_units")?.checked);
           const db=state.databases.find((d)=>d.sourceId===src.id);
@@ -2429,7 +2990,7 @@
           <div><label>User</label><input id="m_edit_user" type="text" value="${src.user||""}" /></div>
           <div><label>Password</label><input id="m_edit_password" type="password" value="${src.password||""}" /></div>
           <div><label>SSL Mode</label><input id="m_edit_ssl" type="text" value="${src.sslmode||"disable"}" /></div>
-        </div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{
+        </div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,WF,async()=>{
           src.name=byId("m_edit_name").value||src.name;
           src.host=byId("m_edit_host").value||src.host;
           src.port=Number(byId("m_edit_port").value||5432);
@@ -2467,82 +3028,178 @@
     function nextCalcName(dbId, base, excludeName){ const stem=(base||"calc_channel").trim()||"calc_channel"; let name=stem; let n=1; const existing=new Set(channelsData.filter((c)=>c.__dbId===dbId).map((c)=>c.channel_name).filter((n0)=>n0!==excludeName)); while(existing.has(name)){ n+=1; name=`${stem}_${n}`; } return name; }
     function varLetters(n){ return Array.from({length:n}, (_,i)=>String.fromCharCode(65+i)); }
     function compileFormula(exprRaw, variableCount){ let expr=String(exprRaw||"").trim().toUpperCase(); if(expr.startsWith("=")) expr=expr.slice(1).trim(); if(!expr) return {ok:false,error:"Enter a formula using A, B, C..."}; if(!/^[A-Z0-9_+\-*/().,\s]+$/.test(expr)) return {ok:false,error:"Formula contains invalid characters."}; const vars=new Set(varLetters(variableCount)); const funcs=new Set(["ABS","SQRT","POW","EXP","LOG","LOG10","SIN","COS","TAN","ASIN","ACOS","ATAN","ROUND","FLOOR","CEIL","MIN","MAX","CLAMP","BAND_PASS_FILTER"]); const words=expr.match(/[A-Z_]+/g)||[]; for(const w of words){ if(vars.has(w)||funcs.has(w)) continue; return {ok:false,error:`Unsupported symbol: ${w}`}; } const helper={ ABS:Math.abs,SQRT:Math.sqrt,POW:Math.pow,EXP:Math.exp,LOG:Math.log,LOG10:Math.log10||((x)=>Math.log(x)/Math.LN10),SIN:Math.sin,COS:Math.cos,TAN:Math.tan,ASIN:Math.asin,ACOS:Math.acos,ATAN:Math.atan,ROUND:Math.round,FLOOR:Math.floor,CEIL:Math.ceil,MIN:Math.min,MAX:Math.max,CLAMP:(x,lo,hi)=>Math.min(Math.max(x,lo),hi), BAND_PASS_FILTER:(x,lowFreq,highFreq)=>{ const low=Number(lowFreq), high=Number(highFreq); if(!Number.isFinite(x)||!Number.isFinite(low)||!Number.isFinite(high)||low<=0||high<=0||high<=low) return Number(x); const ctx=helper.__ctx||{}; const dt=Math.max(1e-6, Number(ctx.dt_s||0)); const callKey=String((helper.__bpCallIndex=(helper.__bpCallIndex||0)+1)); if(!ctx.__bpStates) ctx.__bpStates={}; const state=ctx.__bpStates[callKey]||{lpHigh:Number(x),lpLow:Number(x)}; const tauHigh=1/(2*Math.PI*high); const tauLow=1/(2*Math.PI*low); const aHigh=dt/(tauHigh+dt); const aLow=dt/(tauLow+dt); state.lpHigh=state.lpHigh + aHigh*(Number(x)-state.lpHigh); state.lpLow=state.lpLow + aLow*(Number(x)-state.lpLow); ctx.__bpStates[callKey]=state; return state.lpHigh - state.lpLow; } }; let jsExpr=expr; funcs.forEach((f)=>{ jsExpr=jsExpr.replace(new RegExp(`\\b${f}\\b`,"g"),`__f.${f}`); }); try{ const fn=new Function(...[...vars], "__f", `return (${jsExpr});`); return {ok:true,expr,evalFn:(vals,ctx)=>{ helper.__ctx=ctx||{}; helper.__bpCallIndex=0; return fn(...vals,helper);} }; }catch{ return {ok:false,error:"Formula could not be parsed."}; } }
-    async function showAddRollingChannelModal(){ if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; } await refreshCatalogsForSelections(); const dbId=[...selectedDatabaseIds][0]; const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(!sourceChannels.length){ setStatus("No source channels available for rolling calculation.",true); return; } const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}">${c.channel_name}</option>`).join(""); openModal("Rolling Channel Calculation",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="rolling_mean" /></div><div><label>Units</label><input id="m_calc_unit" type="text" placeholder="e.g. N, kg/s, unitless" /></div><div><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="10" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const sourceId=byId("m_calc_source").value; const op=byId("m_calc_op").value; const window=Math.max(1,Number(byId("m_calc_window").value||1)); const rawName=(byId("m_calc_name").value||"rolling_mean").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const name=nextCalcName(dbId, rawName); const unit=(byId("m_calc_unit").value||"").trim(); state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"rolling", dbId, name, unit, channels:[sourceId], op, window }); addedChannelIds.add(`${dbId}|${name}`); selectedChannelIds.add(`${dbId}|${name}`); await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Added rolling calculated channel '${name}'.`); return true; }); }
-    async function showAddChannelWiseModal(){ if(!selectedDatabaseIds.size){ setStatus("Select a database first.",true); return; } await refreshCatalogsForSelections(); const dbId=[...selectedDatabaseIds][0]; const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(sourceChannels.length<2){ setStatus("Need at least two source channels for channel-wise calculation.",true); return; } const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`})); const chosen=new Set(); openModal("Channel Wise Calculation",`${searchableRowsHtml("fcm",rows,chosen)}<div style="padding:6px 10px 2px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="channel_formula" /><label>Units</label><input id="m_formula_unit" type="text" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,async()=>{ const ordered=[...chosen]; if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const rawName=(byId("m_formula_name").value||"channel_formula").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const name=nextCalcName(dbId, rawName); const unit=(byId("m_formula_unit").value||"").trim(); state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"formula", dbId, name, unit, channels:ordered, formula:compiled.expr }); addedChannelIds.add(`${dbId}|${name}`); selectedChannelIds.add(`${dbId}|${name}`); await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Added channel-wise calculated channel '${name}'.`); return true; }); bindSearchableModal("fcm",chosen); const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); const txt=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | "); byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C..."; }; const list=byId("fcm_list"); if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); } refreshHint(); }
-    async function editCalculatedChannel(channelId){ const [dbId, channelName] = channelId.split("|"); const calc = (state.calculatedChannels||[]).find((c)=>c.dbId===dbId && c.name===channelName); if(!calc){ setStatus("Only calculated channels can be edited.", true); return; } await refreshCatalogsForSelections(); const sourceChannels=channelsData.filter((c)=>c.__dbId===dbId && !c.__isCalculated); if(calc.kind==="rolling"){ if(!sourceChannels.length){ setStatus("No source channels available for rolling calculation.",true); return; } const options=sourceChannels.map((c)=>`<option value="${c.__dbId}|${c.channel_name}" ${calc.channels&&calc.channels[0]===`${c.__dbId}|${c.channel_name}`?"selected":""}>${c.channel_name}</option>`).join(""); openModal("Edit Rolling Channel",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="${calc.name}" /></div><div><label>Units</label><input id="m_calc_unit" type="text" value="${calc.unit||""}" placeholder="e.g. N, kg/s, unitless" /></div><div><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean" ${calc.op==="mean"?"selected":""}>mean</option><option value="sum" ${calc.op==="sum"?"selected":""}>sum</option><option value="min" ${calc.op==="min"?"selected":""}>min</option><option value="max" ${calc.op==="max"?"selected":""}>max</option><option value="std" ${calc.op==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="${calc.window||10}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,async()=>{ const sourceId=byId("m_calc_source").value; const op=byId("m_calc_op").value; const window=Math.max(1,Number(byId("m_calc_window").value||1)); const rawName=(byId("m_calc_name").value||"rolling_mean").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const oldName=calc.name; const name=nextCalcName(dbId, rawName, oldName); calc.name=name; calc.unit=(byId("m_calc_unit").value||"").trim(); calc.channels=[sourceId]; calc.op=op; calc.window=window; if(addedChannelIds.delete(`${dbId}|${oldName}`)) addedChannelIds.add(`${dbId}|${name}`); if(selectedChannelIds.delete(`${dbId}|${oldName}`)) selectedChannelIds.add(`${dbId}|${name}`); if(byId("xAxis").value===`${dbId}|${oldName}`) byId("xAxis").value=`${dbId}|${name}`; await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Updated calculated channel '${name}'.`); return true; }); return; } const rows=sourceChannels.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`unit ${c.unit||"unitless"}`})); const chosen=new Set(calc.channels||[]); openModal("Edit Channel Wise Calculation",`${searchableRowsHtml("efcm",rows,chosen)}<div style="padding:6px 10px 2px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="${calc.name}" /><label>Units</label><input id="m_formula_unit" type="text" value="${calc.unit||""}" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" value="${calc.formula||""}" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,async()=>{ const ordered=[...chosen]; if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const rawName=(byId("m_formula_name").value||"channel_formula").trim(); if(!rawName){ setStatus("Calculated channel name is required.",true); return false; } const oldName=calc.name; const name=nextCalcName(dbId, rawName, oldName); calc.name=name; calc.unit=(byId("m_formula_unit").value||"").trim(); calc.channels=ordered; calc.formula=compiled.expr; if(addedChannelIds.delete(`${dbId}|${oldName}`)) addedChannelIds.add(`${dbId}|${name}`); if(selectedChannelIds.delete(`${dbId}|${oldName}`)) selectedChannelIds.add(`${dbId}|${name}`); if(byId("xAxis").value===`${dbId}|${oldName}`) byId("xAxis").value=`${dbId}|${name}`; await refreshCatalogsForSelections(); renderAll(); saveState(); setStatus(`Updated calculated channel '${name}'.`); return true; }); bindSearchableModal("efcm",chosen); const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); const txt=ordered.map((id,i)=>`${letters[i]}=${id.split("|")[1]}`).join(" | "); byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C..."; }; const list=byId("efcm_list"); if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); } refreshHint(); }
-    async function showAddDatabaseModal(){ const srcs=activeSources(); if(!srcs.length){ setStatus("Select at least one source first.",true); return; } const rows=[]; for(const src of srcs){ if(src.type==="postgres"){ try{ const dbs=await getJson(`/api/databases?${sourceConnQuery(src)}`); dbs.forEach((d)=>rows.push({id:`${src.id}|${d.name}`,primary:d.name,meta:src.name,sourceId:src.id,sourceType:src.type,name:d.name})); }catch(err){ setStatus(`Database discovery failed for source '${src.name}': ${err}`, true); } } else rows.push({id:`${src.id}|${src.file_path||src.name}`,primary:src.name,meta:`${src.type} source`,sourceId:src.id,sourceType:src.type,name:src.name}); } if(!rows.length){ setStatus("No databases were discovered for the selected source(s).", true); } const chosen=new Set(); openModal("Add Databases",`${searchableRowsHtml("dbm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ const newlyAddedIds=[]; [...chosen].forEach((id)=>{ const r=rows.find((x)=>x.id===id); if(!r) return; const existing=state.databases.find((d)=>d.sourceId===r.sourceId&&d.name===r.name); if(existing){ newlyAddedIds.push(existing.id); return; } const entry={id:crypto.randomUUID(),sourceId:r.sourceId,sourceType:r.sourceType,name:r.name}; state.databases.push(entry); newlyAddedIds.push(entry.id); }); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id); }); // Explicitly select every added database after apply/close.
+    async function showAddRollingChannelModal(){
+      const sourceChannels=await ensureCalcSourceChannelsLoaded();
+      if(!sourceChannels) return;
+      const options=rollingSourceChannelOptions(sourceChannels);
+      openModal("Rolling Channel Calculation",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="rolling_mean" /></div><div><label>Units</label><input id="m_calc_unit" type="text" placeholder="e.g. N, kg/s, unitless" /></div><div style="grid-column:1 / -1;"><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="10" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,WF,async()=>{
+        const sourceId=byId("m_calc_source").value;
+        const dbId=sourceId.split("|")[0];
+        const op=byId("m_calc_op").value;
+        const window=Math.max(1,Number(byId("m_calc_window").value||1));
+        const rawName=(byId("m_calc_name").value||"rolling_mean").trim();
+        if(!rawName){ setStatus("Calculated channel name is required.",true); return false; }
+        const name=nextCalcName(dbId, rawName);
+        const unit=(byId("m_calc_unit").value||"").trim();
+        state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"rolling", dbId, name, unit, channels:[sourceId], op, window });
+        addedChannelIds.add(`${dbId}|${name}`);
+        selectedChannelIds.add(`${dbId}|${name}`);
+        await refreshCatalogsForSelections();
+        renderAll();
+        saveState();
+        setStatus(`Added rolling calculated channel '${name}'.`);
+        return true;
+      });
+    }
+    async function showAddChannelWiseModal(){
+      const sourceChannels=await ensureCalcSourceChannelsLoaded();
+      if(!sourceChannels) return;
+      if(sourceChannels.length<2){ setStatus("Need at least two source channels for channel-wise calculation.",true); return; }
+      const rows=calcChannelPickerRows(sourceChannels);
+      const chosen=new Set();
+      openModal("Channel Wise Calculation",`${searchableRowsHtml("fcm",rows,chosen)}<div style="padding:6px 10px 2px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="channel_formula" /><label>Legend source name (optional)</label><input id="m_formula_source_label" type="text" placeholder="Defaults to combined source names" /><div id="m_formula_legend_hint" class="itemMeta" style="margin-top:4px;"></div><label>Units</label><input id="m_formula_unit" type="text" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,WF,async()=>{
+        const ordered=[...chosen];
+        if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; }
+        const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length);
+        if(!compiled.ok){ setStatus(compiled.error,true); return false; }
+        const rawName=(byId("m_formula_name").value||"channel_formula").trim();
+        if(!rawName){ setStatus("Calculated channel name is required.",true); return false; }
+        const dbId=ordered[0].split("|")[0];
+        const name=nextCalcName(dbId, rawName);
+        const unit=(byId("m_formula_unit").value||"").trim();
+        const sourceLabel=(byId("m_formula_source_label").value||"").trim();
+        const calcEntry={ id:crypto.randomUUID(), kind:"formula", dbId, name, unit, channels:ordered, formula:compiled.expr };
+        if(sourceLabel) calcEntry.sourceLabel=sourceLabel;
+        state.calculatedChannels.push(calcEntry);
+        addedChannelIds.add(`${dbId}|${name}`);
+        selectedChannelIds.add(`${dbId}|${name}`);
+        await refreshCatalogsForSelections();
+        renderAll();
+        saveState();
+        setStatus(`Added channel-wise calculated channel '${name}'.`);
+        return true;
+      });
+      bindSearchableModal("fcm",chosen);
+      const refreshHint=()=>{
+        const ordered=[...chosen];
+        const letters=varLetters(ordered.length);
+        const txt=ordered.map((id,i)=>`${letters[i]}=${sourceLabelForDbId(id.split("|")[0])}/${id.split("|")[1]}`).join(" | ");
+        byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C...";
+        const legendHint=byId("m_formula_legend_hint");
+        if(legendHint) legendHint.textContent=ordered.length>=2?`Legend default: ${defaultFormulaSourceLabel(ordered)}`:"";
+      };
+      const list=byId("fcm_list");
+      if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); }
+      refreshHint();
+    }
+    async function editCalculatedChannel(channelId){
+      const [dbId, channelName]=channelId.split("|");
+      const calc=(state.calculatedChannels||[]).find((c)=>c.dbId===dbId && c.name===channelName);
+      if(!calc){ setStatus("Only calculated channels can be edited.", true); return; }
+      const sourceChannels=await ensureCalcSourceChannelsLoaded();
+      if(!sourceChannels) return;
+      if(calc.kind==="rolling"){
+        const selectedId=calc.channels&&calc.channels[0]?calc.channels[0]:null;
+        const options=rollingSourceChannelOptions(sourceChannels, selectedId);
+        openModal("Edit Rolling Channel",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="${calc.name}" /></div><div><label>Units</label><input id="m_calc_unit" type="text" value="${calc.unit||""}" placeholder="e.g. N, kg/s, unitless" /></div><div style="grid-column:1 / -1;"><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean" ${calc.op==="mean"?"selected":""}>mean</option><option value="sum" ${calc.op==="sum"?"selected":""}>sum</option><option value="min" ${calc.op==="min"?"selected":""}>min</option><option value="max" ${calc.op==="max"?"selected":""}>max</option><option value="std" ${calc.op==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="${calc.window||10}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,WF,async()=>{
+          const sourceId=byId("m_calc_source").value;
+          const targetDbId=sourceId.split("|")[0];
+          const op=byId("m_calc_op").value;
+          const window=Math.max(1,Number(byId("m_calc_window").value||1));
+          const rawName=(byId("m_calc_name").value||"rolling_mean").trim();
+          if(!rawName){ setStatus("Calculated channel name is required.",true); return false; }
+          const oldName=calc.name;
+          const name=nextCalcName(targetDbId, rawName, oldName);
+          calc.dbId=targetDbId;
+          calc.name=name;
+          calc.unit=(byId("m_calc_unit").value||"").trim();
+          calc.channels=[sourceId];
+          calc.op=op;
+          calc.window=window;
+          if(addedChannelIds.delete(`${dbId}|${oldName}`)) addedChannelIds.add(`${targetDbId}|${name}`);
+          if(selectedChannelIds.delete(`${dbId}|${oldName}`)) selectedChannelIds.add(`${targetDbId}|${name}`);
+          if(byId("xAxis").value===`${dbId}|${oldName}`) byId("xAxis").value=`${targetDbId}|${name}`;
+          await refreshCatalogsForSelections();
+          renderAll();
+          saveState();
+          setStatus(`Updated calculated channel '${name}'.`);
+          return true;
+        });
+        return;
+      }
+      const rows=calcChannelPickerRows(sourceChannels);
+      const chosen=new Set(calc.channels||[]);
+      const escAttr=(v)=>String(v??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;");
+      openModal("Edit Channel Wise Calculation",`${searchableRowsHtml("efcm",rows,chosen)}<div style="padding:6px 10px 2px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="${escAttr(calc.name)}" /><label>Legend source name (optional)</label><input id="m_formula_source_label" type="text" value="${escAttr(calc.sourceLabel||"")}" placeholder="Defaults to combined source names" /><div id="m_formula_legend_hint" class="itemMeta" style="margin-top:4px;"></div><label>Units</label><input id="m_formula_unit" type="text" value="${escAttr(calc.unit||"")}" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" value="${escAttr(calc.formula||"")}" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,WF,async()=>{
+        const ordered=[...chosen];
+        if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; }
+        const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length);
+        if(!compiled.ok){ setStatus(compiled.error,true); return false; }
+        const rawName=(byId("m_formula_name").value||"channel_formula").trim();
+        if(!rawName){ setStatus("Calculated channel name is required.",true); return false; }
+        const targetDbId=ordered[0].split("|")[0];
+        const oldName=calc.name;
+        const name=nextCalcName(targetDbId, rawName, oldName);
+        calc.dbId=targetDbId;
+        calc.name=name;
+        calc.unit=(byId("m_formula_unit").value||"").trim();
+        calc.channels=ordered;
+        calc.formula=compiled.expr;
+        const sourceLabel=(byId("m_formula_source_label").value||"").trim();
+        if(sourceLabel) calc.sourceLabel=sourceLabel;
+        else delete calc.sourceLabel;
+        if(addedChannelIds.delete(`${dbId}|${oldName}`)) addedChannelIds.add(`${targetDbId}|${name}`);
+        if(selectedChannelIds.delete(`${dbId}|${oldName}`)) selectedChannelIds.add(`${targetDbId}|${name}`);
+        if(byId("xAxis").value===`${dbId}|${oldName}`) byId("xAxis").value=`${targetDbId}|${name}`;
+        await refreshCatalogsForSelections();
+        renderAll();
+        saveState();
+        setStatus(`Updated calculated channel '${name}'.`);
+        return true;
+      });
+      bindSearchableModal("efcm",chosen);
+      const refreshHint=()=>{
+        const ordered=[...chosen];
+        const letters=varLetters(ordered.length);
+        const txt=ordered.map((id,i)=>`${letters[i]}=${sourceLabelForDbId(id.split("|")[0])}/${id.split("|")[1]}`).join(" | ");
+        byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C...";
+        const legendHint=byId("m_formula_legend_hint");
+        if(legendHint) legendHint.textContent=ordered.length>=2?`Legend default: ${defaultFormulaSourceLabel(ordered)}`:"";
+      };
+      const list=byId("efcm_list");
+      if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); }
+      refreshHint();
+    }
+    async function showAddDatabaseModal(){ const srcs=activeSources(); if(!srcs.length){ setStatus("Select at least one source first.",true); return; } const rows=[]; for(const src of srcs){ if(src.type==="postgres"){ try{ const dbs=await getJson(`/api/databases?${sourceConnQuery(src)}`); dbs.forEach((d)=>rows.push({id:`${src.id}|${d.name}`,primary:d.name,meta:src.name,sourceId:src.id,sourceType:src.type,name:d.name})); }catch(err){ setStatus(`Database discovery failed for source '${src.name}': ${err}`, true); } } else rows.push({id:`${src.id}|${src.file_path||src.name}`,primary:src.name,meta:`${src.type} source`,sourceId:src.id,sourceType:src.type,name:src.name}); } if(!rows.length){ setStatus("No databases were discovered for the selected source(s).", true); } const chosen=new Set(); openModal("Add Databases",`${searchableRowsHtml("dbm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ const newlyAddedIds=[]; [...chosen].forEach((id)=>{ const r=rows.find((x)=>x.id===id); if(!r) return; const existing=state.databases.find((d)=>d.sourceId===r.sourceId&&d.name===r.name); if(existing){ newlyAddedIds.push(existing.id); return; } const entry={id:crypto.randomUUID(),sourceId:r.sourceId,sourceType:r.sourceType,name:r.name}; state.databases.push(entry); newlyAddedIds.push(entry.id); }); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id); }); // Explicitly select every added database after apply/close.
       newlyAddedIds.forEach((id)=>selectedDatabaseIds.add(id)); await refreshCatalogsForSelections(); renderAll(); saveState(); return true; }); bindSearchableModal("dbm",chosen); }
-    async function showAddTestsModal(){ if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; } await refreshCatalogsForSelections(); const dup={}; testsData.forEach((t)=>dup[`${t.__dbId}|${t.run_code}`]=(dup[`${t.__dbId}|${t.run_code}`]||0)+1); const rows=testsData.map((t)=>({id:`${t.__dbId}|${t.test_run_id}`,primary:dup[`${t.__dbId}|${t.run_code}`]>1?`${t.run_code} (#${t.test_run_id})`:t.run_code,meta:`${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`})); const chosen=new Set(addedTestIds); openModal("Select Tests",`${searchableRowsHtml("tm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,async()=>{ addedTestIds=new Set(chosen); selectedTestIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("tm",chosen); }
+    async function showAddTestsModal(){ if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; } await refreshCatalogsForSelections(); const dup={}; testsData.forEach((t)=>dup[`${t.__dbId}|${t.run_code}`]=(dup[`${t.__dbId}|${t.run_code}`]||0)+1); const rows=testsData.map((t)=>({id:`${t.__dbId}|${t.test_run_id}`,primary:dup[`${t.__dbId}|${t.run_code}`]>1?`${t.run_code} (#${t.test_run_id})`:t.run_code,meta:`${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`})); const chosen=new Set(addedTestIds); openModal("Select Tests",`${searchableRowsHtml("tm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ addedTestIds=new Set(chosen); selectedTestIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("tm",chosen); }
     async function showAddChannelsModal(){
-      state.sources.filter(isFileSource).forEach(ensureFileSourceCatalog);
-      if(!addedTestIds.size && !state.sources.some(isPostgresTestLeaf)){
-        setStatus("Add at least one source/test first.",true);
+      const sourceOptions=channelPickerSourceOptions();
+      if(!sourceOptions.length){
+        setStatus("Add at least one source first.", true);
         return;
       }
       await refreshCatalogsForSelections();
 
-      // Build the available channel rows (same discovery logic as before).
-      const rows=[];
-      const testsByDb=new Map();
-      const testKeys=[...new Set([...addedTestIds, ...effectiveSelectedTestIds()])];
-      testKeys.forEach((k)=>{
-        const [dbId,testId]=k.split("|");
-        if(!dbId||!testId) return;
-        if(!testsByDb.has(dbId)) testsByDb.set(dbId,[]);
-        testsByDb.get(dbId).push(testId);
+      let activeSourceId=defaultChannelPickerSourceId(sourceOptions);
+      const rowCache=new Map();
+      addedChannelIds.forEach((chId)=>{
+        if(rowCache.has(chId)) return;
+        const c=channelsData.find((x)=>`${x.__dbId}|${x.channel_name}`===chId);
+        if(!c) return;
+        rowCache.set(chId, {
+          id: chId,
+          primary: c.channel_name,
+          meta:`unit ${resolveChannelUnit(chId, c.unit)||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[chId]||c.sample_rate_hz||"n/a"}Hz`,
+        });
       });
-      if(!testKeys.length){
-        setStatus("No tests available for channel discovery.", true);
-        return;
-      }
 
-      for(const [dbId,testIds] of testsByDb.entries()){
-        const { db, src, connSrc }=resolveDbSource(dbId);
-        if(!db||!src) continue;
-        if(src.type==="postgres"){
-          const p=new URLSearchParams();
-          testIds.forEach((id)=>p.append("test_run_ids",id));
-          p.append("db_name",db.name);
-          if(db.test_table) p.append("test_table", db.test_table);
-          sourceConnQuery(connSrc||src).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
-          try{
-            const ch=await getJson(`/api/available-channels?${p.toString()}`);
-            ch.forEach((c)=>rows.push({
-              id:`${dbId}|${c.channel_name}`,
-              primary:c.channel_name,
-              meta:`unit ${resolveChannelUnit(`${dbId}|${c.channel_name}`, c.unit)||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`
-            }));
-          }catch{}
-        } else {
-          try{
-            const fileSrc=isFileSource(src) ? src : state.sources.find((s)=>s.id===db.sourceId);
-            if(!fileSrc) continue;
-            const p=new URLSearchParams();
-            p.append("source_type", fileSrc.type);
-            p.append("file_path", fileSrc.file_path||"");
-            if(fileSrc.type==="csv" && fileSrc.units_in_headers) p.append("units_in_headers","true");
-            const ch=await getJson(`/api/file/channels?${p.toString()}`);
-            ch.forEach((c)=>rows.push({
-              id:`${dbId}|${c.channel_name}`,
-              primary:c.channel_name,
-              meta:`unit ${resolveChannelUnit(`${dbId}|${c.channel_name}`, c.unit)||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[`${dbId}|${c.channel_name}`]||c.sample_rate_hz||"n/a"}Hz`
-            }));
-          }catch{}
-        }
-      }
-
-      const dedup=new Map();
-      rows.forEach((r)=>dedup.set(r.id,r));
-      const allRows=[...dedup.values()].sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
-
-      // Two-column transfer state.
-      // Available list always shows ALL channels; Selected is a subset.
-      // Use Sets so double-adding never duplicates.
-      const selected = new Set(addedChannelIds);
-      const availActive = new Set();
-      const selActive = new Set();
-      let availAnchor = -1;
-      let selAnchor = -1;
+      const selected=new Set(addedChannelIds);
+      const availActive=new Set();
+      const selActive=new Set();
+      let availAnchor=-1;
+      let selAnchor=-1;
+      let allRows=[];
 
       const applyTransferSelection = ({ listRows, activeSet, idx, ev, kind })=>{
         const ids = listRows.map((r)=>r.id);
@@ -2587,7 +3244,7 @@
         });
       };
 
-      const selectedRows = ()=> allRows.filter((r)=>selected.has(r.id));
+      const selectedRows = ()=> [...selected].map((id)=>rowCache.get(id)).filter(Boolean).sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
 
       const renderAllTransfer = ()=>{
         renderTransferList("cm_avail", allRows, availActive, "avail");
@@ -2598,8 +3255,23 @@
         if(btnL) btnL.disabled = selActive.size===0;
       };
 
+      const loadActiveSourceChannels=async()=>{
+        const opt=sourceOptions.find((o)=>o.sourceId===activeSourceId);
+        if(!opt){ allRows=[]; renderAllTransfer(); return; }
+        allRows=await fetchChannelsForDb(opt.dbId);
+        allRows.forEach((r)=>rowCache.set(r.id, r));
+        availActive.clear();
+        availAnchor=-1;
+        renderAllTransfer();
+      };
+
+      const sourceSelectHtml=sourceOptions.length>1
+        ? `<div id="cm_source_wrap" style="margin-bottom:6px;"><label>Source</label><select id="cm_source_sel">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${o.label}</option>`).join("")}</select></div>`
+        : "";
+
       openModal("Channels",`
         <div class="modalBodyPad">
+          ${sourceSelectHtml}
           <div class="channelTransferGrid">
             <div class="scalePickerCol"><label>Available</label><div class="modalList" id="cm_avail"></div></div>
             <div class="channelTransferBtns">
@@ -2616,11 +3288,20 @@
       `, async()=>{
         addedChannelIds = new Set(selected);
         selectedChannelIds = new Set(selected);
+        rebuildChannelUnitMap();
         renderAll();
         saveState();
         setStatus(`Selected ${selected.size} channel(s).`);
         return true;
-      }, { size:"modalChannels", compact:true });
+      }, WF_CHANNELS);
+
+      const srcSel=byId("cm_source_sel");
+      if(srcSel){
+        srcSel.onchange=async()=>{
+          activeSourceId=srcSel.value;
+          await loadActiveSourceChannels();
+        };
+      }
 
       byId("cm_to_sel").onclick=()=>{
         const toMove=[...availActive];
@@ -2635,10 +3316,100 @@
         renderAllTransfer();
       };
 
-      renderAllTransfer();
+      await loadActiveSourceChannels();
+    }
+    function selectedCalculatedChannels(){
+      const dbIds=new Set(effectiveSelectedDatabaseIds());
+      const channelIds=new Set(effectiveSelectedChannelIds());
+      return (state.calculatedChannels||[]).filter((c)=>{
+        const id=`${c.dbId}|${c.name}`;
+        return channelIds.has(id)&&dbIds.has(c.dbId);
+      });
+    }
+    function parseChannelRef(id, fallbackDbId){
+      const parts=String(id||"").split("|");
+      if(parts.length>=2) return { dbId:parts[0], name:parts.slice(1).join("|") };
+      return { dbId:fallbackDbId||"", name:parts[0]||"" };
+    }
+    function rawChannelNamesForDb(dbId, channelIdsAll, selectedCalcs){
+      const names=new Set();
+      channelIdsAll.filter((c)=>c.startsWith(`${dbId}|`)).forEach((c)=>{
+        const name=c.split("|").slice(1).join("|");
+        if(!selectedCalcs.some((calc)=>calc.dbId===dbId && calc.name===name)) names.add(name);
+      });
+      selectedCalcs.forEach((calc)=>{
+        (calc.channels||[]).forEach((id)=>{
+          const ref=parseChannelRef(id, calc.dbId);
+          if(ref.dbId===dbId && ref.name) names.add(ref.name);
+        });
+      });
+      return [...names];
     }
     function rollingCalc(op, arr){ if(!arr.length) return null; if(op==="mean") return arr.reduce((a,b)=>a+b,0)/arr.length; if(op==="sum") return arr.reduce((a,b)=>a+b,0); if(op==="min") return Math.min(...arr); if(op==="max") return Math.max(...arr); if(op==="std"){ const m=arr.reduce((a,b)=>a+b,0)/arr.length; const v=arr.reduce((a,b)=>a+((b-m)*(b-m)),0)/arr.length; return Math.sqrt(v); } return null; }
-    async function computeCalculatedRows(baseRows){ const out=[]; const selectedCalcs=(state.calculatedChannels||[]).filter((c)=>selectedChannelIds.has(`${c.dbId}|${c.name}`)); let workCounter=0; for(const calc of selectedCalcs){ const dbRows=baseRows.filter((r)=>r.__dbId===calc.dbId); if(calc.kind==="rolling"){ const srcName=(calc.channels&&calc.channels[0])?calc.channels[0].split("|")[1]:""; const srcRows=dbRows.filter((r)=>r.channel_name===srcName); const byTest=new Map(); srcRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); for (const rows of byTest.values()){ rows.sort((a,b)=>a.__ts-b.__ts); const w=Math.max(1, Number(calc.window||1)); for(let i=0;i<rows.length;i++){ const vals=rows.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x)); const v=rollingCalc(calc.op, vals); if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: rows[i].test_run_id, test_run_code: rows[i].test_run_code, channel_name: calc.name, unit: calc.unit || null, time: rows[i].time, value: Number(v), __dbId: calc.dbId, __ts: rows[i].__ts }); workCounter+=1; if(workCounter%2000===0) await nextPaint(); } } continue; } if(calc.kind==="formula"){ const deps=(calc.channels||[]).map((id)=>id.split("|")[1]); if(!deps.length) continue; const compiled=compileFormula(calc.formula||"", deps.length); if(!compiled.ok) continue; const byTest=new Map(); dbRows.forEach((r)=>{ const k=`${r.test_run_id}|${r.test_run_code}`; if(!byTest.has(k)) byTest.set(k,[]); byTest.get(k).push(r); }); for (const rows of byTest.values()){ const byTime=new Map(); rows.forEach((r)=>{ const t=String(r.time); if(!byTime.has(t)) byTime.set(t,{vals:{}, sample:r}); const slot=byTime.get(t); slot.vals[r.channel_name]=Number(r.value); }); const sortedTimes=[...byTime.keys()].sort((a,b)=>byTime.get(a).sample.__ts-byTime.get(b).sample.__ts); let prevMs=null; const ctx={dt_s:0,__bpStates:{}}; for (const t of sortedTimes){ const slot=byTime.get(t); const vals=deps.map((nm)=>slot.vals[nm]); if(vals.some((v)=>!Number.isFinite(v))) continue; const currMs=slot.sample.__ts; ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000); prevMs=currMs; let v=null; try{ v=compiled.evalFn(vals,ctx); }catch{ v=null; } if(v===null||!Number.isFinite(v)) continue; out.push({ test_run_id: slot.sample.test_run_id, test_run_code: slot.sample.test_run_code, channel_name: calc.name, unit: calc.unit || null, time: t, value: Number(v), __dbId: calc.dbId, __ts: slot.sample.__ts }); workCounter+=1; if(workCounter%2000===0) await nextPaint(); } } } } return out; }
+    async function computeCalculatedRows(baseRows){
+      const out=[];
+      const selectedCalcs=selectedCalculatedChannels();
+      let workCounter=0;
+      for(const calc of selectedCalcs){
+        const calcLegend=legendSourceForCalc(calc);
+        if(calc.kind==="rolling"){
+          const srcRef=parseChannelRef(calc.channels&&calc.channels[0], calc.dbId);
+          const srcRows=baseRows.filter((r)=>r.__dbId===srcRef.dbId && r.channel_name===srcRef.name);
+          const byTest=new Map();
+          srcRows.forEach((r)=>{
+            const k=`${r.test_run_id}|${r.test_run_code}`;
+            if(!byTest.has(k)) byTest.set(k,[]);
+            byTest.get(k).push(r);
+          });
+          for(const rows of byTest.values()){
+            rows.sort((a,b)=>a.__ts-b.__ts);
+            const w=Math.max(1, Number(calc.window||1));
+            for(let i=0;i<rows.length;i++){
+              const vals=rows.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x));
+              const v=rollingCalc(calc.op, vals);
+              if(v===null||!Number.isFinite(v)) continue;
+              out.push({ test_run_id:rows[i].test_run_id, test_run_code:rows[i].test_run_code, channel_name:calc.name, unit:calc.unit||null, time:rows[i].time, value:Number(v), __dbId:calc.dbId, __ts:rows[i].__ts, __legendSource:calcLegend });
+              workCounter+=1;
+              if(workCounter%2000===0) await nextPaint();
+            }
+          }
+          continue;
+        }
+        if(calc.kind==="formula"){
+          const deps=(calc.channels||[]).map((id)=>parseChannelRef(id, calc.dbId));
+          if(deps.length<2) continue;
+          const compiled=compileFormula(calc.formula||"", deps.length);
+          if(!compiled.ok) continue;
+          const byTime=new Map();
+          deps.forEach((dep, idx)=>{
+            baseRows.filter((r)=>r.__dbId===dep.dbId && r.channel_name===dep.name).forEach((r)=>{
+              const t=String(r.time);
+              if(!byTime.has(t)) byTime.set(t,{ vals:Array(deps.length).fill(NaN), sample:r, ts:r.__ts??Date.parse(r.time) });
+              const slot=byTime.get(t);
+              slot.vals[idx]=Number(r.value);
+              if((r.__ts??Date.parse(r.time))<slot.ts) slot.sample=r;
+            });
+          });
+          const sortedTimes=[...byTime.keys()].sort((a,b)=>(byTime.get(a).ts||0)-(byTime.get(b).ts||0));
+          let prevMs=null;
+          const ctx={ dt_s:0, __bpStates:{} };
+          for(const t of sortedTimes){
+            const slot=byTime.get(t);
+            if(slot.vals.some((v)=>!Number.isFinite(v))) continue;
+            const currMs=slot.ts;
+            ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000);
+            prevMs=currMs;
+            let v=null;
+            try{ v=compiled.evalFn(slot.vals, ctx); }catch{ v=null; }
+            if(v===null||!Number.isFinite(v)) continue;
+            out.push({ test_run_id:slot.sample.test_run_id, test_run_code:slot.sample.test_run_code, channel_name:calc.name, unit:calc.unit||null, time:t, value:Number(v), __dbId:calc.dbId, __ts:slot.ts, __legendSource:calcLegend });
+            workCounter+=1;
+            if(workCounter%2000===0) await nextPaint();
+          }
+        }
+      }
+      return out;
+    }
     async function loadMetadataForSelection(){
       const allMetadata = [];
       for(const dbId of effectiveSelectedDatabaseIds()){
@@ -2670,15 +3441,12 @@
       setStatus("Loading raw timeseries...");
       await nextPaint();
       const rowsAll=[];
+      const selectedCalcs=selectedCalculatedChannels();
       for(const dbId of dbIds){
         const { db, src }=resolveDbSource(dbId);
         if(!db||!src) continue;
         const tests=testIdsAll.filter((t)=>t.startsWith(`${dbId}|`)).map((t)=>t.split("|")[1]);
-        const selectedForDb=channelIdsAll.filter((c)=>c.startsWith(`${dbId}|`)).map((c)=>c.split("|")[1]);
-        const calcForDb=(state.calculatedChannels||[]).filter((c)=>c.dbId===dbId&&selectedForDb.includes(c.name));
-        const channelsSet=new Set(selectedForDb.filter((c)=>!calcForDb.some((x)=>x.name===c)));
-        calcForDb.forEach((c)=> (c.channels||[]).forEach((id)=>channelsSet.add(id.split("|")[1])));
-        const channels=[...channelsSet];
+        const channels=rawChannelNamesForDb(dbId, channelIdsAll, selectedCalcs);
         if(!tests.length||!channels.length) continue;
         if(src.type==="postgres"){
           const rows=await fetchTimeseriesV2({
@@ -2708,8 +3476,10 @@
       // Empty channel selection means "all added channels", already resolved into channelIdsAll.
       const channelIdSet = new Set(channelIdsAll);
       const selectedNonCalc=rowsAll.filter((r)=>channelIdSet.has(`${r.__dbId}|${r.channel_name}`));
-      const finalRows=applyMasks([...selectedNonCalc,...calcRows]);
+      let finalRows=applyMasks([...selectedNonCalc,...calcRows]);
+      finalRows=applyRowUnits(finalRows);
       finalRows.forEach(r => { r.__ts = Date.parse(r.time); });
+      rebuildChannelUnitMap();
       latestRows=finalRows;
       overviewRows=finalRows;
       zoomState="overview";
@@ -2724,7 +3494,7 @@
       renderRows(finalRows);
       setStatus("Rendering plot...");
       await nextPaint();
-      plotRows(finalRows);
+      plotRows(finalRows, { preserveUi:false });
       await nextPaint();
       if(!plotHandlersBound){ bindZoomRefetch(); plotHandlersBound=true; }
       await loadMetadataForSelection();
@@ -2742,6 +3512,7 @@
       byId("edit_setMaxFreq").onclick=()=>openMaxFreqModal();
       byId("edit_realtimeTraces").onclick=()=>{ const p=byId("realtimePanel"); p.style.display="block"; };
       byId("view_viewAppearance").onclick=()=>openViewAppearanceModal();
+      byId("view_preferences").onclick=()=>openPreferencesModal();
       async function saveTextToFile(defaultName, text, mimeType, extension, description, pickerMimeType){
         const normalizedDefaultName = new RegExp(`\\.${extension}$`, "i").test(defaultName) ? defaultName : `${defaultName}.${extension}`;
         const acceptMime = pickerMimeType || mimeType;
@@ -2782,79 +3553,70 @@
           return { ok: false, cancelled: false };
         }
       }
-      async function saveJsonToFile(defaultName, payload){
-        const text = JSON.stringify(payload, null, 2);
-        const normalizedDefaultName = /\.json$/i.test(defaultName) ? defaultName : `${defaultName}.json`;
-        if (window.showSaveFilePicker) {
-          try {
-            let handle = await window.showSaveFilePicker({
-              suggestedName: normalizedDefaultName,
-              excludeAcceptAllOption: true,
-              types: [{ description: "JSON files", accept: { "application/json": [".json"] } }],
-            });
-            // Some environments still allow names without suffix; enforce .json.
-            if (!/\.json$/i.test(handle.name || "")) {
-              const enforcedName = `${handle.name || "nova_config"}.json`;
-              setStatus("Please save with .json extension. Reopening save dialog...", true);
-              handle = await window.showSaveFilePicker({
-                suggestedName: enforcedName,
-                excludeAcceptAllOption: true,
-                types: [{ description: "JSON files", accept: { "application/json": [".json"] } }],
-              });
-              if (!/\.json$/i.test(handle.name || "")) {
-                setStatus("Save requires a .json file name.", true);
-                return { ok: false, cancelled: true };
-              }
-            }
-            const writable = await handle.createWritable();
-            await writable.write(text);
-            await writable.close();
-            return { ok: true, viaPicker: true };
-          } catch (err) {
-            if (err && err.name === "AbortError") return { ok: false, cancelled: true };
-            setStatus(`Save dialog failed, using download fallback: ${err}`, true);
-          }
-        }
-        try {
-          const blob=new Blob([text],{type:"application/json"});
-          const a=document.createElement("a");
-          a.href=URL.createObjectURL(blob);
-          a.download=normalizedDefaultName;
-          a.click();
-          URL.revokeObjectURL(a.href);
-          return { ok: true, viaPicker: false };
-        } catch (err) {
-          setStatus(`Config save failed: ${err}`, true);
-          return { ok: false, cancelled: false };
-        }
-      }
       byId("file_exportPlot").onclick=async()=>{ const p=getActivePlot(); const rows=latestRows||[]; const esc=(v)=>{ const s=String(v??""); return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s; }; const headers=["test_run_id","test_run_code","channel_name","unit","time","value","db_id"]; const csv=[headers.join(",")].concat(rows.map((r)=>[esc(r.test_run_id),esc(r.test_run_code),esc(r.channel_name),esc(r.unit||""),esc(r.time),esc(r.value),esc(r.__dbId)].join(","))).join("\n"); const result=await saveTextToFile(`nova_${(p?.name||"view").replaceAll(" ","_")}.csv`, csv, "text/csv;charset=utf-8", "csv", "CSV files", "text/csv"); if (result.ok && result.viaPicker) setStatus(`Exported ${rows.length} rows to CSV.`); if (result.ok && !result.viaPicker) setStatus(`CSV downloaded (${rows.length} rows).`); if (!result.ok && result.cancelled) setStatus("CSV export cancelled."); };
       byId("file_configManager").onclick=()=>openConfigManagerModal();
       byId("file_defaultSources").onclick=()=>openDefaultSourcesModal();
-      byId("file_saveConfig").onclick=async()=>{
-        const payload=buildConfigPayload();
-        const result = await saveJsonToFile("nova_config.json", payload);
-        if (result.ok && result.viaPicker) setStatus("Config saved.");
-        if (result.ok && !result.viaPicker) setStatus("Config downloaded (save dialog unavailable in this environment).");
-        if (!result.ok && result.cancelled) setStatus("Config save cancelled.");
-      };
-      const picker=byId("filePicker");
-      byId("file_loadConfig").onclick=()=>{
-        picker.accept="application/json";
-        picker.onchange=async()=>{
-          const f=picker.files?.[0];
-          if(!f) return;
-          const txt=await f.text();
-          const obj=JSON.parse(txt);
-          await applyConfigObject(obj);
-          setStatus("Config loaded.");
-          picker.value="";
-        };
-        picker.click();
-      };
     }
 
     const APPEAR_KEY="nova.appearance.v1";
+    const PREFS_KEY="nova.preferences.v1";
+    const FONT_OPTIONS=[
+      { id:"misans", label:"MiSans / System", stack:'"MiSans","Segoe UI","Microsoft YaHei UI",Arial,sans-serif' },
+      { id:"segoe", label:"Segoe UI", stack:'"Segoe UI","Microsoft YaHei UI",Arial,sans-serif' },
+      { id:"arial", label:"Arial", stack:'Arial,Helvetica,sans-serif' },
+      { id:"consolas", label:"Consolas", stack:'Consolas,"Courier New",monospace' },
+    ];
+    const DEFAULT_PREFS={ fontFamily:"misans", fontSize:14, colorMode:"dark" };
+    let preferences={ ...DEFAULT_PREFS };
+    function persistPreferences(){ localStorage.setItem(PREFS_KEY, JSON.stringify(preferences)); }
+    function loadPreferences(){
+      try{
+        const p=JSON.parse(localStorage.getItem(PREFS_KEY)||"{}");
+        preferences={ ...DEFAULT_PREFS, ...p };
+      }catch{}
+      preferences.fontSize=Math.max(10, Math.min(24, Number(preferences.fontSize)||DEFAULT_PREFS.fontSize));
+      if(!FONT_OPTIONS.some((f)=>f.id===preferences.fontFamily)) preferences.fontFamily=DEFAULT_PREFS.fontFamily;
+      if(preferences.colorMode!=="light") preferences.colorMode="dark";
+      applyPreferences();
+    }
+    function applyPreferences(){
+      document.documentElement.style.setProperty("--nova-base-font-size", `${preferences.fontSize}px`);
+      document.documentElement.classList.toggle("light-mode", preferences.colorMode==="light");
+      document.documentElement.style.colorScheme=preferences.colorMode==="light" ? "light" : "dark";
+      const font=FONT_OPTIONS.find((f)=>f.id===preferences.fontFamily)||FONT_OPTIONS[0];
+      document.documentElement.style.setProperty("--nova-font-family", font.stack);
+    }
+    function openPreferencesModal(){
+      const fontOpts=FONT_OPTIONS.map((f)=>`<option value="${f.id}" ${preferences.fontFamily===f.id?"selected":""}>${f.label}</option>`).join("");
+      openModal("Preferences",`
+        <div class="modalGrid" style="grid-template-columns:1fr;">
+          <div><label>Font</label><select id="m_pref_font">${fontOpts}</select></div>
+          <div><label>Font Size (px)</label><input id="m_pref_size" type="number" min="10" max="24" step="1" value="${preferences.fontSize}" /></div>
+          <div><label>Color Mode</label><select id="m_pref_mode"><option value="dark" ${preferences.colorMode==="dark"?"selected":""}>Dark</option><option value="light" ${preferences.colorMode==="light"?"selected":""}>Light</option></select></div>
+        </div>
+        <div class="modalActions">
+          <button id="m_pref_reset" type="button">Reset Defaults</button>
+          <button id="modalCancelBtn" type="button">Cancel</button>
+          <button id="modalSaveCloseBtn" type="button">Apply & Close</button>
+        </div>
+      `, async()=>{
+        preferences.fontFamily=byId("m_pref_font").value||DEFAULT_PREFS.fontFamily;
+        preferences.fontSize=Math.max(10, Math.min(24, Number(byId("m_pref_size").value||DEFAULT_PREFS.fontSize)));
+        preferences.colorMode=byId("m_pref_mode").value==="light" ? "light" : "dark";
+        persistPreferences();
+        applyPreferences();
+        setStatus("Preferences updated.");
+        return true;
+      });
+      byId("m_pref_reset").onclick=()=>{
+        preferences={ ...DEFAULT_PREFS };
+        persistPreferences();
+        applyPreferences();
+        closeModal();
+        openPreferencesModal();
+        setStatus("Preferences reset to defaults.");
+      };
+    }
     const DEFAULT_APPEARANCE={ uiBg:"#070b11", viewBg:"#000000", accent:"#1e3a8a", plotTheme:"default", plotColors:"#4cc9f0,#f72585,#b8f200,#ff9e00,#9b5de5,#06d6a0,#ef476f,#ffd166,#118ab2,#8338ec", plotTitle:"", showLegend:true, legendX:0.01, legendY:0.99, showAxis:true, showGrid:true, axisTitleSize:11, axisTickSize:10, lineWidth:1.5 };
     const PLOT_THEMES={
       default:"#4cc9f0,#f72585,#b8f200,#ff9e00,#9b5de5,#06d6a0,#ef476f,#ffd166,#118ab2,#8338ec",
@@ -3006,6 +3768,31 @@
       };
     }
 
+    function handlePlotZoomRelayoutEnd(){
+      if(realtimeTimer) return;
+      if(!overviewRows.length||!overviewEpochStartMs||overviewEpochEndMs===overviewEpochStartMs) return;
+      if(byId("t0Mode").value!=="absolute") return;
+      const gd=byId("plot");
+      const snap=snapshotPlotAxisLocks(gd);
+      const xRange=snap.xRange;
+      if(!xRange||xRange.length!==2) return;
+      const visStart=new Date(xRange[0]).getTime();
+      const visEnd=new Date(xRange[1]).getTime();
+      if(!Number.isFinite(visStart)||!Number.isFinite(visEnd)) return;
+      const visSpan=visEnd-visStart;
+      const totalSpan=overviewEpochEndMs-overviewEpochStartMs;
+      if(totalSpan<=0||visSpan<=0) return;
+      const fraction=visSpan/totalSpan;
+      if(fraction<0.2 && zoomState!=="detail"){
+        refetchZoomedDetail(new Date(visStart).toISOString(), new Date(visEnd).toISOString(), snap);
+      } else if(fraction>=0.2 && zoomState==="detail"){
+        zoomState="overview";
+        latestRows=overviewRows;
+        plotRows(latestRows, { preserveUi:true });
+        applyPlotAxisLocks(gd, snap);
+        setStatus(`Overview: ${latestRows.length} rows.`);
+      }
+    }
     function bindZoomRefetch(){
       const plotEl=byId("plot");
       if(!plotEl||typeof plotEl.on!=="function") return;
@@ -3017,58 +3804,39 @@
           realtimeLockedYRanges=snap.yRanges;
           return;
         }
+        if(!isPlotRangeRelayoutEvent(ev)) return;
         if(!overviewRows.length||!overviewEpochStartMs||overviewEpochEndMs===overviewEpochStartMs) return;
         if(byId("t0Mode").value!=="absolute") return;
-
-        const autorange=ev["xaxis.autorange"];
-        if(autorange===true){
+        if(ev["xaxis.autorange"]===true){
+          clearTimeout(zoomRelayoutDebounceTimer);
           if(zoomState==="detail"){
             zoomState="overview";
             latestRows=overviewRows;
-            plotRows(latestRows);
+            plotRows(latestRows, { preserveUi:false });
             setStatus(`Overview: ${latestRows.length} rows.`);
           }
           return;
         }
-
-        const x0=ev["xaxis.range[0]"], x1=ev["xaxis.range[1]"];
-        if(!x0||!x1) return;
-
-        const visStart=new Date(x0).getTime(), visEnd=new Date(x1).getTime();
-        const visSpan=visEnd-visStart;
-        const totalSpan=overviewEpochEndMs-overviewEpochStartMs;
-        if(totalSpan<=0) return;
-
-        const fraction=visSpan/totalSpan;
-
-        if(fraction<0.2 && zoomState!=="detail"){
-          clearTimeout(zoomRefetchTimer);
-          zoomRefetchTimer=setTimeout(()=>refetchZoomedDetail(new Date(visStart).toISOString(), new Date(visEnd).toISOString()), 300);
-        } else if(fraction>=0.2 && zoomState==="detail"){
-          zoomState="overview";
-          latestRows=overviewRows;
-          plotRows(latestRows);
-          setStatus(`Overview: ${latestRows.length} rows.`);
-        }
+        if(ev["xaxis.range[0]"]===undefined && ev["xaxis.range[1]"]===undefined && !ev["xaxis.range"]) return;
+        clearTimeout(zoomRelayoutDebounceTimer);
+        zoomRelayoutDebounceTimer=setTimeout(handlePlotZoomRelayoutEnd, ZOOM_RELOCAL_DEBOUNCE_MS);
       });
     }
 
-    async function refetchZoomedDetail(startTime, endTime){
+    async function refetchZoomedDetail(startTime, endTime, axisLocks=null){
       setStatus("Loading detail...");
       const rowsAll=[];
+      const selectedCalcs=selectedCalculatedChannels();
       for(const dbId of effectiveSelectedDatabaseIds()){
         const { db, src }=resolveDbSource(dbId);
         if(!db||!src||src.type!=="postgres") continue;
         const tests=effectiveSelectedTestIds().filter((t)=>t.startsWith(`${dbId}|`)).map((t)=>t.split("|")[1]);
-        const selForDb=effectiveSelectedChannelIds().filter((c)=>c.startsWith(`${dbId}|`)).map((c)=>c.split("|")[1]);
-        const calcForDb=(state.calculatedChannels||[]).filter((c)=>c.dbId===dbId&&selForDb.includes(c.name));
-        const channelSet=new Set(selForDb.filter((c)=>!calcForDb.some((x)=>x.name===c)));
-        calcForDb.forEach((c)=>(c.channels||[]).forEach((id)=>channelSet.add(id.split("|")[1])));
-        if(!tests.length||!channelSet.size) continue;
+        const channels=rawChannelNamesForDb(dbId, effectiveSelectedChannelIds(), selectedCalcs);
+        if(!tests.length||!channels.length) continue;
         try{
           const rows=await fetchTimeseriesV2({
             tests,
-            channels:[...channelSet],
+            channels,
             db,
             src,
             startTime,
@@ -3085,7 +3853,8 @@
       zoomState="detail";
       latestRows=finalRows;
       realtimeRows=[]; realtimePrecomputed=null;
-      plotRows(finalRows);
+      plotRows(finalRows, { preserveUi:true });
+      if(axisLocks) applyPlotAxisLocks(byId("plot"), axisLocks);
       setStatus(`Detail: ${finalRows.length} rows in window.`);
     }
 
@@ -3105,16 +3874,8 @@
         if(!el) return;
         try{ Plotly.Plots.resize(el); }catch{}
       };
-      const relayoutPlotMargins=()=>{
-        const el=plotGd();
-        if(!el) return;
-        try{
-          Plotly.relayout(el,{autosize:true});
-        }catch{}
-      };
       const fullPlotResize=()=>{
         resizePlotOnly();
-        requestAnimationFrame(()=>relayoutPlotMargins());
       };
       const requestPlotResize=()=>{
         if(rafFull) return;
@@ -3164,6 +3925,7 @@
     async function initialize(){
       loadState();
       await loadSourceDefaults();
+      loadPreferences();
       await loadAppearance();
       loadPlots();
       initMenus();
