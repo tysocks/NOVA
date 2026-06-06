@@ -137,19 +137,14 @@ def plan_timeseries_points_cap(
     aggregation_mode: str | None,
     max_points: int | None,
 ) -> int | None:
-    """
-    Convert frontend viewport intent into a per-series point cap.
-    max_points still hard-overrides for backward compatibility.
-    """
-    if max_points and max_points > 0:
-        return max_points
-    mode = (aggregation_mode or "auto").strip().lower()
-    if mode in {"none", "raw"}:
-        return None
-    if not resolution_px or resolution_px <= 0:
-        return None
-    # 2x oversampling retains visual fidelity while avoiding huge payloads.
-    return max(500, min(resolution_px * 2, 5_000_000))
+    """Delegate to v3 query planner (overview mode)."""
+    from ..engine.query_planner import plan_timeseries_points_cap as _plan
+
+    return _plan(
+        resolution_px=resolution_px,
+        aggregation_mode=aggregation_mode,
+        max_points=max_points,
+    )
 
 
 def _build_series_meta(points: list[TimeSeriesPoint]) -> list[TimeSeriesSeriesMeta]:
@@ -370,10 +365,38 @@ def get_timeseries(
     db_password: str | None = None,
     db_sslmode: str | None = None,
 ) -> list[TimeSeriesPoint]:
+    """
+    Fetch timeseries rows from PostgreSQL.
+
+    Uses the v3 postgres engine by default. Set NOVA_LEGACY_ROW_ENGINE=1 to restore
+    the row-oriented SQL + Python LTTB path.
+    """
     if not test_run_ids:
         return []
     if not channel_names:
         return []
+
+    from ..engine.postgres_source import engine_enabled, fetch_postgres_timeseries
+
+    if engine_enabled():
+        mode = "overview" if max_points else "raw"
+        return fetch_postgres_timeseries(
+            test_run_ids,
+            channel_names,
+            start_time=start_time,
+            end_time=end_time,
+            limit=limit,
+            max_points=max_points,
+            mode=mode,
+            aggregation_mode="auto",
+            test_table=test_table,
+            db_name=db_name,
+            db_host=db_host,
+            db_port=db_port,
+            db_user=db_user,
+            db_password=db_password,
+            db_sslmode=db_sslmode,
+        )
 
     query_limit = max(1, min(limit or settings.default_limit, 5000000))
     test_ident = _test_table_ident(test_table)

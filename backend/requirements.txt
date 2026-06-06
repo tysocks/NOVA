@@ -7,3 +7,6 @@ PySide6
 pandas
 nptdms
 h5py
+pyarrow>=15.0.0
+duckdb>=1.0.0
+numpy>=1.26.0

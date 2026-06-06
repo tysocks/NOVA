@@ -16,6 +16,7 @@ backend/uploads/
 backend/.nova_appearance.json
 backend/.nova_source_defaults.json
 backend/.nova_config_library.json
+backend/.nova_sessions/
 
 # OS/editor noise
 .DS_Store

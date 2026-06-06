@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 
 from ..models import ChannelItem, TestRunItem, TimeSeriesPoint
+
+logger = logging.getLogger(__name__)
 
 
 def _to_dt(series: pd.Series) -> pd.Series:
@@ -231,6 +235,27 @@ def file_timeseries(
     limit: int = 5_000_000,
     units_in_headers: bool = False,
 ) -> list[TimeSeriesPoint]:
+    from ..engine.duckdb_source import fetch_artifact_timeseries
+    from ..engine.session_store import find_artifact_for_path
+
+    artifact_id = find_artifact_for_path(file_path)
+    if artifact_id:
+        points = fetch_artifact_timeseries(
+            artifact_id,
+            channel_names,
+            mode="raw",
+            max_points=None,
+        )
+        if limit and len(points) > limit:
+            return points[:limit]
+        return points
+
+    warnings.warn(
+        "file_timeseries used legacy iterrows path; ingest via POST /api/v3/ingest/file first.",
+        stacklevel=2,
+    )
+    logger.warning("Legacy file_timeseries for %s (no artifact index)", file_path)
+
     if source_type == "csv":
         df, unit_map = _csv_frame(file_path, units_in_headers=units_in_headers)
         run_code = Path(file_path).stem

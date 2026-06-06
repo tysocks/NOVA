@@ -10,7 +10,7 @@ from urllib.request import urlopen
 
 from PySide6.QtCore import QUrl, Qt
 from PySide6.QtGui import QIcon, QPainter, QPixmap
-from PySide6.QtWebEngineCore import QWebEngineProfile
+from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen
 
@@ -219,6 +219,10 @@ def main() -> None:
 
     try:
         view = QWebEngineView()
+        web_settings = view.settings()
+        web_settings.setAttribute(QWebEngineSettings.JavascriptEnabled, True)
+        web_settings.setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+        web_settings.setAttribute(QWebEngineSettings.ScrollAnimatorEnabled, False)
         view.setWindowTitle("NOVA")
         if icon_path.exists():
             view.setWindowIcon(QIcon(str(icon_path)))

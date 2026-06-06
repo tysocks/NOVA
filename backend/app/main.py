@@ -2,9 +2,22 @@ from pathlib import Path
 import json
 
 from fastapi import Body, FastAPI, File, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
-from .models import ChannelItem, DatabaseItem, HealthResponse, TestRunItem, TimeSeriesEnvelope, TimeSeriesPoint
+from .engine.arrow_codec import arrow_ipc_to_points
+from .engine.file_index import get_ingest_status, manifest_to_channels, manifest_to_tests, run_ingest
+from .engine.series_query import execute_series_query
+from .models import (
+    ChannelItem,
+    DatabaseItem,
+    FileIngestRequest,
+    FileIngestResponse,
+    HealthResponse,
+    SeriesQueryRequest,
+    TestRunItem,
+    TimeSeriesEnvelope,
+    TimeSeriesPoint,
+)
 from .services.timeseries import (
     get_timeseries_envelope,
     get_timeseries,
@@ -20,6 +33,17 @@ from .services.query_router import resolve_overlay_targets
 from .config import settings
 
 app = FastAPI(title="NOVA API", version="0.1.0", docs_url=None, redoc_url=None)
+
+_LEGACY_TS_HEADERS = {
+    "Deprecation": "true",
+    "X-NOVA-Deprecated": "Use POST /api/v3/series/query",
+    "Link": '</api/v3/series/query>; rel="successor-version"',
+}
+
+
+def _mark_legacy_timeseries(response: Response) -> None:
+    for key, value in _LEGACY_TS_HEADERS.items():
+        response.headers[key] = value
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
@@ -31,6 +55,15 @@ CONFIG_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_config_librar
 @app.get("/", include_in_schema=False)
 def nova_app() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/js/{file_path:path}", include_in_schema=False)
+def static_js(file_path: str) -> FileResponse:
+    target = (STATIC_DIR / "js" / file_path).resolve()
+    root = (STATIC_DIR / "js").resolve()
+    if not str(target).startswith(str(root)) or not target.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(target)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -275,6 +308,7 @@ def available_channels(
 
 @app.get("/api/timeseries", response_model=list[TimeSeriesPoint])
 def timeseries(
+    response: Response,
     test_run_ids: list[int] = Query(..., description="One or more test_run_id values."),
     channel_names: list[str] = Query(..., description="One or more channel names."),
     start_time: str | None = Query(default=None, description="ISO timestamp inclusive lower bound."),
@@ -289,6 +323,7 @@ def timeseries(
     db_password: str | None = Query(default=None),
     db_sslmode: str | None = Query(default=None),
 ) -> list[TimeSeriesPoint]:
+    _mark_legacy_timeseries(response)
     return get_timeseries(
         test_run_ids=test_run_ids,
         channel_names=channel_names,
@@ -308,6 +343,7 @@ def timeseries(
 
 @app.get("/api/v2/timeseries", response_model=TimeSeriesEnvelope)
 def timeseries_v2(
+    response: Response,
     test_run_ids: list[int] = Query(..., description="One or more test_run_id values."),
     channel_names: list[str] = Query(..., description="One or more channel names."),
     start_time: str | None = Query(default=None, description="ISO timestamp inclusive lower bound."),
@@ -327,6 +363,7 @@ def timeseries_v2(
     db_password: str | None = Query(default=None),
     db_sslmode: str | None = Query(default=None),
 ) -> TimeSeriesEnvelope:
+    _mark_legacy_timeseries(response)
     targets = resolve_overlay_targets(source=source, overlay_mode=overlay_mode, db_name=db_name)
     combined_overview: list[TimeSeriesPoint] = []
     combined_meta = []
@@ -363,6 +400,125 @@ def timeseries_v2(
         series_meta=combined_meta,
         detail_hint=detail_hint,
     )
+
+
+@app.post("/api/v3/series/query", response_model=None)
+def series_query_v3(
+    request: SeriesQueryRequest,
+    format: str = Query(default="arrow", description="arrow (IPC stream) or json (UI bridge)"),
+):
+    """
+    Columnar series query (PostgreSQL + indexed file artifacts).
+
+    Default: Apache Arrow IPC stream with X-NOVA-Series-Meta header.
+    format=json: row payload for UI bridge until Phase 4 Arrow client.
+    """
+    try:
+        ipc_bytes, meta = execute_series_query(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if format.strip().lower() == "json":
+        points = arrow_ipc_to_points(ipc_bytes)
+        return {
+            "meta": meta.model_dump(mode="json"),
+            "rows": [p.model_dump(mode="json") for p in points],
+        }
+
+    return Response(
+        content=ipc_bytes,
+        media_type="application/vnd.apache.arrow.stream",
+        headers={"X-NOVA-Series-Meta": meta.model_dump_json()},
+    )
+
+
+@app.post("/api/v3/ingest/file", response_model=FileIngestResponse)
+def ingest_file_v3(body: FileIngestRequest) -> FileIngestResponse:
+    """Index CSV/H5/TDMS into session Parquet artifacts."""
+    try:
+        manifest = run_ingest(
+            body.source_type,
+            body.file_path,
+            units_in_headers=body.units_in_headers,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        from .engine.session_store import artifact_id_for_path
+
+        artifact_id = artifact_id_for_path(body.source_type, body.file_path)
+        failed = get_ingest_status(artifact_id)
+        if failed:
+            return FileIngestResponse(
+                artifact_id=artifact_id,
+                status="failed",
+                error=str(exc),
+            )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return FileIngestResponse(
+        artifact_id=str(manifest["artifact_id"]),
+        status=str(manifest.get("status", "ready")),
+        run_code=manifest.get("run_code"),
+        channels=list(manifest.get("channels") or []),
+        time_bounds=manifest.get("time_bounds"),
+        error=manifest.get("error"),
+    )
+
+
+@app.get("/api/v3/ingest/by-path", response_model=FileIngestResponse)
+def ingest_lookup_by_path(
+    file_path: str = Query(..., description="Absolute path to indexed file."),
+    source_type: str = Query(..., description="csv, h5, or tdms"),
+) -> FileIngestResponse:
+    from .engine.session_store import find_artifact_for_path
+
+    _ = source_type
+    artifact_id = find_artifact_for_path(file_path)
+    if not artifact_id:
+        raise HTTPException(status_code=404, detail="No artifact for this file path.")
+    manifest = get_ingest_status(artifact_id)
+    if not manifest:
+        raise HTTPException(status_code=404, detail="Artifact not found.")
+    return FileIngestResponse(
+        artifact_id=artifact_id,
+        status=str(manifest.get("status", "unknown")),
+        run_code=manifest.get("run_code"),
+        channels=list(manifest.get("channels") or []),
+        time_bounds=manifest.get("time_bounds"),
+        error=manifest.get("error"),
+    )
+
+
+@app.get("/api/v3/ingest/{artifact_id}/status", response_model=FileIngestResponse)
+def ingest_status_v3(artifact_id: str) -> FileIngestResponse:
+    manifest = get_ingest_status(artifact_id)
+    if not manifest:
+        raise HTTPException(status_code=404, detail="Artifact not found.")
+    return FileIngestResponse(
+        artifact_id=artifact_id,
+        status=str(manifest.get("status", "unknown")),
+        run_code=manifest.get("run_code"),
+        channels=list(manifest.get("channels") or []),
+        time_bounds=manifest.get("time_bounds"),
+        error=manifest.get("error"),
+    )
+
+
+@app.get("/api/v3/ingest/{artifact_id}/tests", response_model=list[TestRunItem])
+def ingest_tests_v3(artifact_id: str) -> list[TestRunItem]:
+    manifest = get_ingest_status(artifact_id)
+    if not manifest or manifest.get("status") != "ready":
+        raise HTTPException(status_code=404, detail="Artifact not ready.")
+    return manifest_to_tests(manifest)
+
+
+@app.get("/api/v3/ingest/{artifact_id}/channels", response_model=list[ChannelItem])
+def ingest_channels_v3(artifact_id: str) -> list[ChannelItem]:
+    manifest = get_ingest_status(artifact_id)
+    if not manifest or manifest.get("status") != "ready":
+        raise HTTPException(status_code=404, detail="Artifact not ready.")
+    return manifest_to_channels(manifest)
 
 
 @app.get("/api/metadata")
@@ -415,12 +571,14 @@ def file_channels_api(
 
 @app.get("/api/file/timeseries", response_model=list[TimeSeriesPoint])
 def file_timeseries_api(
+    response: Response,
     source_type: str = Query(..., description="csv or tdms or h5"),
     file_path: str = Query(..., description="Absolute file path."),
     channel_names: list[str] = Query(...),
     limit: int | None = Query(default=5000000, ge=1, le=5000000),
     units_in_headers: bool = Query(default=False, description="If true (CSV only), parse units from column headers."),
 ) -> list[TimeSeriesPoint]:
+    _mark_legacy_timeseries(response)
     try:
         return file_timeseries(
             source_type=source_type,

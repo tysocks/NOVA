@@ -96,6 +96,55 @@
     .plotAdd{ width:auto; min-width:24px; max-width:24px; padding:0; font-weight:900; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:var(--nova-radius-xs); background:var(--nova-ui-bg); color:var(--nova-text-dim); }
     .plotAdd:hover{ color:var(--nova-text); background:var(--nova-hover); }
     #plot{ width:100%; flex:1 1 auto; min-height:0; height:100%; overflow:hidden; position:relative; }
+    .nova-zoom-select{
+      position:absolute;
+      display:none;
+      pointer-events:none;
+      z-index:8;
+      box-sizing:border-box;
+      background:rgba(56,189,248,0.18);
+      border:1px solid rgba(56,189,248,0.85);
+    }
+    .nova-tool-hud{
+      position:absolute;
+      left:10px;
+      top:10px;
+      z-index:9;
+      pointer-events:none;
+      padding:4px 8px;
+      border-radius:4px;
+      background:rgba(2,6,23,0.9);
+      border:1px solid #38bdf8;
+      color:#e2e8f0;
+      font-size:0.72rem;
+      line-height:1.35;
+      max-width:min(420px, calc(100% - 20px));
+    }
+    body.nova-tool-active #plot{ cursor:crosshair; }
+    body.nova-edit-mode #plot{ cursor:default; }
+    body.nova-edit-mode.nova-edit-mode-hit #plot{ cursor:grab; }
+    body.nova-editing-overlay #plot{ cursor:grabbing; }
+    body.nova-edit-mode #plot .draglayer{ pointer-events:none !important; }
+    .nova-edit-hit-layer{
+      position:absolute;
+      z-index:50;
+      background:transparent;
+      pointer-events:auto;
+      touch-action:none;
+    }
+    .nova-overlay-preview{
+      position:absolute;
+      z-index:46;
+      pointer-events:none;
+      overflow:visible;
+    }
+    .nova-overlay-preview line,
+    .nova-overlay-preview rect,
+    .nova-overlay-preview circle{
+      vector-effect:non-scaling-stroke;
+    }
+    .menuAction.menuChecked{ color:var(--nova-line); }
+    .menuAction.menuChecked::before{ content:"✓ "; }
     /* Button overrides */
     .menuItem{ width:auto; }
     .plotTab,.plotAdd{ width:auto !important; }
@@ -169,6 +218,19 @@
     /* Menus */
     .contextMenu,.miniMenu{ position:fixed; z-index:200; display:none; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); min-width:180px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
     .contextItem,.miniMenuItem{ padding:7px 10px; cursor:pointer; font-size:0.78rem; border-bottom:1px solid var(--nova-divider); color:var(--nova-text); }
+    .contextHeader{ padding:5px 10px 3px; font-size:0.62rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--nova-text-dim); pointer-events:none; border-bottom:1px solid var(--nova-divider); }
+    .contextSep{ height:1px; background:var(--nova-divider); margin:2px 0; }
+    .contextSubWrap{ position:relative; }
+    .contextSubWrap>.contextItem::after{ content:"▾"; float:right; opacity:0.55; font-size:0.65rem; }
+    .contextSubWrap.subOpen>.contextItem::after{ content:"▴"; }
+    .contextSubMenu{
+      display:none;
+      background:rgba(0,0,0,0.18);
+      border-top:1px solid var(--nova-divider);
+    }
+    .contextSubWrap.subOpen>.contextSubMenu{ display:block; }
+    .contextSubMenu .contextItem{ padding-left:14px; font-size:0.74rem; border-bottom:1px solid var(--nova-divider); }
+    .contextSubMenu .contextItem:last-child{ border-bottom:none; }
     .contextItem:last-child,.miniMenuItem:last-child{ border-bottom:none; }
     .contextItem:hover,.miniMenuItem:hover{ background:var(--nova-hover); }
     /* Realtime panel */
@@ -229,8 +291,6 @@
         <div class="menuAction" id="edit_showMetadata">Show Metadata</div>
         <div class="menuAction" id="edit_setMaxFreq">Set Max Sample Frequency...</div>
         <div class="menuAction" id="edit_realtimeTraces">Real Time Traces...</div>
-        <div class="menuSep"></div>
-        <div class="menuAction" style="opacity:0.7;cursor:default;">Analysis tools (coming soon)</div>
       </div>
     </div>
       <div class="menuItem" data-menu="view">View
@@ -605,7 +665,7 @@
       return traces.map((t)=>{
         const xy=coercePlotSeries(t.x, t.y, cap);
         const o={
-          type:"scatter",
+          type:t.type||"scatter",
           mode:t.mode||"lines",
           name:String(t.name||"").slice(0,120),
           x:xy.x,
@@ -623,6 +683,70 @@
       const el=host||getPlotDiv();
       if(!el) return;
       try{ Plotly.purge(el); }catch{}
+      delete el._novaRelayoutBound;
+    }
+    function extractAxisRelayoutPatch(layout){
+      if(!layout) return {};
+      const patch={};
+      if(layout.xaxis){
+        const xa=layout.xaxis;
+        if(xa.autorange!==undefined) patch["xaxis.autorange"]=xa.autorange;
+        if(Array.isArray(xa.range)&&xa.range.length===2){
+          patch["xaxis.range[0]"]=xa.range[0];
+          patch["xaxis.range[1]"]=xa.range[1];
+        }
+      }
+      Object.keys(layout).forEach((k)=>{
+        if(!/^yaxis\d*$/.test(k)||!layout[k]) return;
+        const ax=layout[k];
+        if(ax.autorange!==undefined) patch[`${k}.autorange`]=ax.autorange;
+        if(Array.isArray(ax.range)&&ax.range.length===2){
+          patch[`${k}.range[0]`]=ax.range[0];
+          patch[`${k}.range[1]`]=ax.range[1];
+        }
+      });
+      return patch;
+    }
+    function extractStructuralRelayoutPatch(layout){
+      if(!layout) return {};
+      const patch={ uirevision:layout.uirevision };
+      if(layout.title) patch.title=layout.title;
+      if(layout.paper_bgcolor) patch.paper_bgcolor=layout.paper_bgcolor;
+      if(layout.plot_bgcolor) patch.plot_bgcolor=layout.plot_bgcolor;
+      if(layout.colorway) patch.colorway=layout.colorway;
+      if(layout.showlegend!==undefined) patch.showlegend=layout.showlegend;
+      if(layout.margin) patch.margin=layout.margin;
+      if(layout.font) patch.font=layout.font;
+      if(layout.xaxis){
+        const xa=layout.xaxis;
+        if(xa.type) patch["xaxis.type"]=xa.type;
+        if(xa.visible!==undefined) patch["xaxis.visible"]=xa.visible;
+        if(xa.showgrid!==undefined) patch["xaxis.showgrid"]=xa.showgrid;
+        if(xa.tickfont) patch["xaxis.tickfont"]=xa.tickfont;
+        if(xa.titlefont) patch["xaxis.titlefont"]=xa.titlefont;
+      }
+      if(layout.legend) patch.legend=layout.legend;
+      if(Array.isArray(layout.shapes)) patch.shapes=layout.shapes;
+      if(Array.isArray(layout.annotations)) patch.annotations=layout.annotations;
+      Object.keys(layout).forEach((k)=>{
+        if(!/^yaxis\d*$/.test(k)||!layout[k]) return;
+        const ax=layout[k];
+        if(ax.title) patch[`${k}.title`]=ax.title;
+        if(ax.visible!==undefined) patch[`${k}.visible`]=ax.visible;
+        if(ax.showgrid!==undefined) patch[`${k}.showgrid`]=ax.showgrid;
+        if(ax.tickfont) patch[`${k}.tickfont`]=ax.tickfont;
+        if(ax.titlefont) patch[`${k}.titlefont`]=ax.titlefont;
+        if(ax.shift!==undefined) patch[`${k}.shift`]=ax.shift;
+        if(ax.overlaying) patch[`${k}.overlaying`]=ax.overlaying;
+        if(ax.side) patch[`${k}.side`]=ax.side;
+      });
+      return patch;
+    }
+    function extractRelayoutPatch(layout){
+      return {
+        ...extractStructuralRelayoutPatch(layout),
+        ...extractAxisRelayoutPatch(layout),
+      };
     }
     function tracesXToPlotlyMs(traces, t0Mode){
       if(t0Mode!=="absolute") return traces;
@@ -638,27 +762,181 @@
         return { ...t, x:x.map((v)=>Number(v)*1000) };
       });
     }
-    async function plotlyReactDraw(traces, layout, plotOpts={}){
-      const gen=++plotDrawGeneration;
-      const plotEl=ensurePlotlyHost();
-      if(!plotEl||!plotEl.isConnected) throw new Error("Plot container #plot is missing or detached from the document");
-      const plotW=Math.max(320, Number(plotEl.clientWidth||1200));
-      const t0Mode=byId("t0Mode").value;
-      const clean=sanitizePlotlyTraces(tracesXToPlotlyMs(traces, t0Mode), plotPointCap(plotW));
-      if(!clean.length) throw new Error("No plottable points after sanitizing traces");
-      const layoutOut=stripLayoutForPlotly(layout);
-      const unitCount=Math.max(1, Number(plotOpts.unitCount||1));
-      const scrollZoom=unitCount>1 ? "x" : true;
-      await nextPaint();
-      if(gen!==plotDrawGeneration) return plotEl;
-      lastChartTraces=clean;
-      lastChartLayout=layout;
-      try{
-        await Plotly.react(plotEl, clean, layoutOut, {
+
+    // Plot renderer + custom interaction layer (Plotly-only).
+    const PlotRenderer = (() => {
+      let lastConfig = null;
+      let axisRegistry = {
+        unitToAxis: new Map(),
+        axisKeyToUnit: new Map(),
+        axisHitZones: new Map(),
+        plotArea: null,
+        xAxisHitZone: null,
+        rightMargin: null,
+      };
+
+      function computeTraceSig(traces){
+        return traces.map((t)=>[
+          String(t.type||""),
+          String(t.mode||""),
+          String(t.name||""),
+          String(t.yaxis||""),
+          String(t._unit||""),
+        ].join("|")).join("\n");
+      }
+
+      function computeLayoutStructuralSig(layout){
+        if(!layout) return "";
+        const parts=[
+          String(layout.uirevision||""),
+          String(layout.showlegend),
+          JSON.stringify(layout.legend||{}),
+          JSON.stringify(layout.margin||{}),
+          String(layout.paper_bgcolor||""),
+          String(layout.plot_bgcolor||""),
+          JSON.stringify(layout.colorway||[]),
+          JSON.stringify(layout.title||{}),
+        ];
+        if(layout.xaxis){
+          const xa=layout.xaxis;
+          parts.push(`x:${xa.type}:${xa.visible}:${xa.showgrid}`);
+        }
+        Object.keys(layout).filter((k)=>/^yaxis\d*$/.test(k)).sort().forEach((k)=>{
+          const ax=layout[k]||{};
+          const title=typeof ax.title==="object" ? ax.title?.text : ax.title;
+          parts.push(`${k}:${title}:${ax.visible}:${ax.showgrid}:${ax.shift}:${ax.side}`);
+        });
+        return parts.join("\n");
+      }
+
+      function buildTraceIndexMap(traces){
+        const map=new Map();
+        traces.forEach((t, i)=>{
+          const key=String(t.name||"").trim();
+          if(key && !map.has(key)) map.set(key, i);
+        });
+        return map;
+      }
+
+      function yrefToAxisKey(yref){
+        const r = String(yref || "y");
+        if(r === "y") return "yaxis";
+        if(/^y\d+$/.test(r)) return `yaxis${r.slice(1)}`;
+        return "yaxis";
+      }
+
+      function rebuildUnitAxisRegistryFromTraces(traces){
+        axisRegistry.unitToAxis = new Map();
+        axisRegistry.axisKeyToUnit = new Map();
+        axisRegistry.axisHitZones = new Map();
+        axisRegistry.plotArea = null;
+        axisRegistry.xAxisHitZone = null;
+        axisRegistry.rightMargin = null;
+        for(const t of (traces || [])){
+          const unit = String(t?._unit || "unitless");
+          const yref = String(t?.yaxis || "y");
+          const axisKey = yrefToAxisKey(yref);
+          const axisId = axisKey === "yaxis" ? 1 : Number(axisKey.replace("yaxis","")) || 1;
+          if(!axisRegistry.unitToAxis.has(unit)){
+            axisRegistry.unitToAxis.set(unit, { yref, axisKey, axisId });
+          }
+          if(!axisRegistry.axisKeyToUnit.has(axisKey)){
+            axisRegistry.axisKeyToUnit.set(axisKey, unit);
+          }
+        }
+      }
+
+      function yAxisTitle(ax){
+        const t = ax?.title;
+        if(typeof t === "string") return t;
+        if(t && typeof t.text === "string") return t.text;
+        return "";
+      }
+
+      function yAxisPixelX(full, layoutAx){
+        const size = full._size;
+        if(!size || !layoutAx) return null;
+        const plotRight = size.l + size.w;
+        const shift = Number(layoutAx.shift || 0);
+        if(layoutAx.overlaying) return plotRight + shift;
+        return plotRight;
+      }
+
+      function listYAxisKeys(full){
+        return Object.keys(full)
+          .filter((k)=>/^yaxis\d*$/.test(k))
+          .sort((a,b)=>{
+            const na = a === "yaxis" ? 1 : Number(a.replace("yaxis","")) || 99;
+            const nb = b === "yaxis" ? 1 : Number(b.replace("yaxis","")) || 99;
+            return na - nb;
+          });
+      }
+
+      function captureAxisHitZones(plotEl){
+        const gd = plotlyGraphDiv(plotEl);
+        const full = gd?._fullLayout;
+        if(!full || !full._size) return;
+        const plotLeft = full._size.l;
+        const plotTop = full._size.t;
+        const plotW = full._size.w;
+        const plotH = full._size.h;
+        const plotRight = plotLeft + plotW;
+        axisRegistry.plotArea = {
+          left: plotLeft,
+          right: plotRight,
+          top: plotTop,
+          bottom: plotTop + plotH,
+        };
+        axisRegistry.xAxisHitZone = {
+          left: plotLeft,
+          right: plotRight,
+          top: plotTop + plotH - 6,
+          bottom: plotTop + plotH + 52,
+        };
+        axisRegistry.axisHitZones = new Map();
+        const Z = 40;
+        const layout = gd.layout || {};
+        const yKeys = listYAxisKeys(full);
+        yKeys.forEach((axisKey)=>{
+          const layoutAx = layout[axisKey] || {};
+          const x = yAxisPixelX(full, layoutAx);
+          if(!Number.isFinite(x)) return;
+          const unit = axisRegistry.axisKeyToUnit.get(axisKey) || yAxisTitle(layoutAx) || axisKey;
+          axisRegistry.axisKeyToUnit.set(axisKey, unit);
+          axisRegistry.axisHitZones.set(axisKey, {
+            unit,
+            axisKey,
+            centerX: x,
+            left: x - Z,
+            right: x + Z,
+            top: plotTop,
+            bottom: plotTop + plotH,
+          });
+        });
+        const zoneRights = [...axisRegistry.axisHitZones.values()].map((z)=>z.right);
+        const maxAxisRight = zoneRights.length ? Math.max(plotRight, ...zoneRights) : plotRight;
+        axisRegistry.rightMargin = {
+          left: plotRight - 8,
+          right: maxAxisRight + Z,
+          top: plotTop,
+          bottom: plotTop + plotH - 54,
+        };
+      }
+
+      function scheduleAxisHitZoneCapture(plotEl){
+        requestAnimationFrame(()=>{
+          captureAxisHitZones(plotEl);
+          requestAnimationFrame(()=>captureAxisHitZones(plotEl));
+        });
+      }
+
+      function defaultPlotlyConfig(){
+        return {
           responsive:true,
           displaylogo:false,
           displayModeBar:false,
-          scrollZoom,
+          scrollZoom:false,
+          doubleClick:"reset",
           editable:true,
           edits:{
             legendPosition:true,
@@ -668,22 +946,1634 @@
             annotationText:false,
             shapePosition:false,
           },
-        });
-      }catch(primaryErr){
-        console.warn("[NOVA] Plotly.react failed, retrying minimal layout", primaryErr);
-        const minimalTraces=sanitizePlotlyTraces(clean, 1200);
-        if(!minimalTraces.length) throw primaryErr;
-        await Plotly.react(plotEl, minimalTraces, buildEmergencyPlotLayout(layout), {
-          responsive:true,
-          displaylogo:false,
-          displayModeBar:false,
-          scrollZoom:true,
+        };
+      }
+
+      function needsFullRebuild(plotEl, traces, nextSig, unitCount){
+        const gd = plotlyGraphDiv(plotEl);
+        if(!gd?.data?.length) return true;
+        if(gd.data.length !== traces.length) return true;
+        if(lastConfig?.sig !== nextSig) return true;
+        if((lastConfig?.unitCount||1)!==unitCount) return true;
+        return false;
+      }
+
+      async function fullDraw(plotEl, traces, layoutOut, cfg){
+        const gd = plotlyGraphDiv(plotEl);
+        if(gd?.data?.length){
+          try{ Plotly.purge(plotEl); }catch{}
+          delete plotEl._novaRelayoutBound;
+        }
+        suppressZoomRelayout += 4;
+        try{
+          await Plotly.newPlot(plotEl, traces, layoutOut, cfg);
+        }catch(primaryErr){
+          console.warn("[NOVA] Plotly.react failed, retrying minimal layout", primaryErr);
+          const minimalTraces=sanitizePlotlyTraces(traces, 1200);
+          if(!minimalTraces.length) throw primaryErr;
+          try{ Plotly.purge(plotEl); }catch{}
+          delete plotEl._novaRelayoutBound;
+          await Plotly.newPlot(plotEl, minimalTraces, buildEmergencyPlotLayout(layoutOut||{}), {
+            responsive:true,
+            displaylogo:false,
+            displayModeBar:false,
+            scrollZoom:false,
+            doubleClick:"reset",
+          });
+        }finally{
+          setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-4); }, 300);
+        }
+      }
+
+      async function dataOnlyDraw(plotEl, traces){
+        const xs = traces.map((t)=>t.x);
+        const ys = traces.map((t)=>t.y);
+        suppressZoomRelayout += 2;
+        try{
+          await Plotly.restyle(plotEl, { x: xs, y: ys });
+        }finally{
+          setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-2); }, 180);
+        }
+      }
+
+      async function fastDraw(plotEl, traces, layoutOut, opts={}){
+        const xs = traces.map((t)=>t.x);
+        const ys = traces.map((t)=>t.y);
+        const applyLayout = Boolean(opts.applyLayout);
+        const applyAxisLocks = Boolean(opts.applyAxisLocks);
+        suppressZoomRelayout += applyLayout ? 4 : 2;
+        try{
+          await Plotly.restyle(plotEl, { x: xs, y: ys });
+          if(!applyLayout) return;
+          const patch={
+            ...extractStructuralRelayoutPatch(layoutOut),
+            ...(applyAxisLocks ? extractAxisRelayoutPatch(layoutOut) : {}),
+          };
+          if(Object.keys(patch).length > 1){
+            await Plotly.relayout(plotEl, patch);
+          }
+        }finally{
+          setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-(applyLayout?4:2)); }, applyLayout?300:180);
+        }
+      }
+
+      async function draw({ plotEl, traces, layoutOut, unitCount, drawGen, dataOnly, applyAxisLocks }){
+        if(drawGen !== undefined && drawGen !== plotDrawGeneration) return plotEl;
+        await nextPaint();
+        if(drawGen !== undefined && drawGen !== plotDrawGeneration) return plotEl;
+
+        rebuildUnitAxisRegistryFromTraces(traces);
+        const cfg = defaultPlotlyConfig();
+        const nextSig = computeTraceSig(traces);
+        const layoutSig = computeLayoutStructuralSig(layoutOut);
+        const layoutWithDrag = { ...layoutOut, dragmode:"zoom" };
+        const layoutChanged = lastConfig?.layoutSig !== layoutSig;
+        const forceDataOnly = dataOnly === true;
+        const skipAxisRelayout = forceDataOnly || (dataOnly !== false && !applyAxisLocks);
+
+        if(needsFullRebuild(plotEl, traces, nextSig, unitCount)){
+          await fullDraw(plotEl, traces, layoutWithDrag, cfg);
+        }else if(forceDataOnly || (!layoutChanged && skipAxisRelayout)){
+          await dataOnlyDraw(plotEl, traces);
+        }else{
+          await fastDraw(plotEl, traces, layoutWithDrag, {
+            applyLayout:true,
+            applyAxisLocks:!skipAxisRelayout,
+          });
+        }
+
+        if(drawGen !== undefined && drawGen !== plotDrawGeneration) return plotEl;
+
+        lastConfig = {
+          sig: nextSig,
+          unitCount,
+          layoutSig,
+          traceIndex: buildTraceIndexMap(traces),
+        };
+        bindPlotlyRelayoutListener(plotEl);
+        captureAxisHitZones(plotEl);
+        scheduleAxisHitZoneCapture(plotEl);
+        PlotAnalysisTools.install(plotEl);
+        PlotInteractions.install(plotEl);
+        PlotInteractions.refresh();
+        requestAnimationFrame(()=>PlotAnalysisTools.restoreAfterDraw());
+        return plotEl;
+      }
+
+      return {
+        draw,
+        _getLastConfig: () => lastConfig,
+        computeTraceSig,
+        getAxisRegistry: () => axisRegistry,
+        refreshAxisHitZones: (plotEl)=>{
+          const el = plotEl || getPlotDiv();
+          captureAxisHitZones(el);
+          scheduleAxisHitZoneCapture(el);
+        },
+      };
+    })();
+
+    const PlotInteractions = (() => {
+      let plotEl = null;
+      let installed = false;
+      let drag = null;
+
+      function graphDiv(){
+        return plotlyGraphDiv(plotEl);
+      }
+
+      function localCoords(e){
+        const gd = graphDiv();
+        const rect = (gd || plotEl).getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      }
+
+      function nearestYAxis(px, py){
+        const reg = PlotRenderer.getAxisRegistry();
+        let bestKey = null;
+        let bestDist = Infinity;
+        for(const [axisKey, zone] of reg.axisHitZones.entries()){
+          if(py < zone.top || py > zone.bottom) continue;
+          const dist = Math.abs(px - zone.centerX);
+          if(dist < bestDist){ bestDist = dist; bestKey = axisKey; }
+        }
+        if(!bestKey) return null;
+        const rm = reg.rightMargin;
+        const inMargin = rm && px >= rm.left && px <= rm.right && py >= rm.top && py <= rm.bottom;
+        const inBand = px >= reg.axisHitZones.get(bestKey).left && px <= reg.axisHitZones.get(bestKey).right;
+        if(inBand || (inMargin && bestDist <= 72)) return bestKey;
+        return null;
+      }
+
+      function hitAxis(px, py){
+        const reg = PlotRenderer.getAxisRegistry();
+        const xz = reg.xAxisHitZone;
+        if(xz && px >= xz.left && px <= xz.right && py >= xz.top && py <= xz.bottom) return "xaxis";
+        return nearestYAxis(px, py);
+      }
+
+      function inPlotArea(px, py){
+        const a = PlotRenderer.getAxisRegistry().plotArea;
+        if(!a) return false;
+        return px >= a.left && px <= a.right && py >= a.top && py <= a.bottom;
+      }
+
+      function readAxisRange(lay){
+        if(!lay) return null;
+        const r = lay.range || lay._rl;
+        if(!r || r.length !== 2) return null;
+        const a = Number(r[0]);
+        const b = Number(r[1]);
+        if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
+        return [a, b];
+      }
+
+      function yrefForAxisKey(axisKey){
+        if(axisKey === "yaxis") return "y";
+        const n = Number(axisKey.replace("yaxis", ""));
+        return Number.isFinite(n) && n > 1 ? `y${n}` : "y";
+      }
+
+      function axisRangeFromTraces(gd, axisKey){
+        if(!gd?.data?.length) return null;
+        const yref = yrefForAxisKey(axisKey);
+        let lo = Infinity, hi = -Infinity;
+        for(const tr of gd.data){
+          const trY = tr.yaxis || "y";
+          if(trY !== yref) continue;
+          const ys = tr.y;
+          if(!ys?.length) continue;
+          for(let i = 0; i < ys.length; i += 1){
+            const v = Number(ys[i]);
+            if(Number.isFinite(v)){ lo = Math.min(lo, v); hi = Math.max(hi, v); }
+          }
+        }
+        if(!Number.isFinite(lo) || !Number.isFinite(hi)) return null;
+        if(lo === hi){ const pad = Math.max(Math.abs(lo) * 0.05, 1e-9); return [lo - pad, hi + pad]; }
+        return [lo, hi];
+      }
+
+      function axisRange(gd, axisKey){
+        const full = gd._fullLayout?.[axisKey];
+        const lay = full || gd.layout?.[axisKey];
+        const fromFull = readAxisRange(full);
+        if(fromFull) return fromFull;
+        const fromLay = readAxisRange(lay);
+        if(fromLay) return fromLay;
+        return axisRangeFromTraces(gd, axisKey);
+      }
+
+      function plotYAxisKeys(gd){
+        const reg = PlotRenderer.getAxisRegistry();
+        const keys = [...(reg.axisHitZones?.keys() || [])];
+        if(keys.length){
+          return keys.sort((a, b)=>{
+            const na = a === "yaxis" ? 1 : Number(a.replace("yaxis", "")) || 99;
+            const nb = b === "yaxis" ? 1 : Number(b.replace("yaxis", "")) || 99;
+            return na - nb;
+          });
+        }
+        return Object.keys(gd?._fullLayout || {})
+          .filter((k)=>/^yaxis\d*$/.test(k))
+          .sort((a, b)=>{
+            const na = a === "yaxis" ? 1 : Number(a.replace("yaxis", "")) || 99;
+            const nb = b === "yaxis" ? 1 : Number(b.replace("yaxis", "")) || 99;
+            return na - nb;
+          });
+      }
+
+      function coerceAxisMs(v){
+        if(v instanceof Date) return v.getTime();
+        if(typeof v === "number" && Number.isFinite(v)) return v;
+        const p = Date.parse(v);
+        return Number.isFinite(p) ? p : Number(v);
+      }
+
+      function xRangeSpec(gd){
+        const lay = gd._fullLayout?.xaxis || gd.layout?.xaxis;
+        if(!lay) return null;
+        const raw = lay.range || lay._rl;
+        if(!raw || raw.length !== 2) return null;
+        const axisType = lay.type || gd.layout?.xaxis?.type;
+        if(axisType === "date"){
+          const a = coerceAxisMs(raw[0]);
+          const b = coerceAxisMs(raw[1]);
+          if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
+          return { kind:"date", min:a, max:b };
+        }
+        const a = Number(raw[0]);
+        const b = Number(raw[1]);
+        if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
+        return { kind:"linear", min:a, max:b };
+      }
+
+      function xAxisType(gd){
+        const lay = gd._fullLayout?.xaxis || gd.layout?.xaxis;
+        return lay?.type || gd.layout?.xaxis?.type || "linear";
+      }
+
+      function plotAreaLeft(gd){
+        const ax = gd?._fullLayout?.xaxis;
+        return Number.isFinite(ax?._offset) ? ax._offset : (gd?._fullLayout?._size?.l ?? 0);
+      }
+
+      function plotAreaWidth(gd){
+        return gd?._fullLayout?._size?.w ?? 0;
+      }
+
+      function axisPixelOffset(gd, axisKey){
+        const ax = gd?._fullLayout?.[axisKey];
+        if(ax && Number.isFinite(ax._offset)) return ax._offset;
+        const size = gd?._fullLayout?._size;
+        if(!size) return 0;
+        if(axisKey === "xaxis") return size.l ?? 0;
+        return size.t ?? 0;
+      }
+
+      function pixelToAxisData(gd, axisKey, px, py){
+        return axisDataFromPixel(gd, axisKey, px, py);
+      }
+
+      function coerceAxisDataVal(gd, axisKey, v){
+        if(axisKey === "xaxis" && xAxisType(gd) === "date"){
+          if(typeof v === "number") return new Date(v);
+          if(typeof v === "string") return new Date(coerceAxisMs(v));
+        }
+        return v;
+      }
+
+      function axisDataFromPixel(gd, axisKey, px, py){
+        const ax = gd?._fullLayout?.[axisKey];
+        if(!ax) return null;
+        const offset = axisPixelOffset(gd, axisKey);
+        const target = axisKey === "xaxis" ? (px - offset) : (py - offset);
+        if(typeof ax.p2d === "function"){
+          let v = ax.p2d(target);
+          if(v instanceof Date) v = v.getTime();
+          else if(typeof v === "string" && axisKey === "xaxis" && xAxisType(gd) === "date") v = coerceAxisMs(v);
+          const n = Number(v);
+          if(Number.isFinite(n)) return n;
+        }
+        if(typeof ax.l2p !== "function") return null;
+        const range = ax.range || ax._rl;
+        if(!range || range.length !== 2) return null;
+        let lo = range[0], hi = range[1];
+        if(axisKey === "xaxis" && xAxisType(gd) === "date"){
+          lo = coerceAxisMs(lo);
+          hi = coerceAxisMs(hi);
+        } else {
+          lo = Number(lo);
+          hi = Number(hi);
+        }
+        if(!Number.isFinite(lo) || !Number.isFinite(hi)) return null;
+        if(lo === hi) return lo;
+        let pLo = ax.l2p(coerceAxisDataVal(gd, axisKey, lo));
+        let pHi = ax.l2p(coerceAxisDataVal(gd, axisKey, hi));
+        if(!Number.isFinite(pLo) || !Number.isFinite(pHi)) return null;
+        if(pLo > pHi){ const t=lo; lo=hi; hi=t; const tp=pLo; pLo=pHi; pHi=tp; }
+        for(let i=0;i<56;i+=1){
+          const mid = (lo + hi) / 2;
+          const pMid = ax.l2p(coerceAxisDataVal(gd, axisKey, mid));
+          if(!Number.isFinite(pMid)) break;
+          if(Math.abs(pMid - target) < 0.05) return mid;
+          if(pMid < target) lo = mid;
+          else hi = mid;
+        }
+        return (lo + hi) / 2;
+      }
+
+      function axisDataToPixel(gd, axisKey, dataVal){
+        const ax = gd?._fullLayout?.[axisKey];
+        if(!ax) return null;
+        let v = dataVal;
+        if(axisKey === "xaxis" && xAxisType(gd) === "date"){
+          if(typeof v === "number") v = new Date(v);
+          else if(typeof v === "string") v = new Date(coerceAxisMs(v));
+        }
+        if(typeof ax.d2p === "function"){
+          const p = ax.d2p(v);
+          if(Number.isFinite(p)) return p + axisPixelOffset(gd, axisKey);
+        }
+        if(!ax.l2p) return null;
+        const p = ax.l2p(v);
+        if(!Number.isFinite(p)) return null;
+        return p + axisPixelOffset(gd, axisKey);
+      }
+
+      function dataToPixel(gd, x, y, yAxisKey){
+        const xp = axisDataToPixel(gd, "xaxis", x);
+        const yp = axisDataToPixel(gd, yAxisKey || "yaxis", y);
+        if(xp == null || yp == null) return null;
+        return { x: xp, y: yp };
+      }
+
+      function zoomRangeAnchored(min, max, anchor, factor){
+        const span = max - min;
+        if(!Number.isFinite(span) || span <= 0 || !Number.isFinite(anchor)) return null;
+        const newSpan = span * factor;
+        const frac = (anchor - min) / span;
+        const lo = anchor - frac * newSpan;
+        return [lo, lo + newSpan];
+      }
+
+      function xRangePatch(gd, min, max){
+        const lo = Math.min(min, max);
+        const hi = Math.max(min, max);
+        if(xAxisType(gd) === "date"){
+          return { "xaxis.autorange": false, "xaxis.range": [lo, hi] };
+        }
+        return {
+          "xaxis.autorange": false,
+          "xaxis.range[0]": lo,
+          "xaxis.range[1]": hi,
+        };
+      }
+
+      function isPlotlyLegendTarget(e){
+        const t = e.target;
+        if(!t) return false;
+        if(t.closest && t.closest(".legend")) return true;
+        const cls = String(t.className?.baseVal || t.className || "");
+        return cls.includes("legend");
+      }
+
+      function isPlotlyModebarTarget(e){
+        const t = e.target;
+        return Boolean(t?.closest && t.closest(".modebar"));
+      }
+
+      async function applyRelayout(patch){
+        const gd = graphDiv();
+        if(!gd || !Object.keys(patch).length) return;
+        suppressZoomRelayout += 1;
+        try{
+          await Plotly.relayout(gd, patch);
+          PlotRenderer.refreshAxisHitZones(plotEl);
+        }catch(err){
+          console.warn("[NOVA] plot relayout", err);
+        }finally{
+          setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 180);
+        }
+      }
+
+      function zoomYAxis(axisKey, factor, anchorPy){
+        const gd = graphDiv();
+        const patch = zoomYAxisPatch(gd, axisKey, factor, anchorPy);
+        if(!patch) return;
+        void applyRelayout(patch);
+      }
+
+      function panYAxis(axisKey, deltaPx){
+        const gd = graphDiv();
+        const full = gd?._fullLayout;
+        const r = axisRange(gd, axisKey);
+        const plotH = full?._size?.h;
+        if(!r || !plotH) return;
+        const span = r[1] - r[0];
+        const dataShift = (deltaPx / plotH) * span;
+        void applyRelayout({
+          [`${axisKey}.autorange`]: false,
+          [`${axisKey}.range[0]`]: r[0] + dataShift,
+          [`${axisKey}.range[1]`]: r[1] + dataShift,
         });
       }
-      if(gen!==plotDrawGeneration) return plotEl;
-      try{ Plotly.Plots.resize(plotEl); }catch{}
-      bindPlotlyRelayoutListener(plotEl);
-      return plotEl;
+
+      function panXAxis(deltaPx){
+        const gd = graphDiv();
+        const xr = xRangeSpec(gd);
+        const plotW = plotAreaWidth(gd);
+        if(!xr || !plotW) return;
+        const span = xr.max - xr.min;
+        const delta = -(deltaPx / plotW) * span;
+        void applyRelayout(xRangePatch(gd, xr.min + delta, xr.max + delta));
+      }
+
+      function zoomXAxisPatch(gd, factor, anchorPx){
+        const xr = xRangeSpec(gd);
+        if(!xr) return null;
+        const anchor = Number.isFinite(anchorPx) ? pixelToAxisData(gd, "xaxis", anchorPx, 0) : null;
+        const zr = zoomRangeAnchored(xr.min, xr.max, anchor ?? ((xr.min + xr.max) / 2), factor);
+        if(!zr) return null;
+        return xRangePatch(gd, zr[0], zr[1]);
+      }
+
+      function zoomYAxisPatch(gd, axisKey, factor, anchorPy){
+        const r = axisRange(gd, axisKey);
+        if(!r) return null;
+        const anchor = Number.isFinite(anchorPy) ? pixelToAxisData(gd, axisKey, 0, anchorPy) : null;
+        const zr = zoomRangeAnchored(r[0], r[1], anchor ?? ((r[0] + r[1]) / 2), factor);
+        if(!zr) return null;
+        return {
+          [`${axisKey}.autorange`]: false,
+          [`${axisKey}.range[0]`]: zr[0],
+          [`${axisKey}.range[1]`]: zr[1],
+        };
+      }
+
+      function zoomXAxis(factor, anchorPx){
+        const gd = graphDiv();
+        const patch = zoomXAxisPatch(gd, factor, anchorPx);
+        if(!patch) return;
+        void applyRelayout(patch);
+      }
+
+      function zoomPlotArea(factor, anchorPx, anchorPy){
+        const gd = graphDiv();
+        const patch = zoomXAxisPatch(gd, factor, anchorPx) || {};
+        for(const axisKey of plotYAxisKeys(gd)){
+          Object.assign(patch, zoomYAxisPatch(gd, axisKey, factor, anchorPy) || {});
+        }
+        if(Object.keys(patch).length) void applyRelayout(patch);
+      }
+
+      async function resetViewLimits(){
+        const gd = graphDiv();
+        if(!gd) return;
+        const patch = { "xaxis.autorange": true };
+        Object.keys(gd._fullLayout || {}).forEach((k)=>{
+          if(/^yaxis\d*$/.test(k)) patch[`${k}.autorange`] = true;
+        });
+        suppressZoomRelayout += 1;
+        try{
+          await Plotly.relayout(gd, patch);
+          PlotRenderer.refreshAxisHitZones(plotEl);
+        }finally{
+          setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 200);
+        }
+      }
+
+      function onWheel(e){
+        if(!plotEl || isPlotlyLegendTarget(e) || isPlotlyModebarTarget(e)) return;
+        const c = localCoords(e);
+        const axisKey = hitAxis(c.x, c.y);
+        const inPlot = inPlotArea(c.x, c.y);
+        if(!axisKey && !inPlot) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const factor = e.deltaY < 0 ? 0.85 : 1.18;
+        if(axisKey === "xaxis") zoomXAxis(factor, c.x);
+        else if(axisKey) zoomYAxis(axisKey, factor, c.y);
+        else zoomPlotArea(factor, c.x, c.y);
+      }
+
+      function onMouseDown(e){
+        if(!plotEl || e.button !== 0) return;
+        if(PlotAnalysisTools.isActive()) return;
+        if(isPlotlyLegendTarget(e) || isPlotlyModebarTarget(e)) return;
+        const c = localCoords(e);
+        const axisKey = hitAxis(c.x, c.y);
+        if(axisKey){
+          drag = { mode: axisKey === "xaxis" ? "xaxis-pan" : "axis-pan", axisKey, lastX: c.x, lastY: c.y };
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        if(e.shiftKey && inPlotArea(c.x, c.y)){
+          drag = { mode: "shift-pan", lastX: c.x, lastY: c.y };
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+
+      function onMouseMove(e){
+        if(!drag || !plotEl) return;
+        const c = localCoords(e);
+        if(drag.mode === "axis-pan"){
+          panYAxis(drag.axisKey, c.y - drag.lastY);
+          drag.lastY = c.y;
+          return;
+        }
+        if(drag.mode === "xaxis-pan"){
+          panXAxis(c.x - drag.lastX);
+          drag.lastX = c.x;
+          return;
+        }
+        if(drag.mode === "shift-pan"){
+          panXAxis(c.x - drag.lastX);
+          drag.lastX = c.x;
+        }
+      }
+
+      function onMouseUp(){
+        drag = null;
+      }
+
+      function onDoubleClick(e){
+        if(!plotEl) return;
+        if(PlotAnalysisTools.getMode() === "plotline") return;
+        if(isPlotlyLegendTarget(e) || isPlotlyModebarTarget(e)) return;
+        const c = localCoords(e);
+        if(hitAxis(c.x, c.y)) return;
+        if(!inPlotArea(c.x, c.y)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        void resetViewLimits();
+      }
+
+      function install(el){
+        if(!el) return;
+        if(plotEl && plotEl !== el && installed){
+          plotEl.removeEventListener("wheel", onWheel, true);
+          plotEl.removeEventListener("mousedown", onMouseDown, true);
+          plotEl.removeEventListener("dblclick", onDoubleClick, true);
+        }
+        plotEl = el;
+        if(installed) return;
+        installed = true;
+        plotEl.addEventListener("wheel", onWheel, { passive: false, capture: true });
+        plotEl.addEventListener("mousedown", onMouseDown, { capture: true });
+        plotEl.addEventListener("dblclick", onDoubleClick, { capture: true });
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
+      }
+
+      function refresh(){
+        PlotRenderer.refreshAxisHitZones(plotEl);
+      }
+
+      return {
+        install,
+        refresh,
+        coords:{
+          graphDiv,
+          pixelToAxisData,
+          axisDataFromPixel,
+          axisDataToPixel,
+          dataToPixel,
+          axisRange,
+          xRangeSpec,
+          xAxisType,
+          coerceAxisMs,
+          nearestYAxis:(px, py)=>nearestYAxis(px, py),
+          inPlotArea,
+          localCoords,
+        },
+      };
+    })();
+
+    const PlotAnalysisTools = (() => {
+      const YELLOW = "#eae7a8";
+      const LINE_MAIN = { color: YELLOW, width: 1 };
+      const LINE_GUIDE = { color: "rgba(255,255,255,0.28)", width: 1 };
+      const REGION_FILL = "rgba(234,231,168,0.1)";
+      const SIDE_LINE = { color: "rgba(255,255,255,0.45)", width: 1 };
+      const LABEL_FONT = { color: "rgba(255,255,255,0.82)", size: 9 };
+      const HIT_PX = 18;
+
+      let plotEl = null;
+      let installed = false;
+      let mode = null;
+      let drag = null;
+      let editMode = false;
+      let editDrag = null;
+      let hitLayer = null;
+      let hud = null;
+      let plotlinePoints = null;
+      let overlaySavePending = false;
+      let overlayDragActive = false;
+      let overlayPlotlyHidden = false;
+      let overlayPreviewSvg = null;
+      let overlayPreviewRaf = 0;
+      let overlayPreviewPending = null;
+      let overlayPreviewFull = false;
+      let ptrMove = null;
+      let ptrUp = null;
+      let ptrSessionEl = null;
+      let capturePointerId = null;
+
+      function releasePtrCapture(){
+        const el = ptrSessionEl || plotEl;
+        if(el && capturePointerId != null && el.releasePointerCapture){
+          try{ el.releasePointerCapture(capturePointerId); }catch{}
+        }
+        capturePointerId = null;
+      }
+
+      function stopPtrSession(){
+        const el = ptrSessionEl || plotEl;
+        if(el){
+          if(ptrMove) el.removeEventListener("pointermove", ptrMove);
+          if(ptrUp){
+            el.removeEventListener("pointerup", ptrUp);
+            el.removeEventListener("pointercancel", ptrUp);
+          }
+        }
+        ptrMove = null;
+        ptrUp = null;
+        releasePtrCapture();
+        ptrSessionEl = null;
+      }
+
+      function startPtrSession(e, onMove, onUp, sessionEl){
+        stopPtrSession();
+        const el = sessionEl || hitLayer || plotEl;
+        if(!el) return;
+        ptrSessionEl = el;
+        if(e?.pointerId != null && el.setPointerCapture){
+          try{
+            el.setPointerCapture(e.pointerId);
+            capturePointerId = e.pointerId;
+          }catch{}
+        }
+        ptrMove = (ev)=> onMove(ev);
+        ptrUp = ()=>{ stopPtrSession(); onUp(); };
+        el.addEventListener("pointermove", ptrMove);
+        el.addEventListener("pointerup", ptrUp);
+        el.addEventListener("pointercancel", ptrUp);
+      }
+
+      function finishCreateDrag(){
+        if(!drag) return;
+        const chart = gd(); const d = drag; drag = null;
+        if(!chart) return;
+        if(mode==="ruler"){
+          if(Math.abs(d.x1-d.x0)<1e-12&&Math.abs(d.y1-d.y0)<1e-12){ setMode(null); return; }
+          commitRuler(chart,d); setMode(null);
+        }else if(mode==="region"){
+          if(Math.abs(d.x1-d.x0)<1e-12){ setMode(null); return; }
+          commitRegion(d); setMode(null);
+        }
+      }
+
+      function onCreatePointerMove(e){
+        if(!drag || !plotEl) return;
+        const chart = gd(); if(!chart) return;
+        const c = C().localCoords(e);
+        const pt = dataAt(chart, c.x, c.y, drag.yAxisKey);
+        if(mode==="region"){
+          if(Number.isFinite(pt.x)) drag.x1 = pt.x;
+        }else if(Number.isFinite(pt.x) && Number.isFinite(pt.y)){
+          drag.x1 = pt.x; drag.y1 = pt.y;
+        }
+        if(mode==="ruler"){
+          applyOverlays({ type:"ruler", x0:drag.x0, y0:drag.y0, x1:drag.x1, y1:drag.y1, yAxisKey:drag.yAxisKey }, { save:false });
+        }else if(mode==="region"){
+          applyOverlays({ type:"region", x0:drag.x0, x1:drag.x1 }, { save:false });
+        }
+      }
+
+      function startCreateSession(e){
+        startPtrSession(e, onCreatePointerMove, finishCreateDrag);
+      }
+
+      function startEditSession(e){
+        startPtrSession(e, (ev)=>{
+          if(!editDrag) return;
+          const chart=gd(); if(!chart) return;
+          applyEditDrag(chart, C().localCoords(ev));
+        }, ()=>{
+          if(!editDrag) return;
+          editDrag=null;
+          flushOverlaySave();
+          syncToolCursor();
+          applyOverlays(null, { force:true });
+        }, hitLayer || plotEl);
+      }
+
+      function removeEditHitLayer(){
+        if(hitLayer){
+          hitLayer.remove();
+          hitLayer = null;
+        }
+        document.body.classList.remove("nova-edit-mode-hit");
+      }
+
+      function syncEditHitLayer(){
+        if(!plotEl || !editMode){
+          removeEditHitLayer();
+          return;
+        }
+        PlotRenderer.refreshAxisHitZones(plotEl);
+        const area = PlotRenderer.getAxisRegistry().plotArea;
+        if(!area){
+          if(hitLayer) hitLayer.style.display = "none";
+          return;
+        }
+        if(!hitLayer){
+          hitLayer = document.createElement("div");
+          hitLayer.className = "nova-edit-hit-layer";
+          hitLayer.addEventListener("pointerdown", onEditHitPointerDown);
+          hitLayer.addEventListener("pointermove", onEditHitPointerMove);
+          plotEl.appendChild(hitLayer);
+        }
+        hitLayer.style.display = "block";
+        hitLayer.style.left = `${area.left}px`;
+        hitLayer.style.top = `${area.top}px`;
+        hitLayer.style.width = `${Math.max(0, area.right - area.left)}px`;
+        hitLayer.style.height = `${Math.max(0, area.bottom - area.top)}px`;
+      }
+
+      function onEditHitPointerDown(e){
+        if(!editMode || e.button !== 0 || editDrag) return;
+        const chart = gd(); if(!chart) return;
+        const c = C().localCoords(e);
+        const hit = hitTest(chart, c.x, c.y);
+        if(!hit) return;
+        e.preventDefault();
+        e.stopPropagation();
+        editDrag = hit;
+        syncToolCursor();
+        startEditSession(e);
+        applyEditDrag(chart, c);
+      }
+
+      function onEditHitPointerMove(e){
+        if(!editMode || editDrag) return;
+        const chart = gd(); if(!chart) return;
+        const c = C().localCoords(e);
+        const hit = hitTest(chart, c.x, c.y);
+        document.body.classList.toggle("nova-edit-mode-hit", Boolean(hit));
+      }
+
+      function C(){ return PlotInteractions.coords; }
+      function gd(){ return C().graphDiv(); }
+      function newId(){ return crypto.randomUUID(); }
+
+      function analysisState(){
+        const p = getActivePlot();
+        if(!p) return null;
+        if(!p.analysis) p.analysis = { overlays: [] };
+        if(p.analysis.shapes?.length || p.analysis.annotations?.length){
+          p.analysis.overlays = p.analysis.overlays || [];
+          p.analysis.shapes = [];
+          p.analysis.annotations = [];
+        }
+        if(!Array.isArray(p.analysis.overlays)) p.analysis.overlays = [];
+        p.analysis.overlays = p.analysis.overlays.filter((o)=>o.type !== "datanotes");
+        return p.analysis;
+      }
+
+      function ensureHud(){
+        if(hud) return hud;
+        hud = document.createElement("div");
+        hud.className = "nova-tool-hud";
+        hud.style.display = "none";
+        (plotEl || getPlotDiv())?.appendChild(hud);
+        return hud;
+      }
+      function showHud(t){ const el=ensureHud(); el.textContent=t||""; el.style.display=t?"block":"none"; }
+      function hideHud(){ showHud(""); }
+
+      function isActive(){ return Boolean(mode || editMode || editDrag || drag); }
+      function getMode(){ return mode; }
+      function syncToolCursor(){
+        document.body.classList.toggle("nova-tool-active", Boolean(mode));
+        document.body.classList.toggle("nova-edit-mode", Boolean(editMode && !mode));
+        document.body.classList.toggle("nova-editing-overlay", Boolean(editDrag));
+      }
+
+      function setEditMode(on){
+        const next = Boolean(on);
+        if(next === editMode) return;
+        if(!next){
+          if(editDrag){
+            stopPtrSession();
+            editDrag = null;
+            flushOverlaySave();
+            applyOverlays(null, { force:true });
+          }
+          hideHud();
+        }else if(mode){
+          setMode(null);
+        }
+        editMode = next;
+        syncToolCursor();
+        syncEditHitLayer();
+        void setDragmodeForTools().then(()=> syncEditHitLayer());
+        if(editMode){
+          showHud("Edit mode: drag overlay handles · Esc or menu to exit");
+          setStatus("Edit mode on — box zoom disabled until you exit edit.");
+        }else{
+          setStatus("Edit mode off — box zoom enabled.");
+        }
+      }
+
+      function toggleEditMode(){ setEditMode(!editMode); }
+
+      function yrefForAxisKey(axisKey){
+        if(axisKey === "yaxis") return "y";
+        const n = Number(axisKey.replace("yaxis",""));
+        return Number.isFinite(n) && n > 1 ? `y${n}` : "y";
+      }
+      function axisUnit(axisKey){ return PlotRenderer.getAxisRegistry().axisKeyToUnit.get(axisKey) || ""; }
+      function pickYAxisKey(px, py){ return C().nearestYAxis(px, py) || "yaxis"; }
+
+      function hitAxisAt(px, py){
+        const reg = PlotRenderer.getAxisRegistry();
+        const xz = reg.xAxisHitZone;
+        if(xz && px >= xz.left && px <= xz.right && py >= xz.top && py <= xz.bottom) return "xaxis";
+        const yKey = C().nearestYAxis(px, py);
+        if(yKey){
+          const z = reg.axisHitZones.get(yKey);
+          if(z && px >= z.left && px <= z.right && py >= z.top && py <= z.bottom) return yKey;
+        }
+        return null;
+      }
+
+      function lineKindAt(px, py){
+        const onAxis = hitAxisAt(px, py);
+        if(onAxis === "xaxis") return "vertical";
+        if(onAxis && onAxis !== "xaxis") return "horizontal";
+        const reg = PlotRenderer.getAxisRegistry();
+        const area = reg.plotArea;
+        if(!area || !C().inPlotArea(px, py)) return "vertical";
+        const distBottom = Math.abs(py - area.bottom);
+        const yKey = pickYAxisKey(px, py);
+        const zone = yKey ? reg.axisHitZones.get(yKey) : null;
+        const distY = zone ? Math.abs(px - zone.centerX) : Math.abs(px - area.right);
+        return distBottom <= distY ? "vertical" : "horizontal";
+      }
+
+      function dataAt(chart, px, py, yAxisKey){
+        return {
+          x: C().axisDataFromPixel(chart, "xaxis", px, py),
+          y: C().axisDataFromPixel(chart, yAxisKey || "yaxis", px, py),
+          yAxisKey: yAxisKey || "yaxis",
+        };
+      }
+
+      function applyEditDrag(chart, c){
+        if(!editDrag) return;
+        const o=findOverlay(editDrag.id);
+        if(!o) return;
+        const yAxisKey=o.yAxisKey||pickYAxisKey(c.x,c.y);
+        const pt=dataAt(chart,c.x,c.y,yAxisKey);
+        if(editDrag.handle==="ruler:p0" && Number.isFinite(pt.x)&&Number.isFinite(pt.y)){ o.x0=pt.x; o.y0=pt.y; }
+        else if(editDrag.handle==="ruler:p1" && Number.isFinite(pt.x)&&Number.isFinite(pt.y)){ o.x1=pt.x; o.y1=pt.y; }
+        else if(editDrag.handle==="region:x0" && Number.isFinite(pt.x)) o.x0=pt.x;
+        else if(editDrag.handle==="region:x1" && Number.isFinite(pt.x)) o.x1=pt.x;
+        else if(editDrag.handle==="line:move"){
+          if(o.kind==="vertical"&&Number.isFinite(pt.x)) o.x=pt.x;
+          else if(Number.isFinite(pt.y)){ o.y=pt.y; o.yAxisKey=yAxisKey; }
+        }else if(editDrag.handle.startsWith("plotline:pt:")){
+          const pi=Number(editDrag.handle.split(":")[2]);
+          if(Number.isFinite(pt.x)&&Number.isFinite(pt.y)&&o.points[pi]){ o.points[pi].x=pt.x; o.points[pi].y=pt.y; }
+        }else{
+          return;
+        }
+        applyOverlays(null, { save:false });
+      }
+
+      function dataToPx(chart, x, y, yAxisKey){
+        return C().dataToPixel(chart, x, y, yAxisKey || "yaxis");
+      }
+      function xToPx(chart, x){ return C().axisDataToPixel(chart, "xaxis", x); }
+      function yToPx(chart, y, yAxisKey){ return C().axisDataToPixel(chart, yAxisKey || "yaxis", y); }
+
+      function distToSegment(px, py, x1, y1, x2, y2){
+        const dx = x2 - x1, dy = y2 - y1;
+        const len2 = dx * dx + dy * dy;
+        if(len2 < 1e-12) return Math.hypot(px - x1, py - y1);
+        let t = ((px - x1) * dx + (py - y1) * dy) / len2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+      }
+
+      function formatMeasureValue(val){
+        if(!Number.isFinite(val)) return "—";
+        if(val === 0) return "0";
+        const abs = Math.abs(val);
+        const plain = Number(val.toPrecision(4));
+        const needsSci = abs >= 1e4 || abs < 1e-3 || Math.abs(val - plain) > Math.max(1e-12, abs * 1e-6);
+        if(needsSci) return val.toExponential(3);
+        return String(plain);
+      }
+
+      function formatDeltaX(chart, a, b){
+        const t0Mode = byId("t0Mode")?.value || "absolute";
+        const d = b - a;
+        if(!Number.isFinite(d)) return "Δx —";
+        if(t0Mode === "absolute" || C().xAxisType(chart) === "date"){
+          const ms = Math.abs(d);
+          if(ms >= 86400000) return `Δt ${formatMeasureValue(ms / 86400000)} d`;
+          if(ms >= 3600000) return `Δt ${formatMeasureValue(ms / 3600000)} h`;
+          if(ms >= 60000) return `Δt ${formatMeasureValue(ms / 60000)} min`;
+          if(ms >= 1000) return `Δt ${formatMeasureValue(ms / 1000)} s`;
+          return `Δt ${formatMeasureValue(ms)} ms`;
+        }
+        return `Δx ${formatMeasureValue(d)}`;
+      }
+      function formatDeltaY(dy, unit){
+        if(!Number.isFinite(dy)) return "Δy —";
+        return `Δy ${formatMeasureValue(dy)}${unit ? ` ${unit}` : ""}`;
+      }
+      function formatSlope(x0, x1, y0, y1, unit, chart){
+        const dx = x1 - x0;
+        if(!Number.isFinite(dx) || Math.abs(dx) < 1e-15) return "m —";
+        const m = (y1 - y0) / dx;
+        const t0Mode = byId("t0Mode")?.value || "absolute";
+        const xIsTime = t0Mode === "absolute" || C().xAxisType(chart) === "date";
+        const denom = xIsTime ? "s" : "x";
+        const scaled = xIsTime ? m * 1000 : m;
+        const u = unit ? ` ${unit}/${denom}` : "";
+        return `m ${formatMeasureValue(scaled)}${u}`;
+      }
+
+      function formatLineX(chart, x){
+        if(!Number.isFinite(x)) return "x —";
+        const t0Mode = byId("t0Mode")?.value || "absolute";
+        if(t0Mode === "absolute" || C().xAxisType(chart) === "date"){
+          const d = new Date(x);
+          if(Number.isFinite(d.getTime())) return d.toISOString().slice(0, 19).replace("T", " ") + " UTC";
+        }
+        return `x ${formatMeasureValue(x)}`;
+      }
+      function formatLineY(y, unit){
+        if(!Number.isFinite(y)) return "y —";
+        return `y ${formatMeasureValue(y)}${unit ? ` ${unit}` : ""}`;
+      }
+
+      function plainLabel(text){
+        return { text, showarrow:false, editable:false, bgcolor:"rgba(0,0,0,0)", borderwidth:0, borderpad:0, font:LABEL_FONT };
+      }
+
+      function buildRuler(chart, o){
+        const yref = yrefForAxisKey(o.yAxisKey);
+        const unit = axisUnit(o.yAxisKey);
+        const x0=o.x0, x1=o.x1, y0=o.y0, y1=o.y1;
+        const shapes = [
+          { type:"line", xref:"x", yref, x0, y0, x1, y1, line:LINE_MAIN },
+          { type:"line", xref:"x", yref, x0, y0, x1, y1:y0, line:LINE_GUIDE },
+          { type:"line", xref:"x", yref, x0:x1, y0, x1, y1, line:LINE_GUIDE },
+        ];
+        const annotations = [
+          { ...plainLabel(formatDeltaX(chart, x0, x1)), x:(x0+x1)/2, y:y0, xref:"x", yref, xanchor:"center", yanchor:"bottom" },
+          { ...plainLabel(formatDeltaY(y1-y0, unit)), x:x1, y:(y0+y1)/2, xref:"x", yref, xanchor:"left", yanchor:"middle" },
+          { ...plainLabel(formatSlope(x0, x1, y0, y1, unit, chart)), x:(x0+x1)/2, y:(y0+y1)/2, xref:"x", yref, xanchor:"center", yanchor:"bottom", ay:-10 },
+        ];
+        return { shapes, annotations };
+      }
+
+      function buildRegion(o){
+        const x0 = Math.min(o.x0, o.x1), x1 = Math.max(o.x0, o.x1);
+        return {
+          shapes:[
+            { type:"rect", xref:"x", yref:"paper", x0, x1, y0:0, y1:1, fillcolor:REGION_FILL, line:{ width:0 }, layer:"below" },
+            { type:"line", xref:"x", yref:"paper", x0, x1:x0, y0:0, y1:1, line:SIDE_LINE },
+            { type:"line", xref:"x", yref:"paper", x0:x1, x1, y0:0, y1:1, line:SIDE_LINE },
+          ],
+          annotations:[],
+        };
+      }
+
+      function buildLine(chart, o){
+        if(o.kind === "vertical"){
+          return {
+            shapes:[{ type:"line", xref:"x", yref:"paper", x0:o.x, x1:o.x, y0:0, y1:1, line:LINE_MAIN }],
+            annotations:[
+              { ...plainLabel(formatLineX(chart, o.x)), x:o.x, y:0.98, xref:"x", yref:"paper", xanchor:"center", yanchor:"bottom" },
+            ],
+          };
+        }
+        const yref = yrefForAxisKey(o.yAxisKey);
+        const unit = axisUnit(o.yAxisKey);
+        return {
+          shapes:[{ type:"line", xref:"paper", yref, x0:0, x1:1, y0:o.y, y1:o.y, line:LINE_MAIN }],
+          annotations:[
+            { ...plainLabel(formatLineY(o.y, unit)), x:0.98, y:o.y, xref:"paper", yref, xanchor:"right", yanchor:"middle" },
+          ],
+        };
+      }
+
+      function buildPlotline(o){
+        const yref = yrefForAxisKey(o.yAxisKey);
+        const shapes = [];
+        for(let i=1;i<o.points.length;i+=1){
+          const a=o.points[i-1], b=o.points[i];
+          shapes.push({ type:"line", xref:"x", yref, x0:a.x, y0:a.y, x1:b.x, y1:b.y, line:LINE_MAIN });
+        }
+        return { shapes, annotations:[] };
+      }
+
+      function buildAll(chart, overlays, preview){
+        const list = preview ? overlays.concat([preview]) : overlays;
+        const shapes = [], annotations = [];
+        list.forEach((o)=>{
+          let built;
+          if(o.type === "ruler") built = buildRuler(chart, o);
+          else if(o.type === "region") built = buildRegion(o);
+          else if(o.type === "line") built = buildLine(chart, o);
+          else if(o.type === "plotline") built = buildPlotline(o);
+          if(built){ shapes.push(...built.shapes); annotations.push(...built.annotations); }
+        });
+        return { shapes, annotations };
+      }
+
+      function pushOverlayLayout(chart, built){
+        if(lastChartLayout){
+          lastChartLayout.shapes = built.shapes;
+          lastChartLayout.annotations = built.annotations;
+        }
+        if(chart.layout){
+          chart.layout.shapes = built.shapes;
+          chart.layout.annotations = built.annotations;
+        }
+        if(chart._fullLayout){
+          chart._fullLayout.shapes = built.shapes;
+          chart._fullLayout.annotations = built.annotations;
+        }
+      }
+
+      function isOverlayDragging(){ return Boolean(editDrag || drag); }
+
+      function plotAreaSize(){
+        const area = PlotRenderer.getAxisRegistry().plotArea;
+        if(!area) return null;
+        return {
+          left: area.left,
+          top: area.top,
+          width: Math.max(0, area.right - area.left),
+          height: Math.max(0, area.bottom - area.top),
+        };
+      }
+
+      function plotLocalPx(chart, x, y, yAxisKey){
+        const pt = dataToPx(chart, x, y, yAxisKey || "yaxis");
+        const frame = plotAreaSize();
+        if(!pt || !frame) return null;
+        return { x: pt.x - frame.left, y: pt.y - frame.top };
+      }
+
+      function xPlotLocalPx(chart, x){
+        const px = xToPx(chart, x);
+        const frame = plotAreaSize();
+        if(px == null || !frame) return null;
+        return px - frame.left;
+      }
+
+      function yPlotLocalPx(chart, y, yAxisKey){
+        const py = yToPx(chart, y, yAxisKey);
+        const frame = plotAreaSize();
+        if(py == null || !frame) return null;
+        return py - frame.top;
+      }
+
+      function ensureOverlayPreviewSvg(){
+        if(overlayPreviewSvg) return overlayPreviewSvg;
+        overlayPreviewSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        overlayPreviewSvg.setAttribute("class", "nova-overlay-preview");
+        overlayPreviewSvg.setAttribute("aria-hidden", "true");
+        (plotEl || getPlotDiv())?.appendChild(overlayPreviewSvg);
+        return overlayPreviewSvg;
+      }
+
+      function clearOverlayPreview(){
+        if(overlayPreviewRaf){
+          cancelAnimationFrame(overlayPreviewRaf);
+          overlayPreviewRaf = 0;
+        }
+        overlayPreviewPending = null;
+        if(overlayPreviewSvg){
+          overlayPreviewSvg.innerHTML = "";
+          overlayPreviewSvg.style.display = "none";
+        }
+      }
+
+      function svgEl(tag, attrs){
+        const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+        Object.entries(attrs || {}).forEach(([k, v])=>{ if(v != null) el.setAttribute(k, String(v)); });
+        return el;
+      }
+
+      function drawPreviewRuler(svg, chart, o){
+        const p0 = plotLocalPx(chart, o.x0, o.y0, o.yAxisKey);
+        const p1 = plotLocalPx(chart, o.x1, o.y1, o.yAxisKey);
+        if(!p0 || !p1) return;
+        svg.appendChild(svgEl("line", { x1:p0.x, y1:p0.y, x2:p1.x, y2:p1.y, stroke:YELLOW, "stroke-width":1 }));
+        svg.appendChild(svgEl("line", { x1:p0.x, y1:p0.y, x2:p1.x, y2:p0.y, stroke:"rgba(255,255,255,0.28)", "stroke-width":1 }));
+        svg.appendChild(svgEl("line", { x1:p1.x, y1:p0.y, x2:p1.x, y2:p1.y, stroke:"rgba(255,255,255,0.28)", "stroke-width":1 }));
+        svg.appendChild(svgEl("circle", { cx:p0.x, cy:p0.y, r:4, fill:YELLOW, stroke:"#0f172a", "stroke-width":1 }));
+        svg.appendChild(svgEl("circle", { cx:p1.x, cy:p1.y, r:4, fill:YELLOW, stroke:"#0f172a", "stroke-width":1 }));
+      }
+
+      function drawPreviewRegion(svg, chart, o){
+        const frame = plotAreaSize();
+        const lx0 = xPlotLocalPx(chart, Math.min(o.x0, o.x1));
+        const lx1 = xPlotLocalPx(chart, Math.max(o.x0, o.x1));
+        if(lx0 == null || lx1 == null || !frame) return;
+        const x0 = Math.min(lx0, lx1);
+        const x1 = Math.max(lx0, lx1);
+        const w = Math.max(0, x1 - x0);
+        svg.appendChild(svgEl("rect", { x:x0, y:0, width:w, height:frame.height, fill:REGION_FILL, stroke:"none" }));
+        svg.appendChild(svgEl("line", { x1:x0, y1:0, x2:x0, y2:frame.height, stroke:SIDE_LINE.color, "stroke-width":1 }));
+        svg.appendChild(svgEl("line", { x1:x1, y1:0, x2:x1, y2:frame.height, stroke:SIDE_LINE.color, "stroke-width":1 }));
+      }
+
+      function drawPreviewLine(svg, chart, o){
+        const frame = plotAreaSize();
+        if(!frame) return;
+        if(o.kind === "vertical"){
+          const lx = xPlotLocalPx(chart, o.x);
+          if(lx == null) return;
+          svg.appendChild(svgEl("line", { x1:lx, y1:0, x2:lx, y2:frame.height, stroke:YELLOW, "stroke-width":1 }));
+        }else{
+          const ly = yPlotLocalPx(chart, o.y, o.yAxisKey);
+          if(ly == null) return;
+          svg.appendChild(svgEl("line", { x1:0, y1:ly, x2:frame.width, y2:ly, stroke:YELLOW, "stroke-width":1 }));
+        }
+      }
+
+      function drawPreviewPlotline(svg, chart, o){
+        const yKey = o.yAxisKey || "yaxis";
+        for(let i=1;i<o.points.length;i+=1){
+          const a = plotLocalPx(chart, o.points[i-1].x, o.points[i-1].y, yKey);
+          const b = plotLocalPx(chart, o.points[i].x, o.points[i].y, yKey);
+          if(!a || !b) continue;
+          svg.appendChild(svgEl("line", { x1:a.x, y1:a.y, x2:b.x, y2:b.y, stroke:YELLOW, "stroke-width":1 }));
+        }
+        o.points.forEach((pt)=>{
+          const p = plotLocalPx(chart, pt.x, pt.y, yKey);
+          if(!p) return;
+          svg.appendChild(svgEl("circle", { cx:p.x, cy:p.y, r:3.5, fill:YELLOW, stroke:"#0f172a", "stroke-width":1 }));
+        });
+      }
+
+      function drawPreviewOverlay(svg, chart, o){
+        if(o.type === "ruler") drawPreviewRuler(svg, chart, o);
+        else if(o.type === "region") drawPreviewRegion(svg, chart, o);
+        else if(o.type === "line") drawPreviewLine(svg, chart, o);
+        else if(o.type === "plotline") drawPreviewPlotline(svg, chart, o);
+      }
+
+      function renderOverlayPreview(preview, full){
+        const chart = gd();
+        const state = analysisState();
+        if(!chart || !state || !plotEl) return;
+        PlotRenderer.refreshAxisHitZones(plotEl);
+        const frame = plotAreaSize();
+        const svg = ensureOverlayPreviewSvg();
+        if(!frame || frame.width <= 0 || frame.height <= 0){
+          svg.style.display = "none";
+          return;
+        }
+        svg.style.display = "block";
+        svg.style.left = `${frame.left}px`;
+        svg.style.top = `${frame.top}px`;
+        svg.style.width = `${frame.width}px`;
+        svg.style.height = `${frame.height}px`;
+        svg.setAttribute("viewBox", `0 0 ${frame.width} ${frame.height}`);
+        svg.innerHTML = "";
+        if(full){
+          state.overlays.forEach((o)=> drawPreviewOverlay(svg, chart, o));
+        }
+        if(preview) drawPreviewOverlay(svg, chart, preview);
+      }
+
+      function scheduleOverlayPreview(preview, { full=false }={}){
+        overlayPreviewPending = preview ?? null;
+        overlayPreviewFull = full;
+        if(overlayPreviewRaf) return;
+        overlayPreviewRaf = requestAnimationFrame(()=>{
+          overlayPreviewRaf = 0;
+          const pending = overlayPreviewPending;
+          const pendingFull = overlayPreviewFull;
+          overlayPreviewPending = null;
+          renderOverlayPreview(pending, pendingFull);
+        });
+      }
+
+      async function hidePlotlyOverlaysForDrag(){
+        const chart = gd();
+        if(!chart || overlayPlotlyHidden) return;
+        overlayPlotlyHidden = true;
+        suppressZoomRelayout += 1;
+        plotProgrammaticUpdate = true;
+        try{
+          await Plotly.relayout(chart, { shapes: [], annotations: [] });
+        }finally{
+          plotProgrammaticUpdate = false;
+          setTimeout(()=>{ suppressZoomRelayout=Math.max(0, suppressZoomRelayout-1); }, 120);
+        }
+      }
+
+      async function beginOverlayDragSession(){
+        if(overlayDragActive) return;
+        overlayDragActive = true;
+        await hidePlotlyOverlaysForDrag();
+      }
+
+      function endOverlayDragSession(){
+        overlayDragActive = false;
+        overlayPlotlyHidden = false;
+        clearOverlayPreview();
+      }
+
+      function applyOverlays(preview, opts={}){
+        const chart = gd();
+        const state = analysisState();
+        if(!chart || !state) return;
+        const liveDrag = isOverlayDragging() && !opts.force;
+        const livePlotline = !opts.force && mode === "plotline" && preview?.type === "plotline";
+        if(liveDrag || livePlotline){
+          if(liveDrag && !overlayDragActive){
+            renderOverlayPreview(preview ?? null, true);
+            void beginOverlayDragSession();
+          }else{
+            scheduleOverlayPreview(preview ?? null, { full: liveDrag });
+          }
+          overlaySavePending = true;
+          return;
+        }
+        endOverlayDragSession();
+        const built = buildAll(chart, state.overlays, preview ?? null);
+        pushOverlayLayout(chart, built);
+        suppressZoomRelayout += 1;
+        plotProgrammaticUpdate = true;
+        void Plotly.relayout(chart, { shapes: built.shapes, annotations: built.annotations }).finally(()=>{
+          plotProgrammaticUpdate = false;
+          setTimeout(()=>{ suppressZoomRelayout=Math.max(0, suppressZoomRelayout-1); }, 120);
+        });
+        if(opts.save !== false && !editDrag && !drag){
+          savePlots();
+        }else{
+          overlaySavePending = true;
+        }
+      }
+
+      function flushOverlaySave(){
+        if(!overlaySavePending) return;
+        overlaySavePending = false;
+        savePlots();
+      }
+
+      function findOverlay(id){ return analysisState()?.overlays?.find((o)=>o.id===id) || null; }
+
+      function dist(px, py, qx, qy){ return Math.hypot(px-qx, py-qy); }
+
+      function hitTest(chart, px, py){
+        const state = analysisState();
+        if(!state?.overlays?.length) return null;
+        PlotRenderer.refreshAxisHitZones(plotEl);
+        const area = PlotRenderer.getAxisRegistry().plotArea;
+        const inArea = area && px >= area.left && px <= area.right && py >= area.top && py <= area.bottom;
+        if(!inArea) return null;
+        for(let i=state.overlays.length-1;i>=0;i-=1){
+          const o = state.overlays[i];
+          const yKey = o.yAxisKey || "yaxis";
+          if(o.type === "ruler"){
+            const p0=dataToPx(chart,o.x0,o.y0,yKey), p1=dataToPx(chart,o.x1,o.y1,yKey);
+            if(p0 && dist(px,py,p0.x,p0.y)<=HIT_PX) return { id:o.id, handle:"ruler:p0" };
+            if(p1 && dist(px,py,p1.x,p1.y)<=HIT_PX) return { id:o.id, handle:"ruler:p1" };
+            if(p0 && p1 && distToSegment(px,py,p0.x,p0.y,p1.x,p1.y)<=HIT_PX){
+              const d0=dist(px,py,p0.x,p0.y), d1=dist(px,py,p1.x,p1.y);
+              return { id:o.id, handle: d0 <= d1 ? "ruler:p0" : "ruler:p1" };
+            }
+          }else if(o.type === "region"){
+            const x0=Math.min(o.x0,o.x1), x1=Math.max(o.x0,o.x1);
+            const lx0=xToPx(chart,x0), lx1=xToPx(chart,x1);
+            if(lx0!=null && Math.abs(px-lx0)<=HIT_PX) return { id:o.id, handle:"region:x0" };
+            if(lx1!=null && Math.abs(px-lx1)<=HIT_PX) return { id:o.id, handle:"region:x1" };
+          }else if(o.type === "line"){
+            if(o.kind === "vertical"){
+              const lx=xToPx(chart,o.x);
+              if(lx!=null && Math.abs(px-lx)<=HIT_PX) return { id:o.id, handle:"line:move" };
+            }else{
+              const ly=yToPx(chart,o.y,o.yAxisKey);
+              if(ly!=null && Math.abs(py-ly)<=HIT_PX) return { id:o.id, handle:"line:move" };
+            }
+          }else if(o.type === "plotline"){
+            for(let pi=0;pi<o.points.length;pi+=1){
+              const p=dataToPx(chart,o.points[pi].x,o.points[pi].y,yKey);
+              if(p && dist(px,py,p.x,p.y)<=HIT_PX) return { id:o.id, handle:`plotline:pt:${pi}` };
+            }
+            for(let si=1;si<o.points.length;si+=1){
+              const a=dataToPx(chart,o.points[si-1].x,o.points[si-1].y,yKey);
+              const b=dataToPx(chart,o.points[si].x,o.points[si].y,yKey);
+              if(a && b && distToSegment(px,py,a.x,a.y,b.x,b.y)<=HIT_PX){
+                return { id:o.id, handle:`plotline:pt:${si-1}` };
+              }
+            }
+          }
+        }
+        return null;
+      }
+
+      async function setDragmodeForTools(){
+        const chart = gd();
+        if(!chart) return;
+        suppressZoomRelayout += 1;
+        try{ await Plotly.relayout(chart, { dragmode: (mode || editMode) ? false : "zoom" }); }
+        finally{ setTimeout(()=>{ suppressZoomRelayout=Math.max(0, suppressZoomRelayout-1); }, 120); }
+      }
+
+      function setMode(next){
+        if(next && editMode) setEditMode(false);
+        mode = next || null;
+        drag = null;
+        plotlinePoints = null;
+        stopPtrSession();
+        if(!mode && !editMode) hideHud();
+        syncToolCursor();
+        void setDragmodeForTools();
+        if(mode === "plotline") showHud("PlotLine: click start point · add points · double-click or Esc to finish");
+        else if(mode === "line") showHud("Line: click to place · Esc to cancel");
+        else if(mode === "ruler") showHud("Ruler: drag to measure · Esc to cancel");
+        else if(mode === "region") showHud("Region: drag span · Esc to cancel");
+        else if(mode) setStatus(`Analysis: ${mode}`);
+        else setStatus("Analysis tool off");
+      }
+
+      function clearOverlays(){
+        const state = analysisState();
+        if(!state) return;
+        state.overlays = [];
+        setMode(null);
+        applyOverlays();
+        setStatus("All analysis overlays removed.");
+      }
+
+      function removeByType(type){
+        const state = analysisState();
+        if(!state) return;
+        state.overlays = state.overlays.filter((o)=>o.type !== type);
+        applyOverlays();
+        setStatus(`Removed ${type} overlays.`);
+      }
+
+      function commitRuler(chart, d){
+        const state=analysisState(); if(!state) return;
+        state.overlays.push({ id:newId(), type:"ruler", x0:d.x0, y0:d.y0, x1:d.x1, y1:d.y1, yAxisKey:d.yAxisKey });
+        applyOverlays();
+      }
+      function commitRegion(d){
+        const state=analysisState(); if(!state) return;
+        state.overlays.push({ id:newId(), type:"region", x0:d.x0, x1:d.x1 });
+        applyOverlays();
+      }
+      function commitLine(chart, px, py){
+        const kind=lineKindAt(px,py);
+        const state=analysisState(); if(!state) return;
+        if(kind==="vertical"){
+          const x=C().pixelToAxisData(chart,"xaxis",px,py);
+          if(!Number.isFinite(x)) return;
+          state.overlays.push({ id:newId(), type:"line", kind:"vertical", x });
+        }else{
+          const yAxisKey=pickYAxisKey(px,py);
+          const y=C().pixelToAxisData(chart,yAxisKey,px,py);
+          if(!Number.isFinite(y)) return;
+          state.overlays.push({ id:newId(), type:"line", kind:"horizontal", y, yAxisKey });
+        }
+        applyOverlays();
+        setStatus("Line added.");
+      }
+      function commitPlotline(){
+        const state=analysisState();
+        if(!state||!plotlinePoints||plotlinePoints.length<2) return false;
+        state.overlays.push({ id:newId(), type:"plotline", yAxisKey:plotlinePoints[0].yAxisKey, points:plotlinePoints.map((p)=>({ x:p.x, y:p.y })) });
+        plotlinePoints=null;
+        setMode(null);
+        applyOverlays();
+        setStatus("PlotLine added.");
+        return true;
+      }
+      function addPlotlinePoint(px, py){
+        const chart=gd(); if(!chart) return;
+        const yAxisKey=pickYAxisKey(px,py);
+        const pt=dataAt(chart,px,py,yAxisKey);
+        if(!Number.isFinite(pt.x)||!Number.isFinite(pt.y)) return;
+        if(!plotlinePoints) plotlinePoints=[];
+        if(plotlinePoints.length && plotlinePoints[0].yAxisKey!==yAxisKey){
+          setStatus("PlotLine uses one Y axis.", true); return;
+        }
+        plotlinePoints.push({ x:pt.x, y:pt.y, yAxisKey });
+        showHud(`PlotLine: ${plotlinePoints.length} pt(s)`);
+        const preview={ type:"plotline", yAxisKey, points:plotlinePoints.map((p)=>({ x:p.x, y:p.y })) };
+        applyOverlays(preview);
+      }
+
+      function armTool(next){
+        if(next==="line"){ setMode("line"); return; }
+        if(next==="plotline"){ setMode("plotline"); return; }
+        setMode(next);
+      }
+
+      function showPlotContextMenu(clientX, clientY){
+        if(!gd()) return;
+        const c=C().localCoords({ clientX, clientY, target:plotEl });
+        if(!C().inPlotArea(c.x,c.y) && !hitAxisAt(c.x,c.y)) return;
+        showContextMenu(clientX, clientY, [
+          { label:"Add", submenu:[
+            { label:"Ruler", action:()=>armTool("ruler") },
+            { label:"Region", action:()=>armTool("region") },
+            { label:"Line", action:()=>armTool("line") },
+            { label:"PlotLine", action:()=>armTool("plotline") },
+          ]},
+          { label:"Remove", submenu:[
+            { label:"All Overlays", action:()=>clearOverlays() },
+            { label:"Rulers", action:()=>removeByType("ruler") },
+            { label:"Regions", action:()=>removeByType("region") },
+            { label:"Lines", action:()=>removeByType("line") },
+            { label:"PlotLines", action:()=>removeByType("plotline") },
+          ]},
+          { sep:true },
+          { label: editMode ? "Exit edit mode" : "Edit overlays", checked: editMode, action:()=>toggleEditMode() },
+        ]);
+      }
+
+      function onContextMenu(e){
+        if(!plotEl?.contains(e.target)) return;
+        if(e.target?.closest?.(".legend")) return;
+        const c=C().localCoords(e);
+        if(!C().inPlotArea(c.x,c.y) && !hitAxisAt(c.x,c.y)) return;
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        suppressZoomRelayout += 8;
+        setTimeout(()=>{ suppressZoomRelayout=Math.max(0, suppressZoomRelayout-8); }, 600);
+        showPlotContextMenu(e.clientX, e.clientY);
+      }
+
+      function blockPlotRightClick(e){
+        if(!plotEl?.contains(e.target)) return;
+        if(e.target?.closest?.(".legend") || e.target?.closest?.(".modebar")) return;
+        if(e.button !== 2) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+
+      function handlePlotPointerDown(e){
+        if(e.button !== 0) return;
+        if(!plotEl?.contains(e.target)) return;
+        if(e.target?.closest?.(".legend") || e.target?.closest?.(".modebar")) return;
+        const chart=gd(); if(!chart) return;
+        const c=C().localCoords(e);
+        if(!C().inPlotArea(c.x,c.y)) return;
+        if(!mode) return;
+
+        e.preventDefault(); e.stopImmediatePropagation();
+        if(mode==="line"){
+          commitLine(chart,c.x,c.y);
+          setMode(null);
+          return;
+        }
+        if(mode==="plotline"){
+          addPlotlinePoint(c.x,c.y);
+          return;
+        }
+        const yAxisKey=pickYAxisKey(c.x,c.y);
+        const pt=dataAt(chart,c.x,c.y,yAxisKey);
+        if(!Number.isFinite(pt.x)||(mode==="ruler"&&!Number.isFinite(pt.y))) return;
+        drag={ mode, x0:pt.x, y0:pt.y, x1:pt.x, y1:pt.y, yAxisKey };
+        if(mode==="ruler" || mode==="region") startCreateSession(e);
+      }
+
+      function onPointerDown(e){
+        handlePlotPointerDown(e);
+      }
+
+      function onMouseMove(e){
+        if(!plotEl) return;
+        const chart=gd(); if(!chart) return;
+        const c=C().localCoords(e);
+
+        if(mode==="plotline"&&plotlinePoints?.length){
+          const yAxisKey=plotlinePoints[0].yAxisKey;
+          const pt=dataAt(chart,c.x,c.y,yAxisKey);
+          if(Number.isFinite(pt.x)&&Number.isFinite(pt.y)){
+            const pts=plotlinePoints.map((p)=>({ x:p.x, y:p.y })).concat([{ x:pt.x, y:pt.y }]);
+            applyOverlays({ type:"plotline", yAxisKey, points:pts });
+          }
+        }
+      }
+
+      function onPointerUp(e){
+        if(e.button !== 0) return;
+        if(editDrag) return;
+        if(!drag) return;
+        stopPtrSession();
+        finishCreateDrag();
+      }
+
+      function onDoubleClick(e){
+        if(!plotEl||mode!=="plotline") return;
+        const c=C().localCoords(e);
+        if(!C().inPlotArea(c.x,c.y)) return;
+        e.preventDefault(); e.stopPropagation();
+        if(plotlinePoints?.length) addPlotlinePoint(c.x,c.y);
+        commitPlotline();
+      }
+
+      function onKeyDown(e){
+        if(e.key!=="Escape") return;
+        if(mode==="plotline"){
+          e.preventDefault();
+          if(plotlinePoints?.length>=2) commitPlotline();
+          else{ plotlinePoints=null; setMode(null); setStatus("PlotLine cancelled."); }
+          return;
+        }
+        if(mode){ e.preventDefault(); drag=null; stopPtrSession(); setMode(null); }
+        else if(editDrag){
+          stopPtrSession();
+          editDrag=null;
+          flushOverlaySave();
+          syncToolCursor();
+          applyOverlays(null, { force:true });
+        }else if(editMode){
+          e.preventDefault();
+          setEditMode(false);
+        }
+      }
+
+      function install(el){
+        if(!el) return;
+        if(plotEl !== el){
+          hitLayer = null;
+          overlayPreviewSvg = null;
+          overlayDragActive = false;
+          overlayPlotlyHidden = false;
+          clearOverlayPreview();
+        }
+        plotEl=el;
+        if(installed) return;
+        installed=true;
+        window.addEventListener("contextmenu", onContextMenu, { capture:true });
+        window.addEventListener("mousedown", blockPlotRightClick, { capture:true });
+        window.addEventListener("pointerdown", onPointerDown, { capture:true });
+        window.addEventListener("pointerup", onPointerUp, { capture:true });
+        plotEl.addEventListener("dblclick", onDoubleClick, { capture:true });
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("keydown", onKeyDown);
+      }
+
+      function analysisLayoutExtras(){
+        const chart=gd();
+        const state=analysisState();
+        if(!chart||!state?.overlays?.length) return {};
+        return buildAll(chart, state.overlays, null);
+      }
+
+      function restoreAfterDraw(){
+        if(overlayDragActive || isOverlayDragging()) return;
+        hitLayer = null;
+        applyOverlays();
+        void setDragmodeForTools().then(()=> syncEditHitLayer());
+      }
+
+      return {
+        install, setMode, getMode, isActive, isOverlayDragging, clearOverlays, analysisLayoutExtras, restoreAfterDraw, syncEditHitLayer,
+      };
+    })();
+
+    async function plotlyReactDraw(traces, layout, plotOpts={}){
+      const drawGen=plotOpts.drawGen ?? plotDrawGeneration;
+      const plotEl=ensurePlotlyHost();
+      if(!plotEl||!plotEl.isConnected) throw new Error("Plot container #plot is missing or detached from the document");
+      if(drawGen !== plotDrawGeneration) return plotEl;
+      const plotW=Math.max(320, Number(plotEl.clientWidth||1200));
+      const t0Mode=byId("t0Mode").value;
+      const clean=sanitizePlotlyTraces(tracesXToPlotlyMs(traces, t0Mode), plotPointCap(plotW));
+      if(!clean.length) throw new Error("No plottable points after sanitizing traces");
+      const layoutOut=stripLayoutForPlotly(layout);
+      const unitCount=Math.max(1, Number(plotOpts.unitCount||1));
+      lastChartTraces=clean;
+      lastChartLayout=layout;
+      return await PlotRenderer.draw({
+        plotEl,
+        traces: clean,
+        layoutOut,
+        unitCount,
+        drawGen,
+        dataOnly: plotOpts.dataOnly,
+        applyAxisLocks: plotOpts.applyAxisLocks,
+      });
     }
     async function plotlyDraw(plotDiv, traces, layout, config){
       const unitCount=Object.keys(layout||{}).filter((k)=>/^yaxis\d*$/.test(k)).length||1;
@@ -818,14 +2708,14 @@
       if(overviewTraceCache.traces.length!==expectedTraceCount) return false;
       const layout={...overviewTraceCache.layout, uirevision:plotUiRevision()};
       mergeAxisLocksIntoLayout(layout, axisLocks);
+      const drawGen=++plotDrawGeneration;
       suppressZoomRelayout+=1;
       try{
         const unitCount=Object.keys(layout).filter((k)=>/^yaxis\d*$/.test(k)).length||1;
-        await plotlyReactDraw(overviewTraceCache.traces, layout, { unitCount });
+        await plotlyReactDraw(overviewTraceCache.traces, layout, { unitCount, drawGen });
       }finally{
         setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 120);
       }
-      ensurePlotScrollZoom(plotDiv);
       return true;
     }
     function cancelZoomDetailFetch(){
@@ -1437,15 +3327,40 @@
     function hideMenus() { byId("contextMenu").style.display = "none"; byId("sourceAddMenu").style.display = "none"; byId("channelAddMenu").style.display = "none"; byId("maskAddMenu").style.display = "none"; }
     function showContextMenu(x,y,items,opts={}){
       const m=byId("contextMenu");
-      m.innerHTML=items.map((i,idx)=>`<div class="contextItem" data-i="${idx}">${i.label}</div>`).join("");
+      m.innerHTML=items.map((i,idx)=>{
+        if(i.header) return `<div class="contextHeader">${i.label}</div>`;
+        if(i.sep) return `<div class="contextSep"></div>`;
+        if(i.submenu?.length){
+          const sub=i.submenu.map((s,sidx)=>`<div class="contextItem" data-i="${idx}" data-s="${sidx}">${s.label}</div>`).join("");
+          return `<div class="contextSubWrap"><div class="contextItem" data-i="${idx}">${i.label}</div><div class="contextSubMenu">${sub}</div></div>`;
+        }
+        const chk=i.checked ? " menuChecked" : "";
+        return `<div class="contextItem${chk}" data-i="${idx}">${i.label}</div>`;
+      }).join("");
       m.style.left=`${x}px`;
       m.style.top=`${y}px`;
       m.style.zIndex=String(opts.zIndex??200);
       m.style.display="block";
-      m.querySelectorAll(".contextItem").forEach((el)=>el.onclick=(ev)=>{
-        ev.stopPropagation();
-        items[Number(el.getAttribute("data-i"))].action();
-        hideMenus();
+      m.querySelectorAll(".contextItem").forEach((el)=>{
+        el.onclick=(ev)=>{
+          ev.stopPropagation();
+          const idx=Number(el.getAttribute("data-i"));
+          const sidx=el.getAttribute("data-s");
+          const item=items[idx];
+          if(sidx!==null && item?.submenu){
+            item.submenu[Number(sidx)]?.action?.();
+            hideMenus();
+            return;
+          }
+          if(item?.submenu){
+            const wrap=el.closest(".contextSubWrap");
+            m.querySelectorAll(".contextSubWrap.subOpen").forEach((w)=>{ if(w!==wrap) w.classList.remove("subOpen"); });
+            wrap?.classList.toggle("subOpen");
+            return;
+          }
+          item?.action?.();
+          hideMenus();
+        };
       });
     }
     function getDefaultSourceByKey(kind){
@@ -1814,15 +3729,131 @@
     const CONFIG_LIBRARY_KEY = "nova.configLibrary.v1";
     let plots = [];
     let activePlotId = null;
-    function newPlotInstance(){ return { id: crypto.randomUUID(), name: `View ${plots.length+1}`, selections: null, latestRows: [], metadataRows: [] }; }
+    const LEGEND_FONT_SIZE = 9.6;
+    const LEGEND_SNAP_THRESHOLD = 0.055;
+    const LEGEND_CORNERS = [
+      { x:0.02, y:0.98, xanchor:"left", yanchor:"top" },
+      { x:0.98, y:0.98, xanchor:"right", yanchor:"top" },
+      { x:0.02, y:0.02, xanchor:"left", yanchor:"bottom" },
+      { x:0.98, y:0.02, xanchor:"right", yanchor:"bottom" },
+    ];
+    const LEGEND_DEFAULT_X = 0.01;
+    const LEGEND_DEFAULT_Y = 0.99;
+    function defaultLegendLayout(){
+      return { x:LEGEND_DEFAULT_X, y:LEGEND_DEFAULT_Y, xanchor:"left", yanchor:"top" };
+    }
+    function normalizeLegendLayout(x, y, xanchor, yanchor){
+      let nx=Number(x), ny=Number(y);
+      if(!Number.isFinite(nx)) nx=LEGEND_DEFAULT_X;
+      if(!Number.isFinite(ny)) ny=LEGEND_DEFAULT_Y;
+      nx=Math.max(0.02, Math.min(0.98, nx));
+      ny=Math.max(0.02, Math.min(0.98, ny));
+      let best=null, bestDist=Infinity;
+      for(const c of LEGEND_CORNERS){
+        const dist=Math.hypot(nx-c.x, ny-c.y);
+        if(dist<bestDist){ bestDist=dist; best=c; }
+      }
+      if(best && bestDist<=LEGEND_SNAP_THRESHOLD){
+        return { x:best.x, y:best.y, xanchor:best.xanchor, yanchor:best.yanchor, snapped:true };
+      }
+      return {
+        x:nx,
+        y:ny,
+        xanchor:xanchor||"left",
+        yanchor:yanchor||"top",
+        snapped:false,
+      };
+    }
+    function legendLayoutForActivePlot(){
+      const plot=getActivePlot();
+      const base=defaultLegendLayout();
+      const font={ size:LEGEND_FONT_SIZE, color:"#e2e8f0" };
+      if(plot && Number.isFinite(plot.legendX) && Number.isFinite(plot.legendY)){
+        return {
+          x:plot.legendX,
+          y:plot.legendY,
+          xanchor:plot.legendXanchor||base.xanchor,
+          yanchor:plot.legendYanchor||base.yanchor,
+          font,
+        };
+      }
+      return {
+        x:Number(appearance.legendX??base.x),
+        y:Number(appearance.legendY??base.y),
+        xanchor:appearance.legendXanchor||base.xanchor,
+        yanchor:appearance.legendYanchor||base.yanchor,
+        font,
+      };
+    }
+    function syncLegendToActivePlot(layout){
+      const plot=getActivePlot();
+      if(!plot || !layout) return;
+      plot.legendX=layout.x;
+      plot.legendY=layout.y;
+      plot.legendXanchor=layout.xanchor;
+      plot.legendYanchor=layout.yanchor;
+      appearance.legendX=layout.x;
+      appearance.legendY=layout.y;
+      appearance.legendXanchor=layout.xanchor;
+      appearance.legendYanchor=layout.yanchor;
+    }
+    function applyLegendLayoutToChart(gd, layout){
+      if(!gd || !layout || !window.Plotly) return;
+      suppressZoomRelayout+=1;
+      Plotly.relayout(gd, {
+        "legend.x":layout.x,
+        "legend.y":layout.y,
+        "legend.xanchor":layout.xanchor,
+        "legend.yanchor":layout.yanchor,
+      }).finally(()=>{
+        setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 120);
+      });
+    }
+    function resetLegendPosition({ replot=false }={}){
+      const layout=defaultLegendLayout();
+      syncLegendToActivePlot(layout);
+      persistAppearance();
+      savePlots();
+      const gd=plotlyGraphDiv();
+      if(gd?.layout) applyLegendLayoutToChart(gd, layout);
+      if(replot && latestRows.length) void plotRows(latestRows, { preserveUi:true });
+      setStatus("Legend position reset.");
+    }
+    function newPlotInstance(){
+      const base=defaultLegendLayout();
+      return {
+        id:crypto.randomUUID(),
+        name:`View ${plots.length+1}`,
+        selections:null,
+        latestRows:[],
+        metadataRows:[],
+        legendX:base.x,
+        legendY:base.y,
+        legendXanchor:base.xanchor,
+        legendYanchor:base.yanchor,
+        analysis:{ overlays:[] },
+      };
+    }
     function snapshotSelections(){ return { selectedSourceIds:[...selectedSourceIds], selectedDatabaseIds:[...selectedDatabaseIds], selectedTestIds:[...selectedTestIds], selectedChannelIds:[...selectedChannelIds], addedTestIds:[...addedTestIds], addedChannelIds:[...addedChannelIds], xAxis:byId("xAxis").value, t0Mode:byId("t0Mode").value, previewVisible }; }
     function restoreSelections(s){ if(!s) return; selectedSourceIds=new Set(s.selectedSourceIds||[]); selectedDatabaseIds=new Set(s.selectedDatabaseIds||[]); selectedTestIds=new Set(s.selectedTestIds||[]); selectedChannelIds=new Set(s.selectedChannelIds||[]); addedTestIds=new Set(s.addedTestIds||[]); addedChannelIds=new Set(s.addedChannelIds||[]); byId("xAxis").value=s.xAxis||"time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "absolute")); byId("t0Mode").value=nextT0; previewVisible=Boolean(s.previewVisible); }
     function getActivePlot(){ return plots.find((p)=>p.id===activePlotId) || null; }
+    function cloneAnalysisState(analysis){
+      if(!analysis) return undefined;
+      if(Array.isArray(analysis.overlays)){
+        return { overlays: JSON.parse(JSON.stringify(analysis.overlays)) };
+      }
+      return { overlays: [] };
+    }
     function toPersistedPlot(p){
       return {
         id: p.id,
         name: p.name,
         selections: p.selections || null,
+        legendX: Number.isFinite(p.legendX) ? p.legendX : undefined,
+        legendY: Number.isFinite(p.legendY) ? p.legendY : undefined,
+        legendXanchor: p.legendXanchor || undefined,
+        legendYanchor: p.legendYanchor || undefined,
+        analysis: cloneAnalysisState(p.analysis),
       };
     }
     function buildConfigPayload(){
@@ -2068,13 +4099,21 @@
     function loadPlots(){
       try{
         const s=JSON.parse(localStorage.getItem(PLOTS_KEY)||"{}");
-        plots=(s.plots||[]).map((p, idx)=>({
-          id:p.id||crypto.randomUUID(),
-          name:p.name||`View ${idx+1}`,
-          selections:p.selections||null,
-          latestRows:[],
-          metadataRows:[],
-        }));
+        plots=(s.plots||[]).map((p, idx)=>{
+          const base=defaultLegendLayout();
+          return {
+            id:p.id||crypto.randomUUID(),
+            name:p.name||`View ${idx+1}`,
+            selections:p.selections||null,
+            latestRows:[],
+            metadataRows:[],
+            legendX:Number.isFinite(p.legendX)?p.legendX:base.x,
+            legendY:Number.isFinite(p.legendY)?p.legendY:base.y,
+            legendXanchor:p.legendXanchor||base.xanchor,
+            legendYanchor:p.legendYanchor||base.yanchor,
+            analysis:{ overlays:JSON.parse(JSON.stringify(p.analysis?.overlays || [])) },
+          };
+        });
         activePlotId = s.activePlotId || (plots[0]?.id || null);
       }catch{
         plots=[];
@@ -2097,7 +4136,18 @@
       const p=plots.find((x)=>x.id===id); if(!p) return;
       const cur=getActivePlot();
       if(cur){ cur.selections=snapshotSelections(); cur.latestRows=latestRows; cur.metadataRows=metadataRows; }
-      const copy={ id:crypto.randomUUID(), name:`${p.name} (copy)`, selections:structuredClone(p.selections), latestRows:structuredClone(p.latestRows||[]), metadataRows:structuredClone(p.metadataRows||[]) };
+      const copy={
+        id:crypto.randomUUID(),
+        name:`${p.name} (copy)`,
+        selections:structuredClone(p.selections),
+        latestRows:structuredClone(p.latestRows||[]),
+        metadataRows:structuredClone(p.metadataRows||[]),
+        legendX:p.legendX,
+        legendY:p.legendY,
+        legendXanchor:p.legendXanchor,
+        legendYanchor:p.legendYanchor,
+        analysis:cloneAnalysisState(p.analysis),
+      };
       plots.push(copy);
       activePlotId=copy.id;
       latestRows=copy.latestRows||[]; metadataRows=copy.metadataRows||[];
@@ -2175,7 +4225,19 @@
     }
     function switchPlot(id){
       const cur=getActivePlot();
-      if(cur){ cur.selections=snapshotSelections(); cur.latestRows=latestRows; cur.metadataRows=metadataRows; }
+      if(cur){
+        cur.selections=snapshotSelections();
+        cur.latestRows=latestRows;
+        cur.metadataRows=metadataRows;
+        const gd=plotlyGraphDiv();
+        const lay=gd?.layout?.legend;
+        if(lay){
+          cur.legendX=Number(lay.x);
+          cur.legendY=Number(lay.y);
+          cur.legendXanchor=lay.xanchor;
+          cur.legendYanchor=lay.yanchor;
+        }
+      }
       activePlotId=id;
       const next=getActivePlot();
       latestRows=(next?.latestRows)||[];
@@ -2494,19 +4556,6 @@
         setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 120);
       }
     }
-    function ensurePlotScrollZoom(gd){
-      const el=gd||byId("plot");
-      if(!el||!window.Plotly?.setPlotConfig) return;
-      try{
-        Plotly.setPlotConfig(el,{
-          responsive:false,
-          displaylogo:false,
-          displayModeBar:false,
-          scrollZoom:true,
-          editable:false,
-        });
-      }catch{}
-    }
     function applyPlotAxisLocks(gd, locks){
       const plotGd=plotlyGraphDiv(gd);
       if(!plotGd||!locks) return;
@@ -2693,7 +4742,7 @@
           } else {
             const frameRows=realtimeFrameRows();
             if(previewVisible){ renderRows(frameRows); }
-            try{ plotRows(frameRows); }catch(e){ setStatus(`Plot render warning: ${e}`, true); }
+            try{ plotRows(frameRows, { preserveUi:true, dataOnly:true }); }catch(e){ setStatus(`Plot render warning: ${e}`, true); }
             try{ if(typeof opts.onDraw==="function") opts.onDraw(frameRows); }catch{}
           }
           updateRealtimeStatus();
@@ -2971,6 +5020,7 @@
     function openMaxFreqModal(){ openModal("Set Max Sample Frequency",`<div class="modalGrid" style="grid-template-columns:1fr;"><div><label>Maximum frequency in Hz (blank = no global cap)</label><input id="m_max_hz" type="number" step="any" value="${maxSampleHzGlobal??""}" placeholder="e.g. 100" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply</button></div>`,async()=>{ const raw=(byId("m_max_hz").value||"").trim(); if(!raw){ maxSampleHzGlobal=null; if(latestRows.length) plotRows(latestRows); setStatus("Global max sample frequency cleared."); return true; } const hz=Number(raw); if(!Number.isFinite(hz)||hz<=0){ setStatus("Max sample frequency must be a positive number.", true); return false; } maxSampleHzGlobal=hz; if(latestRows.length) plotRows(latestRows); setStatus(`Global max sample frequency set to ${hz} Hz.`); return true; }); }
     function initRealtimePanel(){ const panel=byId("realtimePanel"), header=byId("realtimePanelHeader"); let dragging=false, dx=0, dy=0; header.onmousedown=(e)=>{ dragging=true; dx=e.clientX-panel.offsetLeft; dy=e.clientY-panel.offsetTop; e.preventDefault(); }; window.addEventListener("mousemove",(e)=>{ if(!dragging) return; panel.style.left=`${Math.max(0,e.clientX-dx)}px`; panel.style.top=`${Math.max(0,e.clientY-dy)}px`; panel.style.right="auto"; }); window.addEventListener("mouseup",()=>{ dragging=false; }); byId("realtimeCloseBtn").onclick=()=>{ panel.style.display="none"; }; byId("realtimePlayBtn").onclick=()=>startRealtime(1); byId("realtimePauseBtn").onclick=()=>{ stopRealtime(); updateRealtimeStatus(); }; byId("realtimeForwardBtn").onclick=()=>{ startRealtime(1); }; byId("realtimeReplayBtn").onclick=()=>{ startRealtime(1, true); }; byId("realtimeLoopBtn").onclick=()=>{ const b=byId("realtimeLoopBtn"); b.classList.toggle("active"); }; byId("realtimeExportBtn").onclick=()=>{ openRealtimeExportModal(); }; }
     async function plotRows(rows, plotOpts={}){
+      const drawGen=++plotDrawGeneration;
       let phase="init";
       lastPlotFailPhase="";
       try{
@@ -2982,6 +5032,11 @@
       const gdExisting=byId("plot");
       const axisLocksFromOpts=plotOpts.axisLocks||null;
       const uiLocks=resetView ? null : (axisLocksFromOpts||(preserveUi ? snapshotPlotAxisLocks(gdExisting) : null));
+      const hasLiveChart=Boolean(plotlyGraphDiv(gdExisting)?.data?.length);
+      const dataOnly=plotOpts.dataOnly===true
+        || (plotOpts.dataOnly!==false && preserveUi && hasLiveChart && !resetView);
+      const applyAxisLocks=plotOpts.applyAxisLocks===true
+        || (plotOpts.applyAxisLocks!==false && Boolean(axisLocksFromOpts) && !dataOnly);
       const plotSourceRows=useRealtimeFull?realtimeRows:rows;
       const rtMaskMs=useRealtimeFull?realtimeCurrentMs:null;
       phase="group";
@@ -3088,8 +5143,9 @@
         showlegend: appearance.showLegend!==false,
         xaxis:{title:"",automargin:true,type:t0Mode==="absolute"?"date":"linear",tickfont:{size:Number(appearance.axisTickSize||10)},titlefont:{size:Number(appearance.axisTitleSize||11)},visible:axisVisible,showgrid:gridVisible,...(resetView?{autorange:true}:(realtimeLockedXRange?{range:realtimeLockedXRange,autorange:false}:{}))},
         margin:{l:12,r:Math.max(70,56+extraRight*(axisSpacingPx+6)),t:12,b:48},
-        legend:{x:Number(appearance.legendX??0.01),y:Number(appearance.legendY??0.99),xanchor:"left",yanchor:"top",bgcolor:"rgba(2,6,23,0.55)"},
-        ...yLayout
+        legend:{...legendLayoutForActivePlot(), bgcolor:"rgba(2,6,23,0.55)" },
+        ...yLayout,
+        ...PlotAnalysisTools.analysisLayoutExtras(),
       };
       mergeAxisLocksIntoLayout(layoutBase, uiLocks);
       phase="layout";
@@ -3106,11 +5162,11 @@
       phase="chart";
       suppressZoomRelayout+=1;
       try{
-        await plotlyReactDraw(traces, layoutOut, { unitCount });
+        await plotlyReactDraw(traces, layoutOut, { unitCount, drawGen, dataOnly, applyAxisLocks });
       }finally{
         setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 200);
       }
-      ensurePlotScrollZoom(plotDiv);
+      if(drawGen !== plotDrawGeneration) return;
       if(rows===overviewRows && zoomState==="overview" && !resetView){
         cacheOverviewPlot(traces, layoutBase);
       }
@@ -4213,6 +6269,7 @@
       const plotElLoad=byId("plot");
       const plotWLoad=Math.max(320, Number(plotElLoad?.clientWidth||window.innerWidth||1400));
       const loadResolutionPx=plotResolutionPx(plotWLoad);
+      let loadV3Meta=null;
       for(const dbId of dbIds){
         const { db, src }=resolveDbSource(dbId);
         if(!db||!src) continue;
@@ -4224,7 +6281,10 @@
           try{
             const v3res=await queryV3ForDb(dbId, src, db, channels, tests, { mode:"overview", resolutionPx:loadResolutionPx });
             rows=v3res.rows;
-            if(v3res.meta&&overviewNeedsDetailRefetch(v3res.meta)) overviewLodActive=true;
+            if(v3res.meta){
+              loadV3Meta=v3res.meta;
+              if(overviewNeedsDetailRefetch(v3res.meta)) overviewLodActive=true;
+            }
           }catch(err){
             setStatus(`v3 load failed for '${db.name}': ${err}`, true);
             continue;
@@ -4246,11 +6306,17 @@
             try{
               const v3res=await queryV3ForDb(dbId, src, db, channels, tests, { mode:"overview", resolutionPx:loadResolutionPx });
               rows=v3res.rows;
-              if(v3res.meta&&overviewNeedsDetailRefetch(v3res.meta)) overviewLodActive=true;
+              if(v3res.meta){
+                loadV3Meta=v3res.meta;
+                if(overviewNeedsDetailRefetch(v3res.meta)) overviewLodActive=true;
+              }
             }catch(err){
               setStatus(`v3 file load failed: ${err}`, true);
               continue;
             }
+          }else if(useV3Enabled()){
+            setStatus(`File '${src.name||src.type}' is not indexed yet. Wait for ingest to finish or re-add the file.`, true);
+            continue;
           }else{
             const p=new URLSearchParams();
             p.append("source_type",src.type);
@@ -4264,7 +6330,7 @@
         }
         rows.forEach((r)=>rowsAll.push(r));
       }
-      if(seriesCache){ seriesCache.setOverview(rowsAll, null, { mode:"overview" }); seriesCache.detail.clear(); }
+      if(seriesCache){ seriesCache.setOverview(rowsAll, loadV3Meta, { mode:"overview" }); seriesCache.detail.clear(); }
       rowsAll.forEach((r)=>{ if(!Number.isFinite(r.__ts)) r.__ts=Date.parse(r.time); });
       let calcRows=[];
       const serverCalcs=useV3Enabled() && preferences.useServerCalc!==false;
@@ -4460,7 +6526,7 @@
         setStatus("Preferences reset to defaults.");
       };
     }
-    const DEFAULT_APPEARANCE={ uiBg:"#070b11", viewBg:"#000000", accent:"#1e3a8a", plotTheme:"default", plotColors:"#4cc9f0,#f72585,#b8f200,#ff9e00,#9b5de5,#06d6a0,#ef476f,#ffd166,#118ab2,#8338ec", plotTitle:"", showLegend:true, legendX:0.01, legendY:0.99, showAxis:true, showGrid:true, axisTitleSize:11, axisTickSize:10, lineWidth:1.5 };
+    const DEFAULT_APPEARANCE={ uiBg:"#070b11", viewBg:"#000000", accent:"#1e3a8a", plotTheme:"default", plotColors:"#4cc9f0,#f72585,#b8f200,#ff9e00,#9b5de5,#06d6a0,#ef476f,#ffd166,#118ab2,#8338ec", plotTitle:"", showLegend:true, legendX:0.01, legendY:0.99, legendXanchor:"left", legendYanchor:"top", showAxis:true, showGrid:true, axisTitleSize:11, axisTickSize:10, lineWidth:1.5 };
     const PLOT_THEMES={
       default:"#4cc9f0,#f72585,#b8f200,#ff9e00,#9b5de5,#06d6a0,#ef476f,#ffd166,#118ab2,#8338ec",
       viridis:"#440154,#472d7b,#3b528b,#2c728e,#21918c,#27ad81,#5cc863,#aadc32,#fde725",
@@ -4513,6 +6579,8 @@
       if(appearance.plotTheme!=="custom") appearance.plotColors=PLOT_THEMES[appearance.plotTheme]||PLOT_THEMES.default;
       appearance.legendX=Number.isFinite(Number(appearance.legendX))?Number(appearance.legendX):DEFAULT_APPEARANCE.legendX;
       appearance.legendY=Number.isFinite(Number(appearance.legendY))?Number(appearance.legendY):DEFAULT_APPEARANCE.legendY;
+      appearance.legendXanchor=appearance.legendXanchor||DEFAULT_APPEARANCE.legendXanchor;
+      appearance.legendYanchor=appearance.legendYanchor||DEFAULT_APPEARANCE.legendYanchor;
       appearance.axisTitleSize=Number.isFinite(Number(appearance.axisTitleSize))?Number(appearance.axisTitleSize):DEFAULT_APPEARANCE.axisTitleSize;
       appearance.axisTickSize=Number.isFinite(Number(appearance.axisTickSize))?Number(appearance.axisTickSize):DEFAULT_APPEARANCE.axisTickSize;
       appearance.lineWidth=Number.isFinite(Number(appearance.lineWidth))?Number(appearance.lineWidth):DEFAULT_APPEARANCE.lineWidth;
@@ -4568,6 +6636,7 @@
           <div style="display:flex;align-items:flex-end;"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_view_show_grid" type="checkbox" style="width:auto;" ${appearance.showGrid!==false?"checked":""} />Show grid</label></div>
         </div>
         <div class="modalActions">
+          <button id="m_reset_legend_pos" type="button">Reset Legend Position</button>
           <button id="m_app_reset_view" type="button">Reset View Defaults</button>
           <button id="modalCancelBtn" type="button">Cancel</button>
           <button id="modalSaveCloseBtn" type="button">Apply & Close</button>
@@ -4578,8 +6647,13 @@
         if(theme==="custom") appearance.plotColors=(byId("m_view_plot").value||"").trim()||appearance.plotColors;
         else appearance.plotColors=PLOT_THEMES[theme]||PLOT_THEMES.default;
         appearance.plotTitle=(byId("m_view_title").value||"").trim();
-        appearance.legendX=Math.max(0, Math.min(1, Number(byId("m_view_legend_x").value||DEFAULT_APPEARANCE.legendX)));
-        appearance.legendY=Math.max(0, Math.min(1, Number(byId("m_view_legend_y").value||DEFAULT_APPEARANCE.legendY)));
+        const norm=normalizeLegendLayout(
+          Number(byId("m_view_legend_x").value||DEFAULT_APPEARANCE.legendX),
+          Number(byId("m_view_legend_y").value||DEFAULT_APPEARANCE.legendY),
+          appearance.legendXanchor,
+          appearance.legendYanchor,
+        );
+        syncLegendToActivePlot(norm);
         appearance.axisTitleSize=Math.max(6, Math.min(30, Number(byId("m_view_axis_title_size").value||DEFAULT_APPEARANCE.axisTitleSize)));
         appearance.axisTickSize=Math.max(6, Math.min(30, Number(byId("m_view_tick_size").value||DEFAULT_APPEARANCE.axisTickSize)));
         appearance.lineWidth=Math.max(0.2, Math.min(8, Number(byId("m_view_line_width").value||DEFAULT_APPEARANCE.lineWidth)));
@@ -4592,6 +6666,7 @@
       });
       const themeSel=byId("m_view_theme"), plotWrap=byId("m_view_plot_wrap");
       themeSel.onchange=()=>{ plotWrap.style.display=themeSel.value==="custom"?"block":"none"; };
+      byId("m_reset_legend_pos").onclick=()=>resetLegendPosition({ replot:true });
       byId("m_app_reset_view").onclick=()=>{
         appearance.plotTheme=DEFAULT_APPEARANCE.plotTheme;
         appearance.plotColors=DEFAULT_APPEARANCE.plotColors;
@@ -4599,6 +6674,9 @@
         appearance.showLegend=DEFAULT_APPEARANCE.showLegend;
         appearance.legendX=DEFAULT_APPEARANCE.legendX;
         appearance.legendY=DEFAULT_APPEARANCE.legendY;
+        appearance.legendXanchor=DEFAULT_APPEARANCE.legendXanchor;
+        appearance.legendYanchor=DEFAULT_APPEARANCE.legendYanchor;
+        syncLegendToActivePlot(defaultLegendLayout());
         appearance.showAxis=DEFAULT_APPEARANCE.showAxis;
         appearance.showGrid=DEFAULT_APPEARANCE.showGrid;
         appearance.axisTitleSize=DEFAULT_APPEARANCE.axisTitleSize;
@@ -4646,8 +6724,32 @@
     function bindPlotlyRelayoutListener(plotEl){
       const gd=plotlyGraphDiv(plotEl);
       if(!gd||typeof gd.on!=="function") return;
+      if(gd._novaRelayoutBound) return;
       if(typeof gd.removeAllListeners==="function") gd.removeAllListeners("plotly_relayout");
+      gd._novaRelayoutBound=true;
       gd.on("plotly_relayout",(ev)=>{
+        requestAnimationFrame(()=>{
+          PlotRenderer.refreshAxisHitZones(plotEl);
+          if(!PlotAnalysisTools.isOverlayDragging()) PlotAnalysisTools.syncEditHitLayer();
+        });
+        if(ev && (ev["legend.x"]!==undefined || ev["legend.y"]!==undefined || ev["legend.xanchor"]!==undefined || ev["legend.yanchor"]!==undefined)){
+          const lay=gd.layout?.legend||{};
+          const norm=normalizeLegendLayout(
+            ev["legend.x"]!==undefined ? ev["legend.x"] : lay.x,
+            ev["legend.y"]!==undefined ? ev["legend.y"] : lay.y,
+            ev["legend.xanchor"]!==undefined ? ev["legend.xanchor"] : lay.xanchor,
+            ev["legend.yanchor"]!==undefined ? ev["legend.yanchor"] : lay.yanchor,
+          );
+          syncLegendToActivePlot(norm);
+          persistAppearance();
+          savePlots();
+          saveStateDeferred();
+          const curX=Number(lay.x), curY=Number(lay.y);
+          if(norm.snapped && (Math.abs(curX-norm.x)>1e-4 || Math.abs(curY-norm.y)>1e-4 || lay.xanchor!==norm.xanchor || lay.yanchor!==norm.yanchor)){
+            applyLegendLayoutToChart(gd, norm);
+          }
+          return;
+        }
         if(plotProgrammaticUpdate||suppressZoomRelayout>0) return;
         if(realtimeTimer){
           const snap=snapshotPlotAxisLocks(gd);
@@ -4665,7 +6767,7 @@
           if(zoomState==="detail"){
             zoomState="overview";
             latestRows=overviewRows;
-            plotRows(latestRows, { preserveUi:false });
+            void plotRows(latestRows, { preserveUi:false });
             setStatus(`Overview: ${latestRows.length} rows.`);
           }
           return;
@@ -4754,7 +6856,7 @@
       latestRows=finalRows;
       realtimeRows=[]; realtimePrecomputed=null;
       const gd=byId("plot");
-      await plotRows(finalRows, { preserveUi:true, axisLocks: snapshotPlotAxisLocks(gd) });
+      await plotRows(finalRows, { preserveUi:true, dataOnly:true, axisLocks: snapshotPlotAxisLocks(gd) });
       setStatus(`Detail: ${finalRows.length} rows in window.`);
     }
 
@@ -4773,6 +6875,7 @@
         const el=plotGd();
         if(!el) return;
         try{ Plotly.Plots.resize(el); }catch{}
+        PlotInteractions.refresh();
       };
       const fullPlotResize=()=>{
         resizePlotOnly();
