@@ -4,14 +4,17 @@ import json
 from fastapi import Body, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 
-from .engine.arrow_codec import arrow_ipc_to_points
+from .engine.arrow_codec import arrow_ipc_to_points, _time_to_epoch_ms
 from .engine.file_index import get_ingest_status, manifest_to_channels, manifest_to_tests, run_ingest
+from .engine.file_probe import probe_file_with_validation
 from .engine.series_query import execute_series_query
 from .models import (
     ChannelItem,
     DatabaseItem,
     FileIngestRequest,
     FileIngestResponse,
+    FileProbeRequest,
+    FileProbeResponse,
     HealthResponse,
     SeriesQueryRequest,
     TestRunItem,
@@ -405,13 +408,13 @@ def timeseries_v2(
 @app.post("/api/v3/series/query", response_model=None)
 def series_query_v3(
     request: SeriesQueryRequest,
-    format: str = Query(default="arrow", description="arrow (IPC stream) or json (UI bridge)"),
+    format: str = Query(default="arrow", description="arrow (IPC stream) or json (row payload for browser client)"),
 ):
     """
     Columnar series query (PostgreSQL + indexed file artifacts).
 
     Default: Apache Arrow IPC stream with X-NOVA-Series-Meta header.
-    format=json: row payload for UI bridge until Phase 4 Arrow client.
+    format=json: TimeSeriesPoint rows for the embedded WebEngine UI client.
     """
     try:
         ipc_bytes, meta = execute_series_query(request)
@@ -422,7 +425,10 @@ def series_query_v3(
         points = arrow_ipc_to_points(ipc_bytes)
         return {
             "meta": meta.model_dump(mode="json"),
-            "rows": [p.model_dump(mode="json") for p in points],
+            "rows": [
+                {**p.model_dump(mode="json"), "x_ms": _time_to_epoch_ms(p.time)}
+                for p in points
+            ],
         }
 
     return Response(
@@ -430,6 +436,19 @@ def series_query_v3(
         media_type="application/vnd.apache.arrow.stream",
         headers={"X-NOVA-Series-Meta": meta.model_dump_json()},
     )
+
+
+@app.post("/api/v3/file/probe", response_model=FileProbeResponse)
+def probe_file_v3(body: FileProbeRequest) -> FileProbeResponse:
+    """Inspect a data file for channels, time index options, and unit metadata."""
+    try:
+        return probe_file_with_validation(
+            body.file_path,
+            units_in_headers=body.units_in_headers,
+            time_index_channel=body.time_index_channel,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/v3/ingest/file", response_model=FileIngestResponse)
@@ -440,6 +459,7 @@ def ingest_file_v3(body: FileIngestRequest) -> FileIngestResponse:
             body.source_type,
             body.file_path,
             units_in_headers=body.units_in_headers,
+            time_index_channel=body.time_index_channel,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -469,7 +489,7 @@ def ingest_file_v3(body: FileIngestRequest) -> FileIngestResponse:
 @app.get("/api/v3/ingest/by-path", response_model=FileIngestResponse)
 def ingest_lookup_by_path(
     file_path: str = Query(..., description="Absolute path to indexed file."),
-    source_type: str = Query(..., description="csv, h5, or tdms"),
+    source_type: str = Query(..., description="csv, h5, tdms, parquet, or arrow"),
 ) -> FileIngestResponse:
     from .engine.session_store import find_artifact_for_path
 
@@ -562,9 +582,15 @@ def file_channels_api(
     source_type: str = Query(..., description="csv or tdms or h5"),
     file_path: str = Query(..., description="Absolute file path."),
     units_in_headers: bool = Query(default=False, description="If true (CSV only), parse units from column headers."),
+    time_index_channel: str | None = Query(default=None, description="Shared time column/dataset for tabular files."),
 ) -> list[ChannelItem]:
     try:
-        return file_channels(source_type=source_type, file_path=file_path, units_in_headers=units_in_headers)
+        return file_channels(
+            source_type=source_type,
+            file_path=file_path,
+            units_in_headers=units_in_headers,
+            time_index_channel=time_index_channel,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

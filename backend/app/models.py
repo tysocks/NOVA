@@ -106,9 +106,50 @@ SeriesSource = Annotated[PostgresSeriesSource | FileSeriesSource, Field(discrimi
 
 
 class FileIngestRequest(BaseModel):
-    source_type: Literal["csv", "h5", "tdms"]
+    source_type: Literal["csv", "h5", "tdms", "parquet", "arrow"]
     file_path: str
     units_in_headers: bool = False
+    time_index_channel: str | None = None
+
+
+class FileProbeChannel(BaseModel):
+    channel_name: str
+    unit: str | None = None
+    unit_from_metadata: bool = False
+
+
+class FileUnitsMetadataReport(BaseModel):
+    supports_unit_metadata: bool
+    parse_units_from_header: bool = False
+    channels_with_units: list[str] = Field(default_factory=list)
+    channels_without_units: list[str] = Field(default_factory=list)
+    all_channels_have_units: bool = False
+    summary: str = ""
+    flag: Literal["ok", "partial", "missing", "na"] = "na"
+
+
+class FileSchemaValidation(BaseModel):
+    valid: bool
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    summary: str = ""
+    format_requirements: str = ""
+
+
+class FileProbeRequest(BaseModel):
+    file_path: str
+    units_in_headers: bool = False
+    time_index_channel: str | None = None
+
+
+class FileProbeResponse(BaseModel):
+    source_type: str
+    file_path: str
+    time_index_candidates: list[str] = Field(default_factory=list)
+    time_index_default: str | None = None
+    channels: list[FileProbeChannel] = Field(default_factory=list)
+    units_metadata: FileUnitsMetadataReport
+    schema_validation: FileSchemaValidation | None = None
 
 
 class FileIngestResponse(BaseModel):

@@ -85,6 +85,7 @@ def initial_manifest(
     source_type: str,
     file_path: str,
     units_in_headers: bool,
+    time_index_channel: str | None = None,
 ) -> dict[str, Any]:
     return {
         "artifact_id": artifact_id,
@@ -94,6 +95,7 @@ def initial_manifest(
         "run_code": Path(file_path).stem,
         "test_run_id": 1,
         "units_in_headers": units_in_headers,
+        "time_index_channel": time_index_channel,
         "time_bounds": None,
         "channels": [],
         "error": None,

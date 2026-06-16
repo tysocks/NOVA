@@ -40,7 +40,7 @@ def _query_channel_aggregate(
     *,
     start_ms: float | None,
     end_ms: float | None,
-    bucket_s: float,
+    bucket_ms: float,
 ) -> list[tuple[float, float]]:
     path_sql = str(parquet_path).replace("\\", "/")
     filters = []
@@ -51,7 +51,7 @@ def _query_channel_aggregate(
     where = f"WHERE {' AND '.join(filters)}" if filters else ""
     sql = f"""
     SELECT
-      floor(x_ms / {bucket_s}) * {bucket_s} AS bucket_ms,
+      floor(x_ms / {bucket_ms}) * {bucket_ms} AS bucket_ms,
       avg(y)::DOUBLE AS y
     FROM read_parquet('{path_sql}')
     {where}
@@ -136,11 +136,15 @@ def fetch_artifact_timeseries(
                 continue
             parquet_path = root / str(rel)
             unit = entry.get("unit")
+            if not unit:
+                from .file_index import _read_unit_from_channel_parquet
+
+                unit = _read_unit_from_channel_parquet(parquet_path)
 
             if strategy == "aggregate" and max_points:
-                bucket_s = bucket_interval_seconds(duration_s, max_points)
+                bucket_ms = bucket_interval_seconds(duration_s, max_points) * 1000.0
                 rows = _query_channel_aggregate(
-                    con, parquet_path, start_ms=start_ms, end_ms=end_ms, bucket_s=bucket_s
+                    con, parquet_path, start_ms=start_ms, end_ms=end_ms, bucket_ms=bucket_ms
                 )
             else:
                 rows = _query_channel_raw(con, parquet_path, start_ms=start_ms, end_ms=end_ms)

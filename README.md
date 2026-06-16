@@ -101,7 +101,7 @@ You can edit name, units, input channels, and formula/rolling settings. The exis
 | Calculated channels | Browser main thread | Server (`calculated_channels` on query) |
 | Zoom detail | Postgres only | Postgres + indexed files when overview is downsampled (`aggregate` / `raw_lttb`) |
 
-**Preferences → Use v3 data engine** disables the v3 client bridge and restores v2/file HTTP paths. **Zoom-in detail refetch** only runs when the overview response used downsampling (`fetch_strategy` is not plain `raw`).
+**Zoom-in detail refetch** only runs when the overview response used downsampling (`fetch_strategy` is not plain `raw`). Turn off **Preferences → Compute calculated channels on server** to evaluate formulas in the browser (legacy path).
 
 Session artifacts live under `backend/.nova_sessions/` (safe to delete to reclaim disk; re-ingest files afterward).
 
@@ -111,7 +111,7 @@ Session artifacts live under `backend/.nova_sessions/` (safe to delete to reclai
 - `backend/app/engine/`: v3 query planner, Postgres/Parquet sources, Arrow codec, calc engine.
 - `backend/app/services/timeseries.py`: PostgreSQL-backed query logic (v1/v2).
 - `backend/app/services/file_sources.py`: CSV/TDMS parsing; uses Parquet artifacts when indexed.
-- `backend/app/static/index.html`: single-page UI; `static/js/nova-v3.js` v3 client bridge.
+- `backend/app/static/index.html`: single-page UI; `static/js/nova-v3.js` v3 query client.
 - `backend/desktop_app.py`: PySide6 desktop launcher with splash screen and backend lifecycle.
 
 ## Install (Fresh Clone)
@@ -209,7 +209,7 @@ Example template:
 - `POST /api/v3/ingest/file` — index CSV/H5/TDMS to `.nova_sessions/` Parquet
 - `GET /api/v3/ingest/{artifact_id}/status` (and `/tests`, `/channels`)
 - Legacy v1/v2 postgres queries use the v3 engine by default. Set `NOVA_LEGACY_ROW_ENGINE=1` to restore the old row-oriented SQL path.
-- File sources: ingest on add; Chooch uses v3 when **Preferences → Use v3 data engine** is on (default)
+- File sources: ingest on add; Chooch uses v3 query API
 - `GET /api/v3/ingest/by-path` — resolve existing artifact for a file path (restored sessions)
 - `GET /api/source-defaults`
 - `POST /api/source-defaults`

@@ -87,3 +87,87 @@ def test_h5_file_source_errors_without_telemetry_time(tmp_path: Path):
     with pytest.raises(ValueError) as exc_info:
         file_tests("h5", str(h5_path))
     assert "telemetry/TIME" in str(exc_info.value)
+
+
+# Jan 1 2010 00:00:00 UTC in unix seconds
+_EPOCH_2010_S = 1262304000.0
+
+
+def test_h5_epoch_seconds_with_zero_padding(tmp_path: Path):
+    """Padded TIME buffers (zeros + epoch seconds) must not span ~40 years."""
+    import numpy as np
+
+    h5_path = tmp_path / "padded_epoch.h5"
+    n_pad = 50
+    n_data = 600
+    time_vals = np.zeros(n_pad + n_data)
+    time_vals[n_pad:] = np.linspace(_EPOCH_2010_S, _EPOCH_2010_S + 60.0, n_data)
+    thrust = np.linspace(10.0, 20.0, n_pad + n_data)
+
+    with h5py.File(h5_path, "w") as h5:
+        telem = h5.create_group("telemetry")
+        telem.create_dataset("TIME", data=time_vals)
+        telem.create_dataset("THRUST", data=thrust)
+
+    tests = file_tests("h5", str(h5_path))
+    assert len(tests) == 1
+    assert tests[0].duration_s == pytest.approx(60.0, abs=0.5)
+    assert tests[0].t0_utc.year == 2010
+    span_years = (tests[0].end_time - tests[0].start_time).days / 365.25
+    assert span_years < 1.0
+
+
+def test_h5_milliseconds_since_epoch(tmp_path: Path):
+    import numpy as np
+
+    h5_path = tmp_path / "epoch_ms.h5"
+    time_ms = np.linspace(_EPOCH_2010_S * 1000, (_EPOCH_2010_S + 60) * 1000, 100)
+
+    with h5py.File(h5_path, "w") as h5:
+        telem = h5.create_group("telemetry")
+        ds = telem.create_dataset("TIME", data=time_ms)
+        ds.attrs["units"] = "ms"
+        telem.create_dataset("THRUST", data=np.linspace(1.0, 2.0, 100))
+
+    tests = file_tests("h5", str(h5_path))
+    assert tests[0].duration_s == pytest.approx(60.0, abs=0.5)
+    assert tests[0].t0_utc.year == 2010
+
+
+def test_csv_epoch_seconds_with_zero_padding(tmp_path: Path):
+    """Padded TIME buffers must not span decades when ingested."""
+    import numpy as np
+
+    csv_path = tmp_path / "padded.csv"
+    n_pad = 40
+    n_data = 600
+    time_vals = np.zeros(n_pad + n_data)
+    time_vals[n_pad:] = np.linspace(_EPOCH_2010_S, _EPOCH_2010_S + 60.0, n_data)
+    thrust = np.linspace(1.0, 2.0, n_pad + n_data)
+    lines = ["TIME,THRUST"]
+    for t, y in zip(time_vals, thrust):
+        lines.append(f"{t},{y}")
+    csv_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    tests = file_tests("csv", str(csv_path))
+    assert tests[0].duration_s == pytest.approx(60.0, abs=0.5)
+    assert tests[0].t0_utc.year == 2010
+    span_years = (tests[0].end_time - tests[0].start_time).days / 365.25
+    assert span_years < 1.0
+
+
+def test_h5_elapsed_seconds_with_start_time_attr(tmp_path: Path):
+    import numpy as np
+
+    h5_path = tmp_path / "elapsed_start.h5"
+    time_s = np.linspace(0.0, 60.0, 100)
+
+    with h5py.File(h5_path, "w") as h5:
+        telem = h5.create_group("telemetry")
+        telem.attrs["StartTime"] = _EPOCH_2010_S
+        telem.create_dataset("TIME", data=time_s)
+        telem.create_dataset("THRUST", data=np.linspace(1.0, 2.0, 100))
+
+    tests = file_tests("h5", str(h5_path))
+    assert tests[0].duration_s == pytest.approx(60.0, abs=0.5)
+    assert tests[0].t0_utc.year == 2010

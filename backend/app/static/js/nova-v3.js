@@ -9,7 +9,9 @@
   const CONFIG_IDB_KEY = "library";
 
   function parseTimeMs(time) {
-    if (typeof time === "number" && Number.isFinite(time)) return time;
+    if (typeof time === "number" && Number.isFinite(time)) {
+      return time > 1e11 ? time : time * 1000;
+    }
     const ms = Date.parse(time);
     return Number.isFinite(ms) ? ms : NaN;
   }
@@ -17,7 +19,8 @@
   function stampRows(rows, dbId) {
     return (rows || []).map((r) => {
       const row = { ...r, __dbId: dbId };
-      if (!Number.isFinite(row.__ts)) row.__ts = parseTimeMs(row.time);
+      if (Number.isFinite(row.x_ms)) row.__ts = row.x_ms;
+      else if (!Number.isFinite(row.__ts)) row.__ts = parseTimeMs(row.time);
       return row;
     });
   }

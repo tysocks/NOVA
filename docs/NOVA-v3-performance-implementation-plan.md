@@ -1,6 +1,6 @@
 # NOVA v3 Performance Architecture — Implementation Plan
 
-**Status:** Phases 1–6 shipped on `data_overhaul` (Phase 6.4 uPlot evaluation deferred)  
+**Status:** Phases 1–6 shipped; UI v2 client bridge removed (2026-06-14). Phase 6.4 uPlot evaluation deferred.  
 **Date:** 2026-06-03  
 **Scope:** Ground-up data-plane upgrade for large telemetry datasets while preserving existing UX (sources, channels, masks, calculated channels, Plotly viewer, desktop launcher).
 
@@ -426,18 +426,18 @@ ORDER BY 3;
 
 ---
 
-### Phase 4 — Frontend SeriesCache and v3 client (3 weeks) ✅ Implemented (bridge)
+### Phase 4 — Frontend SeriesCache and v3 client (3 weeks) ✅ Implemented
 
 **Goal:** UI consumes columnar data; modularize hot paths.
 
-**Shipped on `data_overhaul`:** `static/js/nova-v3.js`, `useV3` preference (default on), unified Chooch/zoom via v3 JSON, H5 catalog from artifact API, duplicate file-source guard, modal stack fix for Data Files flow.
+**Shipped:** `static/js/nova-v3.js`, unified Chooch/zoom via v3 JSON, H5 catalog from artifact API, duplicate file-source guard, modal stack fix for Data Files flow. UI v2/file fallback paths removed 2026-06-14.
 
 | Task | Files | Details |
 |------|-------|---------|
 | 4.1 | `frontend/src/api/v3Client.ts` | Fetch Arrow, decode in Worker |
 | 4.2 | `frontend/src/cache/SeriesCache.ts` | L0 overview + L1 detail maps keyed by `series_id` |
 | 4.3 | `frontend/src/plot/PlotController.ts` | Precompute trace indices; `Plotly.restyle` on zoom/realtime |
-| 4.4 | `index.html` | Bridge: if `useV3` flag, Chooch uses v3; else v2 (feature flag in preferences) |
+| 4.4 | `index.html` | Chooch and zoom use v3 query API exclusively |
 | 4.5 | Zoom | Universal detail refetch for **all** source types via `time_range` |
 | 4.6 | `IndexedDB` | Move `CONFIG_LIBRARY` and large selections out of localStorage |
 | 4.7 | Build | `npm run build` → `backend/app/static/dist/`; `main.py` serves bundle |
@@ -469,11 +469,11 @@ ORDER BY 3;
 
 ### Phase 6 — Cleanup and deprecation (1 week) ✅ Implemented
 
-**Shipped on `data_overhaul`:** `useV3` default on; README v3 migration table; `file_timeseries` routes to Parquet when artifact exists (legacy `iterrows` only without ingest); load resets plot session (`resetView`); zoom LOD gated by `fetch_strategy` + hysteresis + overview trace cache.
+**Shipped:** v3-only UI load path; README v3 migration table; `file_timeseries` routes to Parquet when artifact exists (legacy `iterrows` only without ingest); load resets plot session (`resetView`); zoom LOD gated by `fetch_strategy` + hysteresis + overview trace cache.
 
 | Task | Details |
 |------|---------|
-| 6.1 | Default `useV3=true` in preferences |
+| 6.1 | v3-only UI data path (no v2/file client fallback) |
 | 6.2 | v2 adapter retained one release; document migration in README |
 | 6.3 | `file_timeseries` uses DuckDB artifact when indexed; legacy path warns |
 | 6.4 | Optional: evaluate uPlot for single-trace 1M+ point stress test — **deferred** |
@@ -515,7 +515,7 @@ Measured with Phase 0 benchmark on a reference machine (document CPU/RAM):
 | 6 | Calculated rolling | v3 + engine | matches v2 values within ε |
 | 7 | Formula `A/B` | multi-source | correct alignment on time grid |
 | 8 | Masks + t0 modes | unchanged behavior | visual parity |
-| 9 | Feature flag off | v2 only | regression suite green |
+| 9 | Legacy API | v1/v2/file endpoints | deprecation headers; external integrations only |
 | 10 | Desktop launcher | health + port reuse | unchanged |
 
 Automated: extend `backend/tests/test_timeseries_v2.py`, add `test_v3_*`, ingest tests with small fixtures.

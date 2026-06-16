@@ -233,6 +233,37 @@
     .contextSubMenu .contextItem:last-child{ border-bottom:none; }
     .contextItem:last-child,.miniMenuItem:last-child{ border-bottom:none; }
     .contextItem:hover,.miniMenuItem:hover{ background:var(--nova-hover); }
+    .miniMenuItem.disabled{ opacity:0.55; cursor:default; }
+    .probeFlagIcons{ display:inline-flex; align-items:center; gap:8px; flex-shrink:0; }
+    .probeFlagWrap{ position:relative; display:inline-flex; align-items:center; padding:1px 0; }
+    .probeFlagIcon{ width:16px; height:16px; flex-shrink:0; cursor:default; display:inline-flex; align-items:center; justify-content:center; background:transparent; box-shadow:none; }
+    .probeFlagIcon svg{ width:16px; height:16px; display:block; }
+    .probeFlagIcon.ok{ color:#5eead4; }
+    .probeFlagIcon.partial{ color:#fcd34d; }
+    .probeFlagIcon.missing{ color:#fb7185; }
+    .probeFlagIcon.na{ color:#737373; }
+    .probeFlagWrap .probeFlagTip{ display:none !important; }
+    #probeFlagTipFloat{
+      display:none;
+      position:fixed;
+      min-width:160px;
+      max-width:300px;
+      padding:8px 10px;
+      border-radius:var(--nova-radius-sm);
+      border:1px solid var(--nova-divider);
+      background:#1a1a1a;
+      color:var(--nova-text);
+      font-size:0.68rem;
+      line-height:1.35;
+      box-shadow:0 8px 24px rgba(0,0,0,0.55);
+      z-index:5000;
+      pointer-events:none;
+      white-space:normal;
+    }
+    #probeFlagTipFloat .probeFlagTipTitle{ display:block; font-size:0.60rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--nova-text-dim); margin-bottom:4px; }
+    #probeFlagTipFloat .probeFlagTipLine + .probeFlagTipLine{ margin-top:3px; }
+    .sourceNameRow{ display:flex; align-items:center; gap:8px; }
+    .sourceNameRow input{ flex:1; min-width:0; }
     /* Realtime panel */
     #realtimePanel{ background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); }
     .realtimeBtn{ width:26px; height:26px; min-width:26px; border-radius:var(--nova-radius-sm); padding:0; font-size:0.72rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--nova-text-dim); }
@@ -336,7 +367,7 @@
       <div class="panel">
         <div class="panelHeader"><h3>Region</h3><div class="headerBtns"><button data-collapse="regionBody" class="collapseBtn" type="button">-</button></div></div>
         <div id="regionBody" class="list" style="max-height:none;padding:6px;">
-          <label for="t0Mode">Time Reference</label><select id="t0Mode"><option value="absolute">Absolute</option><option value="first_index">First Index</option><option value="t0_relative">t0 Relative</option></select>
+          <label for="t0Mode">Time Reference</label><select id="t0Mode"><option value="first_index" selected>First Index</option><option value="absolute">Absolute</option><option value="t0_relative">t0 Relative</option></select>
           <label for="xAxis">X Axis</label><select id="xAxis"><option value="time">time</option></select>
         </div>
       </div>
@@ -387,6 +418,61 @@
       return document.getElementById(id);
     };
     const toIso = (v) => (v ? new Date(v).toISOString() : "n/a");
+    const escAttr = (v) => String(v ?? "").replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
+    function parseRowTimeMs(row){
+      if(!row) return NaN;
+      if(Number.isFinite(row.x_ms)) return row.x_ms;
+      if(Number.isFinite(row.__ts)) return row.__ts;
+      if(window.NovaV3 && typeof NovaV3.parseTimeMs==="function") return NovaV3.parseTimeMs(row.time);
+      if(typeof row.time==="number" && Number.isFinite(row.time)){
+        return row.time > 1e11 ? row.time : row.time * 1000;
+      }
+      return Date.parse(row.time);
+    }
+    function filterAbsoluteTimeOutliers(pts){
+      if(!pts?.length) return pts;
+      let min=Infinity, max=-Infinity;
+      for(let i=0;i<pts.length;i+=1){
+        const t=pts[i].__ts;
+        if(Number.isFinite(t)){ if(t<min) min=t; if(t>max) max=t; }
+      }
+      if(!Number.isFinite(min)||!Number.isFinite(max)) return pts;
+      if((max-min)<=86400000*30) return pts;
+      if(max>1e11&&min<1e8){
+        const filtered=pts.filter((p)=>Number.isFinite(p.__ts)&&p.__ts>1e8);
+        return filtered.length?filtered:pts;
+      }
+      return pts;
+    }
+    function perTestTimeSpans(rows){
+      const spans=new Map();
+      rows.forEach((r)=>{
+        const k=`${r.__dbId}|${r.test_run_id}`;
+        const t=r.__ts;
+        if(!Number.isFinite(t)) return;
+        if(!spans.has(k)) spans.set(k,{min:t,max:t});
+        else{
+          const s=spans.get(k);
+          if(t<s.min) s.min=t;
+          if(t>s.max) s.max=t;
+        }
+      });
+      return spans;
+    }
+    function shouldFallbackAbsoluteToFirstIndex(rows){
+      let gmin=Infinity, gmax=-Infinity;
+      rows.forEach((r)=>{
+        const t=r.__ts;
+        if(Number.isFinite(t)){ if(t<gmin) gmin=t; if(t>gmax) gmax=t; }
+      });
+      if(!Number.isFinite(gmin)||!Number.isFinite(gmax)) return false;
+      if((gmax-gmin)<=86400000*365) return false;
+      const spans=perTestTimeSpans(rows);
+      for(const s of spans.values()){
+        if((s.max-s.min)>86400000*2) return false;
+      }
+      return spans.size>0;
+    }
     let latestRows = [], metadataRows = [], testsData = [], channelsData = [], previewVisible = false, focusedItem = null;
     let selectedSourceIds = new Set(), selectedDatabaseIds = new Set(), selectedTestIds = new Set(), selectedChannelIds = new Set(), selectedMaskIds = new Set();
     let addedTestIds = new Set(), addedChannelIds = new Set();
@@ -456,7 +542,6 @@
         e.dataset.sticky="1";
         e.textContent=text;
         e.className="error";
-        e.title=text;
         console.error("[NOVA]", text, opts.detail!==undefined?opts.detail:"");
         return;
       }
@@ -464,14 +549,12 @@
       e.dataset.sticky="0";
       e.textContent=text;
       e.className="";
-      e.title="";
     }
     function clearStatusError(){
       const e=byId("statusBar");
       if(!e) return;
       e.dataset.sticky="0";
       e.className="";
-      e.title="";
     }
     function ensurePlotlyHost(){
       const plot=document.getElementById("plot");
@@ -749,18 +832,9 @@
       };
     }
     function tracesXToPlotlyMs(traces, t0Mode){
+      // Absolute-mode traces already carry epoch milliseconds for Plotly's date axis.
       if(t0Mode!=="absolute") return traces;
-      return traces.map((t)=>{
-        const x=t.x;
-        if(!x?.length) return t;
-        let maxAbs=0;
-        for(let i=0;i<Math.min(x.length, 32);i+=1){
-          const v=Math.abs(Number(x[i]));
-          if(Number.isFinite(v)&&v>maxAbs) maxAbs=v;
-        }
-        if(maxAbs>1e11) return t;
-        return { ...t, x:x.map((v)=>Number(v)*1000) };
-      });
+      return traces;
     }
 
     // Plot renderer + custom interaction layer (Plotly-only).
@@ -1880,7 +1954,7 @@
       }
 
       function formatDeltaX(chart, a, b){
-        const t0Mode = byId("t0Mode")?.value || "absolute";
+        const t0Mode = byId("t0Mode")?.value || "first_index";
         const d = b - a;
         if(!Number.isFinite(d)) return "Δx —";
         if(t0Mode === "absolute" || C().xAxisType(chart) === "date"){
@@ -1901,7 +1975,7 @@
         const dx = x1 - x0;
         if(!Number.isFinite(dx) || Math.abs(dx) < 1e-15) return "m —";
         const m = (y1 - y0) / dx;
-        const t0Mode = byId("t0Mode")?.value || "absolute";
+        const t0Mode = byId("t0Mode")?.value || "first_index";
         const xIsTime = t0Mode === "absolute" || C().xAxisType(chart) === "date";
         const denom = xIsTime ? "s" : "x";
         const scaled = xIsTime ? m * 1000 : m;
@@ -1911,7 +1985,7 @@
 
       function formatLineX(chart, x){
         if(!Number.isFinite(x)) return "x —";
-        const t0Mode = byId("t0Mode")?.value || "absolute";
+        const t0Mode = byId("t0Mode")?.value || "first_index";
         if(t0Mode === "absolute" || C().xAxisType(chart) === "date"){
           const d = new Date(x);
           if(Number.isFinite(d.getTime())) return d.toISOString().slice(0, 19).replace("T", " ") + " UTC";
@@ -2589,6 +2663,7 @@
     function buildDecimatedTimeTrace(pts, legendName, opts){
       const { t0Mode, t0FirstSample, t0Meta, rtMaskMs, pointCap, lineW, chId }=opts;
       let down=applyFreq(pts, chId);
+      if(t0Mode==="absolute") down=filterAbsoluteTimeOutliers(down);
       if(rowsNeedSort(down)) down=down.slice().sort((a,b)=>a.__ts-b.__ts);
       const n=down.length;
       const stride=n<=pointCap?1:Math.ceil(n/pointCap);
@@ -2600,9 +2675,7 @@
         const p=down[i];
         let xv;
         if(t0Mode==="absolute"){
-          xv=p.__ts;
-          if(!Number.isFinite(xv)) xv=Date.parse(p.time);
-          if(Number.isFinite(xv)) xv=xv/1000;
+          xv=parseRowTimeMs(p);
         }else{
           const key=`${p.__dbId}|${p.test_run_id}`;
           const base=t0Mode==="t0_relative"?t0Meta.get(key):t0FirstSample.get(key);
@@ -2838,11 +2911,18 @@
         const fileSrc=isFileSource(src) ? src : state.sources.find((s)=>s.id===db.sourceId);
         if(!fileSrc) return rows;
         try{
-          const p=new URLSearchParams();
-          p.append("source_type", fileSrc.type);
-          p.append("file_path", fileSrc.file_path||"");
-          if(fileSrc.type==="csv" && fileSrc.units_in_headers) p.append("units_in_headers","true");
-          const ch=await getJson(`/api/file/channels?${p.toString()}`);
+          await linkArtifactForSource(fileSrc);
+          let ch;
+          if(fileSrc.artifact_id){
+            ch=await getJson(`/api/v3/ingest/${encodeURIComponent(fileSrc.artifact_id)}/channels`);
+          } else {
+            const p=new URLSearchParams();
+            p.append("source_type", fileSrc.type);
+            p.append("file_path", fileSrc.file_path||"");
+            if(supportsHeaderUnitParsing(fileSrc.type) && fileSrc.units_in_headers) p.append("units_in_headers","true");
+            if(fileSrc.time_index_channel) p.append("time_index_channel", fileSrc.time_index_channel);
+            ch=await getJson(`/api/file/channels?${p.toString()}`);
+          }
           ch.forEach((c)=>rows.push({
             id:`${dbId}|${c.channel_name}`,
             primary:c.channel_name,
@@ -2865,7 +2945,7 @@
       const ch = channelsData.find((c)=>`${c.__dbId}|${c.channel_name}`===chId);
       if(!ch || ch.__isCalculated) return false;
       const sourceType = channelSourceType(chId);
-      if(sourceType==="csv" || sourceType==="h5" || sourceType==="tdms") return true;
+      if(sourceType==="csv" || sourceType==="h5" || sourceType==="tdms" || sourceType==="parquet" || sourceType==="arrow") return true;
       return !(ch.unit || "").trim();
     }
     async function getJson(url) { const r = await fetch(url); if (!r.ok) { let detail = ""; try { const body = await r.json(); detail = body?.detail ? `: ${body.detail}` : ""; } catch { try { const text = await r.text(); if (text) detail = `: ${text}`; } catch {} } throw new Error(`Request failed ${r.status}${detail}`); } return r.json(); }
@@ -2880,22 +2960,27 @@
       }catch{ sourceDefaults=[]; }
       return sourceDefaults;
     }
-    function inferLogicalSource(src){
-      const raw=(String(src?.name||"")+" "+String(src?.file_path||"")).toLowerCase();
-      if(raw.includes("blue")) return "bluescale";
-      if(raw.includes("red")) return "redscale";
-      return "auto";
-    }
     function isPostgresTestLeaf(s){ return s && s.leaf_kind==="postgres_test"; }
     function isPostgresConnSource(s){ return s && s.type==="postgres" && !isPostgresTestLeaf(s); }
-    function isFileSourceType(t){ return t==="csv" || t==="h5" || t==="tdms"; }
+    function isFileSourceType(t){ return t==="csv" || t==="h5" || t==="tdms" || t==="parquet" || t==="arrow"; }
+    function supportsHeaderUnitParsing(t){ return t==="csv"; }
+    function detectFileTypeFromPath(filePath){
+      const lower=String(filePath||"").toLowerCase();
+      if(lower.endsWith(".csv")) return "csv";
+      if(lower.endsWith(".tdms")) return "tdms";
+      if(lower.endsWith(".h5")||lower.endsWith(".hdf5")) return "h5";
+      if(lower.endsWith(".parquet")||lower.endsWith(".pq")) return "parquet";
+      if(lower.endsWith(".arrow")||lower.endsWith(".arrows")||lower.endsWith(".feather")) return "arrow";
+      return "";
+    }
+    const DATAFILE_ACCEPT=".csv,.tdms,.h5,.hdf5,.parquet,.pq,.arrow,.arrows,.feather,text/csv,application/x-hdf";
     function isFileSource(s){ return s && isFileSourceType(s.type); }
     function normalizeFilePath(p){ return String(p||"").trim().replace(/\\/g,"/").toLowerCase(); }
     function findFileSourceByPath(filePath, sourceType){
       const norm=normalizeFilePath(filePath);
       return state.sources.find((s)=>isFileSource(s)&&(!sourceType||s.type===sourceType)&&normalizeFilePath(s.file_path)===norm)||null;
     }
-    function useV3Enabled(){ return window.NovaV3 && preferences.useV3!==false; }
+    function v3ClientReady(){ return !!window.NovaV3; }
     async function linkArtifactForSource(src){
       if(!src||!isFileSource(src)||!src.file_path||src.artifact_id) return src;
       try{
@@ -2910,10 +2995,11 @@
     async function refreshArtifactIdsForFileSources(){
       for(const s of state.sources.filter(isFileSource)) await linkArtifactForSource(s);
     }
-    async function addOrReuseFileSource({ type, name, filePath, unitsInHeaders=false }){
+    async function addOrReuseFileSource({ type, name, filePath, unitsInHeaders=false, timeIndexChannel=null, probeSnapshot=null }){
       const existing=findFileSourceByPath(filePath, type);
       if(existing){
-        if(!existing.artifact_id) await attachArtifactToSource(existing, type, filePath, unitsInHeaders);
+        if(probeSnapshot) existing.probe_snapshot=probeSnapshot;
+        if(!existing.artifact_id) await attachArtifactToSource(existing, type, filePath, { unitsInHeaders, timeIndexChannel });
         else await linkArtifactForSource(existing);
         ensureFileSourceCatalog(existing);
         selectedSourceIds.add(existing.id);
@@ -2933,10 +3019,12 @@
         sslmode:"",
         file_path:filePath,
         units_in_headers:unitsInHeaders,
+        time_index_channel:timeIndexChannel||"",
         artifact_id:"",
+        probe_snapshot:probeSnapshot||null,
       };
       state.sources.push(entry);
-      await attachArtifactToSource(entry, type, filePath, unitsInHeaders);
+      await attachArtifactToSource(entry, type, filePath, { unitsInHeaders, timeIndexChannel });
       ensureFileSourceCatalog(entry);
       selectedSourceIds.add(entry.id);
       clearCatalogCache();
@@ -3113,25 +3201,6 @@
       });
       return [...out];
     }
-    async function fetchTimeseriesV2({ tests, channels, db, src, startTime=null, endTime=null, maxPoints=null, aggregationMode="auto" }){
-      const p=new URLSearchParams();
-      tests.forEach((id)=>p.append("test_run_ids",id));
-      channels.forEach((ch)=>p.append("channel_names",ch));
-      p.append("limit","5000000");
-      p.append("t0_mode", byId("t0Mode").value||"absolute");
-      p.append("resolution_px", String(Math.max(320, Number(byId("plot")?.clientWidth||window.innerWidth||1200))));
-      p.append("aggregation_mode", aggregationMode);
-      if(maxPoints!==null && maxPoints!==undefined) p.append("max_points", String(maxPoints));
-      if(db?.name) p.append("db_name", db.name);
-      if(db?.test_table) p.append("test_table", db.test_table);
-      if(startTime) p.append("start_time", startTime);
-      if(endTime) p.append("end_time", endTime);
-      const connSrc=postgresConnForSource(src);
-      p.set("source", inferLogicalSource(connSrc||src));
-      sourceConnQuery(connSrc).split("&").forEach((kv)=>{ if(kv){ const [k,v]=kv.split("="); p.append(k,decodeURIComponent(v)); }});
-      const envelope=await getJson(`/api/v2/timeseries?${p.toString()}`);
-      return Array.isArray(envelope?.overview) ? envelope.overview : [];
-    }
     function activeSources() {
       const ids=new Set(effectiveSelectedSourceIds());
       return state.sources.filter((s)=>ids.has(s.id));
@@ -3144,7 +3213,7 @@
     }
     function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, appearance, selectedSourceIds:[...selectedSourceIds], selectedDatabaseIds:[...selectedDatabaseIds], selectedTestIds:[...selectedTestIds], selectedChannelIds:[...selectedChannelIds], selectedMaskIds:[...selectedMaskIds], addedTestIds:[...addedTestIds], addedChannelIds:[...addedChannelIds], xAxis:byId("xAxis").value, t0Mode:byId("t0Mode").value, previewVisible })); localStorage.setItem(APPEAR_KEY, JSON.stringify(appearance)); }
     const saveStateDeferred = debounce(saveState, 150);
-    function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:s.calculatedChannels || [], freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {} }; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = new Set(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = new Set(s.addedChannelIds || []); byId("xAxis").value = s.xAxis || "time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "absolute")); byId("t0Mode").value = nextT0; previewVisible = Boolean(s.previewVisible); } catch {} }
+    function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:s.calculatedChannels || [], freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {} }; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = new Set(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = new Set(s.addedChannelIds || []); byId("xAxis").value = s.xAxis || "time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "first_index")); byId("t0Mode").value = nextT0; previewVisible = Boolean(s.previewVisible); } catch {} }
     const MODAL_SIZE_CLASSES=["modalScale","modalChannels","modalNarrow","modalMask","modalCompact"];
     const WF={ floating:true };
     const WF_SCALE={ floating:true, size:"modalScale", compact:true };
@@ -3232,7 +3301,7 @@
       el.style.height=`${defH}px`;
       el.style.left=`${left}px`;
       el.style.top=`${top}px`;
-      el.innerHTML=`<div class="appWindowHeader modalHeader"><h4 class="modalTitle"></h4></div><div class="appWindowBody"></div><div class="appWindowResize" title="Resize"></div>`;
+      el.innerHTML=`<div class="appWindowHeader modalHeader"><h4 class="modalTitle"></h4></div><div class="appWindowBody"></div><div class="appWindowResize"></div>`;
       el.querySelector(".modalTitle").textContent=title;
       const root=el.querySelector(".appWindowBody");
       root.innerHTML=bodyHtml;
@@ -3254,6 +3323,7 @@
       wireModalActions(root,saveFn);
       initAppWindowDragResize(entry);
       el.addEventListener("mousedown",()=>bringAppWindowToFront(el));
+      el.querySelectorAll("[title]").forEach((node)=>node.removeAttribute("title"));
       bringAppWindowToFront(el);
       layer.appendChild(el);
       return entry;
@@ -3380,42 +3450,251 @@
       saveState();
       setStatus(`${entry.name} source added.`);
     }
-    function showSourceAddMenu(x,y){
+    function showAddSourceMenu(ev){
+      if(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      }
+      hideMenus();
+      const rect=byId("addSourceBtn").getBoundingClientRect();
       const m=byId("sourceAddMenu");
-      m.innerHTML=`<div class="miniMenuItem" data-t="redscale">Add RedScale</div><div class="miniMenuItem" data-t="bluescale">Add BlueScale</div><div class="miniMenuItem" data-t="postgres">Add PostgreSQL</div><div class="miniMenuItem" data-t="csv">Add CSV</div><div class="miniMenuItem" data-t="tdms">Add TDMS</div><div class="miniMenuItem" data-t="h5">Add H5</div>`;
-      m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block";
-      m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="redscale")addDefaultPostgresSource("redscale"); if(t==="bluescale")addDefaultPostgresSource("bluescale"); if(t==="postgres")showAddPostgresModal(); if(t==="csv")showAddCsvModal(); if(t==="tdms")showAddTdmsModal(); if(t==="h5")showAddH5Modal();});
-    }
-
-    function openAddSourceModal(){
-      // Phase 1: single modal (no dropdown) for source type selection.
-      // Phase 3/4 will refine TDMS/Data Files flows; for now we reuse existing modals.
-      const body = `
-        <div class="modalList" id="asm_list" style="margin:6px 8px;">
-          <div class="selectRow" data-t="redscale"><div class="itemPrimary">RedScale</div></div>
-          <div class="selectRow" data-t="bluescale"><div class="itemPrimary">BlueScale</div></div>
-          <div class="selectRow" data-t="postgres"><div class="itemPrimary">PostgreSQL</div></div>
-          <div class="selectRow" data-t="tdms"><div class="itemPrimary">TDMS</div></div>
-          <div class="selectRow" data-t="datafiles"><div class="itemPrimary">Data Files</div></div>
-        </div>
-        <div class="modalActions">
-          <button id="modalCancelBtn" type="button">Close</button>
-        </div>
+      m.innerHTML=`
+        <div class="miniMenuItem" data-t="database">Database</div>
+        <div class="miniMenuItem" data-t="datafile">Data File</div>
       `;
-      openModal("Add Source", body, async()=>true, WF_NARROW);
-      const list = byId("asm_list");
-      if(!list) return;
-      list.querySelectorAll("[data-t]").forEach((row)=>{
-        row.onclick=()=>{
-          const t = row.getAttribute("data-t");
-          closeModal();
-          if(t==="redscale") showAddScaleTestsModal("redscale");
-          else if(t==="bluescale") showAddScaleTestsModal("bluescale");
-          else if(t==="postgres") showAddPostgresModal();
-          else if(t==="tdms") showAddTdmsModal();
-          else if(t==="datafiles") showAddDataFilesModal();
+      m.style.left=`${rect.left}px`;
+      m.style.top=`${rect.bottom + 4}px`;
+      m.style.display="block";
+      m.querySelectorAll(".miniMenuItem").forEach((el)=>{
+        el.onclick=()=>{
+          const t=el.getAttribute("data-t");
+          hideMenus();
+          if(t==="database") setStatus("Database sources will be available in a future update.");
+          else if(t==="datafile") startDataFileSourcePicker();
         };
       });
+    }
+    async function probeDataFile(filePath, { unitsInHeaders=false, timeIndexChannel=null }={}){
+      return postJson("/api/v3/file/probe", {
+        file_path: filePath,
+        units_in_headers: !!unitsInHeaders,
+        time_index_channel: timeIndexChannel || null,
+      });
+    }
+    function schemaFlagState(schema){
+      if(!schema) return { flag:"na", lines:["Schema check unavailable."] };
+      const lines=[schema.summary].filter(Boolean);
+      if(schema.format_requirements) lines.push(schema.format_requirements);
+      (schema.errors||[]).forEach((e)=>lines.push(e));
+      (schema.warnings||[]).forEach((w)=>lines.push(`Warning: ${w}`));
+      return { flag:schema.valid?"ok":"missing", lines };
+    }
+    function unitsFlagState(meta){
+      if(!meta) return { flag:"na", lines:["Unit metadata check unavailable."] };
+      const lines=[meta.summary].filter(Boolean);
+      if(meta.channels_with_units?.length) lines.push(`With units: ${meta.channels_with_units.join(", ")}`);
+      if(meta.channels_without_units?.length) lines.push(`Missing units: ${meta.channels_without_units.join(", ")}`);
+      return { flag:meta.flag||"na", lines };
+    }
+    const PROBE_FLAG_SVGS={
+      schema:`<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3 2.5h10A1.5 1.5 0 0114.5 4v8A1.5 1.5 0 0113 13.5H3A1.5 1.5 0 011.5 12V4A1.5 1.5 0 013 2.5zm0 2.75h10V4H3v1.25zM3 8.5h4V8H3v.5zm0 2.75h4v-.5H3v.5zm6-2.75h4V8H9v.5zm0 2.75h4v-.5H9v.5z"/></svg>`,
+      units:`<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M5.5 2h5l3.5 3.5V13a1 1 0 01-1 1H5.5a1 1 0 01-1-1V3a1 1 0 011-1zm.5 1.5v9h7V6.5H10a1 1 0 01-1-1V3.5H6zm3 0V5h2.8L9 3.5z"/><circle cx="10.25" cy="5.75" r=".85"/></svg>`,
+    };
+    function renderProbeFlagIcon(kind, state){
+      const title=kind==="schema"?"Schema":"Units";
+      const tipLines=state.lines.length?state.lines:[title];
+      const tipBody=tipLines.map((l)=>`<div class="probeFlagTipLine">${escAttr(l)}</div>`).join("");
+      const svg=PROBE_FLAG_SVGS[kind]||"";
+      return `<span class="probeFlagWrap" data-kind="${kind}"><span class="probeFlagIcon ${state.flag}" aria-hidden="true">${svg}</span><span class="probeFlagTip"><span class="probeFlagTipTitle">${escAttr(title)}</span>${tipBody}</span></span>`;
+    }
+    function renderProbeFlags(probe){
+      if(!probe) return "";
+      const schema=schemaFlagState(probe.schema_validation);
+      const units=unitsFlagState(probe.units_metadata);
+      return renderProbeFlagIcon("schema", schema)+renderProbeFlagIcon("units", units);
+    }
+    function renderProbeErrorFlags(message){
+      return renderProbeFlagIcon("schema", { flag:"missing", lines:[String(message||"Probe failed.")] });
+    }
+    function initProbeFlagTips(){
+      if(initProbeFlagTips._done) return;
+      initProbeFlagTips._done=true;
+      const float=document.createElement("div");
+      float.id="probeFlagTipFloat";
+      document.body.appendChild(float);
+      let activeWrap=null;
+      const hideTip=()=>{
+        activeWrap=null;
+        float.style.display="none";
+      };
+      const showTip=(wrap)=>{
+        if(!wrap||wrap===activeWrap) return;
+        activeWrap=wrap;
+        const tip=wrap.querySelector(".probeFlagTip");
+        if(!tip){ hideTip(); return; }
+        float.innerHTML=tip.innerHTML;
+        float.style.display="block";
+        float.style.visibility="hidden";
+        const icon=wrap.querySelector(".probeFlagIcon")||wrap;
+        const iconRect=icon.getBoundingClientRect();
+        const floatRect=float.getBoundingClientRect();
+        const gap=10;
+        const margin=10;
+        let left=iconRect.left + iconRect.width/2 - floatRect.width/2;
+        let top=iconRect.bottom + gap;
+        left=Math.max(margin, Math.min(left, window.innerWidth - floatRect.width - margin));
+        if(top + floatRect.height > window.innerHeight - margin){
+          top=iconRect.top - floatRect.height - gap;
+        }
+        top=Math.max(margin, Math.min(top, window.innerHeight - floatRect.height - margin));
+        float.style.left=`${Math.round(left)}px`;
+        float.style.top=`${Math.round(top)}px`;
+        float.style.visibility="visible";
+      };
+      document.body.addEventListener("mouseover",(e)=>{
+        const wrap=e.target?.closest?.(".probeFlagWrap");
+        if(wrap) showTip(wrap);
+      });
+      document.body.addEventListener("mouseout",(e)=>{
+        const fromWrap=e.target?.closest?.(".probeFlagWrap");
+        if(!fromWrap) return;
+        const toWrap=e.relatedTarget?.closest?.(".probeFlagWrap");
+        if(toWrap!==fromWrap) hideTip();
+      });
+      window.addEventListener("scroll", hideTip, true);
+      window.addEventListener("resize", hideTip);
+    }
+    function openDataFileConfigModal({ filePath, fileName, fileType, probe }){
+      const defaultName=(fileName||"").replace(/\.[^.]+$/, "")||"Data File";
+      const isTdms=fileType==="tdms";
+      const timeOptions=(probe?.time_index_candidates||[]).map((c)=>{
+        const sel=c===(probe?.time_index_default||"")?" selected":"";
+        return `<option value="${escAttr(c)}"${sel}>${c}</option>`;
+      }).join("");
+      const showUnitsCheckbox=supportsHeaderUnitParsing(fileType);
+      const body=`
+        <div class="modalGrid">
+          <div style="grid-column:1 / -1;">
+            <label>Source Name</label>
+            <div class="sourceNameRow">
+              <input id="m_df_name" type="text" value="${escAttr(defaultName)}" />
+              <span id="m_df_probe_flag" class="probeFlagIcons">${renderProbeFlags(probe)}</span>
+            </div>
+          </div>
+          <div style="grid-column:1 / -1;"><label>Source Filepath</label><input id="m_df_path" type="text" value="${escAttr(filePath)}" /></div>
+          ${isTdms ? "" : `<div style="grid-column:1 / -1;"><label>Time Index Channel</label><select id="m_df_time">${timeOptions}</select></div>`}
+          <div id="m_df_units_wrap" style="grid-column:1 / -1; display:${showUnitsCheckbox?"block":"none"};">
+            <label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);">
+              <input id="m_df_units" type="checkbox" style="width:auto;margin:0;" />
+              Parse Units from Header
+            </label>
+          </div>
+        </div>
+        <div class="modalActions">
+          <button id="modalCancelBtn" type="button">Cancel</button>
+          <button id="modalSaveCloseBtn" type="button">Add Source</button>
+        </div>
+      `;
+      openModal(`Configure ${fileType.toUpperCase()} Source`, body, async()=>{
+        const name=(byId("m_df_name").value||"").trim();
+        const path=(byId("m_df_path").value||"").trim();
+        const timeIndex=isTdms ? null : (byId("m_df_time")?.value||null);
+        if(!name){ setStatus("Source name is required.", true); return false; }
+        if(!path){ setStatus("Source filepath is required.", true); return false; }
+        const resolvedType=detectFileTypeFromPath(path)||fileType;
+        if(!resolvedType){ setStatus("Unsupported file type.", true); return false; }
+        const dup=findFileSourceByPath(path, resolvedType);
+        if(dup){
+          selectedSourceIds.add(dup.id);
+          await linkArtifactForSource(dup);
+          ensureFileSourceCatalog(dup);
+          renderAll();
+          saveState();
+          setStatus(`Source already added for this file: ${dup.name}`);
+          return true;
+        }
+        const unitsInHeaders=supportsHeaderUnitParsing(resolvedType) ? Boolean(byId("m_df_units")?.checked) : false;
+        let latestProbe=null;
+        try{
+          latestProbe=await probeDataFile(path, { unitsInHeaders, timeIndexChannel: timeIndex });
+        }catch(err){
+          setStatus(`Schema check failed: ${err}`, true);
+          return false;
+        }
+        if(latestProbe?.schema_validation && !latestProbe.schema_validation.valid){
+          setStatus(latestProbe.schema_validation.errors?.[0]||latestProbe.schema_validation.summary||"File failed schema validation.", true);
+          return false;
+        }
+        await addOrReuseFileSource({
+          type: resolvedType,
+          name,
+          filePath: path,
+          unitsInHeaders,
+          timeIndexChannel: timeIndex,
+          probeSnapshot: latestProbe,
+        });
+        setStatus(`Added ${resolvedType.toUpperCase()} source '${name}'.`);
+        return true;
+      }, WF);
+      const refreshProbe=async()=>{
+        const path=(byId("m_df_path").value||"").trim()||filePath;
+        const timeIndex=isTdms ? null : (byId("m_df_time")?.value||null);
+        const probeType=detectFileTypeFromPath(path)||fileType;
+        const unitsWrap=byId("m_df_units_wrap");
+        if(unitsWrap) unitsWrap.style.display=supportsHeaderUnitParsing(probeType)?"block":"none";
+        const unitsInHeaders=supportsHeaderUnitParsing(probeType) ? Boolean(byId("m_df_units")?.checked) : false;
+        try{
+          const next=await probeDataFile(path, { unitsInHeaders, timeIndexChannel: timeIndex });
+          const flagEl=byId("m_df_probe_flag");
+          if(flagEl) flagEl.innerHTML=renderProbeFlags(next);
+        }catch(err){
+          const flagEl=byId("m_df_probe_flag");
+          if(flagEl) flagEl.innerHTML=renderProbeErrorFlags(err);
+        }
+      };
+      const pathInput=byId("m_df_path");
+      if(pathInput) pathInput.addEventListener("input", refreshProbe);
+      const timeSel=byId("m_df_time");
+      if(timeSel && !isTdms) timeSel.onchange=refreshProbe;
+      const unitsCb=byId("m_df_units");
+      if(unitsCb) unitsCb.onchange=refreshProbe;
+    }
+    function startDataFileSourcePicker(){
+      const input=byId("filePicker");
+      if(!input) return;
+      input.accept=DATAFILE_ACCEPT;
+      input.value="";
+      input.onchange=async()=>{
+        const file=input.files && input.files[0] ? input.files[0] : null;
+        if(!file) return;
+        try{
+          setStatus("Uploading file...");
+          const fd=new FormData();
+          fd.append("file", file);
+          const r=await fetch("/api/file/upload",{method:"POST",body:fd});
+          if(!r.ok) throw new Error(`Upload failed (${r.status})`);
+          const out=await r.json();
+          const uploadedPath=out.path||"";
+          if(!uploadedPath){ setStatus("Upload failed.", true); return; }
+          const fileType=detectFileTypeFromPath(uploadedPath)||detectFileTypeFromPath(file.name);
+          if(!fileType){
+            setStatus("Unsupported file type. Use CSV, TDMS, HDF5, Parquet, or Arrow.", true);
+            return;
+          }
+          setStatus("Inspecting file metadata...");
+          const probe=await probeDataFile(uploadedPath);
+          openDataFileConfigModal({
+            filePath: uploadedPath,
+            fileName: file.name,
+            fileType,
+            probe,
+          });
+        }catch(err){
+          setStatus(`Failed to add data file: ${err}`, true);
+        }
+      };
+      input.click();
     }
 
     async function showAddScaleTestsModal(kind, parentSrcIn){
@@ -3600,77 +3879,6 @@
       };
     }
 
-    function showAddDataFilesModal(){
-      // Phase 4: unified flow for CSV/H5 with a config step.
-      openModal("Add Data Files",`
-        <div class="modalGrid">
-          <div style="grid-column:1 / -1;">
-            <input id="m_df_file" type="file" accept=".csv,text/csv,.h5,.hdf5,application/x-hdf" />
-          </div>
-        </div>
-        <div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button></div>
-      `, async()=>true, WF);
-      const input = byId("m_df_file");
-      if(!input) return;
-      input.onchange = async()=>{
-        try{
-          const file = (input.files && input.files[0]) ? input.files[0] : null;
-          if(!file){ setStatus("Pick a file first.", true); return; }
-          const fileName = file.name || "datafile";
-          const lower = String(fileName).toLowerCase();
-          const fileType = (lower.endsWith(".csv")) ? "csv" : ((lower.endsWith(".h5") || lower.endsWith(".hdf5")) ? "h5" : "");
-          if(!fileType){ setStatus("Unsupported file type. Use .csv or .h5/.hdf5.", true); return; }
-
-          const uploadedPath = await uploadSelectedFile("m_df_file");
-          if(!uploadedPath){ setStatus("Upload failed.", true); return; }
-
-          const dup=findFileSourceByPath(uploadedPath, fileType);
-          if(dup){
-            closeModal();
-            selectedSourceIds.add(dup.id);
-            await linkArtifactForSource(dup);
-            ensureFileSourceCatalog(dup);
-            renderAll();
-            saveState();
-            setStatus(`Source already added for this file: ${dup.name}`);
-            return;
-          }
-
-          const stem = fileName.replace(/\.[^.]+$/, "");
-          const defaultName = stem || fileName;
-          const showUnits = fileType === "csv";
-          closeModal();
-          openModal("Configure Data File Source",`
-            <div class="modalGrid">
-              <div><label>Source name</label><input id="m_df_name" type="text" value="${defaultName}" /></div>
-              <div><label>File type</label><input id="m_df_type" type="text" value="${fileType.toUpperCase()}" disabled /></div>
-              <div style="grid-column:1 / -1;"><label>Source file path</label><input id="m_df_path" type="text" value="${uploadedPath}" disabled /></div>
-              <div style="grid-column:1 / -1; display:${showUnits ? "block" : "none"};">
-                <label style="display:flex; gap:8px; align-items:center; text-transform:none; letter-spacing:normal; font-size:0.72rem; color:var(--nova-text);">
-                  <input id="m_df_units" type="checkbox" style="width:auto; margin:0;" />
-                  Units are in CSV headers (e.g. <code>THRUST (N)</code> or <code>P[psi]</code>)
-                </label>
-              </div>
-            </div>
-            <div class="modalActions">
-              <button id="modalCancelBtn" type="button">Cancel</button>
-              <button id="modalSaveCloseBtn" type="button">Add</button>
-            </div>
-          `, WF, async()=>{
-            const name = (byId("m_df_name").value || "").trim();
-            if(!name){ setStatus("Source name is required.", true); return false; }
-            const unitsInHeaders = showUnits ? Boolean(byId("m_df_units")?.checked) : false;
-            await addOrReuseFileSource({ type:fileType, name, filePath:uploadedPath, unitsInHeaders });
-            setStatus(`Added ${fileType.toUpperCase()} source '${name}'.`);
-            return true;
-          });
-        }catch(err){
-          setStatus(`Failed to add data file: ${err}`, true);
-        }
-      };
-
-      setTimeout(()=>{ try{ input.click(); }catch{} }, 0);
-    }
     function openDefaultSourcesModal(){
       const rows=Array.isArray(sourceDefaults)?sourceDefaults:[];
       const rowHtml=(r,i)=>`<div class="modalGrid" data-def-row="${i}" style="grid-template-columns:1fr 1fr 1fr 1fr 0.9fr 1fr auto;align-items:end;border-bottom:1px solid var(--nova-divider);padding:8px 10px;">
@@ -3835,7 +4043,7 @@
       };
     }
     function snapshotSelections(){ return { selectedSourceIds:[...selectedSourceIds], selectedDatabaseIds:[...selectedDatabaseIds], selectedTestIds:[...selectedTestIds], selectedChannelIds:[...selectedChannelIds], addedTestIds:[...addedTestIds], addedChannelIds:[...addedChannelIds], xAxis:byId("xAxis").value, t0Mode:byId("t0Mode").value, previewVisible }; }
-    function restoreSelections(s){ if(!s) return; selectedSourceIds=new Set(s.selectedSourceIds||[]); selectedDatabaseIds=new Set(s.selectedDatabaseIds||[]); selectedTestIds=new Set(s.selectedTestIds||[]); selectedChannelIds=new Set(s.selectedChannelIds||[]); addedTestIds=new Set(s.addedTestIds||[]); addedChannelIds=new Set(s.addedChannelIds||[]); byId("xAxis").value=s.xAxis||"time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "absolute")); byId("t0Mode").value=nextT0; previewVisible=Boolean(s.previewVisible); }
+    function restoreSelections(s){ if(!s) return; selectedSourceIds=new Set(s.selectedSourceIds||[]); selectedDatabaseIds=new Set(s.selectedDatabaseIds||[]); selectedTestIds=new Set(s.selectedTestIds||[]); selectedChannelIds=new Set(s.selectedChannelIds||[]); addedTestIds=new Set(s.addedTestIds||[]); addedChannelIds=new Set(s.addedChannelIds||[]); byId("xAxis").value=s.xAxis||"time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "first_index")); byId("t0Mode").value=nextT0; previewVisible=Boolean(s.previewVisible); }
     function getActivePlot(){ return plots.find((p)=>p.id===activePlotId) || null; }
     function cloneAnalysisState(analysis){
       if(!analysis) return undefined;
@@ -4038,7 +4246,7 @@
         el.innerHTML=filtered.map(row).join("")||`<div class="empty">${library.length?"No matching configs.":"No saved configs yet."}</div>`;
         wireRows();
       };
-      openModal("Configuration Manager",`<div class="cfgManagerToolbar"><input id="m_cfg_search" type="text" placeholder="Search configs..." /><button id="m_cfg_menu_btn" type="button" class="iconBtn cfgMenuBtn" title="Config actions">&#8943;</button></div><div style="padding:0 10px 10px;"><div id="m_cfg_list" class="modalList"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true, WF_CFG);
+      openModal("Configuration Manager",`<div class="cfgManagerToolbar"><input id="m_cfg_search" type="text" placeholder="Search configs..." /><button id="m_cfg_menu_btn" type="button" class="iconBtn cfgMenuBtn">&#8943;</button></div><div style="padding:0 10px 10px;"><div id="m_cfg_list" class="modalList"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true, WF_CFG);
       const refreshLibrary=async()=>{
         library=await loadConfigLibrary();
         renderList();
@@ -4376,7 +4584,7 @@
           showContextMenu(ev.clientX,ev.clientY,menu);
         };
         row.ondblclick=()=>{
-          if(kind==="source") renameSource(it.id);
+          if(kind==="source") editSource(it.id);
         };
         root.appendChild(row);
       });
@@ -4655,22 +4863,21 @@
         const chId=`${pts[0].__dbId}|${pts[0].channel_name}`;
         const down=applyFreq(pts,chId).sort((a,b)=>a.__ts-b.__ts);
         const n=down.length;
-        const xIsNumeric=(t0Mode!=="absolute");
-        const xFull=xIsNumeric ? new Float64Array(n) : new Array(n);
+        const xFull=new Float64Array(n);
         const yFull=new Float64Array(n);
         const rtFull=new Float64Array(n);
         down.forEach((p,i)=>{
           yFull[i]=p.value;
           rtFull[i]=p.__rt;
           if(t0Mode==="absolute"){
-            xFull[i]=p.time;
+            xFull[i]=parseRowTimeMs(p);
           } else {
             const k=`${p.__dbId}|${p.test_run_id}`;
             const base=t0Mode==="t0_relative"?t0Meta.get(k):t0FirstSample.get(k);
             xFull[i]=Number.isFinite(base)?(p.__ts-base)/1000:p.__ts/1000;
           }
         });
-        result.push({xFull,yFull,rtFull,xIsNumeric,traceIdx});
+        result.push({xFull,yFull,rtFull,xIsNumeric:true,traceIdx});
         traceIdx++;
       });
       realtimePrecomputed=result;
@@ -5024,7 +5231,8 @@
       let phase="init";
       lastPlotFailPhase="";
       try{
-      const xAxis=byId("xAxis").value,t0Mode=byId("t0Mode").value;
+      const xAxis=byId("xAxis").value;
+      let t0Mode=byId("t0Mode").value;
       const useRealtimeFull=Boolean(realtimeTimer && realtimeCurrentMs!==null && xAxis==="time" && Array.isArray(realtimeRows)&&realtimeRows.length);
       const resetView=plotOpts.resetView===true;
       if(resetView) plotSessionRevision+=1;
@@ -5039,6 +5247,10 @@
         || (plotOpts.applyAxisLocks!==false && Boolean(axisLocksFromOpts) && !dataOnly);
       const plotSourceRows=useRealtimeFull?realtimeRows:rows;
       const rtMaskMs=useRealtimeFull?realtimeCurrentMs:null;
+      if(t0Mode==="absolute"&&shouldFallbackAbsoluteToFirstIndex(plotSourceRows)){
+        t0Mode="first_index";
+        setStatus("Absolute time spans incompatible test epochs; using First Index for this plot.", false);
+      }
       phase="group";
       const grouped=new Map();
       for(let i=0;i<plotSourceRows.length;i+=1){
@@ -5226,7 +5438,7 @@
           tests=await getJson(`/api/v3/ingest/${encodeURIComponent(src.artifact_id)}/tests`);
           channels=await getJson(`/api/v3/ingest/${encodeURIComponent(src.artifact_id)}/channels`);
         }else{
-          const uh = (src.type==="csv" && src.units_in_headers) ? "&units_in_headers=true" : "";
+          const uh = (supportsHeaderUnitParsing(src.type) && src.units_in_headers) ? "&units_in_headers=true" : "";
           tests = await getJson(`/api/file/tests?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}${uh}`);
           channels = await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}${uh}`);
         }
@@ -5367,26 +5579,20 @@
         clearCatalogCache();
       } else if(kind==="database"){ state.databases=state.databases.filter((d)=>d.id!==id); selectedDatabaseIds.delete(id); clearCatalogCache(); } else if(kind==="test"){ selectedTestIds.delete(id); addedTestIds.delete(id); } else if(kind==="channel"){ selectedChannelIds.delete(id); addedChannelIds.delete(id); const [dbId,channelName]=id.split("|"); state.calculatedChannels=(state.calculatedChannels||[]).filter((c)=>!(c.dbId===dbId&&c.name===channelName)); } else if(kind==="mask"){ state.masks=(state.masks||[]).filter((m)=>m.id!==id); selectedMaskIds.delete(id); } focusedItem=null; renderAll(); saveStateDeferred(); }
     async function uploadSelectedFile(inputId){ const input=byId(inputId); const file=(input&&input.files&&input.files[0])?input.files[0]:null; if(!file) return ""; const fd=new FormData(); fd.append("file",file); const r=await fetch("/api/file/upload",{method:"POST",body:fd}); if(!r.ok) throw new Error(`Upload failed (${r.status})`); const out=await r.json(); return out.path||""; }
-    async function ingestDataFile(sourceType, filePath, unitsInHeaders=false){
-      const r=await fetch("/api/v3/ingest/file",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source_type:sourceType,file_path:filePath,units_in_headers:!!unitsInHeaders})});
+    async function ingestDataFile(sourceType, filePath, { unitsInHeaders=false, timeIndexChannel=null }={}){
+      const r=await fetch("/api/v3/ingest/file",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source_type:sourceType,file_path:filePath,units_in_headers:!!unitsInHeaders,time_index_channel:timeIndexChannel||null})});
       if(!r.ok){ let msg=`Ingest failed (${r.status})`; try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail); }catch{} throw new Error(msg); }
       return await r.json();
     }
-    async function attachArtifactToSource(entry, sourceType, filePath, unitsInHeaders=false){
+    async function attachArtifactToSource(entry, sourceType, filePath, { unitsInHeaders=false, timeIndexChannel=null }={}){
       setStatus("Indexing file...");
       await nextPaint();
-      const ing=await ingestDataFile(sourceType, filePath, unitsInHeaders);
+      const ing=await ingestDataFile(sourceType, filePath, { unitsInHeaders, timeIndexChannel });
       entry.artifact_id=ing.artifact_id||"";
+      entry.time_index_channel=timeIndexChannel||entry.time_index_channel||"";
       if(ing.status!=="ready") setStatus(`Index status: ${ing.status}${ing.error?": "+ing.error:""}`, true);
       else setStatus(`Indexed ${(ing.channels||[]).length} channel(s).`);
       return ing;
-    }
-    async function fetchFileTimeseriesV3(src, channels, dbId){
-      if(!src.artifact_id||!channels.length) return null;
-      const r=await fetch("/api/v3/series/query?format=json",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sources:[{type:"file",artifact_id:src.artifact_id,channel_names:channels}],mode:"overview",resolution_px:1400,aggregation_mode:"auto"})});
-      if(!r.ok) return null;
-      const out=await r.json();
-      return (out.rows||[]).map((row)=>({...row,__dbId:dbId}));
     }
     function setChannelFrequency(chId){ const current=state.freqOverrides[chId]||""; const next=prompt(`Set target frequency (Hz) for ${chId.split("|")[1]}. Leave empty to clear.`,String(current)); if(next===null) return; const cleaned=next.trim(); if(!cleaned) delete state.freqOverrides[chId]; else { const hz=Number(cleaned); if(!Number.isFinite(hz)||hz<=0){ setStatus("Frequency must be a positive number.",true); return;} state.freqOverrides[chId]=hz; } if(latestRows.length) plotRows(latestRows); renderAll(); saveStateDeferred(); }
     function setChannelUnit(chId){
@@ -5699,53 +5905,6 @@
         return true;
       });
     }
-    function showAddCsvModal(){ openModal("Add CSV Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="CSV Source" /></div><div><label>CSV File</label><input id="m_fileUpload" type="file" accept=".csv,text/csv" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick a CSV file first.",true); return false; } await addOrReuseFileSource({ type:"csv", name:byId("m_sourceName").value||"CSV Source", filePath:uploadedPath }); return true; }); }
-    function showAddTdmsModal(){
-      const input=byId("filePicker");
-      if(!input) return;
-      input.accept=".tdms,application/octet-stream";
-      input.value="";
-      input.onchange=async()=>{
-        const file=input.files && input.files[0] ? input.files[0] : null;
-        if(!file) return;
-        try{
-          const fd=new FormData();
-          fd.append("file", file);
-          const r=await fetch("/api/file/upload",{method:"POST",body:fd});
-          if(!r.ok) throw new Error(`Upload failed (${r.status})`);
-          const out=await r.json();
-          const uploadedPath=out.path||"";
-          if(!uploadedPath){ setStatus("Upload failed.", true); return; }
-          const name=String(file.name).replace(/\.[^.]+$/, "") || file.name;
-          const dup=findFileSourceByPath(uploadedPath,"tdms");
-          if(dup){
-            selectedSourceIds.add(dup.id);
-            await linkArtifactForSource(dup);
-            ensureFileSourceCatalog(dup);
-            renderAll();
-            saveState();
-            setStatus(`Source already added for this file: ${dup.name}`);
-            return;
-          }
-          await addOrReuseFileSource({ type:"tdms", name, filePath:uploadedPath });
-          setStatus(`Added TDMS source '${name}'.`);
-        }catch(err){
-          setStatus(`Failed to add TDMS source: ${err}`, true);
-        }
-      };
-      input.click();
-    }
-    function showAddH5Modal(){ openModal("Add H5 Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="H5 Source" /></div><div><label>H5 File</label><input id="m_fileUpload" type="file" accept=".h5,.hdf5,application/x-hdf" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ const uploadedPath=await uploadSelectedFile("m_fileUpload"); if(!uploadedPath){ setStatus("Pick an H5 file first.",true); return false; } await addOrReuseFileSource({ type:"h5", name:byId("m_sourceName").value||"H5 Source", filePath:uploadedPath }); return true; }); }
-    function showAddSourceMenu(ev){
-      if (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-      }
-      hideMenus();
-      openAddSourceModal();
-    }
-
     function renameSource(sourceId){
       const src = state.sources.find((s)=>s.id===sourceId);
       if(!src){ setStatus("Source not found.", true); return; }
@@ -5771,10 +5930,10 @@
         openModal("Edit Data File Source",`<div class="modalGrid">
           <div><label>Name</label><input id="m_edit_name" type="text" value="${src.name||""}" /></div>
           <div style="grid-column:1 / -1;"><label>File path</label><input id="m_edit_path" type="text" value="${src.file_path||""}" disabled /></div>
-          ${src.type==="csv" ? `<div style="grid-column:1 / -1;"><label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);"><input id="m_edit_units" type="checkbox" style="width:auto;margin:0;" ${src.units_in_headers?"checked":""} /> Units in CSV headers</label></div>` : ""}
+          ${supportsHeaderUnitParsing(src.type) ? `<div style="grid-column:1 / -1;"><label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);"><input id="m_edit_units" type="checkbox" style="width:auto;margin:0;" ${src.units_in_headers?"checked":""} /> Parse Units from Header</label></div>` : ""}
         </div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,WF,async()=>{
           src.name=(byId("m_edit_name").value||"").trim()||src.name;
-          if(src.type==="csv") src.units_in_headers=Boolean(byId("m_edit_units")?.checked);
+          if(supportsHeaderUnitParsing(src.type)) src.units_in_headers=Boolean(byId("m_edit_units")?.checked);
           const db=state.databases.find((d)=>d.sourceId===src.id);
           if(db) db.name=src.name;
           clearCatalogCache();
@@ -6276,64 +6435,36 @@
         const tests=testIdsAll.filter((t)=>t.startsWith(`${dbId}|`)).map((t)=>t.split("|")[1]);
         const channels=rawChannelNamesForDb(dbId, channelIdsAll, selectedCalcs);
         if(!tests.length||!channels.length) continue;
-        let rows=[];
-        if(useV3Enabled()&&(src.type==="postgres"||(isFileSource(src)&&src.artifact_id))){
-          try{
-            const v3res=await queryV3ForDb(dbId, src, db, channels, tests, { mode:"overview", resolutionPx:loadResolutionPx });
-            rows=v3res.rows;
-            if(v3res.meta){
-              loadV3Meta=v3res.meta;
-              if(overviewNeedsDetailRefetch(v3res.meta)) overviewLodActive=true;
-            }
-          }catch(err){
-            setStatus(`v3 load failed for '${db.name}': ${err}`, true);
-            continue;
-          }
-        }else if(src.type==="postgres"){
-          overviewLodActive=true;
-          const raw=await fetchTimeseriesV2({
-            tests,
-            channels,
-            db,
-            src,
-            maxPoints:10000,
-            aggregationMode:"auto",
-          });
-          rows=raw.map((r)=>({...r,__dbId:dbId,__ts:Number.isFinite(r.__ts)?r.__ts:Date.parse(r.time)}));
-        } else {
-          await linkArtifactForSource(src);
-          if(src.artifact_id){
-            try{
-              const v3res=await queryV3ForDb(dbId, src, db, channels, tests, { mode:"overview", resolutionPx:loadResolutionPx });
-              rows=v3res.rows;
-              if(v3res.meta){
-                loadV3Meta=v3res.meta;
-                if(overviewNeedsDetailRefetch(v3res.meta)) overviewLodActive=true;
-              }
-            }catch(err){
-              setStatus(`v3 file load failed: ${err}`, true);
-              continue;
-            }
-          }else if(useV3Enabled()){
+        if(!v3ClientReady()){
+          setStatus("v3 client failed to load. Refresh the page.", true);
+          continue;
+        }
+        if(isFileSource(src)) await linkArtifactForSource(src);
+        const canV3=src.type==="postgres"||(isFileSource(src)&&src.artifact_id);
+        if(!canV3){
+          if(isFileSource(src)){
             setStatus(`File '${src.name||src.type}' is not indexed yet. Wait for ingest to finish or re-add the file.`, true);
-            continue;
-          }else{
-            const p=new URLSearchParams();
-            p.append("source_type",src.type);
-            p.append("file_path",src.file_path||"");
-            if(src.type==="csv" && src.units_in_headers) p.append("units_in_headers","true");
-            p.append("limit","5000000");
-            channels.forEach((ch)=>p.append("channel_names",ch));
-            rows=await getJson(`/api/file/timeseries?${p.toString()}`);
-            rows.forEach((r)=>{ r.__dbId=dbId; if(!Number.isFinite(r.__ts)) r.__ts=Date.parse(r.time); });
           }
+          continue;
+        }
+        let rows=[];
+        try{
+          const v3res=await queryV3ForDb(dbId, src, db, channels, tests, { mode:"overview", resolutionPx:loadResolutionPx });
+          rows=v3res.rows;
+          if(v3res.meta){
+            loadV3Meta=v3res.meta;
+            if(overviewNeedsDetailRefetch(v3res.meta)) overviewLodActive=true;
+          }
+        }catch(err){
+          setStatus(`Load failed for '${db.name||src.name||src.type}': ${err}`, true);
+          continue;
         }
         rows.forEach((r)=>rowsAll.push(r));
       }
       if(seriesCache){ seriesCache.setOverview(rowsAll, loadV3Meta, { mode:"overview" }); seriesCache.detail.clear(); }
-      rowsAll.forEach((r)=>{ if(!Number.isFinite(r.__ts)) r.__ts=Date.parse(r.time); });
+      rowsAll.forEach((r)=>{ if(!Number.isFinite(r.__ts)) r.__ts=parseRowTimeMs(r); });
       let calcRows=[];
-      const serverCalcs=useV3Enabled() && preferences.useServerCalc!==false;
+      const serverCalcs=preferences.useServerCalc!==false;
       if(!serverCalcs){
         setStatus("Computing calculated channels...");
         await nextPaint();
@@ -6347,7 +6478,7 @@
       const selectedNonCalc=rowsAll.filter((r)=>channelIdSet.has(`${r.__dbId}|${r.channel_name}`));
       let finalRows=applyMasks(concatRows(selectedNonCalc, calcRows));
       applyRowUnitsInPlace(finalRows);
-      finalRows.forEach(r => { r.__ts = Date.parse(r.time); });
+      finalRows.forEach(r => { if(!Number.isFinite(r.__ts)) r.__ts = parseRowTimeMs(r); });
       rebuildChannelUnitMap();
       latestRows=finalRows;
       overviewRows=finalRows;
@@ -6405,7 +6536,7 @@
       document.addEventListener("click",(e)=>{ if(!byId("menubar").contains(e.target)) hideAll(); });
       document.querySelectorAll(".menuItem").forEach((mi)=>{ mi.onclick=(e)=>{ e.stopPropagation(); const id=mi.getAttribute("data-menu"); const dd=byId(`menu_${id}`); const shown=dd.classList.contains("show"); hideAll(); if(!shown) dd.classList.add("show"); }; });
       byId("help_github").onclick=()=>window.open("https://github.com/tysocks/NOVA","_blank");
-      byId("help_sourceHelp").onclick=()=>setStatus("Sources +: add RedScale/BlueScale/PostgreSQL/TDMS/Data Files. Postgres tests appear as database/run_code. Click/Ctrl/Shift to select; empty = all. Right-click to edit/rename/delete.");
+      byId("help_sourceHelp").onclick=()=>setStatus("Sources +: choose Database (coming soon) or Data File (CSV, TDMS, HDF5, Parquet, Arrow). Data files open a file picker, then a configuration window for name, path, time index, and unit parsing. Right-click to edit/rename/delete.");
       byId("help_versionCheck").onclick=()=>{ hideAll(); openVersionCheckModal(); };
       byId("view_togglePreview").onclick=()=>{ setPreviewVisible(!previewVisible); saveState(); };
       byId("edit_showMetadata").onclick=()=>showMetadataModal();
@@ -6466,7 +6597,7 @@
       { id:"arial", label:"Arial", stack:'Arial,Helvetica,sans-serif' },
       { id:"consolas", label:"Consolas", stack:'Consolas,"Courier New",monospace' },
     ];
-    const DEFAULT_PREFS={ fontFamily:"misans", fontSize:14, colorMode:"dark", useV3:true, useServerCalc:true, zoomDetailRefetch:true };
+    const DEFAULT_PREFS={ fontFamily:"misans", fontSize:14, colorMode:"dark", useServerCalc:true, zoomDetailRefetch:true };
     let preferences={ ...DEFAULT_PREFS };
     function persistPreferences(){ localStorage.setItem(PREFS_KEY, JSON.stringify(preferences)); }
     function loadPreferences(){
@@ -6477,7 +6608,6 @@
       preferences.fontSize=Math.max(10, Math.min(24, Number(preferences.fontSize)||DEFAULT_PREFS.fontSize));
       if(!FONT_OPTIONS.some((f)=>f.id===preferences.fontFamily)) preferences.fontFamily=DEFAULT_PREFS.fontFamily;
       if(preferences.colorMode!=="light") preferences.colorMode="dark";
-      if(preferences.useV3===undefined) preferences.useV3=true;
       if(preferences.useServerCalc===undefined) preferences.useServerCalc=true;
       if(preferences.zoomDetailRefetch===undefined) preferences.zoomDetailRefetch=true;
       applyPreferences();
@@ -6496,7 +6626,6 @@
           <div><label>Font</label><select id="m_pref_font">${fontOpts}</select></div>
           <div><label>Font Size (px)</label><input id="m_pref_size" type="number" min="10" max="24" step="1" value="${preferences.fontSize}" /></div>
           <div><label>Color Mode</label><select id="m_pref_mode"><option value="dark" ${preferences.colorMode==="dark"?"selected":""}>Dark</option><option value="light" ${preferences.colorMode==="light"?"selected":""}>Light</option></select></div>
-          <div><label style="text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);display:flex;gap:8px;align-items:center;"><input id="m_pref_v3" type="checkbox" style="width:auto;margin:0;" ${preferences.useV3!==false?"checked":""}/> Use v3 data engine (recommended)</label></div>
           <div><label style="text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);display:flex;gap:8px;align-items:center;"><input id="m_pref_server_calc" type="checkbox" style="width:auto;margin:0;" ${preferences.useServerCalc!==false?"checked":""}/> Compute calculated channels on server</label></div>
           <div><label style="text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);display:flex;gap:8px;align-items:center;"><input id="m_pref_zoom_refetch" type="checkbox" style="width:auto;margin:0;" ${preferences.zoomDetailRefetch!==false?"checked":""}/> Zoom-in detail refetch</label></div>
         </div>
@@ -6509,7 +6638,6 @@
         preferences.fontFamily=byId("m_pref_font").value||DEFAULT_PREFS.fontFamily;
         preferences.fontSize=Math.max(10, Math.min(24, Number(byId("m_pref_size").value||DEFAULT_PREFS.fontSize)));
         preferences.colorMode=byId("m_pref_mode").value==="light" ? "light" : "dark";
-        preferences.useV3=Boolean(byId("m_pref_v3")?.checked);
         preferences.useServerCalc=Boolean(byId("m_pref_server_calc")?.checked);
         preferences.zoomDetailRefetch=Boolean(byId("m_pref_zoom_refetch")?.checked);
         persistPreferences();
@@ -6798,30 +6926,18 @@
         const channels=rawChannelNamesForDb(dbId, effectiveSelectedChannelIds(), selectedCalcs);
         if(!tests.length||!channels.length) continue;
         try{
-          let rows=[];
-          if(useV3Enabled()&&(src.type==="postgres"||(isFileSource(src)&&src.artifact_id))){
-            const v3res=await queryV3ForDb(dbId, src, db, channels, tests, {
-              mode:"detail",
-              timeRange:[startTime, endTime],
-              resolutionPx:plotW,
-              calculatedChannels:preferences.useServerCalc!==false ? buildCalculatedSpecsForDb(dbId) : [],
-              signal:ac.signal,
-            });
-            rows=v3res.rows;
-          }else if(src.type==="postgres"){
-            rows=await fetchTimeseriesV2({
-              tests,
-              channels,
-              db,
-              src,
-              startTime,
-              endTime,
-              aggregationMode:"raw",
-            });
-            rows.forEach((r)=>{ r.__dbId=dbId; r.__ts=Date.parse(r.time); });
-          }else{
-            continue;
-          }
+          if(!v3ClientReady()) return;
+          if(isFileSource(src)) await linkArtifactForSource(src);
+          const canV3=src.type==="postgres"||(isFileSource(src)&&src.artifact_id);
+          if(!canV3) continue;
+          const v3res=await queryV3ForDb(dbId, src, db, channels, tests, {
+            mode:"detail",
+            timeRange:[startTime, endTime],
+            resolutionPx:plotW,
+            calculatedChannels:preferences.useServerCalc!==false ? buildCalculatedSpecsForDb(dbId) : [],
+            signal:ac.signal,
+          });
+          const rows=v3res.rows;
           rows.forEach((r)=>rowsAll.push(r));
         }catch(e){
           if(e?.name==="AbortError") return;
@@ -6842,7 +6958,7 @@
         }
       }
       let calcRows=[];
-      if(preferences.useServerCalc!==false && useV3Enabled()){
+      if(preferences.useServerCalc!==false){
         const calcNames=new Set(selectedCalcs.map((c)=>c.name));
         calcRows=rowsAll.filter((r)=>calcNames.has(r.channel_name));
       }else{
@@ -6850,7 +6966,7 @@
       }
       const selNonCalc=rowsAll.filter((r)=>selectedChannelIds.has(`${r.__dbId}|${r.channel_name}`) && !selectedCalcs.some((c)=>c.name===r.channel_name));
       const finalRows=applyMasks(concatRows(selNonCalc, calcRows));
-      finalRows.forEach(r=>{ if(!r.__ts) r.__ts=Date.parse(r.time); });
+      finalRows.forEach(r=>{ if(!Number.isFinite(r.__ts)) r.__ts=parseRowTimeMs(r); });
       if(fetchGen!==zoomDetailFetchGen) return;
       zoomState="detail";
       latestRows=finalRows;
@@ -6934,6 +7050,7 @@
       loadPlots();
       initMenus();
       initSidebarResize();
+      initProbeFlagTips();
       activePlotId = activePlotId || plots[0].id;
       restoreSelections(getActivePlot()?.selections);
       latestRows = getActivePlot()?.latestRows || [];
@@ -6971,7 +7088,12 @@
     });
     byId("addMaskBtn").onclick=showAddMasksMenu;
     byId("xAxis").onchange=()=>{ if(latestRows.length) plotRows(latestRows); saveState(); };
-    byId("t0Mode").onchange=()=>{ if(latestRows.length) plotRows(latestRows); saveState(); };
+    byId("t0Mode").onchange=()=>{
+      realtimeLockedXRange=null;
+      realtimeLockedYRanges=null;
+      if(latestRows.length) plotRows(latestRows, { preserveUi:false, resetView:true });
+      saveState();
+    };
     byId("loadBtn").onclick=loadTimeseries;
     document.addEventListener("keydown",(e)=>{ if(e.key==="Delete"){ e.preventDefault(); deleteFocused(); } });
     requestAnimationFrame(()=>setTimeout(initialize,0));
