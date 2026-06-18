@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import uuid
 
 from fastapi import Body, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
@@ -51,7 +52,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 APPEARANCE_FILE = Path(__file__).resolve().parents[1] / ".nova_appearance.json"
-SOURCE_DEFAULTS_FILE = Path(__file__).resolve().parents[1] / ".nova_source_defaults.json"
+DATABASE_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_database_library.json"
 CONFIG_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_config_library.json"
 
 
@@ -74,86 +75,136 @@ def health() -> HealthResponse:
     return HealthResponse(ok=True, app="NOVA")
 
 
-@app.get("/api/source-defaults")
-def source_defaults() -> dict:
-    defaults = [
-        {
-            "key": "redscale",
-            "name": "RedScale",
-            "type": "postgres",
-            "host": settings.redscale_host,
-            "port": settings.redscale_port,
-            "user": settings.redscale_user,
-            "password": settings.redscale_password,
-            "sslmode": settings.redscale_sslmode,
-        },
-        {
-            "key": "bluescale",
-            "name": "BlueScale",
-            "type": "postgres",
-            "host": settings.bluescale_host,
-            "port": settings.bluescale_port,
-            "user": settings.bluescale_user,
-            "password": settings.bluescale_password,
-            "sslmode": settings.bluescale_sslmode,
-        },
-    ]
-    if SOURCE_DEFAULTS_FILE.exists():
-        try:
-            payload = json.loads(SOURCE_DEFAULTS_FILE.read_text(encoding="utf-8"))
-            from_file = payload.get("defaults") if isinstance(payload, dict) else None
-            if isinstance(from_file, list):
-                cleaned = []
-                for row in from_file:
-                    if not isinstance(row, dict):
-                        continue
-                    if row.get("type", "postgres") != "postgres":
-                        continue
-                    cleaned.append(
-                        {
-                            "key": str(row.get("key") or f"src_{len(cleaned)+1}"),
-                            "name": str(row.get("name") or "PostgreSQL Source"),
-                            "type": "postgres",
-                            "host": str(row.get("host") or "localhost"),
-                            "port": int(row.get("port") or 5432),
-                            "user": str(row.get("user") or "pipeline"),
-                            "password": str(row.get("password") or ""),
-                            "sslmode": str(row.get("sslmode") or "disable"),
-                        }
-                    )
-                defaults = cleaned or defaults
-        except Exception:
-            pass
-    return {"defaults": defaults}
+@app.get("/api/database-library")
+def get_database_library() -> dict:
+    cleaned = _load_database_library_rows()
+    if not cleaned:
+        cleaned = _seed_database_library_from_settings()
+        if cleaned:
+            _write_database_library_rows(cleaned)
+    return {"databases": cleaned}
 
 
-@app.post("/api/source-defaults")
-def save_source_defaults(payload: dict = Body(...)) -> dict:
-    rows = payload.get("defaults") if isinstance(payload, dict) else None
+@app.post("/api/database-library")
+def save_database_library(payload: dict = Body(...)) -> dict:
+    rows = payload.get("databases") if isinstance(payload, dict) else None
     if not isinstance(rows, list):
-        return {"ok": False, "error": "defaults must be a list"}
-    cleaned = []
+        return {"ok": False, "error": "databases must be a list"}
+    cleaned = _clean_database_library_rows(rows)
+    _write_database_library_rows(cleaned)
+    return {"ok": True, "count": len(cleaned)}
+
+
+@app.post("/api/database-library/test")
+def test_database_library_connection(payload: dict = Body(...)) -> dict:
+    if not isinstance(payload, dict):
+        return {"ok": False, "error": "request body must be a JSON object"}
+    host_raw = payload.get("host")
+    user_raw = payload.get("user")
+    if host_raw is None or not str(host_raw).strip():
+        return {"ok": False, "error": "host is required"}
+    if user_raw is None or not str(user_raw).strip():
+        return {"ok": False, "error": "user is required"}
+    host = str(host_raw).strip()
+    user = str(user_raw).strip()
+    try:
+        port = int(payload.get("port") or 5432)
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "port must be an integer"}
+    if port <= 0:
+        return {"ok": False, "error": "port must be positive"}
+    password = str(payload.get("password") or "")
+    sslmode = str(payload.get("sslmode") or "disable").strip() or "disable"
+    try:
+        databases = list_databases(
+            db_host=host,
+            db_port=port,
+            db_user=user,
+            db_password=password,
+            db_sslmode=sslmode,
+        )
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+    return {"ok": True, "database_count": len(databases)}
+
+
+def _clean_database_library_row(row: dict) -> dict:
+    return {
+        "id": str(row.get("id") or uuid.uuid4()),
+        "type": "postgres",
+        "name": str(row.get("name") or "PostgreSQL Database"),
+        "host": str(row.get("host") or "localhost"),
+        "port": int(row.get("port") or 5432),
+        "user": str(row.get("user") or "pipeline"),
+        "password": str(row.get("password") or ""),
+        "sslmode": str(row.get("sslmode") or "disable"),
+    }
+
+
+def _clean_database_library_rows(rows: list) -> list[dict]:
+    cleaned: list[dict] = []
     for row in rows:
         if not isinstance(row, dict):
             continue
         if row.get("type", "postgres") != "postgres":
             continue
-        cleaned.append(
+        cleaned.append(_clean_database_library_row(row))
+    return cleaned
+
+
+def _load_database_library_rows() -> list[dict]:
+    if not DATABASE_LIBRARY_FILE.exists():
+        return []
+    try:
+        payload = json.loads(DATABASE_LIBRARY_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    rows = payload.get("databases") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return []
+    return _clean_database_library_rows(rows)
+
+
+def _write_database_library_rows(rows: list[dict]) -> None:
+    DATABASE_LIBRARY_FILE.write_text(
+        json.dumps({"databases": rows}, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _seed_database_library_from_settings() -> list[dict]:
+    """Seed RedScale / BlueScale profiles from NOVA_* env when the library file is empty."""
+    profiles: list[dict] = []
+    profiles.append(
+        _clean_database_library_row(
             {
-                "key": str(row.get("key") or f"src_{len(cleaned)+1}"),
-                "name": str(row.get("name") or "PostgreSQL Source"),
-                "type": "postgres",
-                "host": str(row.get("host") or "localhost"),
-                "port": int(row.get("port") or 5432),
-                "user": str(row.get("user") or "pipeline"),
-                "password": str(row.get("password") or ""),
-                "sslmode": str(row.get("sslmode") or "disable"),
+                "name": "RedScale",
+                "host": settings.redscale_host,
+                "port": settings.redscale_port,
+                "user": settings.redscale_user,
+                "password": settings.redscale_password,
+                "sslmode": settings.redscale_sslmode,
             }
         )
-    if not cleaned:
-        return {"ok": False, "error": "at least one postgres default is required"}
-    SOURCE_DEFAULTS_FILE.write_text(json.dumps({"defaults": cleaned}, indent=2), encoding="utf-8")
-    return {"ok": True, "count": len(cleaned)}
+    )
+    bluescale = _clean_database_library_row(
+        {
+            "name": "BlueScale",
+            "host": settings.bluescale_host,
+            "port": settings.bluescale_port,
+            "user": settings.bluescale_user,
+            "password": settings.bluescale_password,
+            "sslmode": settings.bluescale_sslmode,
+        }
+    )
+    if not any(
+        p["host"] == bluescale["host"]
+        and p["port"] == bluescale["port"]
+        and p["user"] == bluescale["user"]
+        for p in profiles
+    ):
+        profiles.append(bluescale)
+    return profiles
 
 
 @app.get("/api/config-library")

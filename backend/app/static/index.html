@@ -10,23 +10,23 @@
   <style>
     :root {
       color-scheme:dark;
-      --nova-base-font-size:14px;
-      --nova-ui-bg:#0a0a0a;
+      --nova-base-font-size:13px;
+      --nova-ui-bg:#0c0c0c;
       --nova-view-bg:#000000;
-      --nova-accent:#333;
-      --nova-text:#d4d4d4;
-      --nova-text-dim:#404040;
-      --nova-divider:#1c1c1c;
-      --nova-hover:#111111;
-      --nova-active:#141414;
-      --nova-line:#555;
-      --nova-surface:#0d0d0d;
-      --nova-input-bg:#0d0d0d;
-      --nova-btn-bg:#111;
-      --nova-radius-xs:3px;
-      --nova-radius-sm:5px;
-      --nova-radius-md:8px;
-      --nova-radius-lg:10px;
+      --nova-accent:#ffffff;
+      --nova-text:#e8e8e8;
+      --nova-text-dim:#6b6b6b;
+      --nova-divider:#1a1a1a;
+      --nova-hover:#161616;
+      --nova-active:#1c1c1c;
+      --nova-line:#3a3a3a;
+      --nova-surface:#111111;
+      --nova-input-bg:#0f0f0f;
+      --nova-btn-bg:#181818;
+      --nova-radius-xs:2px;
+      --nova-radius-sm:3px;
+      --nova-radius-md:4px;
+      --nova-radius-lg:6px;
     }
     html.light-mode {
       color-scheme:light;
@@ -43,45 +43,44 @@
       --nova-btn-bg:#e8e8e8;
     }
     *{ box-sizing:border-box; }
-    body{ margin:0; font-family:var(--nova-font-family,"MiSans","Segoe UI","Microsoft YaHei UI",Arial,sans-serif); font-size:var(--nova-base-font-size); background:var(--nova-ui-bg); color:var(--nova-text); height:100vh; overflow:hidden; }
+    body{ margin:0; font-family:var(--nova-font-family,"Segoe UI","Inter",system-ui,-apple-system,sans-serif); font-size:var(--nova-base-font-size); background:var(--nova-ui-bg); color:var(--nova-text); height:100vh; overflow:hidden; -webkit-font-smoothing:antialiased; }
     /* Menubar */
-    .menubar{ display:flex; align-items:center; gap:4px; padding:3px 6px; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); user-select:none; }
-    .menuItem{ position:relative; padding:5px 9px; border:1px solid transparent; border-radius:var(--nova-radius-xs); cursor:pointer; font-size:0.74rem; }
-    .menuItem:hover{ background:var(--nova-hover); border-color:var(--nova-divider); }
-    .menuDropdown{ position:absolute; top:calc(100% + 4px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-ui-bg); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); box-shadow:0 8px 20px rgba(0,0,0,0.7); overflow:hidden; }
+    .menubar{ display:flex; align-items:center; gap:2px; padding:0 8px; height:28px; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); user-select:none; }
+    .menuItem{ position:relative; padding:4px 8px; border:none; border-radius:0; cursor:pointer; font-size:0.75rem; color:var(--nova-text-dim); }
+    .menuItem:hover{ background:transparent; color:var(--nova-text); }
+    .menuDropdown{ position:absolute; top:calc(100% + 2px); left:0; min-width:200px; display:none; z-index:120; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); box-shadow:0 4px 16px rgba(0,0,0,0.45); overflow:hidden; }
     .menuDropdown.show{ display:block; }
-    .menuAction{ padding:7px 10px; border-bottom:1px solid var(--nova-divider); font-size:0.8rem; cursor:pointer; color:var(--nova-text); }
+    .menuAction{ padding:6px 12px; border-bottom:none; font-size:0.75rem; cursor:pointer; color:var(--nova-text); }
     .menuAction:last-child{ border-bottom:none; }
     .menuAction:hover{ background:var(--nova-hover); }
     .menuSep{ height:1px; background:var(--nova-divider); margin:2px 0; }
     /* Layout */
-    .app{ display:flex; height:calc(100vh - 26px); width:100vw; }
-    .sidebar{ width:252px; min-width:5vw; max-width:704px; background:var(--nova-ui-bg); border-right:1px solid var(--nova-divider); overflow-y:auto; flex:0 0 auto; font-size:0.8rem; display:flex; flex-direction:column; }
+    .app{ display:flex; height:calc(100vh - 28px); width:100vw; }
+    .sidebar{ width:272px; min-width:5vw; max-width:704px; background:var(--nova-ui-bg); border-right:1px solid var(--nova-divider); overflow-y:auto; flex:0 0 auto; font-size:0.78rem; display:flex; flex-direction:column; }
     .sidebarResizer{ width:4px; margin-left:-2px; margin-right:-2px; cursor:col-resize; background:transparent; z-index:5; }
     .main{ flex:1 1 auto; background:var(--nova-view-bg); overflow:hidden; display:flex; flex-direction:column; min-width:0; }
     /* Panels */
     .panel{ background:transparent; border:none; }
-    .panelHeader{ display:flex; justify-content:space-between; align-items:center; background:var(--nova-ui-bg); border-bottom:1px solid var(--nova-divider); padding:5px 6px; margin:0; cursor:pointer; }
-    .panelHeader:hover{ background:var(--nova-hover); }
-    .panelHeader h3{ margin:0; font-size:0.60rem; color:color-mix(in srgb, var(--nova-text-dim) 90%, white 10%); letter-spacing:0.09em; text-transform:uppercase; font-weight:500; }
+    .panelHeader{ display:flex; justify-content:space-between; align-items:center; background:transparent; border-bottom:none; padding:10px 10px 4px; margin:0; cursor:pointer; }
+    .panelHeader:hover{ background:transparent; }
+    .panelHeader h3{ margin:0; font-size:0.58rem; color:var(--nova-text-dim); letter-spacing:0.12em; text-transform:uppercase; font-weight:600; }
     .headerBtns{ display:flex; gap:3px; }
     .addBtn,.collapseBtn{ width:14px; height:14px; border-radius:var(--nova-radius-xs); border:none; background:transparent; color:var(--nova-text-dim); padding:0; font-weight:600; cursor:pointer; font-size:0.60rem; line-height:1; }
     .addBtn:hover,.collapseBtn:hover{ color:var(--nova-text); }
     /* Lists */
-    .list{ border:none; background:var(--nova-ui-bg); overflow-y:auto; max-height:136px; user-select:none; -webkit-user-select:none; }
+    .list{ border:none; background:transparent; overflow-y:auto; max-height:140px; user-select:none; -webkit-user-select:none; padding:0 4px 6px; }
     /* Show more channels by default (user request). */
-    #channelsList{ max-height:260px; }
-    .item{ padding:4px 6px 4px 8px; border-bottom:1px solid #0f0f0f; cursor:pointer; border-left:2px solid transparent; user-select:none; -webkit-user-select:none; }
-    .item:last-child{ border-bottom:none; }
-    .item.active{ background:var(--nova-active); border-left-color:var(--nova-line); }
+    #channelsList{ max-height:280px; }
+    .item{ padding:5px 8px; border:none; border-radius:var(--nova-radius-xs); cursor:pointer; user-select:none; -webkit-user-select:none; }
+    .item.active{ background:var(--nova-active); }
     .item:hover:not(.active){ background:var(--nova-hover); }
     .item.focused{ outline:none; }
-    .itemPrimary{ font-size:0.72rem; color:var(--nova-text); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .itemMeta{ font-size:0.60rem; color:var(--nova-text-dim); margin-top:1px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .empty{ padding:8px; color:var(--nova-text-dim); font-size:0.70rem; }
+    .itemPrimary{ font-size:0.76rem; color:var(--nova-text); line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:400; }
+    .itemMeta{ font-size:0.62rem; color:var(--nova-text-dim); margin-top:2px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .empty{ padding:8px 10px; color:var(--nova-text-dim); font-size:0.72rem; }
     /* Form elements */
     label{ display:block; margin:5px 0 2px 0; font-size:0.60rem; color:var(--nova-text-dim); letter-spacing:0.06em; text-transform:uppercase; }
-    input,select,button{ width:100%; border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); background:var(--nova-input-bg); color:var(--nova-text); padding:5px; font-size:0.72rem; outline:none; }
+    input,select,button{ width:100%; border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); background:var(--nova-input-bg); color:var(--nova-text); padding:6px 8px; font-size:0.75rem; outline:none; }
     input:focus,select:focus{ border-color:var(--nova-line); }
     button{ cursor:pointer; background:var(--nova-btn-bg); border:1px solid transparent; }
     button:hover{ background:var(--nova-hover); }
@@ -89,9 +88,9 @@
     .iconBtn{ width:22px; height:22px; min-width:22px; border-radius:var(--nova-radius-sm); border:none; background:transparent; color:var(--nova-text-dim); padding:0; font-size:0.82rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
     .iconBtn:hover{ color:var(--nova-text); background:var(--nova-hover); }
     /* Plot tabs */
-    .plotTabs{ display:flex; align-items:stretch; gap:0; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); min-height:26px; flex:0 0 auto; overflow-x:auto; }
-    .plotTab{ width:auto; min-width:82px; max-width:195px; background:var(--nova-ui-bg); border:none; border-right:1px solid var(--nova-divider); border-top:2px solid transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 0 auto; padding:4px 8px; font-size:0.68rem; color:var(--nova-text-dim); }
-    .plotTab.active{ background:var(--nova-active); border-top-color:var(--nova-line); color:var(--nova-text); }
+    .plotTabs{ display:flex; align-items:stretch; gap:0; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); min-height:28px; flex:0 0 auto; overflow-x:auto; }
+    .plotTab{ width:auto; min-width:72px; max-width:200px; background:transparent; border:none; border-bottom:2px solid transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 0 auto; padding:5px 12px; font-size:0.72rem; color:var(--nova-text-dim); }
+    .plotTab.active{ background:transparent; border-bottom-color:var(--nova-text); color:var(--nova-text); }
     .plotTab:hover:not(.active){ background:var(--nova-hover); color:var(--nova-text); }
     .plotAdd{ width:auto; min-width:24px; max-width:24px; padding:0; font-weight:900; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; border:none; border-radius:var(--nova-radius-xs); background:var(--nova-ui-bg); color:var(--nova-text-dim); }
     .plotAdd:hover{ color:var(--nova-text); background:var(--nova-hover); }
@@ -154,7 +153,7 @@
     .sidebar,.list,.modalList,.tableWrap{ scrollbar-width:none; }
     .sidebar::-webkit-scrollbar,.list::-webkit-scrollbar,.modalList::-webkit-scrollbar,.tableWrap::-webkit-scrollbar{ width:0; height:0; }
     /* Status bar */
-    #statusBar{ position:fixed; bottom:0; left:0; right:0; min-height:20px; max-height:72px; background:var(--nova-ui-bg); border-top:1px solid var(--nova-divider); padding:2px 8px; font-size:0.65rem; color:#555; z-index:50; display:flex; align-items:flex-start; pointer-events:auto; white-space:normal; overflow:auto; line-height:1.35; }
+    #statusBar{ position:fixed; bottom:0; left:0; right:0; min-height:22px; max-height:72px; background:var(--nova-ui-bg); border-top:1px solid var(--nova-divider); padding:3px 10px; font-size:0.68rem; color:var(--nova-text-dim); z-index:50; display:flex; align-items:flex-start; pointer-events:auto; white-space:normal; overflow:auto; line-height:1.35; }
     #statusBar.error{ color:#f0a8a8; background:rgba(80,24,24,0.35); border-top-color:#6a3030; }
     .versionCheckPanel{ font-size:0.78rem; line-height:1.45; }
     .versionCheckSummary{ margin:0 0 10px; padding:8px 10px; border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); }
@@ -176,7 +175,7 @@
     /* Modal */
     .modalBackdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.78); display:none; z-index:60; align-items:center; justify-content:center; }
     .modalBackdrop.show{ display:flex; }
-    .modal{ width:min(760px,92vw); max-height:82vh; overflow-x:hidden; overflow-y:auto; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); padding:0; box-shadow:0 12px 40px rgba(0,0,0,0.55); }
+    .modal{ width:min(760px,92vw); max-height:82vh; overflow-x:hidden; overflow-y:auto; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); padding:0; box-shadow:0 8px 32px rgba(0,0,0,0.4); }
     .modal.modalScale{ width:min(420px,94vw); overflow-x:hidden; }
     .modal.modalChannels{ width:min(480px,94vw); overflow-x:hidden; }
     .modal.modalNarrow{ width:min(220px,88vw); }
@@ -193,31 +192,30 @@
     .modal.modalMask .maskFormPad{ padding:4px 8px 2px; }
     .modal.modalMask .maskSearchPad{ padding:4px 8px 2px; }
     .modal.modalMask .maskListPad{ padding:0 8px 4px; }
-    .scalePickerGrid{ display:grid; grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr); gap:6px; width:100%; min-width:0; }
+    .scalePickerGrid{ display:grid; grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr); gap:10px; width:100%; min-width:0; padding:0 10px; }
     .scalePickerCol{ min-width:0; display:flex; flex-direction:column; }
-    .scalePickerCol label{ margin:0 0 3px 1px; }
-    .scalePickerCol .modalList{ max-height:48vh; overflow-x:hidden; min-width:0; }
+    .scalePickerCol label{ margin:0 0 4px 2px; font-size:0.58rem; }
+    .scalePickerCol .modalList{ max-height:52vh; overflow-x:hidden; min-width:0; border:none; background:transparent; padding:0; }
     .scalePickerCol select{ margin-bottom:4px; padding:4px; font-size:0.70rem; }
     .channelTransferGrid{ display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:6px; align-items:stretch; width:100%; min-width:0; }
     .channelTransferBtns{ display:flex; flex-direction:column; gap:4px; justify-content:center; }
     .channelTransferBtns button{ min-width:32px !important; width:32px !important; padding:4px 0 !important; border-radius:var(--nova-radius-sm) !important; }
-    .modalHeader{ display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid var(--nova-divider); }
-    .modalTitle{ margin:0; font-size:0.85rem; color:var(--nova-text); }
+    .modalHeader{ display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid var(--nova-divider); }
+    .modalTitle{ margin:0; font-size:0.8rem; color:var(--nova-text); font-weight:500; }
     .modalClose{ width:auto; min-width:24px; padding:3px 7px; border-radius:var(--nova-radius-xs); }
     .modalGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:10px; }
     .modalActions{ padding:8px 10px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid var(--nova-divider); margin:0; }
     .modalActions button{ width:auto; min-width:100px; }
-    .modalList{ border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); background:var(--nova-ui-bg); max-height:48vh; overflow-x:hidden; overflow-y:auto; }
-    .selectRow{ padding:7px 8px 7px 10px; border-bottom:1px solid var(--nova-divider); cursor:pointer; border-left:2px solid transparent; }
-    .selectRow:last-child{ border-bottom:none; }
-    .selectRow.active{ background:var(--nova-active); border-left-color:var(--nova-line); }
+    .modalList{ border:none; border-radius:0; background:transparent; max-height:48vh; overflow-x:hidden; overflow-y:auto; padding:0 4px; }
+    .selectRow{ padding:5px 8px; border:none; border-radius:var(--nova-radius-xs); cursor:pointer; }
+    .selectRow.active{ background:var(--nova-active); }
     .selectRow:hover:not(.active){ background:var(--nova-hover); }
     .selectRow.disabled{ opacity:0.7; }
     .timeRangeRow{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
     .timeRangeRow label{ margin-top:0; }
     /* Menus */
-    .contextMenu,.miniMenu{ position:fixed; z-index:200; display:none; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); min-width:180px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
-    .contextItem,.miniMenuItem{ padding:7px 10px; cursor:pointer; font-size:0.78rem; border-bottom:1px solid var(--nova-divider); color:var(--nova-text); }
+    .contextMenu,.miniMenu{ position:fixed; z-index:200; display:none; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); min-width:180px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.4); }
+    .contextItem,.miniMenuItem{ padding:6px 12px; cursor:pointer; font-size:0.75rem; border-bottom:none; color:var(--nova-text); }
     .contextHeader{ padding:5px 10px 3px; font-size:0.62rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--nova-text-dim); pointer-events:none; border-bottom:1px solid var(--nova-divider); }
     .contextSep{ height:1px; background:var(--nova-divider); margin:2px 0; }
     .contextSubWrap{ position:relative; }
@@ -271,9 +269,9 @@
     .realtimeBtn.active{ background:var(--nova-active); color:var(--nova-text); }
     #realtimeCloseBtn{ border-radius:var(--nova-radius-sm); }
     /* Load dock */
-    .choochDock{ margin-top:auto; margin-bottom:30px; padding:8px; border-top:1px solid var(--nova-divider); }
-    .choochDock button{ border-radius:var(--nova-radius-sm); margin:0; min-height:30px; letter-spacing:0.09em; text-transform:uppercase; font-size:0.65rem; font-weight:600; background:#111; border-color:#2a2a2a; }
-    .choochDock button:hover{ background:#1a1a1a; border-color:#555; }
+    .choochDock{ margin-top:auto; margin-bottom:24px; padding:10px; border-top:1px solid var(--nova-divider); }
+    .choochDock button{ border-radius:var(--nova-radius-sm); margin:0; min-height:32px; letter-spacing:0.04em; text-transform:none; font-size:0.76rem; font-weight:500; background:var(--nova-btn-bg); border:1px solid var(--nova-divider); color:var(--nova-text); }
+    .choochDock button:hover{ background:var(--nova-hover); border-color:var(--nova-line); }
     /* Region section */
     #regionBody{ max-height:none !important; padding:6px 8px; }
     .panel-legacy{ display:none !important; }
@@ -281,9 +279,10 @@
     .cfgManagerToolbar input{ flex:1; min-width:0; }
     .cfgMenuBtn{ width:28px; height:28px; min-width:28px; font-size:1.1rem; letter-spacing:0.02em; }
     #appWindowLayer{ position:fixed; inset:0; pointer-events:none; z-index:110; }
-    .appWindow{ position:fixed; pointer-events:auto; display:flex; flex-direction:column; min-width:220px; min-height:140px; max-width:96vw; max-height:96vh; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); box-shadow:0 12px 40px rgba(0,0,0,0.55); overflow:hidden; z-index:111; }
+    .appWindow{ position:fixed; pointer-events:auto; display:flex; flex-direction:column; min-width:220px; min-height:140px; max-width:96vw; max-height:96vh; background:var(--nova-surface); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); box-shadow:0 8px 32px rgba(0,0,0,0.4); overflow:hidden; z-index:111; }
     .appWindow.modalScale{ width:420px; height:520px; }
     .appWindow.modalChannels{ width:480px; height:560px; }
+    .appWindow.modalDbSource{ width:960px; height:640px; }
     .appWindow.modalMask{ width:360px; height:500px; }
     .appWindow.modalNarrow{ width:260px; height:340px; }
     .appWindowHeader{ display:flex; align-items:center; gap:6px; cursor:move; flex:0 0 auto; user-select:none; padding-right:8px; }
@@ -312,7 +311,7 @@
     <div class="menuItem" data-menu="file">File
       <div class="menuDropdown" id="menu_file">
         <div class="menuAction" id="file_configManager">Configuration Manager...</div>
-        <div class="menuAction" id="file_defaultSources">Default Sources...</div>
+        <div class="menuAction" id="file_databaseManager">Database Manager...</div>
         <div class="menuSep"></div>
         <div class="menuAction" id="file_exportPlot">Export Current View (CSV)...</div>
       </div>
@@ -419,6 +418,13 @@
     };
     const toIso = (v) => (v ? new Date(v).toISOString() : "n/a");
     const escAttr = (v) => String(v ?? "").replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
+    const escapeHtml = (v) =>
+      String(v ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
     function parseRowTimeMs(row){
       if(!row) return NaN;
       if(Number.isFinite(row.x_ms)) return row.x_ms;
@@ -521,7 +527,7 @@
     const lastClickedByKind = {};
     const catalogCache = new Map();
     const seriesCache = window.NovaV3 ? new NovaV3.SeriesCache() : null;
-    let sourceDefaults = null;
+    let databaseLibrary = null;
     function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
     function bsearch(arr, target){ let lo=0, hi=arr.length; while(lo<hi){ const mid=(lo+hi)>>1; if(arr[mid]<=target) lo=mid+1; else hi=mid; } return lo; }
     function clearCatalogCache(){ catalogCache.clear(); }
@@ -2949,16 +2955,105 @@
       return !(ch.unit || "").trim();
     }
     async function getJson(url) { const r = await fetch(url); if (!r.ok) { let detail = ""; try { const body = await r.json(); detail = body?.detail ? `: ${body.detail}` : ""; } catch { try { const text = await r.text(); if (text) detail = `: ${text}`; } catch {} } throw new Error(`Request failed ${r.status}${detail}`); } return r.json(); }
-    async function postJson(url, payload){ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); if(!r.ok) throw new Error(`Request failed ${r.status}`); return r.json(); }
-    async function loadSourceDefaults(){
-      if(sourceDefaults) return sourceDefaults;
+    async function postJson(url, payload){
+      const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      let body=null;
+      try{ body=await r.json(); }catch{}
+      if(!r.ok){
+        const detail=body?.error||body?.detail||`Request failed ${r.status}`;
+        throw new Error(typeof detail==="string"?detail:JSON.stringify(detail));
+      }
+      return body??{};
+    }
+    async function loadDatabaseLibrary(){
       try{
-        const data=await getJson("/api/source-defaults");
-        if(Array.isArray(data?.defaults)) sourceDefaults=data.defaults;
-        else if(data&&typeof data==="object") sourceDefaults=Object.keys(data).map((k)=>({key:k,...data[k]}));
-        else sourceDefaults=[];
-      }catch{ sourceDefaults=[]; }
-      return sourceDefaults;
+        const data=await getJson("/api/database-library");
+        databaseLibrary=Array.isArray(data?.databases) ? data.databases : [];
+      }catch{
+        databaseLibrary=databaseLibrary ?? [];
+      }
+      return databaseLibrary;
+    }
+    async function saveDatabaseLibrary(rows){
+      const out=(rows||[]).map((row)=>({
+        id:String(row.id||crypto.randomUUID()),
+        type:"postgres",
+        name:String(row.name||"PostgreSQL Database"),
+        host:String(row.host||"localhost"),
+        port:Number(row.port||5432),
+        user:String(row.user||"pipeline"),
+        password:String(row.password||""),
+        sslmode:String(row.sslmode||"disable"),
+      })).filter((row)=>row.name&&row.host&&row.user&&Number.isFinite(row.port)&&row.port>0);
+      const saved=await postJson("/api/database-library",{databases:out});
+      if(!saved?.ok) throw new Error(saved?.error||"Failed to save database library.");
+      databaseLibrary=out;
+      return out;
+    }
+    async function testDatabaseProfile(profile){
+      if(!profile) return false;
+      const host=String(profile.host||"localhost").trim();
+      const user=String(profile.user||"pipeline").trim();
+      const port=Number(profile.port||5432);
+      const password=String(profile.password||"");
+      const sslmode=String(profile.sslmode||"disable").trim()||"disable";
+      if(!host||!user){
+        setStatus("Host and user are required to test a connection.", true);
+        return false;
+      }
+      const q=new URLSearchParams();
+      q.append("db_host", host);
+      q.append("db_port", String(port));
+      q.append("db_user", user);
+      q.append("db_password", password);
+      q.append("db_sslmode", sslmode);
+      setStatus(`Testing connection: ${profile.name||"profile"}...`);
+      try{
+        const dbs=await getJson(`/api/databases?${q.toString()}`);
+        const count=Array.isArray(dbs)?dbs.length:0;
+        setStatus(`Connection OK: ${profile.name||"profile"} (${count} database(s) found).`);
+        return true;
+      }catch(err){
+        setStatus(`Connection failed: ${err}`, true);
+        return false;
+      }
+    }
+    function normalizeImportedDatabaseLibrary(obj){
+      const rows=Array.isArray(obj?.databases)?obj.databases:(Array.isArray(obj)?obj:[obj]);
+      return rows
+        .filter((r)=>r&&typeof r==="object")
+        .map((r)=>({
+          id:String(r.id||crypto.randomUUID()),
+          type:"postgres",
+          name:String(r.name||"PostgreSQL Database").trim(),
+          host:String(r.host||"localhost").trim(),
+          port:Number(r.port||5432),
+          user:String(r.user||"pipeline").trim(),
+          password:String(r.password||""),
+          sslmode:String(r.sslmode||"disable").trim()||"disable",
+        }))
+        .filter((r)=>r.name&&r.host&&r.user&&Number.isFinite(r.port)&&r.port>0);
+    }
+    function pickDatabaseJsonFile(){
+      return new Promise((resolve)=>{
+        const picker=byId("filePicker");
+        picker.accept="application/json";
+        picker.value="";
+        picker.onchange=async()=>{
+          const f=picker.files?.[0];
+          if(!f){ resolve(null); return; }
+          try{
+            const obj=JSON.parse(await f.text());
+            picker.value="";
+            resolve(obj);
+          }catch(err){
+            setStatus(`Invalid database library file: ${err}`, true);
+            picker.value="";
+            resolve(null);
+          }
+        };
+        picker.click();
+      });
     }
     function isPostgresTestLeaf(s){ return s && s.leaf_kind==="postgres_test"; }
     function isPostgresConnSource(s){ return s && s.type==="postgres" && !isPostgresTestLeaf(s); }
@@ -3096,13 +3191,6 @@
       }
       return src;
     }
-    function getOrCreatePostgresParent(defs){
-      const existing=state.sources.find((s)=>isPostgresConnSource(s)&&s.host===defs.host&&Number(s.port)===Number(defs.port)&&s.user===defs.user&&s.name===defs.name);
-      if(existing) return existing;
-      const entry={ id:crypto.randomUUID(), type:"postgres", name:defs.name||"PostgreSQL Source", host:defs.host||"localhost", port:Number(defs.port||5432), user:defs.user||"pipeline", password:defs.password||"", sslmode:defs.sslmode||"disable", file_path:"" };
-      state.sources.push(entry);
-      return entry;
-    }
     function ensureFileSourceCatalog(src){
       if(!src || !isFileSource(src)) return null;
       let db=state.databases.find((d)=>d.sourceId===src.id);
@@ -3214,14 +3302,14 @@
     function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, appearance, selectedSourceIds:[...selectedSourceIds], selectedDatabaseIds:[...selectedDatabaseIds], selectedTestIds:[...selectedTestIds], selectedChannelIds:[...selectedChannelIds], selectedMaskIds:[...selectedMaskIds], addedTestIds:[...addedTestIds], addedChannelIds:[...addedChannelIds], xAxis:byId("xAxis").value, t0Mode:byId("t0Mode").value, previewVisible })); localStorage.setItem(APPEAR_KEY, JSON.stringify(appearance)); }
     const saveStateDeferred = debounce(saveState, 150);
     function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:s.calculatedChannels || [], freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {} }; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = new Set(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = new Set(s.addedChannelIds || []); byId("xAxis").value = s.xAxis || "time"; const nextT0 = s.t0Mode==="raw" ? "absolute" : (s.t0Mode==="first_sample" ? "first_index" : (s.t0Mode || "first_index")); byId("t0Mode").value = nextT0; previewVisible = Boolean(s.previewVisible); } catch {} }
-    const MODAL_SIZE_CLASSES=["modalScale","modalChannels","modalNarrow","modalMask","modalCompact"];
+    const MODAL_SIZE_CLASSES=["modalScale","modalChannels","modalDbSource","modalNarrow","modalMask","modalCompact"];
     const WF={ floating:true };
-    const WF_SCALE={ floating:true, size:"modalScale", compact:true };
     const WF_CHANNELS={ floating:true, size:"modalChannels", compact:true };
+    const WF_DB_SOURCE={ floating:true, size:"modalDbSource", compact:true };
     const WF_NARROW={ floating:true, size:"modalNarrow", compact:true };
     const WF_CFG={ floating:true, size:"default", compact:true };
     const dialogCloseStack=[];
-    const APP_WINDOW_SIZES={ modalScale:[420,520], modalChannels:[480,560], modalMask:[360,500], modalNarrow:[260,340], default:[520,560] };
+    const APP_WINDOW_SIZES={ modalScale:[420,520], modalChannels:[480,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], default:[520,560] };
     function removeAppWindowEntry(dialogId){
       const idx=appWindowStack.findIndex((e)=>e.dialogId===dialogId);
       if(idx>=0) appWindowStack.splice(idx,1);
@@ -3433,22 +3521,251 @@
         };
       });
     }
-    function getDefaultSourceByKey(kind){
-      if(!Array.isArray(sourceDefaults)) return null;
-      return sourceDefaults.find((x)=>String(x.key||"").toLowerCase()===String(kind||"").toLowerCase())||null;
-    }
-    function addDefaultPostgresSource(kind){
-      const defs=getDefaultSourceByKey(kind);
-      if(!defs){ setStatus(`No ${kind} defaults available.`, true); return; }
-      const existing=state.sources.find((s)=>s.type==="postgres"&&s.host===defs.host&&Number(s.port)===Number(defs.port)&&s.user===defs.user&&s.name===defs.name);
-      if(existing){ selectedSourceIds.add(existing.id); renderAll(); saveState(); setStatus(`${defs.name} source already exists.`); return; }
-      const entry={ id:crypto.randomUUID(), type:"postgres", name:defs.name||"PostgreSQL Source", host:defs.host||"localhost", port:Number(defs.port||5432), user:defs.user||"pipeline", password:defs.password||"test", sslmode:defs.sslmode||"disable", file_path:"" };
+    function addDatabaseLibrarySource(profile){
+      const existing=state.sources.find((s)=>s.type==="postgres"&&s.host===profile.host&&Number(s.port)===Number(profile.port)&&s.user===profile.user&&s.name===profile.name);
+      if(existing){
+        selectedSourceIds.add(existing.id);
+        return existing;
+      }
+      const entry={
+        id:crypto.randomUUID(),
+        type:"postgres",
+        name:profile.name||"PostgreSQL Source",
+        host:profile.host||"localhost",
+        port:Number(profile.port||5432),
+        user:profile.user||"pipeline",
+        password:profile.password||"",
+        sslmode:profile.sslmode||"disable",
+        file_path:"",
+      };
       state.sources.push(entry);
-      clearCatalogCache();
       selectedSourceIds.add(entry.id);
-      renderAll();
-      saveState();
-      setStatus(`${entry.name} source added.`);
+      return entry;
+    }
+    async function showAddDatabaseSourceModal(){
+      await loadDatabaseLibrary();
+      const profiles=(databaseLibrary||[]).map((db)=>({
+        id:String(db.id||crypto.randomUUID()),
+        name:String(db.name||"PostgreSQL Database"),
+        host:String(db.host||"localhost"),
+        port:Number(db.port||5432),
+        user:String(db.user||"pipeline"),
+        password:String(db.password||""),
+        sslmode:String(db.sslmode||"disable"),
+      }));
+      if(!profiles.length){
+        setStatus("No saved databases. Use File -> Database Manager first.", true);
+        return;
+      }
+
+      let selectedProfileId=profiles[0].id;
+      let dbRows=[];
+      let selectedDb="";
+      let testRows=[];
+      let profileSearchQuery="";
+      let dbSearchQuery="";
+      let testSearchQuery="";
+      const selectedTests=new Set();
+      let profileRows=profiles.map((p)=>({ id:p.id, primary:p.name, meta:`${p.user||"user"}@${p.host||"localhost"}:${Number(p.port||5432)} | ssl=${p.sslmode||"disable"}` }));
+      let activeTables=[];
+      let selectedTable="test_runs";
+      let profileAnchor=-1;
+      let dbAnchor=-1;
+      let testAnchor=-1;
+
+      const activeProfile=()=>profiles.find((p)=>p.id===selectedProfileId)||null;
+      const profileConnQuery=()=>{
+        const p=activeProfile();
+        if(!p) return "";
+        const q=new URLSearchParams();
+        q.append("db_host", p.host);
+        q.append("db_port", String(p.port));
+        q.append("db_user", p.user);
+        q.append("db_password", p.password || "");
+        q.append("db_sslmode", p.sslmode || "disable");
+        return q.toString();
+      };
+      const profileMetaText=(p)=>`${p.user||"user"}@${p.host||"localhost"}:${Number(p.port||5432)} | ssl=${p.sslmode||"disable"}`;
+
+      const filterPickerRows=(rows, query)=>{
+        const q=query.trim().toLowerCase();
+        if(!q) return rows;
+        return rows.filter((r)=>{
+          const hay=`${r.primary||""} ${r.meta||""} ${r.id||""} ${r.runCode||""}`.toLowerCase();
+          return hay.includes(q);
+        });
+      };
+
+      const renderPickerList=(containerId, rows, searchQuery, activeId, setActive, anchorName)=>{
+        const root=byId(containerId);
+        if(!root) return;
+        const visible=filterPickerRows(rows, searchQuery);
+        root.innerHTML="";
+        if(!visible.length){
+          root.innerHTML=`<div class="empty">${rows.length?"No matches.":"No items."}</div>`;
+          return;
+        }
+        visible.forEach((r)=>{
+          const idx=rows.indexOf(r);
+          const el=document.createElement("div");
+          const active=(activeId===r.id);
+          el.className="selectRow"+(active?" active":"");
+          el.innerHTML=`<div class="itemPrimary">${r.primary}</div>${r.meta?`<div class="itemMeta">${r.meta}</div>`:""}`;
+          el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
+          el.onclick=(ev)=>{
+            if(ev&&ev.preventDefault) ev.preventDefault();
+            if(ev&&ev.stopPropagation) ev.stopPropagation();
+            setActive(r.id);
+            if(anchorName==="profile") profileAnchor=idx;
+            else if(anchorName==="db") dbAnchor=idx;
+          };
+          root.appendChild(el);
+        });
+      };
+      const renderTestsList=()=>{
+        const root=byId("dbsrc_tests");
+        if(!root) return;
+        root.innerHTML="";
+        const visible=filterPickerRows(testRows, testSearchQuery);
+        if(!visible.length){
+          root.innerHTML=`<div class="empty">${testRows.length?"No matching tests.":"No tests found."}</div>`;
+          return;
+        }
+        visible.forEach((r)=>{
+          const idx=testRows.indexOf(r);
+          const checked=selectedTests.has(r.id);
+          const el=document.createElement("div");
+          el.className="selectRow"+(checked?" active":"");
+          el.innerHTML=`<div class="itemPrimary">${r.primary}</div>${r.meta?`<div class="itemMeta">${r.meta}</div>`:""}`;
+          el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
+          el.onclick=(ev)=>{
+            if(ev&&ev.preventDefault) ev.preventDefault();
+            if(ev&&ev.stopPropagation) ev.stopPropagation();
+            const shift=Boolean(ev&&ev.shiftKey);
+            const meta=Boolean(ev&&(ev.ctrlKey||ev.metaKey));
+            if(shift && Number.isInteger(testAnchor) && testAnchor>=0 && testAnchor<testRows.length){
+              const a=Math.min(testAnchor, idx);
+              const b=Math.max(testAnchor, idx);
+              for(let i=a;i<=b;i+=1) selectedTests.add(testRows[i].id);
+            }else if(meta){
+              if(selectedTests.has(r.id)) selectedTests.delete(r.id); else selectedTests.add(r.id);
+              testAnchor=idx;
+            }else{
+              selectedTests.clear();
+              selectedTests.add(r.id);
+              testAnchor=idx;
+            }
+            renderTestsList();
+          };
+          root.appendChild(el);
+        });
+      };
+      const renderPicker=()=>{
+        const profile=activeProfile();
+        byId("dbsrc_status_meta").textContent=profile?(selectedTable?`Using table: ${selectedTable} (${profileMetaText(profile)})`:profileMetaText(profile)):"";
+        renderPickerList("dbsrc_profiles", profileRows, profileSearchQuery, selectedProfileId, async(id)=>{ selectedProfileId=id; selectedTests.clear(); testAnchor=-1; await refreshDatabases(); await resolvePreferredTable(); await refreshTests(); renderPicker(); }, "profile");
+        renderPickerList("dbsrc_dbs", dbRows, dbSearchQuery, selectedDb, async(id)=>{ selectedDb=id; selectedTests.clear(); testAnchor=-1; await resolvePreferredTable(); await refreshTests(); renderPicker(); }, "db");
+        renderTestsList();
+      };
+      const refreshDatabases=async()=>{
+        const conn=profileConnQuery();
+        try{
+          const dbs=await getJson(`/api/databases?${conn}`);
+          dbRows=(dbs||[]).map((d)=>({ id:String(d.name), primary:String(d.name), meta:"" }));
+          selectedDb=dbRows[0]?.id||"";
+        }catch(err){
+          dbRows=[];
+          selectedDb="";
+          setStatus(`Database discovery failed: ${err}`, true);
+        }
+      };
+      const resolvePreferredTable=async()=>{
+        const conn=profileConnQuery();
+        if(!selectedDb){
+          activeTables=[];
+          selectedTable="test_runs";
+          return;
+        }
+        try{
+          const tables=await getJson(`/api/test-tables?db_name=${encodeURIComponent(selectedDb)}&${conn}`);
+          activeTables=(tables||[]).map((t)=>String(t));
+          if(activeTables.includes("test_runs")) selectedTable="test_runs";
+          else selectedTable=activeTables[0]||"test_runs";
+        }catch{
+          activeTables=["test_runs"];
+          selectedTable="test_runs";
+        }
+      };
+      const refreshTests=async()=>{
+        const conn=profileConnQuery();
+        if(!selectedDb){
+          testRows=[];
+          return;
+        }
+        try{
+          const tests=await getJson(`/api/tests?limit=5000000&db_name=${encodeURIComponent(selectedDb)}&test_table=${encodeURIComponent(selectedTable)}&${conn}`);
+          const dup={};
+          (tests||[]).forEach((t)=>{ const k=String(t.run_code); dup[k]=(dup[k]||0)+1; });
+          testRows=(tests||[]).map((t)=>({
+            id:String(t.test_run_id),
+            primary:(dup[String(t.run_code)]>1)?`${t.run_code} (#${t.test_run_id})`:String(t.run_code),
+            runCode:String(t.run_code),
+            meta:`${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`,
+          }));
+        }catch(err){
+          testRows=[];
+          setStatus(`Test discovery failed: ${err}`, true);
+        }
+      };
+
+      openModal("Add Database Sources",`
+        <div class="modalBodyPad" style="width:100%;max-width:100%;overflow-x:hidden;box-sizing:border-box;">
+          <div class="scalePickerGrid" style="grid-template-columns:1fr 1fr 1fr;">
+            <div class="scalePickerCol"><label>Connection</label><input id="dbsrc_profile_search" type="text" placeholder="Search connections..." style="margin-bottom:4px;" /><div class="modalList" id="dbsrc_profiles"></div></div>
+            <div class="scalePickerCol"><label>Database</label><input id="dbsrc_db_search" type="text" placeholder="Search databases..." style="margin-bottom:4px;" /><div class="modalList" id="dbsrc_dbs"></div></div>
+            <div class="scalePickerCol"><label>Tests</label><input id="dbsrc_test_search" type="text" placeholder="Search tests..." style="margin-bottom:4px;" /><div class="modalList" id="dbsrc_tests"></div></div>
+          </div>
+          <div id="dbsrc_status_meta" class="itemMeta" style="padding:8px 10px 0;"></div>
+        </div>
+        <div class="modalActions">
+          <button id="modalCancelBtn" type="button">Cancel</button>
+          <button id="modalSaveCloseBtn" type="button">Add Selected Tests</button>
+        </div>
+      `, async()=>{
+        const profile=activeProfile();
+        if(!profile){ setStatus("Select a connection profile.", true); return false; }
+        if(!selectedDb){ setStatus("Select a database first.", true); return false; }
+        if(!selectedTests.size){ setStatus("Select at least one test.", true); return false; }
+        const parentSrc=addDatabaseLibrarySource(profile);
+        let added=0;
+        [...selectedTests].forEach((tid)=>{
+          const row=testRows.find((r)=>r.id===tid);
+          const before=state.sources.length;
+          addPostgresTestLeaf({
+            parentSrc,
+            db_name:selectedDb,
+            test_table:selectedTable,
+            test_run_id:tid,
+            run_code:row ? row.runCode : String(tid),
+          });
+          if(state.sources.length>before) added+=1;
+        });
+        await refreshCatalogsForSelections();
+        renderAll();
+        saveState();
+        setStatus(`Added ${added} source(s).`);
+        return true;
+      }, WF_DB_SOURCE);
+      const profileSearch=byId("dbsrc_profile_search");
+      if(profileSearch) profileSearch.oninput=()=>{ profileSearchQuery=profileSearch.value||""; renderPicker(); };
+      const dbSearch=byId("dbsrc_db_search");
+      if(dbSearch) dbSearch.oninput=()=>{ dbSearchQuery=dbSearch.value||""; renderPicker(); };
+      const testSearch=byId("dbsrc_test_search");
+      if(testSearch) testSearch.oninput=()=>{ testSearchQuery=testSearch.value||""; renderTestsList(); };
+      await refreshDatabases();
+      await resolvePreferredTable();
+      await refreshTests();
+      renderPicker();
     }
     function showAddSourceMenu(ev){
       if(ev){
@@ -3470,7 +3787,7 @@
         el.onclick=()=>{
           const t=el.getAttribute("data-t");
           hideMenus();
-          if(t==="database") setStatus("Database sources will be available in a future update.");
+          if(t==="database") showAddDatabaseSourceModal();
           else if(t==="datafile") startDataFileSourcePicker();
         };
       });
@@ -3697,226 +4014,200 @@
       input.click();
     }
 
-    async function showAddScaleTestsModal(kind, parentSrcIn){
-      let parentSrc = parentSrcIn || null;
-      if(kind==="redscale" || kind==="bluescale"){
-        await loadSourceDefaults();
-        const defs=getDefaultSourceByKey(kind);
-        if(!defs){ setStatus(`No ${kind} defaults available. Use File → Default Sources...`, true); return; }
-        parentSrc=getOrCreatePostgresParent(defs);
-      }
-      if(!parentSrc || parentSrc.type!=="postgres"){
-        setStatus("PostgreSQL connection is required.", true);
-        return;
-      }
+    async function openDatabaseManagerModal(){
+      await loadDatabaseLibrary();
+      let library = Array.isArray(databaseLibrary) ? structuredClone(databaseLibrary) : [];
+      library = library.map((r) => ({ ...r, id: String(r.id || crypto.randomUUID()) }));
+      const expanded = new Set(); // holds profile ids
 
-      const conn = sourceConnQuery(parentSrc);
-      let dbRows = [];
-      try{
-        const dbs = await getJson(`/api/databases?${conn}`);
-        dbRows = (dbs||[]).map((d)=>({ id:String(d.name), primary:String(d.name), meta:"" }));
-      }catch(err){
-        setStatus(`Database discovery failed: ${err}`, true);
-        return;
-      }
-      if(!dbRows.length){ setStatus("No databases discovered.", true); return; }
+      const profileById = (id) => library.find((r) => String(r.id) === String(id)) || null;
 
-      let selectedDb = dbRows[0].id;
-      let tableRows = [];
-      let selectedTable = "test_runs";
-      let testRows = [];
-      const selectedTests = new Set(); // holds test_run_id strings
+      const normalizedMeta = (r) => {
+        const host = (r.host || "localhost").trim();
+        const port = Number(r.port || 5432);
+        const user = (r.user || "pipeline").trim();
+        const ssl = (r.sslmode || "disable").trim();
+        return `${user}@${host}:${port} · ssl=${ssl}`;
+      };
 
-      let dbAnchor=-1, testAnchor=-1;
-
-      const renderListSimple = (containerId, rows, activeId, setActive, anchorRefName)=>{
-        const root=byId(containerId);
-        if(!root) return;
-        root.innerHTML="";
-        rows.forEach((r, idx)=>{
-          const el=document.createElement("div");
-          const active = (activeId===r.id);
-          el.className="selectRow"+(active?" active":"");
-          el.innerHTML=`<div class="itemPrimary">${r.primary}</div>${r.meta?`<div class="itemMeta">${r.meta}</div>`:""}`;
-          el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
-          el.onclick=(ev)=>{
-            if(ev&&ev.preventDefault) ev.preventDefault();
-            if(ev&&ev.stopPropagation) ev.stopPropagation();
-            if(ev && ev.shiftKey){
-              // Shift on single-select lists just keeps last clicked (no-op range).
-              setActive(r.id);
-            } else {
-              setActive(r.id);
-            }
-            if(anchorRefName==="db") dbAnchor=idx;
-          };
-          root.appendChild(el);
+      const filterList = (list) => {
+        const q = (byId("m_db_search")?.value || "").trim().toLowerCase();
+        if (!q) return list;
+        return list.filter((r) => {
+          const hay = `${r.name || ""} ${r.host || ""} ${r.user || ""} ${r.sslmode || ""} ${r.port || ""}`.toLowerCase();
+          return hay.includes(q);
         });
       };
 
-      const renderTestList = ()=>{
-        const root=byId("st_tests");
-        if(!root) return;
-        root.innerHTML="";
-        testRows.forEach((r, idx)=>{
-          const id=r.id;
-          const active = selectedTests.has(id);
-          const el=document.createElement("div");
-          el.className="selectRow"+(active?" active":"");
-          el.innerHTML=`<div class="itemPrimary">${r.primary}</div>${r.meta?`<div class="itemMeta">${r.meta}</div>`:""}`;
-          el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
-          el.onclick=(ev)=>{
-            if(ev&&ev.preventDefault) ev.preventDefault();
-            if(ev&&ev.stopPropagation) ev.stopPropagation();
-            const meta = hasMetaOrCtrlKey(ev);
-            const shift = Boolean(ev && ev.shiftKey);
-            if(shift && Number.isInteger(testAnchor) && testAnchor>=0 && testAnchor<testRows.length){
-              const a=Math.min(testAnchor, idx), b=Math.max(testAnchor, idx);
-              for(let i=a;i<=b;i+=1) selectedTests.add(testRows[i].id);
-            } else if(meta){
-              if(selectedTests.has(id)) selectedTests.delete(id); else selectedTests.add(id);
-              testAnchor=idx;
-            } else {
-              selectedTests.clear();
-              selectedTests.add(id);
-              testAnchor=idx;
-            }
-            renderAllScaleModal();
-          };
-          root.appendChild(el);
-        });
-      };
-
-      const refreshTables = async()=>{
-        try{
-          const rows = await getJson(`/api/test-tables?db_name=${encodeURIComponent(selectedDb)}&${conn}`);
-          tableRows = (rows||[]).map((t)=>({ id:String(t), primary:String(t), meta:"" }));
-          if(!tableRows.some((r)=>r.id===selectedTable)) selectedTable = tableRows[0]?.id || "test_runs";
-        }catch{
-          tableRows = [{id:"test_runs", primary:"test_runs", meta:""}];
-          selectedTable = "test_runs";
-        }
-      };
-
-      const refreshTests = async()=>{
-        selectedTests.clear();
-        testRows = [];
-        try{
-          const url = `/api/tests?limit=5000000&db_name=${encodeURIComponent(selectedDb)}&test_table=${encodeURIComponent(selectedTable)}&${conn}`;
-          const tests = await getJson(url);
-          const dup = {};
-          (tests||[]).forEach((t)=>{ const k=String(t.run_code); dup[k]=(dup[k]||0)+1; });
-          testRows = (tests||[]).map((t)=>({
-            id:String(t.test_run_id),
-            primary: (dup[String(t.run_code)]>1) ? `${t.run_code} (#${t.test_run_id})` : String(t.run_code),
-            meta: ""
-          }));
-        }catch(err){
-          setStatus(`Failed to load tests: ${err}`, true);
-        }
-      };
-
-      const updateTableSelect = ()=>{
-        const sel=byId("st_table_sel");
-        if(!sel) return;
-        if(tableRows.length<=1){
-          sel.style.display="none";
-          sel.innerHTML="";
-          return;
-        }
-        sel.style.display="block";
-        sel.innerHTML=tableRows.map((r)=>`<option value="${r.id}" ${r.id===selectedTable?"selected":""}>${r.primary}</option>`).join("");
-      };
-
-      const renderAllScaleModal = ()=>{
-        renderListSimple("st_dbs", dbRows, selectedDb, (id)=>{ selectedDb=id; refreshTables().then(()=>refreshTests().then(renderAllScaleModal)); }, "db");
-        updateTableSelect();
-        renderTestList();
-        const btn=byId("st_apply");
-        if(btn) btn.disabled = selectedTests.size===0;
-      };
-
-      const modalTitle = kind==="redscale" ? "Add RedScale Tests" : (kind==="bluescale" ? "Add BlueScale Tests" : "Add PostgreSQL Tests");
-      openModal(modalTitle,`
-        <div class="modalBodyPad" style="width:100%;max-width:100%;overflow-x:hidden;box-sizing:border-box;">
-          <div class="scalePickerGrid">
-            <div class="scalePickerCol"><label>Database</label><div class="modalList" id="st_dbs"></div></div>
-            <div class="scalePickerCol"><label>Tests</label><select id="st_table_sel" style="display:none;"></select><div class="modalList" id="st_tests"></div></div>
+      const editHtml = (r) => `
+        <div style="padding:6px 8px 8px;">
+          <div class="modalGrid" style="grid-template-columns:1fr 1fr; gap:8px; padding:0;">
+            <div><label>Name</label><input data-k="name" data-id="${escAttr(r.id)}" type="text" value="${escAttr(r.name || "")}" /></div>
+            <div><label>Host</label><input data-k="host" data-id="${escAttr(r.id)}" type="text" value="${escAttr(r.host || "localhost")}" /></div>
+            <div><label>User</label><input data-k="user" data-id="${escAttr(r.id)}" type="text" value="${escAttr(r.user || "pipeline")}" /></div>
+            <div><label>Port</label><input data-k="port" data-id="${escAttr(r.id)}" type="number" value="${Number(r.port || 5432)}" /></div>
+            <div><label>SSL</label><input data-k="sslmode" data-id="${escAttr(r.id)}" type="text" value="${escAttr(r.sslmode || "disable")}" /></div>
+            <div><label>Password</label><input data-k="password" data-id="${escAttr(r.id)}" type="password" value="${escAttr(r.password || "")}" /></div>
           </div>
         </div>
-        <div class="modalActions">
-          <button id="modalCancelBtn" type="button">Cancel</button>
-          <button id="st_apply" type="button">Apply</button>
-        </div>
-      `, async()=>true, WF_SCALE);
-      const tableSel=byId("st_table_sel");
-      if(tableSel) tableSel.onchange=()=>{ selectedTable=tableSel.value; refreshTests().then(renderAllScaleModal); };
+      `;
 
-      await refreshTables();
-      await refreshTests();
-      renderAllScaleModal();
+      const rowHtml = (r) => {
+        const isOpen = expanded.has(String(r.id));
+        return `
+          <div class="selectRow ${isOpen ? "active" : ""}" data-id="${escAttr(r.id)}" style="display:block;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="flex:1;min-width:0;">
+                <div class="itemPrimary">${escapeHtml(r.name || "PostgreSQL Database")}</div>
+                <div class="itemMeta">${escapeHtml(normalizedMeta(r))}</div>
+              </div>
+              <button type="button" class="iconBtn" data-a="test" data-id="${escAttr(r.id)}" title="Test connection">&#9889;</button>
+              <button type="button" class="iconBtn" data-a="toggle" data-id="${escAttr(r.id)}" title="${isOpen ? "Collapse" : "Edit"}">${isOpen ? "▴" : "✎"}</button>
+              <button type="button" class="iconBtn" data-a="delete" data-id="${escAttr(r.id)}" title="Delete">×</button>
+            </div>
+            ${isOpen ? editHtml(r) : ""}
+          </div>
+        `;
+      };
 
-      byId("st_apply").onclick=async()=>{
-        if(!selectedTests.size) return;
-        let added=0;
-        [...selectedTests].forEach((tid)=>{
-          const row=testRows.find((r)=>r.id===tid);
-          const before=state.sources.length;
-          addPostgresTestLeaf({
-            parentSrc,
-            db_name:selectedDb,
-            test_table:selectedTable,
-            test_run_id:tid,
-            run_code:row ? row.primary.replace(/\s*\(#\d+\)\s*$/,"") : String(tid)
-          });
-          if(state.sources.length>before) added+=1;
+      const renderList = () => {
+        const el = byId("m_db_list");
+        if (!el) return;
+        const filtered = filterList(library);
+        el.innerHTML = filtered.length
+          ? filtered.map((r) => rowHtml(r)).join("")
+          : `<div class="empty">${library.length ? "No matching profiles." : "No saved database profiles yet."}</div>`;
+
+        el.querySelectorAll("button[data-a]").forEach((b) => {
+          b.onclick = (ev) => {
+            if (ev) {
+              ev.preventDefault();
+              ev.stopPropagation();
+            }
+            const action = b.getAttribute("data-a");
+            const id = b.getAttribute("data-id");
+            const row = profileById(id);
+            if (!row) return;
+            if (action === "toggle") {
+              const key = String(id);
+              if (expanded.has(key)) expanded.delete(key);
+              else expanded.add(key);
+              renderList();
+              return;
+            }
+            if (action === "test") {
+              syncLibraryFromDom();
+              void testDatabaseProfile(profileById(id));
+              return;
+            }
+            if (action === "delete") {
+              const idx = library.findIndex((x) => String(x.id) === String(id));
+              if (idx < 0) return;
+              library.splice(idx, 1);
+              expanded.delete(String(id));
+              renderList();
+              return;
+            }
+          };
         });
-        await refreshCatalogsForSelections();
-        renderAll();
-        saveState();
-        closeModal();
-        setStatus(`Added ${added} source(s).`);
-      };
-    }
 
-    function openDefaultSourcesModal(){
-      const rows=Array.isArray(sourceDefaults)?sourceDefaults:[];
-      const rowHtml=(r,i)=>`<div class="modalGrid" data-def-row="${i}" style="grid-template-columns:1fr 1fr 1fr 1fr 0.9fr 1fr auto;align-items:end;border-bottom:1px solid var(--nova-divider);padding:8px 10px;">
-        <div><label>Name</label><input data-k="name" type="text" value="${r.name||""}" /></div>
-        <div><label>Key</label><input data-k="key" type="text" value="${r.key||""}" /></div>
-        <div><label>Host</label><input data-k="host" type="text" value="${r.host||"localhost"}" /></div>
-        <div><label>User</label><input data-k="user" type="text" value="${r.user||"pipeline"}" /></div>
-        <div><label>Port</label><input data-k="port" type="number" value="${Number(r.port||5432)}" /></div>
-        <div><label>SSL</label><input data-k="sslmode" type="text" value="${r.sslmode||"disable"}" /></div>
-        <div><button type="button" class="iconBtn" data-del="${i}" title="Delete">&#10005;</button></div>
-        <div style="grid-column:1 / -1;"><label>Password</label><input data-k="password" type="password" value="${r.password||""}" /></div>
-      </div>`;
-      openModal("Default Sources",`<div id="defaultSourcesWrap">${rows.map((r,i)=>rowHtml(r,i)).join("")}</div><div class="modalActions"><button id="m_add_default_source" type="button">Add Source</button><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,async()=>{
-        const wrap=byId("defaultSourcesWrap");
-        const defs=[...wrap.querySelectorAll("[data-def-row]")].map((row)=>{
-          const get=(k)=>row.querySelector(`[data-k="${k}"]`)?.value?.trim()||"";
-          return { type:"postgres", name:get("name")||"PostgreSQL Source", key:get("key")||`src_${Math.random().toString(36).slice(2,8)}`, host:get("host")||"localhost", port:Number(get("port")||"5432"), user:get("user")||"pipeline", password:get("password")||"", sslmode:get("sslmode")||"disable" };
-        }).filter((d)=>d.name&&d.host&&d.user&&Number.isFinite(d.port)&&d.port>0);
-        if(!defs.length){ setStatus("Add at least one valid default source.", true); return false; }
-        try{
-          const saved=await postJson("/api/source-defaults",{defaults:defs});
-          if(!saved?.ok){ setStatus(saved?.error||"Failed to save defaults.", true); return false; }
-          sourceDefaults=defs;
-          setStatus(`Saved ${defs.length} default source(s).`);
-          return true;
-        }catch(err){
-          setStatus(`Failed to save defaults: ${err}`, true);
-          return false;
-        }
-      });
-      const wireDeletes=()=>{ byId("defaultSourcesWrap").querySelectorAll("[data-del]").forEach((b)=>b.onclick=()=>{ const row=b.closest("[data-def-row]"); if(row) row.remove(); }); };
-      byId("m_add_default_source").onclick=()=>{
-        const wrap=byId("defaultSourcesWrap");
-        const idx=wrap.querySelectorAll("[data-def-row]").length;
-        wrap.insertAdjacentHTML("beforeend", rowHtml({name:"PostgreSQL Source",key:`src_${idx+1}`,host:"localhost",port:5432,user:"pipeline",password:"",sslmode:"disable"}, idx));
-        wireDeletes();
+        el.querySelectorAll("input[data-k]").forEach((inp) => {
+          inp.oninput = () => {
+            const k = inp.getAttribute("data-k");
+            const id = inp.getAttribute("data-id");
+            const row = profileById(id);
+            if (!k || !row) return;
+            if (k === "port") row[k] = Number(inp.value || "5432");
+            else row[k] = inp.value;
+          };
+        });
       };
-      wireDeletes();
+
+      const addProfile = () => {
+        const id = crypto.randomUUID();
+        library.unshift({ id, type: "postgres", name: "PostgreSQL Database", host: "localhost", port: 5432, user: "pipeline", password: "", sslmode: "disable" });
+        expanded.clear();
+        expanded.add(id);
+        renderList();
+      };
+
+      const syncLibraryFromDom = () => {
+        const root = byId("m_db_list");
+        if (!root) return;
+        root.querySelectorAll("input[data-k]").forEach((inp) => {
+          const k = inp.getAttribute("data-k");
+          const id = inp.getAttribute("data-id");
+          const row = profileById(id);
+          if (!k || !row) return;
+          if (k === "port") row[k] = Number(inp.value || "5432");
+          else row[k] = inp.value;
+        });
+      };
+
+      openModal(
+        "Database Manager",
+        `<div class="cfgManagerToolbar">
+            <input id="m_db_search" type="text" placeholder="Search databases..." />
+            <button id="m_db_menu_btn" type="button" class="iconBtn cfgMenuBtn">&#8943;</button>
+         </div>
+         <div style="padding:0 10px 10px;">
+           <div id="m_db_list" class="modalList"></div>
+         </div>
+         <div class="modalActions">
+           <button id="modalCancelBtn" type="button">Close</button>
+           <button id="modalSaveCloseBtn" type="button">Save</button>
+         </div>`,
+        async () => {
+          syncLibraryFromDom();
+          try {
+            const saved = await saveDatabaseLibrary(library);
+            library = structuredClone(saved);
+            setStatus(`Saved ${saved.length} database profile(s).`);
+            return true;
+          } catch (err) {
+            setStatus(`Failed to save database profiles: ${err}`, true);
+            return false;
+          }
+        },
+        WF_CFG
+      );
+
+      const importProfiles = async () => {
+        const obj = await pickDatabaseJsonFile();
+        if (!obj) return;
+        const imported = normalizeImportedDatabaseLibrary(obj);
+        if (!imported.length) {
+          setStatus("No valid database profiles found in import file.", true);
+          return;
+        }
+        library = [...imported, ...library];
+        renderList();
+        setStatus(`Imported ${imported.length} database profile(s). Click Save to persist.`);
+      };
+      const exportProfiles = async () => {
+        syncLibraryFromDom();
+        const payload = { databases: library };
+        const result = await saveJsonToFile("nova_database_library.json", payload);
+        if (result.ok && result.viaPicker) setStatus("Database library exported.");
+        if (result.ok && !result.viaPicker) setStatus("Database library downloaded (save dialog unavailable in this environment).");
+        if (!result.ok && result.cancelled) setStatus("Database library export cancelled.");
+      };
+
+      byId("m_db_search").oninput = () => renderList();
+      byId("m_db_menu_btn").onclick = (ev) => {
+        ev.stopPropagation();
+        const rect = ev.currentTarget.getBoundingClientRect();
+        const z = Math.max(200, appWindowZ + 15);
+        setTimeout(() => {
+          showContextMenu(rect.right - 180, rect.bottom + 2, [
+            { label: "Add database profile", action: () => addProfile() },
+            { label: "Import profiles...", action: () => importProfiles() },
+            { label: "Export profiles...", action: () => exportProfiles() },
+          ], { zIndex: z });
+        }, 0);
+      };
+
+      renderList();
     }
     function showChannelAddMenu(x,y){ const m=byId("channelAddMenu"); m.innerHTML=`<div class="miniMenuItem" data-t="source">Add channels from source</div><div class="miniMenuItem" data-t="rolling">Rolling channel calculations</div><div class="miniMenuItem" data-t="formula">Channel wise calculations</div>`; m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="source")showAddChannelsModal(); if(t==="rolling")showAddRollingChannelModal(); if(t==="formula")showAddChannelWiseModal();}); }
     function showMaskAddMenu(x,y){ const m=byId("maskAddMenu"); m.innerHTML=`<div class="miniMenuItem" data-t="source">Add mask from channel/time</div><div class="miniMenuItem" data-t="rolling">Rolling mask calculation</div><div class="miniMenuItem" data-t="formula">Channel wise mask calculation</div>`; m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="source")showAddMaskModal(); if(t==="rolling")showAddRollingMaskModal(); if(t==="formula")showAddChannelWiseMaskModal();}); }
@@ -5885,26 +6176,6 @@
       if(mmList) mmList.addEventListener("click",()=>setTimeout(refreshMaskInputs,0));
       refreshMaskInputs();
     }
-    function showAddPostgresModal(){
-      openModal("Add PostgreSQL Source",`<div class="modalGrid"><div><label>Name</label><input id="m_sourceName" type="text" value="PostgreSQL Source" /></div><div><label>Host</label><input id="m_host" type="text" value="localhost" /></div><div><label>Port</label><input id="m_port" type="number" value="5432" /></div><div><label>User</label><input id="m_user" type="text" value="pipeline" /></div><div><label>Password</label><input id="m_password" type="password" value="test" /></div><div><label>SSL Mode</label><input id="m_ssl" type="text" value="disable" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Connect & Pick Tests</button></div>`,WF,async()=>{
-        const parent={
-          id:crypto.randomUUID(),
-          type:"postgres",
-          name:byId("m_sourceName").value||"PostgreSQL Source",
-          host:byId("m_host").value||"localhost",
-          port:Number(byId("m_port").value||"5432"),
-          user:byId("m_user").value||"pipeline",
-          password:byId("m_password").value||"",
-          sslmode:byId("m_ssl").value||"disable",
-          file_path:""
-        };
-        state.sources.push(parent);
-        clearCatalogCache();
-        closeModal();
-        showAddScaleTestsModal(null, parent);
-        return true;
-      });
-    }
     function renameSource(sourceId){
       const src = state.sources.find((s)=>s.id===sourceId);
       if(!src){ setStatus("Source not found.", true); return; }
@@ -6536,7 +6807,7 @@
       document.addEventListener("click",(e)=>{ if(!byId("menubar").contains(e.target)) hideAll(); });
       document.querySelectorAll(".menuItem").forEach((mi)=>{ mi.onclick=(e)=>{ e.stopPropagation(); const id=mi.getAttribute("data-menu"); const dd=byId(`menu_${id}`); const shown=dd.classList.contains("show"); hideAll(); if(!shown) dd.classList.add("show"); }; });
       byId("help_github").onclick=()=>window.open("https://github.com/tysocks/NOVA","_blank");
-      byId("help_sourceHelp").onclick=()=>setStatus("Sources +: choose Database (coming soon) or Data File (CSV, TDMS, HDF5, Parquet, Arrow). Data files open a file picker, then a configuration window for name, path, time index, and unit parsing. Right-click to edit/rename/delete.");
+      byId("help_sourceHelp").onclick=()=>setStatus("Sources +: choose Database or Data File (CSV, TDMS, HDF5, Parquet, Arrow). Data files open a file picker, then a configuration window for name, path, time index, and unit parsing. Right-click to edit/rename/delete.");
       byId("help_versionCheck").onclick=()=>{ hideAll(); openVersionCheckModal(); };
       byId("view_togglePreview").onclick=()=>{ setPreviewVisible(!previewVisible); saveState(); };
       byId("edit_showMetadata").onclick=()=>showMetadataModal();
@@ -6586,7 +6857,7 @@
       }
       byId("file_exportPlot").onclick=async()=>{ const p=getActivePlot(); const rows=latestRows||[]; const esc=(v)=>{ const s=String(v??""); return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s; }; const headers=["test_run_id","test_run_code","channel_name","unit","time","value","db_id"]; const csv=[headers.join(",")].concat(rows.map((r)=>[esc(r.test_run_id),esc(r.test_run_code),esc(r.channel_name),esc(r.unit||""),esc(r.time),esc(r.value),esc(r.__dbId)].join(","))).join("\n"); const result=await saveTextToFile(`nova_${(p?.name||"view").replaceAll(" ","_")}.csv`, csv, "text/csv;charset=utf-8", "csv", "CSV files", "text/csv"); if (result.ok && result.viaPicker) setStatus(`Exported ${rows.length} rows to CSV.`); if (result.ok && !result.viaPicker) setStatus(`CSV downloaded (${rows.length} rows).`); if (!result.ok && result.cancelled) setStatus("CSV export cancelled."); };
       byId("file_configManager").onclick=()=>openConfigManagerModal();
-      byId("file_defaultSources").onclick=()=>openDefaultSourcesModal();
+      byId("file_databaseManager").onclick=()=>openDatabaseManagerModal();
     }
 
     const APPEAR_KEY="nova.appearance.v1";
@@ -7044,7 +7315,7 @@
     async function initialize(){
       loadState();
       await refreshArtifactIdsForFileSources();
-      await loadSourceDefaults();
+      await loadDatabaseLibrary();
       loadPreferences();
       await loadAppearance();
       loadPlots();
