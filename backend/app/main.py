@@ -33,6 +33,7 @@ from .services.timeseries import (
     list_tests,
 )
 from .services.file_sources import file_channels, file_tests, file_timeseries
+from .services.unit_library import clean_unit_library_rows, default_unit_library_rows
 from .services.query_router import resolve_overlay_targets
 from .config import settings
 
@@ -53,6 +54,7 @@ UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 APPEARANCE_FILE = Path(__file__).resolve().parents[1] / ".nova_appearance.json"
 DATABASE_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_database_library.json"
+UNIT_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_unit_library.json"
 CONFIG_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_config_library.json"
 
 
@@ -675,6 +677,51 @@ async def upload_file(file: UploadFile = File(...)) -> dict:
     content = await file.read()
     out_path.write_bytes(content)
     return {"path": str(out_path)}
+
+
+def _load_unit_library_rows() -> list[dict]:
+    if not UNIT_LIBRARY_FILE.exists():
+        return []
+    try:
+        payload = json.loads(UNIT_LIBRARY_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    rows = payload.get("categories") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return []
+    try:
+        return clean_unit_library_rows(rows)
+    except ValueError:
+        return []
+
+
+def _write_unit_library_rows(rows: list[dict]) -> None:
+    UNIT_LIBRARY_FILE.write_text(
+        json.dumps({"categories": rows}, indent=2),
+        encoding="utf-8",
+    )
+
+
+@app.get("/api/unit-library")
+def get_unit_library() -> dict:
+    cleaned = _load_unit_library_rows()
+    if not cleaned:
+        cleaned = default_unit_library_rows()
+        _write_unit_library_rows(cleaned)
+    return {"categories": cleaned}
+
+
+@app.post("/api/unit-library")
+def save_unit_library(payload: dict = Body(...)) -> dict:
+    rows = payload.get("categories") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return {"ok": False, "error": "categories must be a list"}
+    try:
+        cleaned = clean_unit_library_rows(rows)
+    except (ValueError, SyntaxError) as exc:
+        return {"ok": False, "error": str(exc)}
+    _write_unit_library_rows(cleaned)
+    return {"ok": True, "count": len(cleaned)}
 
 
 @app.get("/api/appearance")

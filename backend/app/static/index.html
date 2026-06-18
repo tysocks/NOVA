@@ -312,6 +312,7 @@
       <div class="menuDropdown" id="menu_file">
         <div class="menuAction" id="file_configManager">Configuration Manager...</div>
         <div class="menuAction" id="file_databaseManager">Database Manager...</div>
+        <div class="menuAction" id="file_unitManager">Unit Manager...</div>
         <div class="menuSep"></div>
         <div class="menuAction" id="file_exportPlot">Export Current View (CSV)...</div>
       </div>
@@ -528,6 +529,7 @@
     const catalogCache = new Map();
     const seriesCache = window.NovaV3 ? new NovaV3.SeriesCache() : null;
     let databaseLibrary = null;
+    let unitLibrary = { categories: [] };
     function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
     function bsearch(arr, target){ let lo=0, hi=arr.length; while(lo<hi){ const mid=(lo+hi)>>1; if(arr[mid]<=target) lo=mid+1; else hi=mid; } return lo; }
     function clearCatalogCache(){ catalogCache.clear(); }
@@ -677,11 +679,13 @@
     function applyRowUnitsInPlace(rows){
       for(let i=0;i<(rows?.length||0);i+=1){
         const r=rows[i];
-        const chId=`${r.__dbId}|${r.channel_name}`;
-        r.unit=resolveChannelUnit(chId, r.unit);
         r.__legendKey=traceLegendName(r);
       }
       return rows;
+    }
+    function channelSourceUnit(chId){
+      const ch=channelsData.find((c)=>`${c.__dbId}|${c.channel_name}`===chId);
+      return getChannelSourceUnit(chId, ch?.unit);
     }
     function legendKeyForRow(r){
       return r.__legendKey||traceLegendName(r);
@@ -1507,12 +1511,20 @@
       }
 
       async function resetViewLimits(){
+        if(latestRows?.length){
+          try{
+            overviewTraceCache=null;
+            await plotRows(latestRows, { preserveUi:false, resetView:true });
+            PlotRenderer.refreshAxisHitZones(plotEl);
+            return;
+          }catch(err){
+            console.warn("[NOVA] reset view via replot failed", err);
+          }
+        }
         const gd = graphDiv();
         if(!gd) return;
         const patch = { "xaxis.autorange": true };
-        Object.keys(gd._fullLayout || {}).forEach((k)=>{
-          if(/^yaxis\d*$/.test(k)) patch[`${k}.autorange`] = true;
-        });
+        plotYAxisKeys(gd).forEach((k)=>{ patch[`${k}.autorange`] = true; });
         suppressZoomRelayout += 1;
         try{
           await Plotly.relayout(gd, patch);
@@ -2688,7 +2700,9 @@
           xv=Number.isFinite(base)?(p.__ts-base)/1000:(Number.isFinite(p.__ts)?p.__ts/1000:0);
         }
         if(!Number.isFinite(xv)) continue;
-        const yv=(rtMaskMs===null||!Number.isFinite(p.__rt))?Number(p.value):(p.__rt<=rtMaskMs?Number(p.value):NaN);
+        const rawUnit=getChannelSourceUnit(chId, pts[0]?.unit);
+        const yvBase=(rtMaskMs===null||!Number.isFinite(p.__rt))?Number(p.value):(p.__rt<=rtMaskMs?Number(p.value):NaN);
+        const yv=Number.isFinite(yvBase)?convertValueToPreferred(yvBase, rawUnit):yvBase;
         if(!Number.isFinite(yv)) continue;
         x[oi]=xv;
         y[oi]=yv;
@@ -2722,10 +2736,60 @@
       return { x:xo, y:yo, decimated:true, original:n };
     }
     function sourceConnQuery(src) { if (!src || src.type !== "postgres") return ""; const p = new URLSearchParams(); p.append("db_host", src.host); p.append("db_port", String(src.port)); p.append("db_user", src.user); p.append("db_password", src.password); p.append("db_sslmode", src.sslmode || "disable"); return p.toString(); }
+    function normalizeUnitSymbol(u){ return String(u||"").trim(); }
+    function unitSymbolKey(u){ return normalizeUnitSymbol(u).toLowerCase(); }
+    const unitFormulaCache=new Map();
+    function validateUnitFormula(expr){
+      const s=String(expr||"").trim();
+      if(!s) throw new Error("Formula is required");
+      if(!/^[0-9x()+*/.\s-]+$/i.test(s)) throw new Error("Formula contains invalid characters");
+      if(!/\bx\b/i.test(s)) throw new Error("Formula must use x as the input variable");
+      return s;
+    }
+    function compileUnitFormula(expr){
+      const s=validateUnitFormula(expr);
+      if(unitFormulaCache.has(s)) return unitFormulaCache.get(s);
+      const fn=(x)=>{
+        const out=new Function("x", `"use strict"; return (${s});`)(Number(x));
+        if(!Number.isFinite(out)) throw new Error("Formula returned a non-finite value");
+        return out;
+      };
+      [0, 1, 100].forEach((probe)=>fn(probe));
+      unitFormulaCache.set(s, fn);
+      return fn;
+    }
+    function findUnitCategoryMatch(symbol){
+      const key=unitSymbolKey(symbol);
+      if(!key) return null;
+      for(const cat of unitLibrary.categories||[]){
+        if(unitSymbolKey(cat.preferred)===key) return { category:cat, isPreferred:true };
+        for(const u of cat.units||[]){
+          if(unitSymbolKey(u.symbol)===key) return { category:cat, isPreferred:false, toPreferred:u.to_preferred };
+        }
+      }
+      return null;
+    }
+    function resolveDisplayUnit(rawUnit){
+      const match=findUnitCategoryMatch(rawUnit);
+      if(match) return normalizeUnitSymbol(match.category.preferred);
+      const cleaned=normalizeUnitSymbol(rawUnit);
+      return cleaned||null;
+    }
+    function convertValueToPreferred(value, fromUnit){
+      if(!Number.isFinite(value)) return value;
+      const match=findUnitCategoryMatch(fromUnit);
+      if(!match||match.isPreferred) return value;
+      try{ return compileUnitFormula(match.toPreferred)(value); }
+      catch(err){ console.warn("[NOVA] unit conversion failed", fromUnit, err); return value; }
+    }
+    function getChannelSourceUnit(chId, fallbackUnit){
+      const override=state.unitOverrides?state.unitOverrides[chId]:"";
+      if(typeof override==="string"&&override.trim()) return override.trim();
+      return fallbackUnit||null;
+    }
     function resolveChannelUnit(chId, fallbackUnit){
-      const override = state.unitOverrides ? state.unitOverrides[chId] : "";
-      if (typeof override === "string" && override.trim()) return override.trim();
-      return fallbackUnit || null;
+      const raw=getChannelSourceUnit(chId, fallbackUnit);
+      return resolveDisplayUnit(raw)||raw||null;
     }
     function rebuildChannelUnitMap(){
       channelUnitMap = new Map();
@@ -2740,13 +2804,18 @@
       });
     }
     function applyRowUnits(rows){
-      return (rows||[]).map((r)=>{
-        const chId=`${r.__dbId}|${r.channel_name}`;
-        return { ...r, unit: resolveChannelUnit(chId, r.unit) };
-      });
+      return (rows||[]).map((r)=>({ ...r, __legendKey:traceLegendName(r) }));
+    }
+    function unitLibraryRevision(){
+      return (unitLibrary.categories||[]).map((c)=>{
+        const units=(c.units||[]).map((u)=>`${u.symbol}:${u.to_preferred}`).join(",");
+        return `${c.name}|${c.preferred}|${units}`;
+      }).join(";");
     }
     function plotLayoutRevision(){
       const parts=Object.entries(state.unitOverrides || {}).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>`${k}=${v}`);
+      const ul=unitLibraryRevision();
+      if(ul) parts.push(`ul:${ul}`);
       return parts.length ? parts.join("|") : "nova";
     }
     function plotUiRevision(){
@@ -2989,6 +3058,68 @@
       if(!saved?.ok) throw new Error(saved?.error||"Failed to save database library.");
       databaseLibrary=out;
       return out;
+    }
+    async function loadUnitLibrary(){
+      try{
+        const data=await getJson("/api/unit-library");
+        unitLibrary={ categories:Array.isArray(data?.categories)?data.categories:[] };
+      }catch{
+        unitLibrary={ categories:[] };
+      }
+      unitFormulaCache.clear();
+      return unitLibrary;
+    }
+    async function saveUnitLibrary(categories){
+      const out=(categories||[]).map((row)=>({
+        id:String(row.id||crypto.randomUUID()),
+        name:String(row.name||"").trim(),
+        preferred:String(row.preferred||"").trim(),
+        units:(row.units||[]).map((u)=>({
+          symbol:String(u.symbol||"").trim(),
+          to_preferred:String(u.to_preferred||"").trim(),
+        })).filter((u)=>u.symbol&&u.to_preferred),
+      })).filter((row)=>row.name&&row.preferred);
+      const saved=await postJson("/api/unit-library",{categories:out});
+      if(!saved?.ok) throw new Error(saved?.error||"Failed to save unit library.");
+      unitLibrary={ categories:out };
+      unitFormulaCache.clear();
+      return out;
+    }
+    function normalizeImportedUnitLibrary(obj){
+      const rows=Array.isArray(obj?.categories)?obj.categories:(Array.isArray(obj)?obj:[obj]);
+      return rows
+        .filter((r)=>r&&typeof r==="object")
+        .map((r)=>({
+          id:String(r.id||crypto.randomUUID()),
+          name:String(r.name||"").trim(),
+          preferred:String(r.preferred||"").trim(),
+          units:Array.isArray(r.units)?r.units.map((u)=>({
+            symbol:String(u?.symbol||"").trim(),
+            to_preferred:String(u?.to_preferred||u?.toPreferred||"").trim(),
+          })).filter((u)=>u.symbol&&u.to_preferred):[],
+        }))
+        .filter((r)=>r.name&&r.preferred);
+    }
+    function pickUnitJsonFile(){
+      return new Promise((resolve)=>{
+        const picker=byId("filePicker");
+        picker.accept="application/json";
+        picker.value="";
+        picker.onchange=async()=>{
+          const f=picker.files?.[0];
+          if(!f){ resolve(null); return; }
+          try{
+            const obj=JSON.parse(await f.text());
+            picker.value="";
+            resolve(obj);
+          }catch(err){
+            setStatus(`Invalid unit library file: ${err}`, true);
+            picker.value="";
+            resolve(null);
+          }
+        };
+        picker.click();
+      });
     }
     async function testDatabaseProfile(profile){
       if(!profile) return false;
@@ -4209,6 +4340,237 @@
 
       renderList();
     }
+    async function openUnitManagerModal(){
+      await loadUnitLibrary();
+      let library=structuredClone(unitLibrary.categories||[]);
+      const expanded=new Set();
+
+      const categoryById=(id)=>library.find((x)=>String(x.id)===String(id))||null;
+      const filterList=(rows)=>{
+        const q=(byId("m_unit_search")?.value||"").trim().toLowerCase();
+        if(!q) return rows;
+        return rows.filter((r)=>{
+          const blob=`${r.name} ${r.preferred} ${(r.units||[]).map((u)=>`${u.symbol} ${u.to_preferred}`).join(" ")}`.toLowerCase();
+          return blob.includes(q);
+        });
+      };
+
+      const translationRowsHtml=(cat)=>{
+        const units=Array.isArray(cat.units)?cat.units:[];
+        if(!units.length) return `<div class="empty" style="padding:6px 0;">No translations yet.</div>`;
+        return `<div class="tableWrap" style="max-height:none;margin-top:6px;">
+          <table style="width:100%;">
+            <thead><tr><th>Unit</th><th>To preferred (x = source value)</th><th></th></tr></thead>
+            <tbody>
+              ${units.map((u, idx)=>`<tr>
+                <td><input data-k="symbol" data-cat="${escAttr(cat.id)}" data-idx="${idx}" type="text" value="${escAttr(u.symbol||"")}" placeholder="C" /></td>
+                <td><input data-k="to_preferred" data-cat="${escAttr(cat.id)}" data-idx="${idx}" type="text" value="${escAttr(u.to_preferred||"")}" placeholder="x + 273" /></td>
+                <td><button type="button" class="iconBtn" data-a="del-unit" data-cat="${escAttr(cat.id)}" data-idx="${idx}" title="Remove">×</button></td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`;
+      };
+
+      const editHtml=(cat)=>`
+        <div class="modalGrid" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+          <div><label>Category Name</label><input data-k="name" data-cat="${escAttr(cat.id)}" type="text" value="${escAttr(cat.name||"")}" /></div>
+          <div><label>Preferred Unit</label><input data-k="preferred" data-cat="${escAttr(cat.id)}" type="text" value="${escAttr(cat.preferred||"")}" placeholder="K" /></div>
+        </div>
+        <div style="margin-top:8px;display:flex;justify-content:flex-end;">
+          <button type="button" class="iconBtn" data-a="add-unit" data-cat="${escAttr(cat.id)}" title="Add translation">+</button>
+        </div>
+        <div id="m_unit_trans_${escAttr(cat.id)}">${translationRowsHtml(cat)}</div>
+      `;
+
+      const rowHtml=(cat)=>{
+        const isOpen=expanded.has(String(cat.id));
+        const count=(cat.units||[]).length;
+        return `
+          <div class="selectRow ${isOpen?"active":""}" data-id="${escAttr(cat.id)}" style="display:block;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="flex:1;min-width:0;">
+                <div class="itemPrimary">${escapeHtml(cat.name||"Unit category")}</div>
+                <div class="itemMeta">preferred ${escapeHtml(cat.preferred||"—")} | ${count} translation${count===1?"":"s"}</div>
+              </div>
+              <button type="button" class="iconBtn" data-a="toggle" data-id="${escAttr(cat.id)}" title="${isOpen?"Collapse":"Edit"}">${isOpen?"▴":"✎"}</button>
+              <button type="button" class="iconBtn" data-a="delete" data-id="${escAttr(cat.id)}" title="Delete">×</button>
+            </div>
+            ${isOpen?editHtml(cat):""}
+          </div>
+        `;
+      };
+
+      const syncCategoryFromDom=(catId)=>{
+        const cat=categoryById(catId);
+        if(!cat) return;
+        byId("modalBody").querySelectorAll(`input[data-cat="${CSS.escape(String(catId))}"]`).forEach((inp)=>{
+          const k=inp.getAttribute("data-k");
+          const idx=inp.getAttribute("data-idx");
+          if(!k) return;
+          if(idx!==null){
+            const i=Number(idx);
+            if(!Array.isArray(cat.units)) cat.units=[];
+            if(!cat.units[i]) cat.units[i]={ symbol:"", to_preferred:"" };
+            cat.units[i][k]=inp.value;
+            return;
+          }
+          cat[k]=inp.value;
+        });
+      };
+
+      const syncLibraryFromDom=()=>{
+        library.forEach((cat)=>syncCategoryFromDom(cat.id));
+      };
+
+      const renderList=()=>{
+        const el=byId("m_unit_list");
+        if(!el) return;
+        const filtered=filterList(library);
+        el.innerHTML=filtered.length
+          ? filtered.map((r)=>rowHtml(r)).join("")
+          : `<div class="empty">${library.length?"No matching categories.":"No unit categories yet."}</div>`;
+
+        el.querySelectorAll("button[data-a]").forEach((b)=>{
+          b.onclick=(ev)=>{
+            if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+            const action=b.getAttribute("data-a");
+            const catId=b.getAttribute("data-cat")||b.getAttribute("data-id");
+            if(action==="toggle"){
+              const key=String(catId);
+              syncCategoryFromDom(catId);
+              if(expanded.has(key)) expanded.delete(key);
+              else{ expanded.clear(); expanded.add(key); }
+              renderList();
+              return;
+            }
+            if(action==="delete"){
+              const idx=library.findIndex((x)=>String(x.id)===String(catId));
+              if(idx<0) return;
+              library.splice(idx,1);
+              expanded.delete(String(catId));
+              renderList();
+              return;
+            }
+            if(action==="add-unit"){
+              syncCategoryFromDom(catId);
+              const cat=categoryById(catId);
+              if(!cat) return;
+              if(!Array.isArray(cat.units)) cat.units=[];
+              cat.units.push({ symbol:"", to_preferred:"" });
+              expanded.add(String(catId));
+              renderList();
+              return;
+            }
+            if(action==="del-unit"){
+              syncCategoryFromDom(catId);
+              const cat=categoryById(catId);
+              const idx=Number(b.getAttribute("data-idx"));
+              if(!cat||!Array.isArray(cat.units)||idx<0||idx>=cat.units.length) return;
+              cat.units.splice(idx,1);
+              renderList();
+            }
+          };
+        });
+
+        el.querySelectorAll("input[data-k]").forEach((inp)=>{
+          inp.oninput=()=>{
+            const k=inp.getAttribute("data-k");
+            const catId=inp.getAttribute("data-cat");
+            const idx=inp.getAttribute("data-idx");
+            const cat=categoryById(catId);
+            if(!k||!cat) return;
+            if(idx!==null){
+              const i=Number(idx);
+              if(!Array.isArray(cat.units)) cat.units=[];
+              if(!cat.units[i]) cat.units[i]={ symbol:"", to_preferred:"" };
+              cat.units[i][k]=inp.value;
+            }else cat[k]=inp.value;
+          };
+        });
+      };
+
+      const addCategory=()=>{
+        const id=crypto.randomUUID();
+        library.unshift({ id, name:"New category", preferred:"", units:[] });
+        expanded.clear();
+        expanded.add(id);
+        renderList();
+      };
+
+      const importCategories=async()=>{
+        const obj=await pickUnitJsonFile();
+        if(!obj) return;
+        const imported=normalizeImportedUnitLibrary(obj);
+        if(!imported.length){
+          setStatus("No valid unit categories found in import file.", true);
+          return;
+        }
+        library=[...imported, ...library];
+        renderList();
+        setStatus(`Imported ${imported.length} unit category(ies). Click Save to persist.`);
+      };
+
+      const exportCategories=async()=>{
+        syncLibraryFromDom();
+        const payload={ categories:library };
+        const result=await saveJsonToFile("nova_unit_library.json", payload);
+        if(result.ok&&result.viaPicker) setStatus("Unit library exported.");
+        if(result.ok&&!result.viaPicker) setStatus("Unit library downloaded (save dialog unavailable in this environment).");
+        if(!result.ok&&result.cancelled) setStatus("Unit library export cancelled.");
+      };
+
+      openModal(
+        "Unit Manager",
+        `<div class="cfgManagerToolbar">
+            <input id="m_unit_search" type="text" placeholder="Search categories..." />
+            <button id="m_unit_menu_btn" type="button" class="iconBtn cfgMenuBtn">&#8943;</button>
+         </div>
+         <div style="padding:0 10px 10px;">
+           <div class="itemMeta" style="margin-bottom:8px;">Define preferred units and formulas that convert channel values (<code>x</code>) into the preferred unit.</div>
+           <div id="m_unit_list" class="modalList"></div>
+         </div>
+         <div class="modalActions">
+           <button id="modalCancelBtn" type="button">Close</button>
+           <button id="modalSaveCloseBtn" type="button">Save</button>
+         </div>`,
+        async()=>{
+          syncLibraryFromDom();
+          try{
+            const saved=await saveUnitLibrary(library);
+            library=structuredClone(saved);
+            rebuildChannelUnitMap();
+            overviewTraceCache=null;
+            if(latestRows.length){
+              latestRows=applyRowUnits(latestRows);
+              await plotRows(latestRows, { preserveUi:false, resetView:true });
+            }
+            renderAll();
+            setStatus(`Saved ${saved.length} unit category(ies).`);
+            return true;
+          }catch(err){
+            setStatus(`Failed to save unit library: ${err}`, true);
+            return false;
+          }
+        }
+      );
+
+      byId("m_unit_search").oninput=()=>renderList();
+      byId("m_unit_menu_btn").onclick=(ev)=>{
+        ev.stopPropagation();
+        const rect=ev.currentTarget.getBoundingClientRect();
+        const z=Math.max(200, appWindowZ+15);
+        setTimeout(()=>{
+          showContextMenu(rect.right-180, rect.bottom+2,[
+            { label:"Add category", action:()=>addCategory() },
+            { label:"Import categories...", action:()=>importCategories() },
+            { label:"Export categories...", action:()=>exportCategories() },
+          ], { zIndex:z });
+        }, 0);
+      };
+
+      renderList();
+    }
     function showChannelAddMenu(x,y){ const m=byId("channelAddMenu"); m.innerHTML=`<div class="miniMenuItem" data-t="source">Add channels from source</div><div class="miniMenuItem" data-t="rolling">Rolling channel calculations</div><div class="miniMenuItem" data-t="formula">Channel wise calculations</div>`; m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="source")showAddChannelsModal(); if(t==="rolling")showAddRollingChannelModal(); if(t==="formula")showAddChannelWiseModal();}); }
     function showMaskAddMenu(x,y){ const m=byId("maskAddMenu"); m.innerHTML=`<div class="miniMenuItem" data-t="source">Add mask from channel/time</div><div class="miniMenuItem" data-t="rolling">Rolling mask calculation</div><div class="miniMenuItem" data-t="formula">Channel wise mask calculation</div>`; m.style.left=`${x}px`; m.style.top=`${y}px`; m.style.display="block"; m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{const t=el.getAttribute("data-t"); hideMenus(); if(t==="source")showAddMaskModal(); if(t==="rolling")showAddRollingMaskModal(); if(t==="formula")showAddChannelWiseMaskModal();}); }
     document.addEventListener("click", (e) => {
@@ -4786,7 +5148,7 @@
       });
       renderAll();
     }
-    function renderRows(rows){ const b=byId("rows"); b.innerHTML=""; rows.slice(0,200).forEach((r)=>{ const tr=document.createElement("tr"); const chId=`${r.__dbId}|${r.channel_name}`; tr.innerHTML=`<td>${r.test_run_id}</td><td>${r.test_run_code}</td><td>${r.channel_name}</td><td>${resolveChannelUnit(chId, r.unit)||"unitless"}</td><td>${r.time}</td><td>${Number(r.value).toFixed(4)}</td>`; b.appendChild(tr);}); }
+    function renderRows(rows){ const b=byId("rows"); b.innerHTML=""; rows.slice(0,200).forEach((r)=>{ const tr=document.createElement("tr"); const chId=`${r.__dbId}|${r.channel_name}`; const rawUnit=getChannelSourceUnit(chId, r.unit); const displayVal=convertValueToPreferred(Number(r.value), rawUnit); tr.innerHTML=`<td>${r.test_run_id}</td><td>${r.test_run_code}</td><td>${r.channel_name}</td><td>${resolveChannelUnit(chId, r.unit)||"unitless"}</td><td>${r.time}</td><td>${Number(displayVal).toFixed(4)}</td>`; b.appendChild(tr);}); }
     function renderMetadata(rows){ metadataRows=rows||[]; }
     function showMetadataModal(){ if(!metadataRows.length){ setStatus("No metadata loaded yet. Click Chooch first.", true); return; } const cols=Object.keys(metadataRows[0]); const head=cols.map((c)=>`<th>${c}</th>`).join(""); const body=metadataRows.map((r)=>`<tr>${cols.map((c)=>`<td>${r[c] ?? ""}</td>`).join("")}</tr>`).join(""); openModal("Metadata",`<div class="tableWrap" style="max-height:70vh;"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true); }
 
@@ -4858,6 +5220,11 @@
         row.oncontextmenu=(ev)=>{
           ev.preventDefault();
           if(ev.stopPropagation) ev.stopPropagation();
+          if(kind==="channel" && !set.has(it.id)){
+            set.clear();
+            set.add(it.id);
+            lastClickedByKind[kind]=idx;
+          }
           focusedItem={kind,id:it.id};
           const menu=[{label:"Delete",action:deleteFocused}];
           if(kind==="source"){
@@ -4948,6 +5315,7 @@
               side:"right",
               anchor:"x",
               automargin:false,
+              autorange:true,
               titlefont:{size:Number(appearance.axisTitleSize||11)},
               tickfont:{size:Number(appearance.axisTickSize||10)},
               showticklabels:true,
@@ -4967,6 +5335,7 @@
               // Keep spacing readable even in windowed mode.
               shift:axisOffset*axisSpacingPx,
               automargin:false,
+              autorange:true,
               titlefont:{size:Number(appearance.axisTitleSize||11)},
               tickfont:{size:Number(appearance.axisTickSize||10)},
               showticklabels:true,
@@ -5602,7 +5971,10 @@
             if(chId===xAxis) return;
             const xs=[],ys=[];
             timeMap.forEach((v)=>{
-              if(v[xAxis]!==undefined&&v[chId]!==undefined){ xs.push(v[xAxis]); ys.push(v[chId]); }
+              if(v[xAxis]!==undefined&&v[chId]!==undefined){
+                xs.push(v[xAxis]);
+                ys.push(convertValueToPreferred(Number(v[chId]), channelSourceUnit(chId)));
+              }
             });
             if(!xs.length) return;
             plotOriginalPoints+=xs.length;
@@ -5903,23 +6275,27 @@
       saveStateDeferred();
     }
     function selectedChannelTargets(defaultId){
-      const inScope=new Set(effectiveSelectedChannelIds());
-      const selected=[...selectedChannelIds].filter((id)=>addedChannelIds.has(id)&&inScope.has(id));
-      if(selected.length) return selected;
-      if(defaultId&&inScope.has(defaultId)) return [defaultId];
+      const selected=[...selectedChannelIds].filter((id)=>addedChannelIds.has(id));
+      if(selected.length>1) return selected;
+      if(selected.length===1) return selected;
+      if(defaultId&&addedChannelIds.has(defaultId)) return [defaultId];
       return [];
     }
-    function bulkSetChannelUnit(defaultId){
+    async function bulkSetChannelUnit(defaultId){
       const targets = selectedChannelTargets(defaultId);
       if(!targets.length){ setStatus("Select one or more channels first.", true); return; }
+      const label=targets.length>1
+        ? `${targets.length} channels (${targets.map((id)=>id.split("|")[1]).join(", ")})`
+        : (targets[0].split("|")[1]||"channel");
       const current=(state.unitOverrides && state.unitOverrides[targets[0]]) ? state.unitOverrides[targets[0]] : "";
-      const next=prompt(`Set unit for ${targets.length} channel(s). Leave empty to clear override.`, String(current||""));
+      const next=prompt(`Set unit for ${label}. Leave empty to clear override.`, String(current||""));
       if(next===null) return;
       const cleaned=next.trim();
       targets.forEach((chId)=>{ if(!cleaned) delete state.unitOverrides[chId]; else state.unitOverrides[chId]=cleaned; });
+      overviewTraceCache=null;
       if(latestRows.length){
         latestRows=applyRowUnits(latestRows);
-        plotRows(latestRows);
+        await plotRows(latestRows, { preserveUi:false, resetView:true });
       }
       rebuildChannelUnitMap();
       renderAll();
@@ -6858,6 +7234,7 @@
       byId("file_exportPlot").onclick=async()=>{ const p=getActivePlot(); const rows=latestRows||[]; const esc=(v)=>{ const s=String(v??""); return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s; }; const headers=["test_run_id","test_run_code","channel_name","unit","time","value","db_id"]; const csv=[headers.join(",")].concat(rows.map((r)=>[esc(r.test_run_id),esc(r.test_run_code),esc(r.channel_name),esc(r.unit||""),esc(r.time),esc(r.value),esc(r.__dbId)].join(","))).join("\n"); const result=await saveTextToFile(`nova_${(p?.name||"view").replaceAll(" ","_")}.csv`, csv, "text/csv;charset=utf-8", "csv", "CSV files", "text/csv"); if (result.ok && result.viaPicker) setStatus(`Exported ${rows.length} rows to CSV.`); if (result.ok && !result.viaPicker) setStatus(`CSV downloaded (${rows.length} rows).`); if (!result.ok && result.cancelled) setStatus("CSV export cancelled."); };
       byId("file_configManager").onclick=()=>openConfigManagerModal();
       byId("file_databaseManager").onclick=()=>openDatabaseManagerModal();
+      byId("file_unitManager").onclick=()=>openUnitManagerModal();
     }
 
     const APPEAR_KEY="nova.appearance.v1";
@@ -7316,6 +7693,7 @@
       loadState();
       await refreshArtifactIdsForFileSources();
       await loadDatabaseLibrary();
+      await loadUnitLibrary();
       loadPreferences();
       await loadAppearance();
       loadPlots();

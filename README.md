@@ -13,6 +13,7 @@ NOVA supports multiple data source types in one session:
 The UI lets you:
 
 - Manage PostgreSQL connections via **File → Database Manager...** (searchable list, inline edit, add via `⋯` menu).
+- Define unit preferences and conversions via **File → Unit Manager...** (preferred units per category, translation formulas).
 - Add database-backed sources from **Sources `+` → Database** (requires at least one saved profile).
 - Edit or rename sources (right-click or double-click on Sources).
 - Add channels via a two-column transfer dialog (available → selected).
@@ -27,6 +28,7 @@ The UI lets you:
 - Switch time reference between `Raw Time` and `t0 = First Point (per test)`.
 - Apply optional start/end time filtering for database-backed timeseries.
 - Downsample channels using per-channel frequency overrides.
+- Override or set channel units via right-click **Set Unit...** (applies to all selected channels in the Channels list).
 - Show/hide an in-app data preview drawer.
 - Use a simple ruler tool (`R` key + right-click after hover) for delta and slope checks.
 
@@ -77,6 +79,34 @@ On first run, if no library file exists, NOVA seeds **RedScale** and **BlueScale
 - **“No saved databases” when adding a source** — open Database Manager, confirm profiles exist, and click **Save**.
 - **Connection column shows profiles but Database column is empty** — check host, port, password, and that PostgreSQL is reachable; status bar shows discovery errors.
 - **No tests listed** — confirm the database has a `public` test table with `id`, `run_code`, and `start_time` (default `test_runs`). See [docs/data-file-formats.md](docs/data-file-formats.md).
+
+## Unit Manager
+
+Unit categories and conversion formulas are stored locally on the backend host in `backend/.nova_unit_library.json` (not committed).
+
+### Workflow
+
+1. **File → Unit Manager...** — add or edit categories (name, preferred unit, translations).
+2. For each translation, set the **source unit symbol** and a formula with `x` as the value in that unit, e.g. `x + 273` (C → K) or `x / 1000` (N → kN).
+3. Use the `⋯` menu to **Add**, **Import**, or **Export** categories (JSON).
+4. Click **Save** to persist the library to disk.
+
+When a channel’s unit (from file metadata or a per-channel override) matches a translation symbol, NOVA plots and previews values in the **preferred unit** and labels the Y axis accordingly. Double-click the plot area to reset zoom to the converted scale.
+
+On first run, if no library file exists, NOVA seeds a default **Temperature** category (preferred **K**, with **C** and **F** translations).
+
+### Channel unit overrides
+
+- Right-click a channel in the Channels list → **Set Unit...**
+- Multi-select with Ctrl/Cmd+click or Shift+click, then right-click → **Set Unit...** to apply the same override to all selected channels.
+- Overrides set the channel’s **source** unit; Unit Manager controls display unit and value conversion when a matching translation exists.
+
+### API
+
+- `GET /api/unit-library` — list saved categories (seeds defaults when empty)
+- `POST /api/unit-library` — replace saved categories (`{ "categories": [ ... ] }`)
+
+Formulas are validated on save (numbers, `x`, `+ - * / ( )` only). API tests in `backend/tests/test_unit_library.py`.
 
 ## Calculated Channels
 
@@ -156,10 +186,11 @@ Session artifacts live under `backend/.nova_sessions/` (safe to delete to reclai
 - `backend/app/engine/`: v3 query planner, Postgres/Parquet sources, Arrow codec, calc engine.
 - `backend/app/services/timeseries.py`: PostgreSQL-backed query logic (v1/v2).
 - `backend/app/services/file_sources.py`: CSV/TDMS parsing; uses Parquet artifacts when indexed.
+- `backend/app/services/unit_library.py`: unit category validation and conversion formulas.
 - `backend/app/static/index.html`: single-page UI; `static/js/nova-v3.js` v3 query client.
 - `backend/desktop_app.py`: PySide6 desktop launcher with splash screen and backend lifecycle.
 
-Local runtime data (gitignored): `backend/.nova_database_library.json` (PostgreSQL profiles), `backend/.nova_config_library.json`, `backend/.nova_sessions/`, `backend/uploads/`.
+Local runtime data (gitignored): `backend/.nova_database_library.json` (PostgreSQL profiles), `backend/.nova_unit_library.json` (unit categories), `backend/.nova_config_library.json`, `backend/.nova_sessions/`, `backend/uploads/`.
 
 ## Install (Fresh Clone)
 
@@ -261,6 +292,8 @@ Example template:
 - `GET /api/database-library` — saved PostgreSQL connection profiles
 - `POST /api/database-library`
 - `POST /api/database-library/test` — verify connection credentials
+- `GET /api/unit-library` — saved unit categories and conversion formulas
+- `POST /api/unit-library`
 - `GET /api/config-library`
 - `POST /api/config-library`
 - `GET /api/file/tests`
