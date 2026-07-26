@@ -34,6 +34,26 @@ def test_rolling_mean_calculation():
     assert all(p.channel_name == "A_mean" for p in out)
 
 
+def test_formula_smooth_single_channel():
+    base = [_row("A", float(i), i) for i in range(5)]
+    specs = [
+        CalculatedChannelSpec(
+            kind="formula",
+            name="A_smooth",
+            channels=["A"],
+            formula="SMOOTH(A, 3)",
+        )
+    ]
+    out = apply_calculated_channels(base, specs)
+    assert len(out) == 5
+    # Trailing window: at i=2 values are 0,1,2 → mean 1.0
+    by_sec = {int((p.time - BASE).total_seconds()): p.value for p in out}
+    assert by_sec[0] == 0.0
+    assert by_sec[1] == 0.5
+    assert by_sec[2] == 1.0
+    assert by_sec[4] == 3.0
+
+
 def test_formula_addition():
     base = [
         _row("A", 1.0, 0),

@@ -99,6 +99,7 @@
     .addBtn:hover,.collapseBtn:hover{ color:var(--nova-text); background:var(--nova-hover); }
     .addBtn:disabled{ opacity:0.35; cursor:default; }
     .addBtn:disabled:hover{ background:transparent; color:var(--nova-text-dim); }
+    .addBtn svg{ width:12px; height:12px; display:block; }
     /* Lists — Notion sidebar row format */
     .list{ border:none; background:transparent; overflow-y:auto; user-select:none; -webkit-user-select:none; padding:1px 6px 6px; display:flex; flex-direction:column; gap:1px; }
     .item{
@@ -138,6 +139,19 @@
       min-width:0;
     }
     .item.active .itemPrimary{ font-weight:500; }
+    .itemBadge{
+      flex:0 0 auto;
+      margin-left:6px;
+      width:14px;
+      height:14px;
+      color:var(--nova-text-dim);
+      opacity:0.72;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .itemBadge svg{ width:12px; height:12px; display:block; }
+    .item.active .itemBadge{ color:var(--nova-text); opacity:0.85; }
     .item > .itemMeta{ display:none; }
     .treeRow{ gap:4px; padding-left:calc(6px + (var(--depth, 0) * 14px)); }
     .treeTwist{
@@ -295,7 +309,9 @@
     .modalBackdrop.show{ display:flex; }
     .modal{ width:min(760px,92vw); max-height:82vh; overflow-x:hidden; overflow-y:auto; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-lg); padding:0; box-shadow:var(--nova-shadow); }
     .modal.modalScale{ width:min(420px,94vw); overflow-x:hidden; }
-    .modal.modalChannels{ width:min(480px,94vw); overflow-x:hidden; }
+    .modal.modalSourceForm{ width:min(598px,94vw); overflow:hidden; }
+    .modal.modalAliasForm{ width:min(598px,94vw); overflow:hidden; }
+    .modal.modalChannels{ width:min(960px,94vw); overflow-x:hidden; }
     .modal.modalNarrow{ width:min(220px,88vw); }
     .modal.modalMask{ width:min(340px,92vw); }
     .modal.modalCompact .modalHeader{ padding:5px 8px; }
@@ -366,12 +382,23 @@
     .selectRow:hover:not(.active){ background:var(--nova-hover); }
     .selectRow.disabled{ opacity:0.55; }
     .selectRow .itemPrimary{
+      flex:1 1 auto;
+      min-width:0;
       font-size:1rem;
       font-weight:400;
       line-height:1.2;
       color:var(--nova-text);
     }
     .selectRow.active .itemPrimary{ font-weight:500; }
+    .selectRowVar{
+      flex:0 0 auto;
+      margin-left:8px;
+      font-size:0.85rem;
+      font-weight:600;
+      letter-spacing:0.02em;
+      color:var(--nova-text-dim);
+    }
+    .selectRow.active .selectRowVar{ color:var(--nova-text); }
     .selectRow > .itemMeta{ display:none; }
     /* Taller manager rows keep natural height */
     .selectRow:has(button),
@@ -389,7 +416,7 @@
     .timeRangeRow{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
     .timeRangeRow label{ margin-top:0; }
     /* Menus */
-    .contextMenu,.miniMenu{ position:fixed; z-index:200; display:none; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); min-width:200px; overflow:hidden; box-shadow:var(--nova-shadow); padding:4px; }
+    .contextMenu,.miniMenu{ position:fixed; z-index:200; display:none; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); min-width:100px; overflow:hidden; box-shadow:var(--nova-shadow); padding:4px; }
     .contextItem,.miniMenuItem{ padding:6px 10px; cursor:pointer; font-size:0.875rem; border-bottom:none; border-radius:var(--nova-radius-xs); color:var(--nova-text); }
     .contextHeader{ padding:6px 10px 4px; font-size:0.72rem; font-weight:500; letter-spacing:0.01em; text-transform:none; color:var(--nova-text-dim); pointer-events:none; border-bottom:1px solid var(--nova-divider); margin-bottom:2px; }
     .contextSep{ height:1px; background:var(--nova-divider); margin:4px 2px; }
@@ -450,6 +477,247 @@
     .sourceFileTip{ display:none !important; }
     .sourceNameRow{ display:flex; align-items:center; gap:8px; }
     .sourceNameRow input{ flex:1; min-width:0; }
+    /* Synnax-style stacked form (source / channel dialogs) */
+    .formStack{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      padding:14px 16px 16px;
+      box-sizing:border-box;
+    }
+    .formNameInput{
+      width:100%;
+      box-sizing:border-box;
+      font-size:1.5rem;
+      font-weight:600;
+      letter-spacing:-0.02em;
+      line-height:1.25;
+      padding:6px 2px 10px;
+      border:none;
+      border-bottom:1px solid var(--nova-divider);
+      border-radius:0;
+      background:transparent;
+      color:var(--nova-text);
+    }
+    .formNameInput:focus{
+      border-color:var(--nova-line);
+      box-shadow:none;
+      outline:none;
+    }
+    .formField{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+    .formField > label{
+      margin:0;
+      font-size:0.72rem;
+      font-weight:500;
+      color:var(--nova-text-dim);
+      letter-spacing:0.01em;
+    }
+    .formField > input,
+    .formField > select{
+      width:100%;
+      box-sizing:border-box;
+      min-height:34px;
+      height:34px;
+      margin:0;
+    }
+    .formField > .formNameInput{
+      min-height:0;
+      height:auto;
+    }
+    .formFieldRow{
+      display:flex;
+      flex-wrap:nowrap;
+      align-items:flex-start;
+      justify-content:flex-start;
+      gap:12px;
+      min-width:0;
+    }
+    .formFieldRow > .formField{
+      flex:0 0 150px;
+      width:150px;
+      max-width:150px;
+      box-sizing:border-box;
+    }
+    .inputWithSuffix{
+      display:flex;
+      align-items:stretch;
+      width:100%;
+      min-width:0;
+    }
+    .inputWithSuffix > input{
+      flex:1 1 auto;
+      min-width:0;
+      width:auto;
+      min-height:34px;
+      height:34px;
+      margin:0;
+      border-top-right-radius:0;
+      border-bottom-right-radius:0;
+    }
+    .inputWithSuffix > input:focus{
+      position:relative;
+      z-index:1;
+    }
+    .inputWithSuffix > .inputSuffix{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 auto;
+      min-height:34px;
+      padding:0 10px;
+      border:1px solid var(--nova-divider);
+      border-left:none;
+      border-radius:0 4px 4px 0;
+      background:var(--nova-input-bg);
+      color:var(--nova-text-dim);
+      font-size:0.75rem;
+      box-sizing:border-box;
+      user-select:none;
+    }
+    /* Stable native select — avoid focus/open layout jump */
+    select.formSelectStable,
+    .formField > select{
+      -webkit-appearance:none;
+      appearance:none;
+      background-color:var(--nova-input-bg);
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%23888888' d='M4.2 6.2L8 10l3.8-3.8-.9-.9L8 8.2 5.1 5.3l-.9.9z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:right 10px center;
+      background-size:12px 12px;
+      padding:6px 30px 6px 10px;
+      border:1px solid var(--nova-divider);
+      border-radius:4px;
+      line-height:1.2;
+    }
+    select.formSelectStable:focus,
+    .formField > select:focus{
+      border-color:var(--nova-line);
+      box-shadow:none;
+      outline:none;
+    }
+    .formCheckRow{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin:0;
+      font-size:0.8rem;
+      color:var(--nova-text);
+      font-weight:400;
+      text-transform:none;
+      letter-spacing:normal;
+      cursor:pointer;
+    }
+    .formCheckRow input{
+      width:auto;
+      min-height:0;
+      height:auto;
+      margin:0;
+      flex:0 0 auto;
+    }
+    .formFieldHint{
+      margin:0;
+      font-size:0.7rem;
+      color:#eb5757;
+    }
+    .reqMark{ color:#eb5757; margin-left:2px; font-weight:600; }
+    .aliasMembersBlock{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      padding:0 16px 10px;
+      box-sizing:border-box;
+      flex:0 0 auto;
+      min-height:0;
+    }
+    .aliasMembersHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      flex:0 0 auto;
+    }
+    .aliasMembersHeader > label{
+      margin:0;
+      font-size:0.72rem;
+      font-weight:500;
+      color:var(--nova-text-dim);
+      letter-spacing:0.01em;
+    }
+    .aliasMemberList{
+      flex:0 0 auto;
+      min-height:0;
+      overflow-x:hidden;
+      overflow-y:auto;
+      border:1px solid var(--nova-divider);
+      border-radius:4px;
+      padding:2px;
+      box-sizing:border-box;
+      scrollbar-width:none;
+      -ms-overflow-style:none;
+    }
+    .aliasMemberList::-webkit-scrollbar{ width:0; height:0; display:none; }
+    .aliasMemberList:has(.empty){
+      border-style:dashed;
+      min-height:0;
+    }
+    .aliasMemberList .empty{
+      padding:8px;
+      color:var(--nova-text-dim);
+      font-size:0.78rem;
+    }
+    .aliasMemberList .selectRow{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      height:27px;
+      min-height:27px;
+      max-height:27px;
+      padding:0 8px;
+      box-sizing:border-box;
+    }
+    .aliasMemberList .selectRow .itemPrimary{ flex:1; min-width:0; }
+    .aliasMemberRemove{
+      width:22px; min-width:22px; height:22px; padding:0;
+      border:none; border-radius:4px; background:transparent;
+      color:var(--nova-text-dim); cursor:pointer;
+      display:inline-flex; align-items:center; justify-content:center;
+      flex:0 0 auto;
+    }
+    .aliasMemberRemove:hover{ background:var(--nova-hover); color:var(--nova-text); }
+    .calcFormulaPad{
+      padding:0 16px 10px;
+      box-sizing:border-box;
+      flex:0 0 auto;
+    }
+    .calcFormulaPad .formField{ gap:5px; }
+    .aliasMemberList .selectRowVar{
+      position:static;
+      float:none;
+      margin:0;
+      flex:0 0 auto;
+    }
+    .modalActions.modalActionsIconOnly{
+      justify-content:flex-end;
+      padding:10px 12px;
+      gap:8px;
+    }
+    .iconActionBtn{
+      width:32px !important;
+      min-width:32px !important;
+      height:32px !important;
+      padding:0 !important;
+      display:inline-flex !important;
+      align-items:center;
+      justify-content:center;
+      border-radius:4px !important;
+      background:rgba(255,255,255,0.12);
+      color:var(--nova-text);
+      border:1px solid var(--nova-divider);
+    }
+    .iconActionBtn:hover{ background:rgba(255,255,255,0.18); }
+    html.light-mode .iconActionBtn{ background:rgba(55,53,47,0.08); }
+    html.light-mode .iconActionBtn:hover{ background:rgba(55,53,47,0.14); }
+    .iconActionBtn svg{ width:15px; height:15px; display:block; }
     /* Realtime panel */
     #realtimePanel{ background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); box-shadow:var(--nova-shadow); }
     .realtimeBtn{ width:26px; height:26px; min-width:26px; border-radius:var(--nova-radius-xs); padding:0; font-size:0.75rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--nova-text-dim); }
@@ -465,12 +733,79 @@
     #appWindowLayer{ position:fixed; inset:0; pointer-events:none; z-index:110; }
     .appWindow{ position:fixed; pointer-events:auto; display:flex; flex-direction:column; min-width:220px; min-height:140px; max-width:96vw; max-height:96vh; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-lg); box-shadow:var(--nova-shadow); overflow:hidden; z-index:111; }
     .appWindow.modalScale{ width:420px; height:520px; }
-    .appWindow.modalChannels{ width:480px; height:560px; }
+    .appWindow.modalSourceForm{ width:598px; height:300px; }
+    .appWindow.modalAliasForm{ width:598px; height:auto; min-height:280px; max-height:96vh; }
+    .appWindow.modalChannels{ width:960px; height:560px; }
     .appWindow.modalDbSource{ width:960px; height:640px; }
     .appWindow.modalMask{ width:360px; height:500px; }
     .appWindow.modalNarrow{ width:260px; height:340px; }
     .appWindowHeader{ display:flex; align-items:center; gap:6px; cursor:move; flex:0 0 auto; user-select:none; padding-right:8px; }
-    .appWindowHeader .modalTitle{ flex:1; min-width:0; margin:0; }
+    .appWindowHeader .modalTitle{ flex:1; min-width:0; margin:0; display:flex; align-items:center; gap:8px; }
+    .appWindowHeader .modalTitleIcon{
+      width:16px; height:16px; min-width:16px; color:var(--nova-text-dim);
+      display:inline-flex; align-items:center; justify-content:center;
+    }
+    .appWindowHeader .modalTitleIcon svg{ width:14px; height:14px; display:block; }
+    .appWindowHeader .modalTitleSep{
+      display:inline-flex; align-items:center; justify-content:center;
+      margin:0 8px; color:var(--nova-text-dim);
+      width:12px; height:12px; min-width:12px; flex:0 0 auto;
+    }
+    .appWindowHeader .modalTitleSep svg{ width:10px; height:10px; display:block; }
+    .appWindowHeader .appWindowClose{
+      width:28px; min-width:28px; height:28px; padding:0;
+      border:none; border-radius:4px; background:transparent;
+      color:var(--nova-text-dim); display:inline-flex; align-items:center; justify-content:center;
+      cursor:pointer; flex:0 0 auto;
+    }
+    .appWindowHeader .appWindowClose:hover{ background:var(--nova-hover); color:var(--nova-text); }
+    .appWindowHeader .appWindowClose svg{ width:12px; height:12px; display:block; }
+    .appWindow.modalSourceForm .appWindowHeader.modalHeader{
+      padding:8px 14px;
+    }
+    .appWindow.modalSourceForm .appWindowHeader .appWindowClose{
+      width:20px; min-width:20px; height:20px;
+    }
+    .appWindow.modalSourceForm .appWindowHeader .modalTitle{ font-size:0.85rem; }
+    .appWindow.modalSourceForm .formStack{ padding:10px 16px 4px; gap:12px; }
+    .appWindow.modalSourceForm .modalActions.modalActionsIconOnly{ padding:6px 12px; }
+    .appWindow.modalAliasForm .appWindowHeader.modalHeader{ padding:8px 14px; }
+    .appWindow.modalAliasForm .appWindowHeader .appWindowClose{ width:20px; min-width:20px; height:20px; }
+    .appWindow.modalAliasForm .appWindowHeader .modalTitle{ font-size:0.85rem; }
+    .appWindow.modalAliasForm .formStack{ padding:10px 16px 8px; gap:12px; flex:0 0 auto; }
+    .appWindow.modalAliasForm .aliasMembersBlock{
+      flex:1 1 auto;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+    .appWindow.modalAliasForm .aliasMemberList{
+      flex:1 1 auto;
+      min-height:0;
+    }
+    .appWindow.modalAliasForm .appWindowBody{
+      flex:1 1 auto;
+      min-height:0;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    .appWindow.modalAliasForm .appWindowContent{
+      flex:1 1 auto;
+      min-height:0;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      scrollbar-width:none;
+      -ms-overflow-style:none;
+    }
+    .appWindow.modalAliasForm .appWindowContent::-webkit-scrollbar{ width:0; height:0; display:none; }
+    .appWindow.modalAliasForm{ overflow:hidden; }
+    .appWindow.modalAliasForm .appWindowBody>.modalActions{
+      flex:0 0 auto;
+    }
+    .appWindow.modalAliasForm .calcFormulaPad{ flex:0 0 auto; }
+    .appWindow.modalAliasForm .modalActions.modalActionsIconOnly{ padding:8px 12px; }
     .appWindowBody{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
     .appWindowContent{ flex:1 1 auto; min-height:0; overflow:auto; display:flex; flex-direction:column; }
     .appWindowBody>.modalActions{ flex:0 0 auto; }
@@ -486,6 +821,8 @@
     .appWindow.modalCompact .appWindowContent .modalList{ max-height:none !important; }
     .appWindow .appWindowContent .scalePickerCol .modalList{ max-height:none !important; }
     .appWindow .appWindowContent>div:has(>.modalList){ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; padding-bottom:0 !important; }
+    .appWindow .appWindowContent .formStack{ flex:0 0 auto; overflow:visible; }
+    .appWindow.modalSourceForm .appWindowContent{ overflow:hidden; }
     .appWindowResize{ position:absolute; right:0; bottom:0; width:14px; height:14px; cursor:nwse-resize; z-index:2; background:linear-gradient(135deg, transparent 50%, var(--nova-text-dim) 50%); opacity:0.45; }
     .appWindowResize:hover{ opacity:0.85; }
   </style>
@@ -533,7 +870,7 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5c-3.2 0-5.5 1-5.5 2.3v8.4c0 1.3 2.3 2.3 5.5 2.3s5.5-1 5.5-2.3V3.8C13.5 2.5 11.2 1.5 8 1.5zm0 1.2c2.6 0 4.2.7 4.2 1.1S10.6 5 8 5 3.8 4.2 3.8 3.8 5.4 2.7 8 2.7zM3.8 6.2C4.6 6.7 6.1 7 8 7s3.4-.3 4.2-.8v1.6C11.4 8.3 9.9 8.6 8 8.6s-3.4-.3-4.2-.8V6.2zm0 3.2c.8.5 2.3.8 4.2.8s3.4-.3 4.2-.8v1.6c-.8.5-2.3.8-4.2.8s-3.4-.3-4.2-.8V9.4z"/></svg>
         </button>
         <button type="button" class="railBtn" data-toolbar="channels" title="Channels" aria-label="Channels">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 3.25h1.5v9.5H2v-9.5zm3.5 2h1.5v7.5H5.5v-7.5zm3.5-2h1.5v9.5H9V3.25zm3.5 3h1.5v6.5H12.5V6.25z"/></svg>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" d="M1.5 8h2l1.4-4.2L7.2 12l2.1-6.3L11 9.5h3.5"/></svg>
         </button>
         <button type="button" class="railBtn" data-toolbar="masks" title="Masks" aria-label="Masks">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 3.5h11v1.5h-11V3.5zm0 3.75h7v1.5h-7v-1.5zm0 3.75h9v1.5h-9V11zM12.2 8.1l1.1 1.1-2.85 2.85-1.1-1.1L12.2 8.1z"/></svg>
@@ -566,7 +903,12 @@
         <section class="toolbarSection" data-section="channels" id="section_channels">
           <div class="toolbarSectionHeader">
             <h3>Channels</h3>
-            <div class="headerBtns"><button id="addChannelBtn" class="addBtn" type="button" title="Add channel">+</button></div>
+            <div class="headerBtns">
+              <button id="addCalcChannelBtn" class="addBtn" type="button" title="Add calculated channel" aria-label="Add calculated channel">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M1.5 1.5h5v5h-5v-5zm7 0h5v5h-5v-5zm-7 7h5v5h-5v-5zm8.25 1h1.5v1.75H13v1.5h-1.75V14h-1.5v-1.75H8v-1.5h1.75V9.5z"/></svg>
+              </button>
+              <button id="addChannelBtn" class="addBtn" type="button" title="Add channel" aria-label="Add channel">+</button>
+            </div>
           </div>
           <div id="channelsList" class="list"></div>
         </section>
@@ -712,6 +1054,144 @@
     let latestRows = [], metadataRows = [], testsData = [], channelsData = [], previewVisible = false, focusedItem = null;
     let selectedSourceIds = new Set(), selectedDatabaseIds = new Set(), selectedTestIds = new Set(), selectedChannelIds = new Set(), selectedMaskIds = new Set();
     let addedTestIds = new Set(), addedChannelIds = new Set();
+    function channelKeyFromId(id){
+      const s=String(id??"");
+      const i=s.indexOf("|");
+      return i>=0 ? s.slice(i+1) : s;
+    }
+    function channelDisplayName(id){
+      const key=channelKeyFromId(id);
+      if(!key) return "";
+      const label=state.channelLabels?.[key];
+      if(typeof label==="string" && label.trim()) return label.trim();
+      return key;
+    }
+    function setChannelDisplayName(id, name){
+      const key=channelKeyFromId(id);
+      if(!key) return;
+      state.channelLabels=state.channelLabels||{};
+      const cleaned=String(name??"").trim();
+      if(!cleaned || cleaned===key) delete state.channelLabels[key];
+      else state.channelLabels[key]=cleaned;
+    }
+    function freqUnitFieldsHtml({ freqId, unitId, freqValue="", unitValue="", freqPlaceholder="" }){
+      return `<div class="formFieldRow">
+          <div class="formField">
+            <label>Frequency</label>
+            <div class="inputWithSuffix">
+              <input id="${freqId}" type="number" step="any" min="0" value="${escAttr(freqValue)}" placeholder="${escAttr(freqPlaceholder||"")}" />
+              <span class="inputSuffix">Hz</span>
+            </div>
+          </div>
+          <div class="formField">
+            <label>Unit</label>
+            <input id="${unitId}" type="text" value="${escAttr(unitValue)}" placeholder="e.g. degC" spellcheck="false" />
+          </div>
+        </div>`;
+    }
+    function migrateChannelKeySet(values){
+      const out=new Set();
+      (values||[]).forEach((v)=>{
+        const key=String(channelKeyFromId(v)||"").trim();
+        if(key) out.add(key);
+      });
+      return out;
+    }
+    function findCalculatedByKey(name){
+      return (state.calculatedChannels||[]).find((c)=>c.name===name)||null;
+    }
+    function isCalculatedChannelKey(name){
+      return Boolean(findCalculatedByKey(name));
+    }
+    function findAliasByKey(name){
+      return (state.channelAliases||[]).find((a)=>a.name===name)||null;
+    }
+    function isAliasChannelKey(name){
+      return Boolean(findAliasByKey(name));
+    }
+    function aliasMemberNames(alias){
+      return [...new Set((alias?.channels||[]).map((id)=>channelKeyFromId(id)).filter(Boolean))];
+    }
+    function aliasesContainingChannel(name){
+      const key=channelKeyFromId(name);
+      if(!key || isAliasChannelKey(key) || isCalculatedChannelKey(key)) return [];
+      return (state.channelAliases||[]).filter((a)=>aliasMemberNames(a).includes(key));
+    }
+    function isAliasedChannelMember(name){
+      return aliasesContainingChannel(name).length>0;
+    }
+    function purgeAliasedMembersFromChannelLists(memberNames){
+      (memberNames||[]).forEach((n)=>{
+        const key=channelKeyFromId(n);
+        if(!key || isAliasChannelKey(key) || isCalculatedChannelKey(key)) return;
+        addedChannelIds.delete(key);
+        selectedChannelIds.delete(key);
+      });
+    }
+    function sanitizeAliasedChannelLists(){
+      const members=[];
+      (state.channelAliases||[]).forEach((a)=>members.push(...aliasMemberNames(a)));
+      purgeAliasedMembersFromChannelLists(members);
+    }
+    function migrateChannelAliases(list){
+      const out=[];
+      const seen=new Set();
+      (list||[]).forEach((a)=>{
+        let name=String(a?.name||"").trim()||"channel_alias";
+        if(seen.has(name)){
+          let n=2;
+          while(seen.has(`${name}_${n}`)) n+=1;
+          name=`${name}_${n}`;
+        }
+        seen.add(name);
+        out.push({
+          id:a.id||crypto.randomUUID(),
+          name,
+          channels:aliasMemberNames(a),
+        });
+      });
+      return out;
+    }
+    function calcDepNames(calc){
+      return (calc?.channels||[]).map((id)=>channelKeyFromId(id)).filter(Boolean);
+    }
+    function migrateCalculatedChannels(list){
+      const out=[];
+      const seenNames=new Set();
+      (list||[]).forEach((c)=>{
+        let name=String(c?.name||"").trim()||"calc_channel";
+        if(seenNames.has(name)){
+          let n=2;
+          while(seenNames.has(`${name}_${n}`)) n+=1;
+          name=`${name}_${n}`;
+        }
+        seenNames.add(name);
+        const channels=calcDepNames(c);
+        if(c?.kind==="rolling"){
+          const op=String(c.op||"mean").trim().toLowerCase();
+          const window=Math.max(1, Number(c.window||1));
+          const opFn={
+            mean:"SMOOTH",
+            sum:"ROLLING_SUM",
+            min:"ROLLING_MIN",
+            max:"ROLLING_MAX",
+            std:"ROLLING_STD",
+          }[op]||"SMOOTH";
+          out.push({
+            id:c.id||crypto.randomUUID(),
+            kind:"formula",
+            name,
+            unit:c.unit||"",
+            channels,
+            formula:`${opFn}(A, ${window})`,
+            sourceLabel:c.sourceLabel,
+          });
+          return;
+        }
+        out.push({ ...c, name, channels });
+      });
+      return out;
+    }
     let maxSampleHzGlobal = null;
     let realtimeRows = [];
     let realtimePrecomputed = null; // [{xFull, yFull, rtFull, xIsNumeric, traceIdx}] | null
@@ -753,7 +1233,7 @@
     let realtimeExporting = false;
     let realtimeExportRenderOptions = null;
     let channelUnitMap = new Map();
-    let state = { sources: [], databases: [], masks: [], calculatedChannels: [], freqOverrides: {}, unitOverrides: {}, collapsed: {}, activeToolbar: "sources", sourceTreeExpanded: [] };
+    let state = { sources: [], databases: [], masks: [], calculatedChannels: [], channelAliases: [], channelLabels: {}, freqOverrides: {}, unitOverrides: {}, collapsed: {}, activeToolbar: "sources", sourceTreeExpanded: [] };
     let activeToolbar = "sources";
     let sourceTreeExpanded = new Set();
     const dbBrowseCache = new Map();
@@ -3045,8 +3525,11 @@
       catch(err){ console.warn("[NOVA] unit conversion failed", fromUnit, err); return value; }
     }
     function getChannelSourceUnit(chId, fallbackUnit){
-      const override=state.unitOverrides?state.unitOverrides[chId]:"";
-      if(typeof override==="string"&&override.trim()) return override.trim();
+      const overrides=state.unitOverrides||{};
+      const exact=overrides[chId];
+      if(typeof exact==="string"&&exact.trim()) return exact.trim();
+      const byKey=overrides[channelKeyFromId(chId)];
+      if(typeof byKey==="string"&&byKey.trim()) return byKey.trim();
       return fallbackUnit||null;
     }
     function resolveChannelUnit(chId, fallbackUnit){
@@ -3059,9 +3542,9 @@
         const chId=`${c.__dbId}|${c.channel_name}`;
         channelUnitMap.set(chId, resolveChannelUnit(chId, c.unit) || "unitless");
       });
-      addedChannelIds.forEach((chId)=>{
-        if(!channelUnitMap.has(chId)){
-          channelUnitMap.set(chId, resolveChannelUnit(chId, null) || "unitless");
+      addedChannelIds.forEach((key)=>{
+        if(!channelUnitMap.has(key)){
+          channelUnitMap.set(key, resolveChannelUnit(key, null) || "unitless");
         }
       });
     }
@@ -3076,6 +3559,8 @@
     }
     function plotLayoutRevision(){
       const parts=Object.entries(state.unitOverrides || {}).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>`${k}=${v}`);
+      const labels=Object.entries(state.channelLabels || {}).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>`${k}=${v}`);
+      if(labels.length) parts.push(`labels:${labels.join(",")}`);
       const ul=unitLibraryRevision();
       if(ul) parts.push(`ul:${ul}`);
       return parts.length ? parts.join("|") : "nova";
@@ -3159,46 +3644,57 @@
       if(src?.name) return src.name;
       return db?.name||String(dbId).slice(0,8);
     }
-    function defaultFormulaSourceLabel(channelIds){
-      const labels=[], seen=new Set();
-      (channelIds||[]).forEach((id)=>{
-        const dbId=id.split("|")[0];
-        const lab=sourceLabelForDbId(dbId);
-        if(seen.has(lab)) return;
-        seen.add(lab);
-        labels.push(lab);
-      });
-      return labels.join(" + ");
-    }
-    function legendSourceForCalc(calc){
+    function legendSourceForCalc(calc, dbId){
       const custom=String(calc?.sourceLabel||"").trim();
       if(custom) return custom;
-      if(calc?.kind==="formula") return defaultFormulaSourceLabel(calc.channels||[]);
-      return sourceLabelForDbId(calc.dbId);
+      return sourceLabelForDbId(dbId);
     }
     function traceLegendName(r){
-      if(r.__legendSource) return `${r.__legendSource} | ${r.channel_name}`;
+      const chName=r.__displayChannel || r.channel_name;
+      if(r.__legendSource) return `${r.__legendSource} | ${chName}`;
       const srcLabel=sourceLabelForDbId(r.__dbId);
       const { src }=resolveDbSource(r.__dbId);
-      if(isFileSource(src)||isPostgresTestLeaf(src)) return `${srcLabel} | ${r.channel_name}`;
+      if(isFileSource(src)||isPostgresTestLeaf(src)) return `${srcLabel} | ${chName}`;
       const run=r.test_run_code??r.test_run_id;
-      if(run!=null && run!=="" && !String(srcLabel).includes(String(run))) return `${srcLabel} / ${run} | ${r.channel_name}`;
-      return `${srcLabel} | ${r.channel_name}`;
+      if(run!=null && run!=="" && !String(srcLabel).includes(String(run))) return `${srcLabel} / ${run} | ${chName}`;
+      return `${srcLabel} | ${chName}`;
     }
     async function ensureCalcSourceChannelsLoaded(){
       if(!state.sources.length){
         setStatus("Add at least one source first.",true);
         return null;
       }
-      await refreshCatalogsForSelections();
-      const dbIds=new Set(collectDatabaseIdsForSources(effectiveSelectedSourceIds()));
-      const sourceChannels=channelsData
-        .filter((c)=>!c.__isCalculated && dbIds.has(c.__dbId))
-        .sort((a,b)=>{
-          const bySource=sourceLabelForDbId(a.__dbId).localeCompare(sourceLabelForDbId(b.__dbId));
-          if(bySource!==0) return bySource;
-          return String(a.channel_name).localeCompare(String(b.channel_name));
-        });
+      const options=channelPickerSourceOptions();
+      if(!options.length){
+        setStatus("Select at least one source first.",true);
+        return null;
+      }
+      const sourceId=defaultChannelPickerSourceId(options);
+      const opt=options.find((o)=>o.sourceId===sourceId)||options[0];
+      const src=state.sources.find((s)=>s.id===opt.sourceId);
+      if(isFileSource(src)) await ensureFileSourceIndexed(src);
+      const byName=new Map();
+      const { db, connSrc }=resolveDbSource(opt.dbId);
+      if(db && (connSrc||src)){
+        try{
+          const packed=await fetchCatalogRows(db, connSrc||src);
+          (packed.channels||[]).forEach((c)=>{
+            const name=String(c.channel_name||"").trim();
+            if(!name||byName.has(name)) return;
+            byName.set(name,{ channel_name:name, unit:c.unit||null });
+          });
+        }catch(err){
+          setStatus(`Failed to load channels for calculation: ${err}`,true);
+          return null;
+        }
+      }
+      channelsData.forEach((c)=>{
+        if(c.__isCalculated) return;
+        const name=String(c.channel_name||"").trim();
+        if(!name||byName.has(name)) return;
+        byName.set(name,{ channel_name:name, unit:c.unit||null });
+      });
+      const sourceChannels=[...byName.values()].sort((a,b)=>String(a.channel_name).localeCompare(String(b.channel_name)));
       if(!sourceChannels.length){
         setStatus("No source channels available for the selected sources.",true);
         return null;
@@ -3207,16 +3703,16 @@
     }
     function calcChannelPickerRows(sourceChannels){
       return sourceChannels.map((c)=>({
-        id:`${c.__dbId}|${c.channel_name}`,
+        id:c.channel_name,
         primary:c.channel_name,
-        meta:`${sourceLabelForDbId(c.__dbId)} | unit ${c.unit||"unitless"}`,
+        meta:`unit ${c.unit||"unitless"}`,
       }));
     }
     function rollingSourceChannelOptions(sourceChannels, selectedId){
+      const selectedKey=channelKeyFromId(selectedId||"");
       return sourceChannels.map((c)=>{
-        const id=`${c.__dbId}|${c.channel_name}`;
-        const selected=selectedId===id?" selected":"";
-        return `<option value="${id}"${selected}>${sourceLabelForDbId(c.__dbId)} / ${c.channel_name}</option>`;
+        const selected=selectedKey===c.channel_name?" selected":"";
+        return `<option value="${c.channel_name}"${selected}>${c.channel_name}</option>`;
       }).join("");
     }
     async function fetchChannelsForDb(dbId){
@@ -3562,13 +4058,23 @@
       return body;
     }
     function buildCalculatedSpecsForDb(dbId){
+      const available=new Set(
+        channelsData
+          .filter((c)=>c.__dbId===dbId && !c.__isCalculated)
+          .map((c)=>c.channel_name)
+      );
       return selectedCalculatedChannels()
-        .filter((c)=>c.dbId===dbId)
+        .filter((c)=>{
+          const deps=calcDepNames(c);
+          if(c.kind==="rolling") return Boolean(deps[0]) && (!available.size || available.has(deps[0]));
+          if(c.kind==="formula") return deps.length>=1 && (!available.size || deps.every((n)=>available.has(n)));
+          return false;
+        })
         .map((c)=>({
           kind:c.kind,
           name:c.name,
           unit:c.unit||null,
-          channels:(c.channels||[]).map((id)=>{ const p=String(id).split("|"); return p.length>1?p.slice(1).join("|"):p[0]; }),
+          channels:calcDepNames(c),
           op:c.op||null,
           window:c.window||null,
           formula:c.formula||null,
@@ -4240,15 +4746,17 @@
         if(!src.timeRef) src.timeRef=ref;
       });
     }
-    function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); const toolbar = Object.prototype.hasOwnProperty.call(s, "activeToolbar") ? s.activeToolbar : "sources"; state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:s.calculatedChannels || [], freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {}, activeToolbar: toolbar, sourceTreeExpanded: Array.isArray(s.sourceTreeExpanded)?s.sourceTreeExpanded:[] }; migrateLegacyTimeRef(state.sources, s.t0Mode); if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = new Set(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = new Set(s.addedChannelIds || []); previewVisible = Boolean(s.previewVisible); activeToolbar = state.activeToolbar ?? null; if(activeToolbar && !["sources","channels","masks","ranges","objects","ingestion"].includes(activeToolbar)) activeToolbar="sources"; sourceTreeExpanded = new Set(state.sourceTreeExpanded || s.sourceTreeExpanded || []); } catch {} }
-    const MODAL_SIZE_CLASSES=["modalScale","modalChannels","modalDbSource","modalNarrow","modalMask","modalCompact"];
+    function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); const toolbar = Object.prototype.hasOwnProperty.call(s, "activeToolbar") ? s.activeToolbar : "sources"; state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:migrateCalculatedChannels(s.calculatedChannels || []), channelAliases:migrateChannelAliases(s.channelAliases || []), channelLabels:(s.channelLabels && typeof s.channelLabels==="object" && !Array.isArray(s.channelLabels))?s.channelLabels:{}, freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {}, activeToolbar: toolbar, sourceTreeExpanded: Array.isArray(s.sourceTreeExpanded)?s.sourceTreeExpanded:[] }; migrateLegacyTimeRef(state.sources, s.t0Mode); if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = migrateChannelKeySet(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = migrateChannelKeySet(s.addedChannelIds || []); previewVisible = Boolean(s.previewVisible); activeToolbar = state.activeToolbar ?? null; if(activeToolbar && !["sources","channels","masks","ranges","objects","ingestion"].includes(activeToolbar)) activeToolbar="sources"; sourceTreeExpanded = new Set(state.sourceTreeExpanded || s.sourceTreeExpanded || []); } catch {} }
+    const MODAL_SIZE_CLASSES=["modalScale","modalSourceForm","modalAliasForm","modalChannels","modalDbSource","modalNarrow","modalMask","modalCompact"];
     const WF={ floating:true };
     const WF_CHANNELS={ floating:true, size:"modalChannels", compact:true };
     const WF_DB_SOURCE={ floating:true, size:"modalDbSource", compact:true };
     const WF_NARROW={ floating:true, size:"modalNarrow", compact:true };
     const WF_CFG={ floating:true, size:"default", compact:true };
+    const WF_SOURCE_FORM={ floating:true, size:"modalSourceForm", closable:true };
+    const WF_ALIAS_FORM={ floating:true, size:"modalAliasForm", closable:true };
     const dialogCloseStack=[];
-    const APP_WINDOW_SIZES={ modalScale:[420,520], modalChannels:[480,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], default:[520,560] };
+    const APP_WINDOW_SIZES={ modalScale:[420,520], modalSourceForm:[598,300], modalAliasForm:[598,320], modalChannels:[960,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], default:[520,560] };
     function removeAppWindowEntry(dialogId){
       const idx=appWindowStack.findIndex((e)=>e.dialogId===dialogId);
       if(idx>=0) appWindowStack.splice(idx,1);
@@ -4325,11 +4833,21 @@
       const el=document.createElement("div");
       el.className="appWindow modal"+(layoutOpts?.size?` ${layoutOpts.size}`:"")+(layoutOpts?.compact?" modalCompact":"");
       el.style.width=`${defW}px`;
-      el.style.height=`${defH}px`;
+      if(sizeKey==="modalAliasForm"){
+        el.style.height="auto";
+        el.style.minHeight=`${Math.max(280, defH)}px`;
+      }else{
+        el.style.height=`${defH}px`;
+      }
       el.style.left=`${left}px`;
       el.style.top=`${top}px`;
-      el.innerHTML=`<div class="appWindowHeader modalHeader"><h4 class="modalTitle"></h4></div><div class="appWindowBody"></div><div class="appWindowResize"></div>`;
-      el.querySelector(".modalTitle").textContent=title;
+      const closeBtnHtml=layoutOpts?.closable
+        ? `<button type="button" class="appWindowClose" aria-label="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3.2 3.2l9.6 9.6-.9.9L2.3 4.1l.9-.9zm9.6 0l.9.9-9.6 9.6-.9-.9 9.6-9.6z"/></svg></button>`
+        : "";
+      el.innerHTML=`<div class="appWindowHeader modalHeader"><h4 class="modalTitle"></h4>${closeBtnHtml}</div><div class="appWindowBody"></div><div class="appWindowResize"></div>`;
+      const titleEl=el.querySelector(".modalTitle");
+      if(layoutOpts?.titleHtml) titleEl.innerHTML=layoutOpts.titleHtml;
+      else titleEl.textContent=title;
       const root=el.querySelector(".appWindowBody");
       root.innerHTML=bodyHtml;
       layoutAppWindowBody(root);
@@ -4347,6 +4865,13 @@
       };
       appWindowStack.push(entry);
       dialogCloseStack.push({ close:entry.close });
+      const closeBtn=el.querySelector(".appWindowClose");
+      if(closeBtn){
+        closeBtn.onclick=(ev)=>{
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          entry.close();
+        };
+      }
       wireModalActions(root,saveFn);
       initAppWindowDragResize(entry);
       el.addEventListener("mousedown",()=>bringAppWindowToFront(el));
@@ -4740,7 +5265,13 @@
       float.id="probeFlagTipFloat";
       document.body.appendChild(float);
       let activeHost=null;
+      let sourceTipTimer=null;
+      const SOURCE_TIP_DELAY_MS=500;
+      const clearSourceTipTimer=()=>{
+        if(sourceTipTimer){ clearTimeout(sourceTipTimer); sourceTipTimer=null; }
+      };
       const hideTip=()=>{
+        clearSourceTipTimer();
         activeHost=null;
         float.style.display="none";
       };
@@ -4771,18 +5302,32 @@
         placeFloat(wrap.querySelector(".probeFlagIcon")||wrap);
       };
       const showSourceTip=(host)=>{
-        if(!host||host===activeHost) return;
+        if(!host) return;
+        if(host===activeHost && float.style.display==="block") return;
         activeHost=host;
         const tip=host.querySelector(".sourceFileTip");
         if(!tip){ hideTip(); return; }
         float.innerHTML=tip.innerHTML;
         placeFloat(host);
       };
+      const scheduleSourceTip=(host)=>{
+        if(!host) return;
+        if(host===activeHost && float.style.display==="block") return;
+        clearSourceTipTimer();
+        if(activeHost && activeHost!==host){
+          activeHost=null;
+          float.style.display="none";
+        }
+        sourceTipTimer=setTimeout(()=>{
+          sourceTipTimer=null;
+          showSourceTip(host);
+        }, SOURCE_TIP_DELAY_MS);
+      };
       document.body.addEventListener("mouseover",(e)=>{
         const probeWrap=e.target?.closest?.(".probeFlagWrap");
-        if(probeWrap){ showProbeTip(probeWrap); return; }
+        if(probeWrap){ clearSourceTipTimer(); showProbeTip(probeWrap); return; }
         const sourceHost=e.target?.closest?.(".sourceFileTipHost");
-        if(sourceHost){ showSourceTip(sourceHost); return; }
+        if(sourceHost){ scheduleSourceTip(sourceHost); return; }
       });
       document.body.addEventListener("mouseout",(e)=>{
         const fromProbe=e.target?.closest?.(".probeFlagWrap");
@@ -5481,23 +6026,12 @@
         const rect=el.getBoundingClientRect();
         hideMenus();
         if(t==="source") showAddChannelsModal();
-        if(t==="calc") showCalculatedChannelPicker(rect);
+        if(t==="calc") showAddChannelWiseModal();
       });
     }
     function showCalculatedChannelPicker(anchorRect){
-      const m=byId("channelAddMenu");
-      m.innerHTML=`<div class="miniMenuItem" data-t="rolling">Rolling calculation</div><div class="miniMenuItem" data-t="formula">Channel-wise calculation</div>`;
-      const x=anchorRect?.left ?? 80;
-      const y=(anchorRect?.bottom ?? 80)+4;
-      m.style.left=`${x}px`;
-      m.style.top=`${y}px`;
-      m.style.display="block";
-      m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{
-        const t=el.getAttribute("data-t");
-        hideMenus();
-        if(t==="rolling") showAddRollingChannelModal();
-        if(t==="formula") showAddChannelWiseModal();
-      });
+      // Legacy entry point — calculated channels are formulas only now.
+      showAddChannelWiseModal();
     }
     function showMaskAddMenu(x,y){
       const m=byId("maskAddMenu");
@@ -5533,12 +6067,13 @@
       const addBtn = byId("addSourceBtn");
       const channelMenu = byId("channelAddMenu");
       const addChannelBtn = byId("addChannelBtn");
+      const addCalcChannelBtn = byId("addCalcChannelBtn");
       const maskMenu = byId("maskAddMenu");
       const addMaskBtn = byId("addMaskBtn");
       const ctxMenu=byId("contextMenu");
       if(ctxMenu&&ctxMenu.contains(e.target)) return;
       if(e.target.closest&&e.target.closest(".cfgMenuBtn")) return;
-      if (menu.contains(e.target) || addBtn.contains(e.target) || channelMenu.contains(e.target) || addChannelBtn.contains(e.target) || maskMenu.contains(e.target) || addMaskBtn.contains(e.target)) return;
+      if (menu.contains(e.target) || addBtn.contains(e.target) || channelMenu.contains(e.target) || addChannelBtn.contains(e.target) || (addCalcChannelBtn&&addCalcChannelBtn.contains(e.target)) || maskMenu.contains(e.target) || addMaskBtn.contains(e.target)) return;
       hideMenus();
     });
     const PLOTS_KEY = "nova.plots.v1";
@@ -5651,7 +6186,7 @@
       };
     }
     function snapshotSelections(){ return { selectedSourceIds:[...selectedSourceIds], selectedDatabaseIds:[...selectedDatabaseIds], selectedTestIds:[...selectedTestIds], selectedChannelIds:[...selectedChannelIds], addedTestIds:[...addedTestIds], addedChannelIds:[...addedChannelIds], previewVisible }; }
-    function restoreSelections(s){ if(!s) return; selectedSourceIds=new Set(s.selectedSourceIds||[]); selectedDatabaseIds=new Set(s.selectedDatabaseIds||[]); selectedTestIds=new Set(s.selectedTestIds||[]); selectedChannelIds=new Set(s.selectedChannelIds||[]); addedTestIds=new Set(s.addedTestIds||[]); addedChannelIds=new Set(s.addedChannelIds||[]); previewVisible=Boolean(s.previewVisible); }
+    function restoreSelections(s){ if(!s) return; selectedSourceIds=new Set(s.selectedSourceIds||[]); selectedDatabaseIds=new Set(s.selectedDatabaseIds||[]); selectedTestIds=new Set(s.selectedTestIds||[]); selectedChannelIds=migrateChannelKeySet(s.selectedChannelIds||[]); addedTestIds=new Set(s.addedTestIds||[]); addedChannelIds=migrateChannelKeySet(s.addedChannelIds||[]); previewVisible=Boolean(s.previewVisible); }
     function getActivePlot(){ return plots.find((p)=>p.id===activePlotId) || null; }
     function cloneAnalysisState(analysis){
       if(!analysis) return undefined;
@@ -5687,6 +6222,8 @@
           databases:state.databases,
           masks:state.masks,
           calculatedChannels:state.calculatedChannels,
+          channelAliases:state.channelAliases,
+          channelLabels:state.channelLabels,
           freqOverrides:state.freqOverrides,
           unitOverrides:state.unitOverrides,
           collapsed:state.collapsed||{},
@@ -5709,7 +6246,9 @@
       migrateLegacyTimeRef(state.sources, obj.t0Mode || obj.app?.t0Mode);
       if(app.databases) state.databases=app.databases;
       if(app.masks) state.masks=app.masks;
-      if(app.calculatedChannels) state.calculatedChannels=app.calculatedChannels;
+      if(app.calculatedChannels) state.calculatedChannels=migrateCalculatedChannels(app.calculatedChannels);
+      if(app.channelAliases) state.channelAliases=migrateChannelAliases(app.channelAliases);
+      if(app.channelLabels && typeof app.channelLabels==="object" && !Array.isArray(app.channelLabels)) state.channelLabels=app.channelLabels;
       if(app.freqOverrides) state.freqOverrides=app.freqOverrides;
       if(app.unitOverrides) state.unitOverrides=app.unitOverrides;
       if(app.collapsed) state.collapsed=app.collapsed;
@@ -5727,6 +6266,7 @@
       }
       if(obj.activeSelections) restoreSelections(obj.activeSelections);
       else if(obj.selections) restoreSelections(obj.selections);
+      sanitizeAliasedChannelLists();
       selectedMaskIds=new Set((state.masks||[]).map((m)=>m.id));
       clearCatalogCache();
       await refreshCatalogsForSelections();
@@ -6067,8 +6607,8 @@
       selectedDatabaseIds = new Set(prevSel.selectedDatabaseIds || []);
       selectedTestIds = new Set(prevSel.selectedTestIds || []);
       addedTestIds = new Set(prevSel.addedTestIds || []);
-      selectedChannelIds = new Set((next?.selections?.selectedChannelIds) || []);
-      addedChannelIds = new Set((next?.selections?.addedChannelIds) || []);
+      selectedChannelIds = migrateChannelKeySet((next?.selections?.selectedChannelIds) || []);
+      addedChannelIds = migrateChannelKeySet((next?.selections?.addedChannelIds) || []);
 
       refreshCatalogsForSelections().then(()=>{
         renderPlotTabs();
@@ -6139,52 +6679,36 @@
         : `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.2 4.2L10 8l-3.8 3.8-.9-.9L8.2 8 5.3 5.1l.9-.9z"/></svg>`;
     }
     function rebuildChannelsDataLocal(){
-      channelsData=[];
       const activeDbIdSet=new Set(effectiveSelectedDatabaseIds());
-      addedChannelIds.forEach((id)=>{
-        const parts=String(id).split("|");
-        const dbId=parts[0];
-        const channelName=parts.slice(1).join("|");
-        if(selectedSourceIds.size && activeDbIdSet.size && !activeDbIdSet.has(dbId)) return;
-        const calc=(state.calculatedChannels||[]).find((c)=>c.dbId===dbId&&c.name===channelName);
-        channelsData.push({
-          channel_id: calc?.id || id,
-          channel_name: channelName,
-          display_name: channelName,
-          unit: resolveChannelUnit(id, calc?.unit || null),
-          sample_rate_hz: null,
-          valid_min: null,
-          valid_max: null,
-          __dbId: dbId,
-          __isCalculated: Boolean(calc),
-          __calcKind: calc?.kind || null,
-        });
-      });
+      const kept=channelsData.filter((c)=>!c.__isCalculated && (!selectedSourceIds.size || !activeDbIdSet.size || activeDbIdSet.has(c.__dbId)));
+      channelsData=kept;
       (state.calculatedChannels||[]).forEach((calc)=>{
-        const id=`${calc.dbId}|${calc.name}`;
-        if(!addedChannelIds.has(id)) return;
-        if(selectedSourceIds.size && activeDbIdSet.size && !activeDbIdSet.has(calc.dbId)) return;
-        if(channelsData.some((c)=>c.__dbId===calc.dbId&&c.channel_name===calc.name)) return;
-        channelsData.push({ channel_id: calc.id, channel_name: calc.name, display_name: calc.name, unit: calc.unit || null, sample_rate_hz: null, valid_min: null, valid_max: null, __dbId: calc.dbId, __isCalculated: true, __calcKind: calc.kind });
+        if(!addedChannelIds.has(calc.name)) return;
+        if(channelsData.some((c)=>c.__isCalculated && c.channel_name===calc.name)) return;
+        channelsData.push({ channel_id: calc.id, channel_name: calc.name, display_name: calc.name, unit: calc.unit || null, sample_rate_hz: null, valid_min: null, valid_max: null, __dbId: "__calculated__", __isCalculated: true, __calcKind: calc.kind });
       });
       rebuildChannelUnitMap();
+    }
+    async function ensureFileSourceIndexed(src){
+      if(!src || !isFileSource(src) || !src.file_path) return src;
+      ensureFileSourceCatalog(src);
+      if(src.artifact_id){
+        await linkArtifactForSource(src);
+        return src;
+      }
+      setStatus(`Indexing ${src.name||src.type}...`);
+      await attachArtifactToSource(src, src.type, src.file_path, {
+        unitsInHeaders: !!src.units_in_headers,
+        timeIndexChannel: src.time_index_channel||null,
+      });
+      ensureFileSourceCatalog(src);
+      return src;
     }
     async function ensureSelectedFileSourcesIndexed(){
       const ids=effectiveSelectedSourceIds();
       for(const id of ids){
         const src=state.sources.find((s)=>s.id===id);
-        if(!isFileSource(src) || !src.file_path) continue;
-        ensureFileSourceCatalog(src);
-        if(src.artifact_id){
-          await linkArtifactForSource(src);
-          continue;
-        }
-        setStatus(`Indexing ${src.name||src.type}...`);
-        await attachArtifactToSource(src, src.type, src.file_path, {
-          unitsInHeaders: !!src.units_in_headers,
-          timeIndexChannel: src.time_index_channel||null,
-        });
-        ensureFileSourceCatalog(src);
+        await ensureFileSourceIndexed(src);
       }
     }
     function applySourceTreeSelection(items, clickIndex, ev){
@@ -6358,9 +6882,8 @@
           focusedItem={kind:"source",id:it.id};
           const menu=[{label:"Delete",action:deleteFocused}];
           if(it.rowKind==="file" || it.rowKind==="folder" || it.rowKind==="db_test"){
-            menu.unshift({label:"Set t0...",action:()=>showSetSourceT0Modal(it.id)});
-            menu.unshift({label:"Rename...",action:()=>renameSource(it.id)});
-            if(it.rowKind!=="db_test") menu.unshift({label:"Edit source...",action:()=>editSource(it.id)});
+            menu.unshift({label:"Set Range",action:()=>showSetSourceT0Modal(it.id)});
+            if(it.rowKind!=="db_test") menu.unshift({label:"Edit source",action:()=>editSource(it.id)});
           }
           showContextMenu(ev.clientX,ev.clientY,menu);
           renderAll();
@@ -6405,6 +6928,15 @@
       lastClickedByKind[kind] = clickIndex;
     }
 
+    function channelKindBadgeHtml(it){
+      if(it?.isCalculated){
+        return `<span class="itemBadge" title="Calculated channel"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4.2 2.8h2.1l-.35 4.1H8.2l-.25 1.5H5.7L5.2 13.2H3.7l.5-4.8H2.4L2.65 7H4.55L4.2 2.8zm6.35 3.7c1.15 0 1.95.35 2.45 1.05l-1.05 1.05c-.3-.35-.7-.5-1.2-.5-.95 0-1.55.65-1.55 1.6 0 .95.6 1.55 1.5 1.55.55 0 .95-.2 1.25-.55l1.05 1c-.55.7-1.45 1.15-2.5 1.15-2.05 0-3.35-1.35-3.35-3.2 0-1.9 1.35-3.15 3.35-3.15z"/></svg></span>`;
+      }
+      if(it?.isAlias){
+        return `<span class="itemBadge" title="Channel alias"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.4 9.6a2.4 2.4 0 0 1 0-3.4l1.1-1.1a.7.7 0 0 0-1-1L5.4 5.2a3.8 3.8 0 0 0 0 5.4l1.1 1.1a.7.7 0 1 0 1-1L6.4 9.6zm3.2-3.2a2.4 2.4 0 0 1 0 3.4l-1.1 1.1a.7.7 0 1 0 1 1l1.1-1.1a3.8 3.8 0 0 0 0-5.4L9.5 4.3a.7.7 0 0 0-1 1l1.1 1.1zM6.9 8.7a.7.7 0 0 0 1 0l1.2-1.2a.7.7 0 1 0-1-1L6.9 7.7a.7.7 0 0 0 0 1z"/></svg></span>`;
+      }
+      return "";
+    }
     function renderList(target,items,set,kind,empty){
       const root=byId(target);
       if(!root) return;
@@ -6426,7 +6958,8 @@
       items.forEach((it,idx)=>{
         const row=document.createElement("div");
         row.className="item"+(set.has(it.id)?" active":"")+(focusedItem&&focusedItem.kind===kind&&focusedItem.id===it.id?" focused":"");
-        row.innerHTML=`<div class="itemPrimary">${it.primary}</div>${it.meta?`<div class="itemMeta">${it.meta}</div>`:""}`;
+        const badge=kind==="channel" ? channelKindBadgeHtml(it) : "";
+        row.innerHTML=`<div class="itemPrimary">${it.primary}</div>${badge}${it.meta?`<div class="itemMeta">${it.meta}</div>`:""}`;
         row.onmousedown=(ev)=>{
           // Prevent shift+click from selecting/highlighting text ranges.
           if(ev && ev.preventDefault) ev.preventDefault();
@@ -6452,22 +6985,37 @@
           focusedItem={kind,id:it.id};
           const menu=[{label:"Delete",action:deleteFocused}];
           if(kind==="source"){
-            menu.unshift({label:"Set t0...",action:()=>showSetSourceT0Modal(it.id)});
-            menu.unshift({label:"Edit source...",action:()=>editSource(it.id)});
-            menu.unshift({label:"Rename...",action:()=>renameSource(it.id)});
+            menu.unshift({label:"Set Range",action:()=>showSetSourceT0Modal(it.id)});
+            menu.unshift({label:"Edit source",action:()=>editSource(it.id)});
           }
           if(kind==="channel"){
-            if(it.isCalculated) menu.push({label:"Edit calculated channel...",action:()=>editCalculatedChannel(it.id)});
-            menu.push({label:"Set Unit...",action:()=>bulkSetChannelUnit(it.id)});
-            menu.push({label:"Set Frequency...",action:()=>bulkSetChannelFrequency(it.id)});
+            const menuItems=[];
+            menuItems.push({label:"Edit",action:()=>editChannel(it.id)});
+            if(!it.isCalculated && !it.isAlias){
+              menuItems.push({label:"Create Alias",action:()=>showCreateChannelAliasModal(selectedRawChannelSeeds(it.id))});
+              const aliases=(state.channelAliases||[]).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+              if(aliases.length){
+                menuItems.push({
+                  label:"Add Alias",
+                  submenu:aliases.map((a)=>({
+                    label:a.name,
+                    action:()=>addChannelsToAlias(a.name, selectedRawChannelSeeds(it.id)),
+                  })),
+                });
+              }
+            }
+            menuItems.push({label:"Delete",action:deleteFocused});
+            showContextMenu(ev.clientX,ev.clientY,menuItems);
+            return;
           }
           if(kind==="mask"){
-            menu.unshift({label:"Edit mask...",action:()=>editMask(it.id)});
+            menu.unshift({label:"Edit mask",action:()=>editMask(it.id)});
           }
           showContextMenu(ev.clientX,ev.clientY,menu);
         };
         row.ondblclick=()=>{
           if(kind==="source") editSource(it.id);
+          if(kind==="channel") editChannel(it.id);
         };
         root.appendChild(row);
       });
@@ -6516,11 +7064,8 @@
       return effectiveIds({ selected:scopedSel, all:scopedAll });
     }
     function effectiveSelectedChannelIds(){
-      const dbIds=new Set(effectiveSelectedDatabaseIds());
-      const inScope=(chId)=>dbIds.has(chId.split("|")[0]);
-      const scopedAll=[...addedChannelIds].filter(inScope);
-      const scopedSel=[...selectedChannelIds].filter(inScope);
-      return effectiveIds({ selected:scopedSel, all:scopedAll });
+      // Channel keys are cross-source names; selection empty ⇒ all added keys.
+      return effectiveIds({ selected:selectedChannelIds, all:[...addedChannelIds] });
     }
 
     function buildXAxis(){ /* time-series views only; x axis is always time */ }
@@ -6575,7 +7120,13 @@
       traces.forEach((t)=>{ t.yaxis=m.get(t._unit||"unitless"); });
       return layout;
     }
-    function effectiveSampleHz(chId){ const localHz=Number(state.freqOverrides[chId]||0); const globalHz=Number(maxSampleHzGlobal||0); if(localHz>0 && globalHz>0) return Math.min(localHz, globalHz); return localHz>0?localHz:(globalHz>0?globalHz:0); }
+    function effectiveSampleHz(chId){
+      const overrides=state.freqOverrides||{};
+      const localHz=Number(overrides[chId]||overrides[channelKeyFromId(chId)]||0);
+      const globalHz=Number(maxSampleHzGlobal||0);
+      if(localHz>0 && globalHz>0) return Math.min(localHz, globalHz);
+      return localHz>0?localHz:(globalHz>0?globalHz:0);
+    }
     function applyFreq(points,chId){
       const hz=effectiveSampleHz(chId);
       if(!hz||hz<=0) return points;
@@ -7296,11 +7847,8 @@
       const selectedIds=new Set(effectiveSelectedSourceIds());
       state.sources.filter((s)=>isFileSource(s)&&selectedIds.has(s.id)).forEach(ensureFileSourceCatalog);
       let dbIds=effectiveSelectedDatabaseIds();
-      if(onlyWithAddedChannels){
-        const needed=new Set();
-        addedChannelIds.forEach((id)=>needed.add(String(id).split("|")[0]));
-        (state.calculatedChannels||[]).forEach((c)=>{ if(addedChannelIds.has(`${c.dbId}|${c.name}`)) needed.add(c.dbId); });
-        dbIds=dbIds.filter((id)=>needed.has(id));
+      if(onlyWithAddedChannels && !addedChannelIds.size && !(state.calculatedChannels||[]).length){
+        dbIds=[];
       }
       for(const dbId of dbIds){
         const { db, connSrc:src }=resolveDbSource(dbId);
@@ -7313,10 +7861,10 @@
           setStatus(`Failed to load catalog for '${db.name}' (${src.type}): ${err}`, true);
         }
       }
-      const effectiveDbSet=new Set(dbIds);
       (state.calculatedChannels||[]).forEach((calc)=>{
-        if(effectiveDbSet.size && !effectiveDbSet.has(calc.dbId)) return;
-        channelsData.push({ channel_id: calc.id, channel_name: calc.name, display_name: calc.name, unit: calc.unit || null, sample_rate_hz: null, valid_min: null, valid_max: null, __dbId: calc.dbId, __isCalculated: true, __calcKind: calc.kind });
+        if(!addedChannelIds.has(calc.name)) return;
+        if(channelsData.some((c)=>c.__isCalculated && c.channel_name===calc.name)) return;
+        channelsData.push({ channel_id: calc.id, channel_name: calc.name, display_name: calc.name, unit: calc.unit || null, sample_rate_hz: null, valid_min: null, valid_max: null, __dbId: "__calculated__", __isCalculated: true, __calcKind: calc.kind });
       });
       rebuildChannelUnitMap();
     }
@@ -7356,14 +7904,21 @@
 
       renderList(
         "channelsList",
-        channelsData
-          .filter((c) => addedChannelIds.has(`${c.__dbId}|${c.channel_name}`) && activeDbIdSet.has(c.__dbId))
-          .map((c) => ({
-            id: `${c.__dbId}|${c.channel_name}`,
-            primary: c.channel_name,
-            isCalculated: Boolean(c.__isCalculated),
-            calcKind: c.__calcKind || null
-          })),
+        [...addedChannelIds]
+          .filter((name)=>!isAliasedChannelMember(name))
+          .slice()
+          .sort((a,b)=>String(channelDisplayName(a)).localeCompare(String(channelDisplayName(b))))
+          .map((name)=>{
+            const calc=findCalculatedByKey(name);
+            const alias=findAliasByKey(name);
+            return {
+              id: name,
+              primary: channelDisplayName(name),
+              isCalculated: Boolean(calc),
+              isAlias: Boolean(alias),
+              calcKind: calc?.kind || null,
+            };
+          }),
         selectedChannelIds,
         "channel",
         "No channels added."
@@ -7430,7 +7985,7 @@
         state.sources=state.sources.filter((x)=>x.id!==id);
         selectedSourceIds.delete(id);
         clearCatalogCache();
-      } else if(kind==="database"){ state.databases=state.databases.filter((d)=>d.id!==id); selectedDatabaseIds.delete(id); clearCatalogCache(); } else if(kind==="test"){ selectedTestIds.delete(id); addedTestIds.delete(id); } else if(kind==="channel"){ selectedChannelIds.delete(id); addedChannelIds.delete(id); const [dbId,channelName]=id.split("|"); state.calculatedChannels=(state.calculatedChannels||[]).filter((c)=>!(c.dbId===dbId&&c.name===channelName)); } else if(kind==="mask"){ state.masks=(state.masks||[]).filter((m)=>m.id!==id); selectedMaskIds.delete(id); } focusedItem=null; renderAll(); saveStateDeferred(); }
+      } else if(kind==="database"){ state.databases=state.databases.filter((d)=>d.id!==id); selectedDatabaseIds.delete(id); clearCatalogCache(); } else if(kind==="test"){ selectedTestIds.delete(id); addedTestIds.delete(id); } else if(kind==="channel"){ selectedChannelIds.delete(id); addedChannelIds.delete(id); state.calculatedChannels=(state.calculatedChannels||[]).filter((c)=>c.name!==id); state.channelAliases=(state.channelAliases||[]).filter((a)=>a.name!==id); if(state.channelLabels) delete state.channelLabels[id]; clearChannelOverrideKeys(state.freqOverrides, id); clearChannelOverrideKeys(state.unitOverrides, id); } else if(kind==="mask"){ state.masks=(state.masks||[]).filter((m)=>m.id!==id); selectedMaskIds.delete(id); } focusedItem=null; renderAll(); saveStateDeferred(); }
     async function ingestDataFile(sourceType, filePath, { unitsInHeaders=false, timeIndexChannel=null }={}){
       const r=await fetch("/api/v3/ingest/file",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source_type:sourceType,file_path:filePath,units_in_headers:!!unitsInHeaders,time_index_channel:timeIndexChannel||null})});
       if(!r.ok){ let msg=`Ingest failed (${r.status})`; try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail); }catch{} throw new Error(msg); }
@@ -7474,13 +8029,13 @@
       const targets = selectedChannelTargets(defaultId);
       if(!targets.length){ setStatus("Select one or more channels first.", true); return; }
       const label=targets.length>1
-        ? `${targets.length} channels (${targets.map((id)=>id.split("|")[1]).join(", ")})`
-        : (targets[0].split("|")[1]||"channel");
+        ? `${targets.length} channels (${targets.join(", ")})`
+        : (targets[0]||"channel");
       const current=(state.unitOverrides && state.unitOverrides[targets[0]]) ? state.unitOverrides[targets[0]] : "";
       const next=prompt(`Set unit for ${label}. Leave empty to clear override.`, String(current||""));
       if(next===null) return;
       const cleaned=next.trim();
-      targets.forEach((chId)=>{ if(!cleaned) delete state.unitOverrides[chId]; else state.unitOverrides[chId]=cleaned; });
+      targets.forEach((key)=>{ if(!cleaned) delete state.unitOverrides[key]; else state.unitOverrides[key]=cleaned; });
       overviewTraceCache=null;
       if(latestRows.length){
         latestRows=applyRowUnits(latestRows);
@@ -7499,7 +8054,7 @@
       if(next===null) return;
       const cleaned=next.trim();
       if(!cleaned){
-        targets.forEach((chId)=>{ delete state.freqOverrides[chId]; });
+        targets.forEach((key)=>{ delete state.freqOverrides[key]; });
         if(latestRows.length) plotRows(latestRows);
         renderAll(); saveStateDeferred();
         setStatus(`Cleared frequency override for ${targets.length} channel(s).`);
@@ -7507,14 +8062,61 @@
       }
       const hz=Number(cleaned);
       if(!Number.isFinite(hz)||hz<=0){ setStatus("Frequency must be a positive number.",true); return; }
-      targets.forEach((chId)=>{ state.freqOverrides[chId]=hz; });
+      targets.forEach((key)=>{ state.freqOverrides[key]=hz; });
       if(latestRows.length) plotRows(latestRows);
       renderAll(); saveStateDeferred();
       setStatus(`Set frequency to ${hz} Hz for ${targets.length} channel(s).`);
     }
     function searchableRowsHtml(prefix,rows,set){ return `<div class="maskSearchPad"><input id="${prefix}_search" type="text" placeholder="Search..." /></div><div class="maskListPad"><div id="${prefix}_list" class="modalList">${rows.map((r)=>`<div class="selectRow${set.has(r.id)?" active":""}" data-id="${r.id}"><div class="itemPrimary">${r.primary}</div></div>`).join("")}</div></div>`; }
+    function formulaChannelRowsHtml(prefix,rows,chosen){
+      return `<div class="maskSearchPad"><input id="${prefix}_search" type="text" placeholder="Search..." /></div><div class="maskListPad"><div id="${prefix}_list" class="modalList">${rows.map((r)=>`<div class="selectRow${chosen.has(r.id)?" active":""}" data-id="${r.id}"><div class="itemPrimary">${r.primary}</div><span class="selectRowVar" hidden></span></div>`).join("")}</div></div>`;
+    }
+    function syncFormulaChannelLetters(list, chosen){
+      if(!list) return;
+      const ordered=[...chosen];
+      list.querySelectorAll(".selectRow").forEach((row)=>{
+        const id=row.getAttribute("data-id");
+        const badge=row.querySelector(".selectRowVar");
+        const idx=ordered.indexOf(id);
+        if(idx>=0){
+          row.classList.add("active");
+          if(badge){
+            badge.hidden=false;
+            badge.textContent=idx<26 ? String.fromCharCode(65+idx) : String(idx+1);
+          }
+        }else{
+          row.classList.remove("active");
+          if(badge){ badge.hidden=true; badge.textContent=""; }
+        }
+      });
+    }
     const MASK_MODAL_LAYOUT={ floating:true, size:"modalMask", compact:true };
     function bindSearchableModal(prefix,chosen){ const search=byId(`${prefix}_search`), list=byId(`${prefix}_list`), rows=[...list.querySelectorAll(".selectRow")]; rows.forEach((row)=>row.onclick=()=>{ const id=row.getAttribute("data-id"); if(chosen.has(id)){ chosen.delete(id); row.classList.remove("active"); } else { chosen.add(id); row.classList.add("active"); }}); search.oninput=()=>{ const q=search.value.toLowerCase(); rows.forEach((r)=>r.style.display=r.textContent.toLowerCase().includes(q)?"":"none"); }; }
+    function bindFormulaChannelPicker(prefix, chosen){
+      const search=byId(`${prefix}_search`);
+      const list=byId(`${prefix}_list`);
+      const rows=[...list.querySelectorAll(".selectRow")];
+      const refresh=()=>syncFormulaChannelLetters(list, chosen);
+      rows.forEach((row)=>{
+        row.onclick=()=>{
+          const id=row.getAttribute("data-id");
+          if(chosen.has(id)) chosen.delete(id);
+          else chosen.add(id);
+          refresh();
+        };
+      });
+      if(search){
+        search.oninput=()=>{
+          const q=search.value.toLowerCase();
+          rows.forEach((r)=>{
+            const primary=r.querySelector(".itemPrimary");
+            const text=(primary?primary.textContent:r.textContent).toLowerCase();
+            r.style.display=text.includes(q)?"":"none";
+          });
+        };
+      }
+      refresh();
+    }
     function maskOpNeedsTwoValues(op){ return op==="between" || op==="outside"; }
     function evalMaskValue(v, op, a, b){
       if(!Number.isFinite(v) || !Number.isFinite(a)) return false;
@@ -7812,12 +8414,31 @@
             return `<option value="${escAttr(c)}"${sel}>${escAttr(c)}</option>`;
           })
         ).join("");
-        openModal("Edit Data File Source",`<div class="modalGrid">
-          <div><label>Name</label><input id="m_edit_name" type="text" value="${escAttr(src.name||"")}" /></div>
-          <div style="grid-column:1 / -1;"><label>File path</label><input id="m_edit_path" type="text" value="${escAttr(src.file_path||"")}" disabled /></div>
-          ${src.type==="tdms" ? "" : `<div style="grid-column:1 / -1;"><label>Time Index Channel${src.needs_time_index?' <span style="color:#eb5757;">(required)</span>':""}</label><select id="m_edit_time">${timeOptions}</select></div>`}
-          ${supportsHeaderUnitParsing(src.type) ? `<div style="grid-column:1 / -1;"><label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);"><input id="m_edit_units" type="checkbox" style="width:auto;margin:0;" ${src.units_in_headers?"checked":""} /> Parse Units from Header</label></div>` : ""}
-        </div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`,WF,async()=>{
+        const indexField=src.type==="tdms" ? "" : `
+          <div class="formField">
+            <label>Index${src.needs_time_index?'<span class="reqMark" aria-hidden="true">*</span>':""}</label>
+            <select id="m_edit_time" class="formSelectStable">${timeOptions}</select>
+          </div>`;
+        const unitsField=supportsHeaderUnitParsing(src.type) ? `
+          <label class="formCheckRow"><input id="m_edit_units" type="checkbox" ${src.units_in_headers?"checked":""} /> Parse units from header</label>` : "";
+        const sourceTitleHtml=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="3.2" rx="5.2" ry="1.8" fill="none" stroke="currentColor" stroke-width="1.2"/><path fill="none" stroke="currentColor" stroke-width="1.2" d="M2.8 3.2v8.2c0 1 2.3 1.8 5.2 1.8s5.2-.8 5.2-1.8V3.2"/><path fill="none" stroke="currentColor" stroke-width="1.2" d="M2.8 6.4c0 1 2.3 1.8 5.2 1.8s5.2-.8 5.2-1.8M2.8 9.6c0 1 2.3 1.8 5.2 1.8s5.2-.8 5.2-1.8"/></svg></span><span>Source</span><span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span><span>Edit</span>`;
+        const saveIcon=`<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.4 1.5h8.8L13.6 4v10.5H2.4V1.5zm1.3 1.2v10.6h8.2V4.5L10 2.7H3.7zm1.4 0H9v2.4H5.1V2.7zm-.3 5.6h7v4.4h-7V8.3zm1.2 1.2v2h4.6v-2H6z"/></svg>`;
+        openModal("Source > Edit",`
+          <div class="formStack">
+            <div class="formField">
+              <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+              <input id="m_edit_name" class="formNameInput" type="text" value="${escAttr(src.name||"")}" spellcheck="false" />
+            </div>
+            <div class="formField">
+              <label>Filepath</label>
+              <input id="m_edit_path" type="text" value="${escAttr(src.file_path||"")}" disabled />
+            </div>
+            ${indexField}
+            ${unitsField}
+          </div>
+          <div class="modalActions modalActionsIconOnly">
+            <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${saveIcon}</button>
+          </div>`,{ ...WF_SOURCE_FORM, titleHtml:sourceTitleHtml },async()=>{
           src.name=(byId("m_edit_name").value||"").trim()||src.name;
           if(supportsHeaderUnitParsing(src.type)) src.units_in_headers=Boolean(byId("m_edit_units")?.checked);
           if(src.type!=="tdms"){
@@ -7897,8 +8518,15 @@
         ev.stopPropagation();
         if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
       }
-      const rect = byId("addChannelBtn").getBoundingClientRect();
-      showChannelAddMenu(rect.left, rect.bottom + 4);
+      showAddChannelsModal();
+    }
+    function showAddCalcChannelsMenu(ev){
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      }
+      showAddChannelWiseModal();
     }
     function showAddMasksMenu(ev){
       if (ev) {
@@ -7909,155 +8537,465 @@
       const rect = byId("addMaskBtn").getBoundingClientRect();
       showMaskAddMenu(rect.left, rect.bottom + 4);
     }
-    function nextCalcName(dbId, base, excludeName){ const stem=(base||"calc_channel").trim()||"calc_channel"; let name=stem; let n=1; const existing=new Set(channelsData.filter((c)=>c.__dbId===dbId).map((c)=>c.channel_name).filter((n0)=>n0!==excludeName)); while(existing.has(name)){ n+=1; name=`${stem}_${n}`; } return name; }
+    function nextCalcName(base, excludeName){
+      const stem=(base||"calc_channel").trim()||"calc_channel";
+      let name=stem;
+      let n=1;
+      const existing=new Set();
+      (state.calculatedChannels||[]).forEach((c)=>{ if(c.name && c.name!==excludeName) existing.add(c.name); });
+      addedChannelIds.forEach((k)=>{ if(k!==excludeName) existing.add(k); });
+      channelsData.forEach((c)=>{ if(c.channel_name && c.channel_name!==excludeName) existing.add(c.channel_name); });
+      while(existing.has(name)){ n+=1; name=`${stem}_${n}`; }
+      return name;
+    }
     function varLetters(n){ return Array.from({length:n}, (_,i)=>String.fromCharCode(65+i)); }
-    function compileFormula(exprRaw, variableCount){ let expr=String(exprRaw||"").trim().toUpperCase(); if(expr.startsWith("=")) expr=expr.slice(1).trim(); if(!expr) return {ok:false,error:"Enter a formula using A, B, C..."}; if(!/^[A-Z0-9_+\-*/().,\s]+$/.test(expr)) return {ok:false,error:"Formula contains invalid characters."}; const vars=new Set(varLetters(variableCount)); const funcs=new Set(["ABS","SQRT","POW","EXP","LOG","LOG10","SIN","COS","TAN","ASIN","ACOS","ATAN","ROUND","FLOOR","CEIL","MIN","MAX","CLAMP","BAND_PASS_FILTER"]); const words=expr.match(/[A-Z_]+/g)||[]; for(const w of words){ if(vars.has(w)||funcs.has(w)) continue; return {ok:false,error:`Unsupported symbol: ${w}`}; } const helper={ ABS:Math.abs,SQRT:Math.sqrt,POW:Math.pow,EXP:Math.exp,LOG:Math.log,LOG10:Math.log10||((x)=>Math.log(x)/Math.LN10),SIN:Math.sin,COS:Math.cos,TAN:Math.tan,ASIN:Math.asin,ACOS:Math.acos,ATAN:Math.atan,ROUND:Math.round,FLOOR:Math.floor,CEIL:Math.ceil,MIN:Math.min,MAX:Math.max,CLAMP:(x,lo,hi)=>Math.min(Math.max(x,lo),hi), BAND_PASS_FILTER:(x,lowFreq,highFreq)=>{ const low=Number(lowFreq), high=Number(highFreq); if(!Number.isFinite(x)||!Number.isFinite(low)||!Number.isFinite(high)||low<=0||high<=0||high<=low) return Number(x); const ctx=helper.__ctx||{}; const dt=Math.max(1e-6, Number(ctx.dt_s||0)); const callKey=String((helper.__bpCallIndex=(helper.__bpCallIndex||0)+1)); if(!ctx.__bpStates) ctx.__bpStates={}; const state=ctx.__bpStates[callKey]||{lpHigh:Number(x),lpLow:Number(x)}; const tauHigh=1/(2*Math.PI*high); const tauLow=1/(2*Math.PI*low); const aHigh=dt/(tauHigh+dt); const aLow=dt/(tauLow+dt); state.lpHigh=state.lpHigh + aHigh*(Number(x)-state.lpHigh); state.lpLow=state.lpLow + aLow*(Number(x)-state.lpLow); ctx.__bpStates[callKey]=state; return state.lpHigh - state.lpLow; } }; let jsExpr=expr; funcs.forEach((f)=>{ jsExpr=jsExpr.replace(new RegExp(`\\b${f}\\b`,"g"),`__f.${f}`); }); try{ const fn=new Function(...[...vars], "__f", `return (${jsExpr});`); return {ok:true,expr,evalFn:(vals,ctx)=>{ helper.__ctx=ctx||{}; helper.__bpCallIndex=0; const args=Array.isArray(vals)?vals.slice():[]; args.push(helper); return fn.apply(null,args);} }; }catch{ return {ok:false,error:"Formula could not be parsed."}; } }
-    async function showAddRollingChannelModal(){
-      const sourceChannels=await ensureCalcSourceChannelsLoaded();
-      if(!sourceChannels) return;
-      const options=rollingSourceChannelOptions(sourceChannels);
-      openModal("Rolling Channel Calculation",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="rolling_mean" /></div><div><label>Units</label><input id="m_calc_unit" type="text" placeholder="e.g. N, kg/s, unitless" /></div><div style="grid-column:1 / -1;"><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="10" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,WF,async()=>{
-        const sourceId=byId("m_calc_source").value;
-        const dbId=sourceId.split("|")[0];
-        const op=byId("m_calc_op").value;
-        const window=Math.max(1,Number(byId("m_calc_window").value||1));
-        const rawName=(byId("m_calc_name").value||"rolling_mean").trim();
-        if(!rawName){ setStatus("Calculated channel name is required.",true); return false; }
-        const name=nextCalcName(dbId, rawName);
-        const unit=(byId("m_calc_unit").value||"").trim();
-        state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"rolling", dbId, name, unit, channels:[sourceId], op, window });
-        addedChannelIds.add(`${dbId}|${name}`);
-        selectedChannelIds.add(`${dbId}|${name}`);
-        await refreshCatalogsForSelections();
-        renderAll();
-        saveState();
-        setStatus(`Added rolling calculated channel '${name}'.`);
-        return true;
-      });
+    const FORMULA_FUNC_NAMES=["ABS","SQRT","POW","EXP","LOG","LOG10","SIN","COS","TAN","ASIN","ACOS","ATAN","ROUND","FLOOR","CEIL","MIN","MAX","CLAMP","BAND_PASS_FILTER","SMOOTH","ROLLING_MEAN","ROLLING_SUM","ROLLING_MIN","ROLLING_MAX","ROLLING_STD"];
+    function compileFormula(exprRaw, variableCount){
+      let expr=String(exprRaw||"").trim().toUpperCase();
+      if(expr.startsWith("=")) expr=expr.slice(1).trim();
+      if(!expr) return {ok:false,error:"Enter a formula using A, B, C..."};
+      if(!/^[A-Z0-9_+\-*/().,\s]+$/.test(expr)) return {ok:false,error:"Formula contains invalid characters."};
+      const vars=new Set(varLetters(variableCount));
+      const funcs=new Set(FORMULA_FUNC_NAMES);
+      const words=expr.match(/[A-Z_]+/g)||[];
+      for(const w of words){
+        if(vars.has(w)||funcs.has(w)) continue;
+        return {ok:false,error:`Unsupported symbol: ${w}`};
+      }
+      const helper={
+        ABS:Math.abs, SQRT:Math.sqrt, POW:Math.pow, EXP:Math.exp, LOG:Math.log,
+        LOG10:Math.log10||((x)=>Math.log(x)/Math.LN10),
+        SIN:Math.sin, COS:Math.cos, TAN:Math.tan, ASIN:Math.asin, ACOS:Math.acos, ATAN:Math.atan,
+        ROUND:Math.round, FLOOR:Math.floor, CEIL:Math.ceil, MIN:Math.min, MAX:Math.max,
+        CLAMP:(x,lo,hi)=>Math.min(Math.max(x,lo),hi),
+        BAND_PASS_FILTER:(x,lowFreq,highFreq)=>{
+          const low=Number(lowFreq), high=Number(highFreq);
+          if(!Number.isFinite(x)||!Number.isFinite(low)||!Number.isFinite(high)||low<=0||high<=0||high<=low) return Number(x);
+          const ctx=helper.__ctx||{};
+          const dt=Math.max(1e-6, Number(ctx.dt_s||0));
+          const callKey=String((helper.__bpCallIndex=(helper.__bpCallIndex||0)+1));
+          if(!ctx.__bpStates) ctx.__bpStates={};
+          const state=ctx.__bpStates[callKey]||{lpHigh:Number(x),lpLow:Number(x)};
+          const tauHigh=1/(2*Math.PI*high);
+          const tauLow=1/(2*Math.PI*low);
+          const aHigh=dt/(tauHigh+dt);
+          const aLow=dt/(tauLow+dt);
+          state.lpHigh=state.lpHigh + aHigh*(Number(x)-state.lpHigh);
+          state.lpLow=state.lpLow + aLow*(Number(x)-state.lpLow);
+          ctx.__bpStates[callKey]=state;
+          return state.lpHigh - state.lpLow;
+        },
+      };
+      const pushRolling=(op)=>(x, window)=>{
+        const n=Math.max(1, Math.floor(Number(window)||1));
+        const ctx=helper.__ctx||{};
+        const callKey=`${op}${helper.__rollCallIndex=(helper.__rollCallIndex||0)+1}`;
+        if(!ctx.__rollStates) ctx.__rollStates={};
+        let buf=ctx.__rollStates[callKey];
+        if(!buf){ buf=[]; ctx.__rollStates[callKey]=buf; }
+        const v=Number(x);
+        if(!Number.isFinite(v)) return NaN;
+        buf.push(v);
+        while(buf.length>n) buf.shift();
+        if(!buf.length) return NaN;
+        if(op==="mean"||op==="smooth") return buf.reduce((a,b)=>a+b,0)/buf.length;
+        if(op==="sum") return buf.reduce((a,b)=>a+b,0);
+        if(op==="min") return buf.reduce((a,b)=>Math.min(a,b));
+        if(op==="max") return buf.reduce((a,b)=>Math.max(a,b));
+        if(op==="std"){
+          const m=buf.reduce((a,b)=>a+b,0)/buf.length;
+          const variance=buf.reduce((a,b)=>a+((b-m)*(b-m)),0)/buf.length;
+          return Math.sqrt(variance);
+        }
+        return NaN;
+      };
+      helper.SMOOTH=pushRolling("smooth");
+      helper.ROLLING_MEAN=pushRolling("mean");
+      helper.ROLLING_SUM=pushRolling("sum");
+      helper.ROLLING_MIN=pushRolling("min");
+      helper.ROLLING_MAX=pushRolling("max");
+      helper.ROLLING_STD=pushRolling("std");
+      let jsExpr=expr;
+      funcs.forEach((f)=>{ jsExpr=jsExpr.replace(new RegExp(`\\b${f}\\b`,"g"),`__f.${f}`); });
+      try{
+        const fn=new Function(...[...vars], "__f", `return (${jsExpr});`);
+        return {
+          ok:true,
+          expr,
+          evalFn:(vals,ctx)=>{
+            helper.__ctx=ctx||{};
+            helper.__bpCallIndex=0;
+            helper.__rollCallIndex=0;
+            const args=Array.isArray(vals)?vals.slice():[];
+            args.push(helper);
+            return fn.apply(null,args);
+          },
+        };
+      }catch{
+        return {ok:false,error:"Formula could not be parsed."};
+      }
     }
     async function showAddChannelWiseModal(){
-      const sourceChannels=await ensureCalcSourceChannelsLoaded();
-      if(!sourceChannels) return;
-      if(sourceChannels.length<2){ setStatus("Need at least two source channels for channel-wise calculation.",true); return; }
-      const rows=calcChannelPickerRows(sourceChannels);
-      const chosen=new Set();
-      openModal("Channel Wise Calculation",`${searchableRowsHtml("fcm",rows,chosen)}<div style="padding:6px 10px 2px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="channel_formula" /><label>Legend source name (optional)</label><input id="m_formula_source_label" type="text" placeholder="Defaults to combined source names" /><div id="m_formula_legend_hint" class="itemMeta" style="margin-top:4px;"></div><label>Units</label><input id="m_formula_unit" type="text" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`,WF,async()=>{
-        const ordered=[...chosen];
-        if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; }
-        const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length);
-        if(!compiled.ok){ setStatus(compiled.error,true); return false; }
-        const rawName=(byId("m_formula_name").value||"channel_formula").trim();
-        if(!rawName){ setStatus("Calculated channel name is required.",true); return false; }
-        const dbId=ordered[0].split("|")[0];
-        const name=nextCalcName(dbId, rawName);
-        const unit=(byId("m_formula_unit").value||"").trim();
-        const sourceLabel=(byId("m_formula_source_label").value||"").trim();
-        const calcEntry={ id:crypto.randomUUID(), kind:"formula", dbId, name, unit, channels:ordered, formula:compiled.expr };
-        if(sourceLabel) calcEntry.sourceLabel=sourceLabel;
-        state.calculatedChannels.push(calcEntry);
-        addedChannelIds.add(`${dbId}|${name}`);
-        selectedChannelIds.add(`${dbId}|${name}`);
-        await refreshCatalogsForSelections();
+      openCalculatedChannelEditorModal({ mode:"create" });
+    }
+    function channelOverrideValue(map, key){
+      if(!map || !key) return "";
+      if(map[key]!=null && map[key]!=="") return map[key];
+      for(const [k,v] of Object.entries(map)){
+        if(channelKeyFromId(k)===key && v!=null && v!=="") return v;
+      }
+      return "";
+    }
+    function clearChannelOverrideKeys(map, key){
+      if(!map || !key) return;
+      delete map[key];
+      Object.keys(map).forEach((k)=>{ if(channelKeyFromId(k)===key) delete map[k]; });
+    }
+    function lookupRawChannelCatalog(name){
+      const key=channelKeyFromId(name);
+      return (channelsData||[]).find((c)=>!c.__isCalculated && c.channel_name===key) || null;
+    }
+    function editChannel(channelId){
+      const key=channelKeyFromId(channelId);
+      if(!key){ setStatus("Channel not found.", true); return; }
+      if(isCalculatedChannelKey(key)){ editCalculatedChannel(key); return; }
+      if(isAliasChannelKey(key)){ editChannelAlias(key); return; }
+      editRawChannel(key);
+    }
+    async function editRawChannel(channelId){
+      const key=channelKeyFromId(channelId);
+      if(!key || !addedChannelIds.has(key)){ setStatus("Channel not found.", true); return; }
+      const catalog=lookupRawChannelCatalog(key);
+      const displayName=channelDisplayName(key);
+      const unitCurrent=String(channelOverrideValue(state.unitOverrides, key) || catalog?.unit || "");
+      const freqOverride=channelOverrideValue(state.freqOverrides, key);
+      const freqCurrent=freqOverride!=="" && freqOverride!=null ? String(freqOverride) : "";
+      const freqPlaceholder=catalog?.sample_rate_hz!=null && catalog.sample_rate_hz!==""
+        ? String(catalog.sample_rate_hz)
+        : "";
+      openModal("Channels > Edit",`
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="m_ch_name" class="formNameInput" type="text" value="${escAttr(displayName)}" spellcheck="false" />
+          </div>
+          <div class="formField">
+            <label>Key</label>
+            <input id="m_ch_key" type="text" value="${escAttr(key)}" spellcheck="false" disabled />
+          </div>
+          ${freqUnitFieldsHtml({ freqId:"m_ch_freq", unitId:"m_ch_unit", freqValue:freqCurrent, unitValue:unitCurrent, freqPlaceholder })}
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_SOURCE_FORM, titleHtml:channelsWindowTitleHtml("Edit") },async()=>{
+        const nameRaw=(byId("m_ch_name").value||"").trim();
+        if(!nameRaw){ setStatus("Channel name is required.", true); return false; }
+        const freqRaw=(byId("m_ch_freq").value||"").trim();
+        const unitRaw=(byId("m_ch_unit").value||"").trim();
+        const applied=applyChannelFreqUnitOverrides(key, freqRaw, unitRaw);
+        if(!applied.ok){ setStatus(applied.error, true); return false; }
+        setChannelDisplayName(key, nameRaw);
+        overviewTraceCache=null;
+        if(latestRows.length){
+          latestRows=applyRowUnits(latestRows);
+          await plotRows(latestRows, { preserveUi:false, resetView:true });
+        }
+        rebuildChannelUnitMap();
         renderAll();
         saveState();
-        setStatus(`Added channel-wise calculated channel '${name}'.`);
+        setStatus(`Updated channel '${channelDisplayName(key)}'.`);
         return true;
       });
-      bindSearchableModal("fcm",chosen);
-      const refreshHint=()=>{
-        const ordered=[...chosen];
-        const letters=varLetters(ordered.length);
-        const txt=ordered.map((id,i)=>`${letters[i]}=${sourceLabelForDbId(id.split("|")[0])}/${id.split("|")[1]}`).join(" | ");
-        byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C...";
-        const legendHint=byId("m_formula_legend_hint");
-        if(legendHint) legendHint.textContent=ordered.length>=2?`Legend default: ${defaultFormulaSourceLabel(ordered)}`:"";
-      };
-      const list=byId("fcm_list");
-      if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); }
-      refreshHint();
     }
     async function editCalculatedChannel(channelId){
-      const [dbId, channelName]=channelId.split("|");
-      const calc=(state.calculatedChannels||[]).find((c)=>c.dbId===dbId && c.name===channelName);
+      const channelName=channelKeyFromId(channelId);
+      let calc=(state.calculatedChannels||[]).find((c)=>c.name===channelName);
       if(!calc){ setStatus("Only calculated channels can be edited.", true); return; }
-      const sourceChannels=await ensureCalcSourceChannelsLoaded();
-      if(!sourceChannels) return;
       if(calc.kind==="rolling"){
-        const selectedId=calc.channels&&calc.channels[0]?calc.channels[0]:null;
-        const options=rollingSourceChannelOptions(sourceChannels, selectedId);
-        openModal("Edit Rolling Channel",`<div class="modalGrid"><div><label>Calculated Channel Name</label><input id="m_calc_name" type="text" value="${calc.name}" /></div><div><label>Units</label><input id="m_calc_unit" type="text" value="${calc.unit||""}" placeholder="e.g. N, kg/s, unitless" /></div><div style="grid-column:1 / -1;"><label>Source Channel</label><select id="m_calc_source">${options}</select></div><div><label>Rolling Calculation</label><select id="m_calc_op"><option value="mean" ${calc.op==="mean"?"selected":""}>mean</option><option value="sum" ${calc.op==="sum"?"selected":""}>sum</option><option value="min" ${calc.op==="min"?"selected":""}>min</option><option value="max" ${calc.op==="max"?"selected":""}>max</option><option value="std" ${calc.op==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_calc_window" type="number" min="1" step="1" value="${calc.window||10}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,WF,async()=>{
-          const sourceId=byId("m_calc_source").value;
-          const targetDbId=sourceId.split("|")[0];
-          const op=byId("m_calc_op").value;
-          const window=Math.max(1,Number(byId("m_calc_window").value||1));
-          const rawName=(byId("m_calc_name").value||"rolling_mean").trim();
-          if(!rawName){ setStatus("Calculated channel name is required.",true); return false; }
+        const migrated=migrateCalculatedChannels([calc])[0];
+        Object.assign(calc, migrated);
+      }
+      calc.channels=calcDepNames(calc);
+      openCalculatedChannelEditorModal({ mode:"edit", calc });
+    }
+    function renderCalcMemberList(listEl, chosen){
+      if(!listEl) return;
+      const names=[...chosen].map((id)=>channelKeyFromId(id)).filter(Boolean);
+      if(!names.length){
+        listEl.innerHTML=`<div class="empty">No channels selected.</div>`;
+        fitAliasEditorWindow(listEl);
+        return;
+      }
+      listEl.innerHTML=names.map((name,idx)=>`
+        <div class="selectRow" data-id="${escAttr(name)}">
+          <div class="itemPrimary">${escAttr(name)}</div>
+          <span class="selectRowVar">${idx<26 ? String.fromCharCode(65+idx) : String(idx+1)}</span>
+          <button type="button" class="aliasMemberRemove" data-id="${escAttr(name)}" aria-label="Remove">&#10005;</button>
+        </div>`).join("");
+      listEl.querySelectorAll(".aliasMemberRemove").forEach((btn)=>{
+        btn.onclick=(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          const id=btn.getAttribute("data-id");
+          if(id) chosen.delete(id);
+          renderCalcMemberList(listEl, chosen);
+        };
+      });
+      fitAliasEditorWindow(listEl);
+    }
+    function openCalculatedChannelEditorModal({ mode, calc=null }){
+      const isEdit=mode==="edit";
+      const leaf="Calculated Channel";
+      const deps=isEdit ? calcDepNames(calc) : [];
+      const chosen=new Set(deps);
+      const defaultName=isEdit ? (calc?.name||"channel_formula") : "channel_formula";
+      const calcKey=isEdit ? (calc?.name||"") : "";
+      const unitCurrent=isEdit ? String(calc?.unit||"") : "";
+      const freqOverride=isEdit ? channelOverrideValue(state.freqOverrides, calcKey) : "";
+      const freqCurrent=freqOverride!=="" && freqOverride!=null ? String(freqOverride) : "";
+      const formulaCurrent=isEdit ? String(calc?.formula||"") : "";
+      openModal(`Channels > ${leaf}`,`
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="m_formula_name" class="formNameInput" type="text" value="${escAttr(defaultName)}" spellcheck="false" />
+          </div>
+          ${freqUnitFieldsHtml({ freqId:"m_formula_freq", unitId:"m_formula_unit", freqValue:freqCurrent, unitValue:unitCurrent })}
+        </div>
+        <div class="aliasMembersBlock">
+          <div class="aliasMembersHeader">
+            <label>Channels</label>
+            <button type="button" class="addBtn" id="m_calc_add_ch" title="Add channel" aria-label="Add channel">+</button>
+          </div>
+          <div id="m_calc_members" class="aliasMemberList"></div>
+        </div>
+        <div class="calcFormulaPad">
+          <div class="formField">
+            <label>Formula</label>
+            <input id="m_formula_expr" type="text" value="${escAttr(formulaCurrent)}" placeholder="A + B" spellcheck="false" />
+          </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_ALIAS_FORM, titleHtml:channelsWindowTitleHtml(leaf) },async()=>{
+        const ordered=[...chosen].map((id)=>channelKeyFromId(id)).filter(Boolean);
+        if(ordered.length<1){ setStatus("Add at least one channel.", true); return false; }
+        const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length);
+        if(!compiled.ok){ setStatus(compiled.error, true); return false; }
+        const rawName=(byId("m_formula_name").value||"").trim();
+        if(!rawName){ setStatus("Calculated channel name is required.", true); return false; }
+        const freqRaw=(byId("m_formula_freq").value||"").trim();
+        const unitRaw=(byId("m_formula_unit").value||"").trim();
+        if(freqRaw){
+          const hz=Number(freqRaw);
+          if(!Number.isFinite(hz)||hz<=0){ setStatus("Frequency must be a positive number.", true); return false; }
+        }
+        state.freqOverrides=state.freqOverrides||{};
+        if(isEdit){
           const oldName=calc.name;
-          const name=nextCalcName(targetDbId, rawName, oldName);
-          calc.dbId=targetDbId;
+          const name=nextCalcName(rawName, oldName);
+          delete calc.dbId;
+          delete calc.op;
+          delete calc.window;
+          calc.kind="formula";
           calc.name=name;
-          calc.unit=(byId("m_calc_unit").value||"").trim();
-          calc.channels=[sourceId];
-          calc.op=op;
-          calc.window=window;
-          if(addedChannelIds.delete(`${dbId}|${oldName}`)) addedChannelIds.add(`${targetDbId}|${name}`);
-          if(selectedChannelIds.delete(`${dbId}|${oldName}`)) selectedChannelIds.add(`${targetDbId}|${name}`);
-          await refreshCatalogsForSelections();
+          calc.unit=unitRaw;
+          calc.channels=ordered;
+          calc.formula=compiled.expr;
+          if(name!==oldName) clearChannelOverrideKeys(state.freqOverrides, oldName);
+          clearChannelOverrideKeys(state.freqOverrides, name);
+          if(freqRaw) state.freqOverrides[name]=Number(freqRaw);
+          if(addedChannelIds.delete(oldName)) addedChannelIds.add(name);
+          if(selectedChannelIds.delete(oldName)) selectedChannelIds.add(name);
+          rebuildChannelsDataLocal();
+          overviewTraceCache=null;
+          if(latestRows.length){
+            latestRows=applyRowUnits(latestRows);
+            await plotRows(latestRows, { preserveUi:false, resetView:true });
+          }
           renderAll();
           saveState();
           setStatus(`Updated calculated channel '${name}'.`);
           return true;
-        });
-        return;
-      }
-      const rows=calcChannelPickerRows(sourceChannels);
-      const chosen=new Set(calc.channels||[]);
-      const escAttr=(v)=>String(v??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;");
-      openModal("Edit Channel Wise Calculation",`${searchableRowsHtml("efcm",rows,chosen)}<div style="padding:6px 10px 2px;"><label>Calculated Channel Name</label><input id="m_formula_name" type="text" value="${escAttr(calc.name)}" /><label>Legend source name (optional)</label><input id="m_formula_source_label" type="text" value="${escAttr(calc.sourceLabel||"")}" placeholder="Defaults to combined source names" /><div id="m_formula_legend_hint" class="itemMeta" style="margin-top:4px;"></div><label>Units</label><input id="m_formula_unit" type="text" value="${escAttr(calc.unit||"")}" placeholder="e.g. s (for ISP), unitless, etc." /><label>Formula</label><input id="m_formula_expr" type="text" value="${escAttr(calc.formula||"")}" placeholder="A + B" /><div id="m_formula_hint" class="itemMeta" style="margin-top:6px;"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Save</button></div>`,WF,async()=>{
-        const ordered=[...chosen];
-        if(ordered.length<2){ setStatus("Select at least two channels.",true); return false; }
-        const compiled=compileFormula(byId("m_formula_expr").value||"", ordered.length);
-        if(!compiled.ok){ setStatus(compiled.error,true); return false; }
-        const rawName=(byId("m_formula_name").value||"channel_formula").trim();
-        if(!rawName){ setStatus("Calculated channel name is required.",true); return false; }
-        const targetDbId=ordered[0].split("|")[0];
-        const oldName=calc.name;
-        const name=nextCalcName(targetDbId, rawName, oldName);
-        calc.dbId=targetDbId;
-        calc.name=name;
-        calc.unit=(byId("m_formula_unit").value||"").trim();
-        calc.channels=ordered;
-        calc.formula=compiled.expr;
-        const sourceLabel=(byId("m_formula_source_label").value||"").trim();
-        if(sourceLabel) calc.sourceLabel=sourceLabel;
-        else delete calc.sourceLabel;
-        if(addedChannelIds.delete(`${dbId}|${oldName}`)) addedChannelIds.add(`${targetDbId}|${name}`);
-        if(selectedChannelIds.delete(`${dbId}|${oldName}`)) selectedChannelIds.add(`${targetDbId}|${name}`);
-        await refreshCatalogsForSelections();
+        }
+        const name=nextCalcName(rawName);
+        state.calculatedChannels=state.calculatedChannels||[];
+        state.calculatedChannels.push({ id:crypto.randomUUID(), kind:"formula", name, unit:unitRaw, channels:ordered, formula:compiled.expr });
+        clearChannelOverrideKeys(state.freqOverrides, name);
+        if(freqRaw) state.freqOverrides[name]=Number(freqRaw);
+        addedChannelIds.add(name);
+        selectedChannelIds.add(name);
+        rebuildChannelsDataLocal();
         renderAll();
         saveState();
-        setStatus(`Updated calculated channel '${name}'.`);
+        setStatus(`Added calculated channel '${name}' (applies per selected source).`);
         return true;
       });
-      bindSearchableModal("efcm",chosen);
-      const refreshHint=()=>{
-        const ordered=[...chosen];
-        const letters=varLetters(ordered.length);
-        const txt=ordered.map((id,i)=>`${letters[i]}=${sourceLabelForDbId(id.split("|")[0])}/${id.split("|")[1]}`).join(" | ");
-        byId("m_formula_hint").textContent=txt||"Select channels to map A, B, C...";
-        const legendHint=byId("m_formula_legend_hint");
-        if(legendHint) legendHint.textContent=ordered.length>=2?`Legend default: ${defaultFormulaSourceLabel(ordered)}`:"";
-      };
-      const list=byId("efcm_list");
-      if(list){ list.addEventListener("click",()=>setTimeout(refreshHint,0)); }
-      refreshHint();
+      const listEl=byId("m_calc_members");
+      const refresh=()=>renderCalcMemberList(listEl, chosen);
+      refresh();
+      const addBtn=byId("m_calc_add_ch");
+      if(addBtn) addBtn.onclick=()=>showAddAliasMembersModal(chosen, refresh, { leaf });
+      bindAliasEditorManualResize(listEl);
+      requestAnimationFrame(()=>fitAliasEditorWindow(listEl));
     }
-    async function showAddDatabaseModal(){ const srcs=activeSources(); if(!srcs.length){ setStatus("Select at least one source first.",true); return; } const rows=[]; for(const src of srcs){ if(src.type==="postgres"){ try{ const dbs=await getJson(`/api/databases?${sourceConnQuery(src)}`); dbs.forEach((d)=>rows.push({id:`${src.id}|${d.name}`,primary:d.name,meta:src.name,sourceId:src.id,sourceType:src.type,name:d.name})); }catch(err){ setStatus(`Database discovery failed for source '${src.name}': ${err}`, true); } } else rows.push({id:`${src.id}|${src.file_path||src.name}`,primary:src.name,meta:`${src.type} source`,sourceId:src.id,sourceType:src.type,name:src.name}); } if(!rows.length){ setStatus("No databases were discovered for the selected source(s).", true); } const chosen=new Set(); openModal("Add Databases",`${searchableRowsHtml("dbm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ const newlyAddedIds=[]; [...chosen].forEach((id)=>{ const r=rows.find((x)=>x.id===id); if(!r) return; const existing=state.databases.find((d)=>d.sourceId===r.sourceId&&d.name===r.name); if(existing){ newlyAddedIds.push(existing.id); return; } const entry={id:crypto.randomUUID(),sourceId:r.sourceId,sourceType:r.sourceType,name:r.name}; state.databases.push(entry); newlyAddedIds.push(entry.id); }); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id); }); // Explicitly select every added database after apply/close.
-      newlyAddedIds.forEach((id)=>selectedDatabaseIds.add(id)); await refreshCatalogsForSelections(); renderAll(); saveState(); return true; }); bindSearchableModal("dbm",chosen); }
-    async function showAddTestsModal(){ if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; } await refreshCatalogsForSelections(); const dup={}; testsData.forEach((t)=>dup[`${t.__dbId}|${t.run_code}`]=(dup[`${t.__dbId}|${t.run_code}`]||0)+1); const rows=testsData.map((t)=>({id:`${t.__dbId}|${t.test_run_id}`,primary:dup[`${t.__dbId}|${t.run_code}`]>1?`${t.run_code} (#${t.test_run_id})`:t.run_code,meta:`${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`})); const chosen=new Set(addedTestIds); openModal("Select Tests",`${searchableRowsHtml("tm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ addedTestIds=new Set(chosen); selectedTestIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("tm",chosen); }
-    async function showAddChannelsModal(){
-      await ensureSelectedFileSourcesIndexed();
-      await refreshCatalogsForSelections();
+    function selectedRawChannelSeeds(fallbackId){
+      const fromSelection=[...selectedChannelIds].filter((id)=>{
+        const key=channelKeyFromId(id);
+        return key && !isCalculatedChannelKey(key) && !isAliasChannelKey(key);
+      }).map((id)=>channelKeyFromId(id));
+      if(fromSelection.length) return [...new Set(fromSelection)];
+      const fallback=channelKeyFromId(fallbackId);
+      if(fallback && !isCalculatedChannelKey(fallback) && !isAliasChannelKey(fallback)) return [fallback];
+      return [];
+    }
+    function nextAliasName(base, excludeName){
+      const stem=(base||"channel_alias").trim()||"channel_alias";
+      let name=stem;
+      let n=1;
+      const existing=new Set();
+      (state.channelAliases||[]).forEach((a)=>{ if(a.name && a.name!==excludeName) existing.add(a.name); });
+      (state.calculatedChannels||[]).forEach((c)=>{ if(c.name && c.name!==excludeName) existing.add(c.name); });
+      addedChannelIds.forEach((k)=>{ if(k!==excludeName) existing.add(k); });
+      while(existing.has(name)){ n+=1; name=`${stem}_${n}`; }
+      return name;
+    }
+    async function aliasMemberCatalogRows(){
+      const byName=new Map();
+      const loaded=await ensureCalcSourceChannelsLoaded();
+      (loaded||[]).forEach((c)=>{
+        const name=String(c.channel_name||"").trim();
+        if(!name||byName.has(name)) return;
+        byName.set(name,{ id:name, primary:name, meta:`unit ${c.unit||"unitless"}` });
+      });
+      addedChannelIds.forEach((key)=>{
+        if(!key || isCalculatedChannelKey(key) || isAliasChannelKey(key) || byName.has(key)) return;
+        byName.set(key,{ id:key, primary:key, meta:"" });
+      });
+      return [...byName.values()].sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
+    }
+    function addChannelsToAlias(aliasName, memberNames){
+      const alias=findAliasByKey(aliasName);
+      if(!alias){ setStatus(`Alias '${aliasName}' not found.`, true); return; }
+      const next=new Set(aliasMemberNames(alias));
+      (memberNames||[]).forEach((n)=>{
+        const key=channelKeyFromId(n);
+        if(key && !isCalculatedChannelKey(key) && !isAliasChannelKey(key)) next.add(key);
+      });
+      alias.channels=[...next];
+      purgeAliasedMembersFromChannelLists(alias.channels);
+      if(!addedChannelIds.has(alias.name)){
+        addedChannelIds.add(alias.name);
+        selectedChannelIds.add(alias.name);
+      }
+      renderAll();
+      saveState();
+      setStatus(`Updated alias '${alias.name}' (${alias.channels.length} channel(s)).`);
+    }
+    function channelsWindowTitleHtml(...leaves){
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" d="M1.5 8h2l1.4-4.2L7.2 12l2.1-6.3L11 9.5h3.5"/></svg></span>`;
+      const sep=`<span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span>`;
+      const parts=[`<span>Channels</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${leaf}</span>`));
+      return `${icon}${parts.join("")}`;
+    }
+    function modalSaveIconHtml(){
+      return `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.4 1.5h8.8L13.6 4v10.5H2.4V1.5zm1.3 1.2v10.6h8.2V4.5L10 2.7H3.7zm1.4 0H9v2.4H5.1V2.7zm-.3 5.6h7v4.4h-7V8.3zm1.2 1.2v2h4.6v-2H6z"/></svg>`;
+    }
+    function modalCheckIconHtml(){
+      return `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.4 11.6L2.9 8.1l1.1-1.1 2.4 2.4 5.5-5.5 1.1 1.1-6.6 6.6z"/></svg>`;
+    }
+    function applyChannelFreqUnitOverrides(key, freqRaw, unitRaw){
+      state.freqOverrides=state.freqOverrides||{};
+      state.unitOverrides=state.unitOverrides||{};
+      clearChannelOverrideKeys(state.freqOverrides, key);
+      clearChannelOverrideKeys(state.unitOverrides, key);
+      if(freqRaw){
+        const hz=Number(freqRaw);
+        if(!Number.isFinite(hz)||hz<=0) return { ok:false, error:"Frequency must be a positive number." };
+        state.freqOverrides[key]=hz;
+      }
+      if(unitRaw) state.unitOverrides[key]=unitRaw;
+      return { ok:true };
+    }
+    function fitAliasEditorWindow(listEl){
+      const win=listEl?.closest?.(".appWindow");
+      if(!win || !listEl) return;
+      const VISIBLE=5;
+      const ROW_H=27;
+      const PAD=4;
+      const count=listEl.querySelectorAll(".selectRow").length;
+      const hasEmpty=Boolean(listEl.querySelector(".empty"));
+      win._aliasAutoFitting=true;
+      if(hasEmpty){
+        listEl.style.height="auto";
+        listEl.style.maxHeight="none";
+        listEl.style.flex="0 0 auto";
+      }else{
+        const visibleRows=Math.min(Math.max(count,1), VISIBLE);
+        const capped=`${visibleRows*ROW_H+PAD}px`;
+        listEl.style.flex="0 0 auto";
+        listEl.style.maxHeight=capped;
+        listEl.style.height=capped;
+      }
+      win.style.height="auto";
+      void win.offsetHeight;
+      const measured=Math.ceil(win.scrollHeight);
+      const next=Math.min(Math.max(measured, 280), Math.floor(window.innerHeight*0.96));
+      win.style.height=`${next}px`;
+      requestAnimationFrame(()=>{ win._aliasAutoFitting=false; });
+    }
+    function bindAliasEditorManualResize(listEl){
+      const win=listEl?.closest?.(".appWindow");
+      if(!win || !listEl || win._aliasResizeBound) return;
+      win._aliasResizeBound=true;
+      const releaseListCap=()=>{
+        // Manual window resize: let the channel list fill the middle section.
+        listEl.style.height="";
+        listEl.style.maxHeight="";
+        listEl.style.flex="";
+      };
+      const resizeHandle=win.querySelector(".appWindowResize");
+      if(!resizeHandle) return;
+      resizeHandle.addEventListener("mousedown",()=>{
+        const onMove=()=>releaseListCap();
+        const onUp=()=>{
+          releaseListCap();
+          window.removeEventListener("mousemove", onMove);
+          window.removeEventListener("mouseup", onUp);
+        };
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+      });
+    }
+    function renderAliasMemberList(listEl, chosen){
+      if(!listEl) return;
+      const names=[...chosen].map((id)=>channelKeyFromId(id)).filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b)));
+      if(!names.length){
+        listEl.innerHTML=`<div class="empty">No channels in alias.</div>`;
+        fitAliasEditorWindow(listEl);
+        return;
+      }
+      listEl.innerHTML=names.map((name)=>`
+        <div class="selectRow" data-id="${escAttr(name)}">
+          <div class="itemPrimary">${escAttr(name)}</div>
+          <button type="button" class="aliasMemberRemove" data-id="${escAttr(name)}" aria-label="Remove">&#10005;</button>
+        </div>`).join("");
+      listEl.querySelectorAll(".aliasMemberRemove").forEach((btn)=>{
+        btn.onclick=(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          const id=btn.getAttribute("data-id");
+          if(id) chosen.delete(id);
+          renderAliasMemberList(listEl, chosen);
+        };
+      });
+      fitAliasEditorWindow(listEl);
+    }
+    async function showAddAliasMembersModal(chosen, onChanged, { leaf="Edit Alias" }={}){
+      if(!selectedSourceIds.size || !effectiveSelectedSourceIds().length){
+        setStatus("Select at least one source first.", true);
+        return;
+      }
       const sourceOptions=channelPickerSourceOptions();
       if(!sourceOptions.length){
         setStatus("Select at least one source first.", true);
@@ -8066,23 +9004,13 @@
 
       let activeSourceId=defaultChannelPickerSourceId(sourceOptions);
       const rowCache=new Map();
-      addedChannelIds.forEach((chId)=>{
-        if(rowCache.has(chId)) return;
-        const c=channelsData.find((x)=>`${x.__dbId}|${x.channel_name}`===chId);
-        if(!c) return;
-        rowCache.set(chId, {
-          id: chId,
-          primary: c.channel_name,
-          meta:`unit ${resolveChannelUnit(chId, c.unit)||"unitless"} | min ${c.valid_min??"n/a"} | max ${c.valid_max??"n/a"} | rate ${state.freqOverrides[chId]||c.sample_rate_hz||"n/a"}Hz`,
-        });
-      });
-
-      const selected=new Set(addedChannelIds);
+      const selected=new Set([...chosen].map((id)=>channelKeyFromId(id)).filter((n)=>n && !isCalculatedChannelKey(n) && !isAliasChannelKey(n)));
+      selected.forEach((id)=>rowCache.set(id, { id, primary:id, meta:"" }));
+      let allRows=[];
       const availActive=new Set();
       const selActive=new Set();
       let availAnchor=-1;
       let selAnchor=-1;
-      let allRows=[];
 
       const applyTransferSelection = ({ listRows, activeSet, idx, ev, kind })=>{
         const ids = listRows.map((r)=>r.id);
@@ -8112,7 +9040,8 @@
           const el=document.createElement("div");
           const isSelected = selected.has(r.id);
           el.className="selectRow"+(activeSet.has(r.id)?" active":"")+(kind==="avail" && isSelected ? " disabled" : "");
-          el.innerHTML=`<div class="itemPrimary">${r.primary}${(kind==="avail" && isSelected)?" · selected":""}</div>`;
+          const suffix=(kind==="avail" && isSelected)?" · selected":"";
+          el.innerHTML=`<div class="itemPrimary">${r.primary}${suffix}</div>`;
           el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
           el.onclick=(ev)=>{
             if(ev&&ev.preventDefault) ev.preventDefault();
@@ -8125,7 +9054,289 @@
         });
       };
 
-      const selectedRows = ()=> [...selected].map((id)=>rowCache.get(id)).filter(Boolean).sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
+      const selectedRows = ()=> [...selected]
+        .map((id)=>rowCache.get(id)||{id, primary:id, meta:""})
+        .filter(Boolean)
+        .sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
+
+      const renderAllTransfer = ()=>{
+        renderTransferList("aam_avail", allRows, availActive, "avail");
+        renderTransferList("aam_sel", selectedRows(), selActive, "sel");
+        const btnR = byId("aam_to_sel");
+        const btnL = byId("aam_to_avail");
+        if(btnR) btnR.disabled = availActive.size===0;
+        if(btnL) btnL.disabled = selActive.size===0;
+      };
+
+      const loadActiveSourceChannels=async()=>{
+        const opt=sourceOptions.find((o)=>o.sourceId===activeSourceId);
+        if(!opt){ allRows=[]; renderAllTransfer(); return; }
+        const src=state.sources.find((s)=>s.id===opt.sourceId);
+        try{
+          if(isFileSource(src)) await ensureFileSourceIndexed(src);
+          const db=isFileSource(src)
+            ? (state.databases.find((d)=>d.sourceId===src.id) || ensureFileSourceCatalog(src))
+            : null;
+          const dbId=db?.id || opt.dbId;
+          opt.dbId=dbId;
+          const rows=await fetchChannelsForDb(dbId);
+          const byName=new Map();
+          rows.forEach((r)=>{
+            const name=channelKeyFromId(r.id) || r.primary;
+            if(!name || byName.has(name) || isCalculatedChannelKey(name) || isAliasChannelKey(name)) return;
+            const entry={ id:name, primary:name, meta:r.meta||"" };
+            byName.set(name, entry);
+            rowCache.set(name, entry);
+          });
+          allRows=[...byName.values()].sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
+        }catch(err){
+          allRows=[];
+          setStatus(`Failed to load channels: ${err}`, true);
+        }
+        availActive.clear();
+        availAnchor=-1;
+        renderAllTransfer();
+      };
+
+      const sourceSelectHtml=`<div id="aam_source_wrap" style="margin-bottom:8px;"><label>Source</label><select id="aam_source_sel">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div>`;
+
+      openModal(`Channels > ${leaf} > Add`,`
+        <div class="modalBodyPad">
+          ${sourceSelectHtml}
+          <div class="channelTransferGrid">
+            <div class="scalePickerCol"><label>Available</label><div class="modalList" id="aam_avail"></div></div>
+            <div class="channelTransferBtns">
+              <button id="aam_to_sel" type="button">→</button>
+              <button id="aam_to_avail" type="button">←</button>
+            </div>
+            <div class="scalePickerCol"><label>Selected</label><div class="modalList" id="aam_sel"></div></div>
+          </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Apply">${modalCheckIconHtml()}</button>
+        </div>
+      `,{ ...WF_CHANNELS, closable:true, titleHtml:channelsWindowTitleHtml(leaf, "Add") },async()=>{
+        const next=[...selected].map((id)=>channelKeyFromId(id)).filter((n)=>n && !isCalculatedChannelKey(n) && !isAliasChannelKey(n));
+        chosen.clear();
+        next.forEach((n)=>chosen.add(n));
+        if(typeof onChanged==="function") onChanged();
+        setStatus(`Updated channel selection (${next.length}).`);
+        return true;
+      });
+
+      const srcSel=byId("aam_source_sel");
+      if(srcSel){
+        srcSel.onchange=async()=>{
+          activeSourceId=srcSel.value;
+          await loadActiveSourceChannels();
+        };
+      }
+      byId("aam_to_sel").onclick=()=>{
+        [...availActive].forEach((id)=>{
+          if(isCalculatedChannelKey(id) || isAliasChannelKey(id)) return;
+          selected.add(id);
+          if(!rowCache.has(id)) rowCache.set(id, { id, primary:id, meta:"" });
+        });
+        availActive.clear();
+        renderAllTransfer();
+      };
+      byId("aam_to_avail").onclick=()=>{
+        [...selActive].forEach((id)=>selected.delete(id));
+        selActive.clear();
+        renderAllTransfer();
+      };
+      await loadActiveSourceChannels();
+    }
+    function openAliasEditorModal({ mode, alias=null, seedNames=[] }){
+      const isEdit=mode==="edit";
+      const seeds=[...new Set((seedNames||[]).map((n)=>channelKeyFromId(n)).filter((n)=>n && !isCalculatedChannelKey(n) && !isAliasChannelKey(n)))];
+      const chosen=new Set(isEdit ? aliasMemberNames(alias) : seeds);
+      const defaultName=isEdit
+        ? (alias?.name||"")
+        : (seeds[0] ? `${seeds[0]}_alias` : "channel_alias");
+      const aliasKey=isEdit ? (alias?.name||"") : "";
+      const unitCurrent=isEdit ? String(channelOverrideValue(state.unitOverrides, aliasKey) || "") : "";
+      const freqOverride=isEdit ? channelOverrideValue(state.freqOverrides, aliasKey) : "";
+      const freqCurrent=freqOverride!=="" && freqOverride!=null ? String(freqOverride) : "";
+      const leaf=isEdit ? "Edit Alias" : "Create Alias";
+      openModal(`Channels > ${leaf}`,`
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="m_alias_name" class="formNameInput" type="text" value="${escAttr(defaultName)}" spellcheck="false" />
+          </div>
+          ${freqUnitFieldsHtml({ freqId:"m_alias_freq", unitId:"m_alias_unit", freqValue:freqCurrent, unitValue:unitCurrent })}
+        </div>
+        <div class="aliasMembersBlock">
+          <div class="aliasMembersHeader">
+            <label>Channels</label>
+            <button type="button" class="addBtn" id="m_alias_add_ch" title="Add channel" aria-label="Add channel">+</button>
+          </div>
+          <div id="m_alias_members" class="aliasMemberList"></div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_ALIAS_FORM, titleHtml:channelsWindowTitleHtml(leaf) },async()=>{
+        const members=[...chosen].map((id)=>channelKeyFromId(id)).filter((n)=>n && !isCalculatedChannelKey(n) && !isAliasChannelKey(n));
+        if(!members.length){ setStatus("Add at least one channel to the alias.", true); return false; }
+        const rawName=(byId("m_alias_name").value||"").trim();
+        if(!rawName){ setStatus("Alias name is required.", true); return false; }
+        const freqRaw=(byId("m_alias_freq").value||"").trim();
+        const unitRaw=(byId("m_alias_unit").value||"").trim();
+        if(isEdit){
+          const oldName=alias.name;
+          if(rawName!==oldName && isCalculatedChannelKey(rawName)){ setStatus("Alias name conflicts with a calculated channel.", true); return false; }
+          const name=nextAliasName(rawName, oldName);
+          if(name!==oldName){
+            clearChannelOverrideKeys(state.freqOverrides, oldName);
+            clearChannelOverrideKeys(state.unitOverrides, oldName);
+          }
+          const applied=applyChannelFreqUnitOverrides(name, freqRaw, unitRaw);
+          if(!applied.ok){ setStatus(applied.error, true); return false; }
+          alias.name=name;
+          alias.channels=members;
+          if(addedChannelIds.delete(oldName)) addedChannelIds.add(name);
+          if(selectedChannelIds.delete(oldName)) selectedChannelIds.add(name);
+          purgeAliasedMembersFromChannelLists(members);
+          overviewTraceCache=null;
+          if(latestRows.length){
+            latestRows=applyRowUnits(latestRows);
+            await plotRows(latestRows, { preserveUi:false, resetView:true });
+          }
+          rebuildChannelUnitMap();
+          renderAll();
+          saveState();
+          setStatus(`Updated alias '${name}'.`);
+          return true;
+        }
+        if(isCalculatedChannelKey(rawName)){ setStatus("Alias name conflicts with a calculated channel.", true); return false; }
+        const name=nextAliasName(rawName);
+        const applied=applyChannelFreqUnitOverrides(name, freqRaw, unitRaw);
+        if(!applied.ok){ setStatus(applied.error, true); return false; }
+        state.channelAliases=state.channelAliases||[];
+        state.channelAliases.push({ id:crypto.randomUUID(), name, channels:members });
+        purgeAliasedMembersFromChannelLists(members);
+        addedChannelIds.add(name);
+        selectedChannelIds.add(name);
+        overviewTraceCache=null;
+        if(latestRows.length){
+          latestRows=applyRowUnits(latestRows);
+          await plotRows(latestRows, { preserveUi:false, resetView:true });
+        }
+        rebuildChannelUnitMap();
+        renderAll();
+        saveState();
+        setStatus(`Created alias '${name}' with ${members.length} channel(s).`);
+        return true;
+      });
+      const listEl=byId("m_alias_members");
+      const refresh=()=>renderAliasMemberList(listEl, chosen);
+      refresh();
+      const addBtn=byId("m_alias_add_ch");
+      if(addBtn) addBtn.onclick=()=>showAddAliasMembersModal(chosen, refresh, { leaf });
+      bindAliasEditorManualResize(listEl);
+      requestAnimationFrame(()=>fitAliasEditorWindow(listEl));
+    }
+    async function showCreateChannelAliasModal(seedNames){
+      openAliasEditorModal({ mode:"create", seedNames });
+    }
+    async function editChannelAlias(aliasId){
+      const aliasName=channelKeyFromId(aliasId);
+      const alias=findAliasByKey(aliasName);
+      if(!alias){ setStatus("Only channel aliases can be edited.", true); return; }
+      openAliasEditorModal({ mode:"edit", alias });
+    }
+    async function showAddDatabaseModal(){ const srcs=activeSources(); if(!srcs.length){ setStatus("Select at least one source first.",true); return; } const rows=[]; for(const src of srcs){ if(src.type==="postgres"){ try{ const dbs=await getJson(`/api/databases?${sourceConnQuery(src)}`); dbs.forEach((d)=>rows.push({id:`${src.id}|${d.name}`,primary:d.name,meta:src.name,sourceId:src.id,sourceType:src.type,name:d.name})); }catch(err){ setStatus(`Database discovery failed for source '${src.name}': ${err}`, true); } } else rows.push({id:`${src.id}|${src.file_path||src.name}`,primary:src.name,meta:`${src.type} source`,sourceId:src.id,sourceType:src.type,name:src.name}); } if(!rows.length){ setStatus("No databases were discovered for the selected source(s).", true); } const chosen=new Set(); openModal("Add Databases",`${searchableRowsHtml("dbm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ const newlyAddedIds=[]; [...chosen].forEach((id)=>{ const r=rows.find((x)=>x.id===id); if(!r) return; const existing=state.databases.find((d)=>d.sourceId===r.sourceId&&d.name===r.name); if(existing){ newlyAddedIds.push(existing.id); return; } const entry={id:crypto.randomUUID(),sourceId:r.sourceId,sourceType:r.sourceType,name:r.name}; state.databases.push(entry); newlyAddedIds.push(entry.id); }); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id); }); // Explicitly select every added database after apply/close.
+      newlyAddedIds.forEach((id)=>selectedDatabaseIds.add(id)); await refreshCatalogsForSelections(); renderAll(); saveState(); return true; }); bindSearchableModal("dbm",chosen); }
+    async function showAddTestsModal(){ if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; } await refreshCatalogsForSelections(); const dup={}; testsData.forEach((t)=>dup[`${t.__dbId}|${t.run_code}`]=(dup[`${t.__dbId}|${t.run_code}`]||0)+1); const rows=testsData.map((t)=>({id:`${t.__dbId}|${t.test_run_id}`,primary:dup[`${t.__dbId}|${t.run_code}`]>1?`${t.run_code} (#${t.test_run_id})`:t.run_code,meta:`${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`})); const chosen=new Set(addedTestIds); openModal("Select Tests",`${searchableRowsHtml("tm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ addedTestIds=new Set(chosen); selectedTestIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("tm",chosen); }
+    async function showAddChannelsModal(){
+      if(!selectedSourceIds.size || !effectiveSelectedSourceIds().length){
+        setStatus("Select at least one source first.", true);
+        return;
+      }
+      // Catalog stubs only — do not index every selected file up front.
+      const sourceOptions=channelPickerSourceOptions();
+      if(!sourceOptions.length){
+        setStatus("Select at least one source first.", true);
+        return;
+      }
+
+      let activeSourceId=defaultChannelPickerSourceId(sourceOptions);
+      const rowCache=new Map();
+      addedChannelIds.forEach((key)=>{
+        const calc=findCalculatedByKey(key);
+        const alias=findAliasByKey(key);
+        rowCache.set(key, {
+          id: key,
+          primary: key,
+          meta: calc ? `calculated (${calc.kind||"calc"})` : (alias ? `alias (${aliasMemberNames(alias).length})` : ""),
+        });
+      });
+
+      let allRows=[];
+      // Aliased members live under their alias key — keep them out of Selected.
+      const selected=new Set([...addedChannelIds].filter((id)=>!isAliasedChannelMember(id)));
+      const availActive=new Set();
+      const selActive=new Set();
+      let availAnchor=-1;
+      let selAnchor=-1;
+
+      const aliasBadgeHtml=(channelName)=>{
+        const hits=aliasesContainingChannel(channelName);
+        if(!hits.length) return "";
+        const tip=hits.map((a)=>a.name).join(", ");
+        return `<span class="selectRowVar" title="In alias: ${tip}"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.4 9.6a2.4 2.4 0 0 1 0-3.4l1.1-1.1a.7.7 0 0 0-1-1L5.4 5.2a3.8 3.8 0 0 0 0 5.4l1.1 1.1a.7.7 0 1 0 1-1L6.4 9.6zm3.2-3.2a2.4 2.4 0 0 1 0 3.4l-1.1 1.1a.7.7 0 1 0 1 1l1.1-1.1a3.8 3.8 0 0 0 0-5.4L9.5 4.3a.7.7 0 0 0-1 1l1.1 1.1zM6.9 8.7a.7.7 0 0 0 1 0l1.2-1.2a.7.7 0 1 0-1-1L6.9 7.7a.7.7 0 0 0 0 1z"/></svg></span>`;
+      };
+
+      const applyTransferSelection = ({ listRows, activeSet, idx, ev, kind })=>{
+        const ids = listRows.map((r)=>r.id);
+        const anchor = (kind==="avail") ? availAnchor : selAnchor;
+        if(ev && ev.shiftKey && Number.isInteger(anchor) && anchor >= 0 && anchor < ids.length){
+          const a = Math.min(anchor, idx);
+          const b = Math.max(anchor, idx);
+          for(let i=a;i<=b;i+=1) activeSet.add(ids[i]);
+          return;
+        }
+        if(hasMetaOrCtrlKey(ev)){
+          const id = ids[idx];
+          if(activeSet.has(id)) activeSet.delete(id); else activeSet.add(id);
+          if(kind==="avail") availAnchor = idx; else selAnchor = idx;
+          return;
+        }
+        activeSet.clear();
+        activeSet.add(ids[idx]);
+        if(kind==="avail") availAnchor = idx; else selAnchor = idx;
+      };
+
+      const renderTransferList = (containerId, listRows, activeSet, kind)=>{
+        const root = byId(containerId);
+        if(!root) return;
+        root.innerHTML="";
+        listRows.forEach((r)=>{
+          const el=document.createElement("div");
+          const isSelected = selected.has(r.id);
+          const aliased = kind==="avail" && isAliasedChannelMember(r.id);
+          el.className="selectRow"+(activeSet.has(r.id)?" active":"")+(kind==="avail" && isSelected ? " disabled" : "");
+          const suffix=(kind==="avail" && isSelected)?" · selected":"";
+          el.innerHTML=`<div class="itemPrimary">${r.primary}${suffix}</div>${kind==="avail"?aliasBadgeHtml(r.id):""}`;
+          if(aliased) el.title=`In alias: ${aliasesContainingChannel(r.id).map((a)=>a.name).join(", ")}`;
+          el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
+          el.onclick=(ev)=>{
+            if(ev&&ev.preventDefault) ev.preventDefault();
+            if(ev&&ev.stopPropagation) ev.stopPropagation();
+            const idx = listRows.findIndex((x)=>x.id===r.id);
+            applyTransferSelection({ listRows, activeSet, idx, ev, kind });
+            renderAllTransfer();
+          };
+          root.appendChild(el);
+        });
+      };
+
+      const selectedRows = ()=> [...selected]
+        .filter((id)=>!isAliasedChannelMember(id))
+        .map((id)=>rowCache.get(id)||{id, primary:id, meta:""})
+        .filter(Boolean)
+        .sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
 
       const renderAllTransfer = ()=>{
         renderTransferList("cm_avail", allRows, availActive, "avail");
@@ -8139,18 +9350,37 @@
       const loadActiveSourceChannels=async()=>{
         const opt=sourceOptions.find((o)=>o.sourceId===activeSourceId);
         if(!opt){ allRows=[]; renderAllTransfer(); return; }
-        allRows=await fetchChannelsForDb(opt.dbId);
-        allRows.forEach((r)=>rowCache.set(r.id, r));
+        const src=state.sources.find((s)=>s.id===opt.sourceId);
+        try{
+          if(isFileSource(src)) await ensureFileSourceIndexed(src);
+          // Refresh db id after catalog/ingest in case it was created lazily
+          const db=isFileSource(src)
+            ? (state.databases.find((d)=>d.sourceId===src.id) || ensureFileSourceCatalog(src))
+            : null;
+          const dbId=db?.id || opt.dbId;
+          opt.dbId=dbId;
+          const rows=await fetchChannelsForDb(dbId);
+          const byName=new Map();
+          rows.forEach((r)=>{
+            const name=channelKeyFromId(r.id) || r.primary;
+            if(!name || byName.has(name)) return;
+            const entry={ id:name, primary:name, meta:r.meta||"" };
+            byName.set(name, entry);
+            rowCache.set(name, entry);
+          });
+          allRows=[...byName.values()].sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
+        }catch(err){
+          allRows=[];
+          setStatus(`Failed to load channels: ${err}`, true);
+        }
         availActive.clear();
         availAnchor=-1;
         renderAllTransfer();
       };
 
-      const sourceSelectHtml=sourceOptions.length>1
-        ? `<div id="cm_source_wrap" style="margin-bottom:6px;"><label>Source</label><select id="cm_source_sel">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${o.label}</option>`).join("")}</select></div>`
-        : "";
+      const sourceSelectHtml=`<div id="cm_source_wrap" style="margin-bottom:8px;"><label>Source</label><select id="cm_source_sel">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div>`;
 
-      openModal("Channels",`
+      openModal("Channels > Add",`
         <div class="modalBodyPad">
           ${sourceSelectHtml}
           <div class="channelTransferGrid">
@@ -8162,19 +9392,24 @@
             <div class="scalePickerCol"><label>Selected</label><div class="modalList" id="cm_sel"></div></div>
           </div>
         </div>
-        <div class="modalActions">
-          <button id="modalCancelBtn" type="button">Cancel</button>
-          <button id="modalSaveCloseBtn" type="button">Apply</button>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Apply">${modalCheckIconHtml()}</button>
         </div>
       `, async()=>{
-        addedChannelIds = new Set(selected);
-        selectedChannelIds = new Set(selected);
+        const next=new Set();
+        selected.forEach((id)=>{
+          if(isAliasedChannelMember(id)) return;
+          next.add(id);
+        });
+        addedChannelIds.forEach((k)=>{ if(isCalculatedChannelKey(k) || isAliasChannelKey(k)) next.add(k); });
+        addedChannelIds = next;
+        selectedChannelIds = new Set(next);
         rebuildChannelUnitMap();
         renderAll();
         saveState();
-        setStatus(`Selected ${selected.size} channel(s).`);
+        setStatus(`Selected ${[...next].filter((k)=>!isCalculatedChannelKey(k) && !isAliasChannelKey(k)).length} channel key(s).`);
         return true;
-      }, WF_CHANNELS);
+      }, { ...WF_CHANNELS, closable:true, titleHtml:channelsWindowTitleHtml("Add") });
 
       const srcSel=byId("cm_source_sel");
       if(srcSel){
@@ -8186,13 +9421,27 @@
 
       byId("cm_to_sel").onclick=()=>{
         const toMove=[...availActive];
-        toMove.forEach((id)=>selected.add(id));
+        const skipped=[];
+        toMove.forEach((id)=>{
+          if(isAliasedChannelMember(id)){ skipped.push(id); return; }
+          selected.add(id);
+        });
         availActive.clear();
         renderAllTransfer();
+        if(skipped.length){
+          const tip=skipped.slice(0,3).map((id)=>{
+            const hits=aliasesContainingChannel(id);
+            return `${id}${hits[0]?` → ${hits[0].name}`:""}`;
+          }).join(", ");
+          setStatus(`${skipped.length} channel(s) already in an alias and were not added${tip?`: ${tip}`:""}.`);
+        }
       };
       byId("cm_to_avail").onclick=()=>{
         const toMove=[...selActive];
-        toMove.forEach((id)=>selected.delete(id));
+        toMove.forEach((id)=>{
+          if(isCalculatedChannelKey(id) || isAliasChannelKey(id)) return;
+          selected.delete(id);
+        });
         selActive.clear();
         renderAllTransfer();
       };
@@ -8200,31 +9449,77 @@
       await loadActiveSourceChannels();
     }
     function selectedCalculatedChannels(){
-      const dbIds=new Set(effectiveSelectedDatabaseIds());
-      const channelIds=new Set(effectiveSelectedChannelIds());
-      return (state.calculatedChannels||[]).filter((c)=>{
-        const id=`${c.dbId}|${c.name}`;
-        return channelIds.has(id)&&dbIds.has(c.dbId);
-      });
+      const channelKeys=new Set(effectiveSelectedChannelIds());
+      return (state.calculatedChannels||[]).filter((c)=>channelKeys.has(c.name));
     }
     function parseChannelRef(id, fallbackDbId){
       const parts=String(id||"").split("|");
       if(parts.length>=2) return { dbId:parts[0], name:parts.slice(1).join("|") };
       return { dbId:fallbackDbId||"", name:parts[0]||"" };
     }
-    function rawChannelNamesForDb(dbId, channelIdsAll, selectedCalcs){
+    function rawChannelNamesForDb(dbId, channelKeysAll, selectedCalcs){
       const names=new Set();
-      channelIdsAll.filter((c)=>c.startsWith(`${dbId}|`)).forEach((c)=>{
-        const name=c.split("|").slice(1).join("|");
-        if(!selectedCalcs.some((calc)=>calc.dbId===dbId && calc.name===name)) names.add(name);
+      const available=new Set(
+        channelsData
+          .filter((c)=>c.__dbId===dbId && !c.__isCalculated)
+          .map((c)=>c.channel_name)
+      );
+      const calcNames=new Set((selectedCalcs||[]).map((c)=>c.name));
+      (channelKeysAll||[]).forEach((key)=>{
+        const name=channelKeyFromId(key);
+        if(!name || calcNames.has(name)) return;
+        const alias=findAliasByKey(name);
+        if(alias){
+          aliasMemberNames(alias).forEach((member)=>{
+            if(available.size && !available.has(member)) return;
+            names.add(member);
+          });
+          return;
+        }
+        if(available.size && !available.has(name)) return;
+        names.add(name);
       });
       selectedCalcs.forEach((calc)=>{
-        (calc.channels||[]).forEach((id)=>{
-          const ref=parseChannelRef(id, calc.dbId);
-          if(ref.dbId===dbId && ref.name) names.add(ref.name);
-        });
+        const deps=calcDepNames(calc);
+        if(calc.kind==="rolling"){
+          if(deps[0] && (!available.size || available.has(deps[0]))) names.add(deps[0]);
+          return;
+        }
+        if(calc.kind==="formula"){
+          if(deps.length<1) return;
+          if(available.size && !deps.every((n)=>available.has(n))) return;
+          deps.forEach((n)=>names.add(n));
+        }
       });
       return [...names];
+    }
+    function displayChannelForRawName(channelName, selectedKeys){
+      const keys=[...(selectedKeys||[])].map((k)=>channelKeyFromId(k)).filter(Boolean);
+      if(keys.includes(channelName) && !isAliasChannelKey(channelName)) return channelDisplayName(channelName);
+      for(const key of keys){
+        const alias=findAliasByKey(key);
+        if(alias && aliasMemberNames(alias).includes(channelName)) return channelDisplayName(alias.name);
+      }
+      return channelDisplayName(channelName);
+    }
+    function rawRowMatchesSelectedKeys(row, selectedKeys, selectedCalcs){
+      const channelName=row?.channel_name;
+      if(!channelName) return false;
+      if((selectedCalcs||[]).some((c)=>c.name===channelName)) return false;
+      const keys=[...(selectedKeys||[])].map((k)=>channelKeyFromId(k)).filter(Boolean);
+      for(const key of keys){
+        if(isCalculatedChannelKey(key)) continue;
+        if(key===channelName) return true;
+        const alias=findAliasByKey(key);
+        if(alias && aliasMemberNames(alias).includes(channelName)) return true;
+      }
+      return false;
+    }
+    function stampAliasDisplayNames(rows, selectedKeys){
+      (rows||[]).forEach((r)=>{
+        r.__displayChannel=displayChannelForRawName(r.channel_name, selectedKeys);
+      });
+      return rows;
     }
     function rollingCalc(op, arr){
       if(!arr.length) return null;
@@ -8242,62 +9537,69 @@
     async function computeCalculatedRows(baseRows){
       const out=[];
       const selectedCalcs=selectedCalculatedChannels();
+      const dbIds=effectiveSelectedDatabaseIds();
       let workCounter=0;
       for(const calc of selectedCalcs){
-        const calcLegend=legendSourceForCalc(calc);
-        if(calc.kind==="rolling"){
-          const srcRef=parseChannelRef(calc.channels&&calc.channels[0], calc.dbId);
-          const srcRows=baseRows.filter((r)=>r.__dbId===srcRef.dbId && r.channel_name===srcRef.name);
-          const byTest=new Map();
-          srcRows.forEach((r)=>{
-            const k=`${r.test_run_id}|${r.test_run_code}`;
-            if(!byTest.has(k)) byTest.set(k,[]);
-            byTest.get(k).push(r);
-          });
-          for(const rows of byTest.values()){
-            rows.sort((a,b)=>a.__ts-b.__ts);
-            const w=Math.max(1, Number(calc.window||1));
-            for(let i=0;i<rows.length;i++){
-              const vals=rows.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x));
-              const v=rollingCalc(calc.op, vals);
+        const depNames=calcDepNames(calc);
+        for(const dbId of dbIds){
+          const calcLegend=legendSourceForCalc(calc, dbId);
+          if(calc.kind==="rolling"){
+            const srcName=depNames[0];
+            if(!srcName) continue;
+            const srcRows=baseRows.filter((r)=>r.__dbId===dbId && r.channel_name===srcName);
+            if(!srcRows.length) continue;
+            const byTest=new Map();
+            srcRows.forEach((r)=>{
+              const k=`${r.test_run_id}|${r.test_run_code}`;
+              if(!byTest.has(k)) byTest.set(k,[]);
+              byTest.get(k).push(r);
+            });
+            for(const rows of byTest.values()){
+              rows.sort((a,b)=>a.__ts-b.__ts);
+              const w=Math.max(1, Number(calc.window||1));
+              for(let i=0;i<rows.length;i++){
+                const vals=rows.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x));
+                const v=rollingCalc(calc.op, vals);
+                if(v===null||!Number.isFinite(v)) continue;
+                out.push({ test_run_id:rows[i].test_run_id, test_run_code:rows[i].test_run_code, channel_name:calc.name, unit:calc.unit||null, time:rows[i].time, value:Number(v), __dbId:dbId, __ts:rows[i].__ts, __legendSource:calcLegend });
+                workCounter+=1;
+                if(workCounter%2000===0) await nextPaint();
+              }
+            }
+            continue;
+          }
+          if(calc.kind==="formula"){
+            if(depNames.length<1) continue;
+            const hasAll=depNames.every((name)=>baseRows.some((r)=>r.__dbId===dbId && r.channel_name===name));
+            if(!hasAll) continue;
+            const compiled=compileFormula(calc.formula||"", depNames.length);
+            if(!compiled.ok) continue;
+            const byTime=new Map();
+            depNames.forEach((depName, idx)=>{
+              baseRows.filter((r)=>r.__dbId===dbId && r.channel_name===depName).forEach((r)=>{
+                const t=String(r.time);
+                if(!byTime.has(t)) byTime.set(t,{ vals:Array(depNames.length).fill(NaN), sample:r, ts:r.__ts??Date.parse(r.time) });
+                const slot=byTime.get(t);
+                slot.vals[idx]=Number(r.value);
+                if((r.__ts??Date.parse(r.time))<slot.ts) slot.sample=r;
+              });
+            });
+            const sortedTimes=[...byTime.keys()].sort((a,b)=>(byTime.get(a).ts||0)-(byTime.get(b).ts||0));
+            let prevMs=null;
+            const ctx={ dt_s:0, __bpStates:{} };
+            for(const t of sortedTimes){
+              const slot=byTime.get(t);
+              if(slot.vals.some((v)=>!Number.isFinite(v))) continue;
+              const currMs=slot.ts;
+              ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000);
+              prevMs=currMs;
+              let v=null;
+              try{ v=compiled.evalFn(slot.vals, ctx); }catch{ v=null; }
               if(v===null||!Number.isFinite(v)) continue;
-              out.push({ test_run_id:rows[i].test_run_id, test_run_code:rows[i].test_run_code, channel_name:calc.name, unit:calc.unit||null, time:rows[i].time, value:Number(v), __dbId:calc.dbId, __ts:rows[i].__ts, __legendSource:calcLegend });
+              out.push({ test_run_id:slot.sample.test_run_id, test_run_code:slot.sample.test_run_code, channel_name:calc.name, unit:calc.unit||null, time:t, value:Number(v), __dbId:dbId, __ts:slot.ts, __legendSource:calcLegend });
               workCounter+=1;
               if(workCounter%2000===0) await nextPaint();
             }
-          }
-          continue;
-        }
-        if(calc.kind==="formula"){
-          const deps=(calc.channels||[]).map((id)=>parseChannelRef(id, calc.dbId));
-          if(deps.length<2) continue;
-          const compiled=compileFormula(calc.formula||"", deps.length);
-          if(!compiled.ok) continue;
-          const byTime=new Map();
-          deps.forEach((dep, idx)=>{
-            baseRows.filter((r)=>r.__dbId===dep.dbId && r.channel_name===dep.name).forEach((r)=>{
-              const t=String(r.time);
-              if(!byTime.has(t)) byTime.set(t,{ vals:Array(deps.length).fill(NaN), sample:r, ts:r.__ts??Date.parse(r.time) });
-              const slot=byTime.get(t);
-              slot.vals[idx]=Number(r.value);
-              if((r.__ts??Date.parse(r.time))<slot.ts) slot.sample=r;
-            });
-          });
-          const sortedTimes=[...byTime.keys()].sort((a,b)=>(byTime.get(a).ts||0)-(byTime.get(b).ts||0));
-          let prevMs=null;
-          const ctx={ dt_s:0, __bpStates:{} };
-          for(const t of sortedTimes){
-            const slot=byTime.get(t);
-            if(slot.vals.some((v)=>!Number.isFinite(v))) continue;
-            const currMs=slot.ts;
-            ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000);
-            prevMs=currMs;
-            let v=null;
-            try{ v=compiled.evalFn(slot.vals, ctx); }catch{ v=null; }
-            if(v===null||!Number.isFinite(v)) continue;
-            out.push({ test_run_id:slot.sample.test_run_id, test_run_code:slot.sample.test_run_code, channel_name:calc.name, unit:calc.unit||null, time:t, value:Number(v), __dbId:calc.dbId, __ts:slot.ts, __legendSource:calcLegend });
-            workCounter+=1;
-            if(workCounter%2000===0) await nextPaint();
           }
         }
       }
@@ -8399,10 +9701,15 @@
       }else{
         const calcNames=new Set(selectedCalcs.map((c)=>c.name));
         calcRows=rowsAll.filter((r)=>calcNames.has(r.channel_name));
+        const calcByName=new Map(selectedCalcs.map((c)=>[c.name,c]));
+        calcRows.forEach((r)=>{
+          const calc=calcByName.get(r.channel_name);
+          if(calc) r.__legendSource=legendSourceForCalc(calc, r.__dbId);
+        });
       }
       // Empty channel selection means "all added channels", already resolved into channelIdsAll.
-      const channelIdSet = new Set(channelIdsAll);
-      const selectedNonCalc=rowsAll.filter((r)=>channelIdSet.has(`${r.__dbId}|${r.channel_name}`));
+      const selectedNonCalc=rowsAll.filter((r)=>rawRowMatchesSelectedKeys(r, channelIdsAll, selectedCalcs));
+      stampAliasDisplayNames(selectedNonCalc, channelIdsAll);
       let finalRows=applyMasks(concatRows(selectedNonCalc, calcRows));
       applyRowUnitsInPlace(finalRows);
       finalRows.forEach(r => { if(!Number.isFinite(r.__ts)) r.__ts = parseRowTimeMs(r); });
@@ -8918,10 +10225,17 @@
       if(preferences.useServerCalc!==false){
         const calcNames=new Set(selectedCalcs.map((c)=>c.name));
         calcRows=rowsAll.filter((r)=>calcNames.has(r.channel_name));
+        const calcByName=new Map(selectedCalcs.map((c)=>[c.name,c]));
+        calcRows.forEach((r)=>{
+          const calc=calcByName.get(r.channel_name);
+          if(calc) r.__legendSource=legendSourceForCalc(calc, r.__dbId);
+        });
       }else{
         calcRows=await computeCalculatedRows(rowsAll);
       }
-      const selNonCalc=rowsAll.filter((r)=>selectedChannelIds.has(`${r.__dbId}|${r.channel_name}`) && !selectedCalcs.some((c)=>c.name===r.channel_name));
+      const channelKeys=effectiveSelectedChannelIds();
+      const selNonCalc=rowsAll.filter((r)=>rawRowMatchesSelectedKeys(r, channelKeys, selectedCalcs));
+      stampAliasDisplayNames(selNonCalc, channelKeys);
       const finalRows=applyMasks(concatRows(selNonCalc, calcRows));
       finalRows.forEach(r=>{ if(!Number.isFinite(r.__ts)) r.__ts=parseRowTimeMs(r); });
       if(fetchGen!==zoomDetailFetchGen) return;
@@ -9039,6 +10353,7 @@
 
     async function initialize(){
       loadState();
+      sanitizeAliasedChannelLists();
       // Prefer durable server workspace for files/folders so they survive reloads.
       try{
         const loaded=await loadSourcesWorkspace();
@@ -9102,6 +10417,12 @@
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     });
     byId("addChannelBtn").onclick=showAddChannelsMenu;
+    byId("addCalcChannelBtn")?.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    });
+    byId("addCalcChannelBtn").onclick=showAddCalcChannelsMenu;
     byId("addMaskBtn").addEventListener("mousedown", (e) => {
       e.preventDefault();
       e.stopPropagation();

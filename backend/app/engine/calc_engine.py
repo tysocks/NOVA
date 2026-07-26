@@ -112,36 +112,90 @@ class _BandPassState:
         return st["lp_high"] - st["lp_low"]
 
 
+class _RollingWindowState:
+    """Causal trailing-window rolling stats for formula functions."""
+
+    def __init__(self) -> None:
+        self.bufs: dict[str, list[float]] = {}
+
+    @staticmethod
+    def _reduce(op: str, buf: list[float]) -> float:
+        if not buf:
+            return float("nan")
+        if op in ("mean", "smooth"):
+            return sum(buf) / len(buf)
+        if op == "sum":
+            return sum(buf)
+        if op == "min":
+            return min(buf)
+        if op == "max":
+            return max(buf)
+        if op == "std":
+            m = sum(buf) / len(buf)
+            var = sum((v - m) * (v - m) for v in buf) / len(buf)
+            return math.sqrt(var)
+        return float("nan")
+
+    def apply(self, op: str, x: float, window: int, key: str) -> float:
+        n = max(1, int(window))
+        if not math.isfinite(x):
+            return float("nan")
+        buf = self.bufs.setdefault(key, [])
+        buf.append(float(x))
+        if len(buf) > n:
+            del buf[:-n]
+        return self._reduce(op, buf)
+
+
 class _FormulaEvaluator:
     ALLOWED_NAMES = {
-      "ABS": abs,
-      "SQRT": math.sqrt,
-      "POW": pow,
-      "EXP": math.exp,
-      "LOG": math.log,
-      "LOG10": math.log10,
-      "SIN": math.sin,
-      "COS": math.cos,
-      "TAN": math.tan,
-      "ASIN": math.asin,
-      "ACOS": math.acos,
-      "ATAN": math.atan,
-      "ROUND": round,
-      "FLOOR": math.floor,
-      "CEIL": math.ceil,
-      "MIN": min,
-      "MAX": max,
-      "CLAMP": lambda x, lo, hi: min(max(x, lo), hi),
-  }
+        "ABS": abs,
+        "SQRT": math.sqrt,
+        "POW": pow,
+        "EXP": math.exp,
+        "LOG": math.log,
+        "LOG10": math.log10,
+        "SIN": math.sin,
+        "COS": math.cos,
+        "TAN": math.tan,
+        "ASIN": math.asin,
+        "ACOS": math.acos,
+        "ATAN": math.atan,
+        "ROUND": round,
+        "FLOOR": math.floor,
+        "CEIL": math.ceil,
+        "MIN": min,
+        "MAX": max,
+        "CLAMP": lambda x, lo, hi: min(max(x, lo), hi),
+    }
+    # Formula token -> rolling op name (trailing window of N samples).
+    ROLLING_FUNCS = {
+        "SMOOTH": "smooth",
+        "ROLLING_MEAN": "mean",
+        "ROLLING_SUM": "sum",
+        "ROLLING_MIN": "min",
+        "ROLLING_MAX": "max",
+        "ROLLING_STD": "std",
+    }
 
-    def __init__(self, expr: str, var_count: int, band_pass: _BandPassState) -> None:
+    def __init__(
+        self,
+        expr: str,
+        var_count: int,
+        band_pass: _BandPassState,
+        rolling: _RollingWindowState,
+    ) -> None:
         self.band_pass = band_pass
+        self.rolling = rolling
         self.vars = [chr(ord("A") + i) for i in range(var_count)]
         cleaned = expr.strip()
         if cleaned.startswith("="):
             cleaned = cleaned[1:].strip()
         cleaned = cleaned.upper()
         cleaned = re.sub(r"\bBAND_PASS_FILTER\b", "band_pass_filter", cleaned)
+        # Longer rolling tokens first so ROLLING_MEAN is not partially mishandled.
+        for name in sorted(self.ROLLING_FUNCS.keys(), key=len, reverse=True):
+            cleaned = re.sub(rf"\b{name}\b", f"rolling_{self.ROLLING_FUNCS[name]}", cleaned)
         for name in self.ALLOWED_NAMES:
             cleaned = re.sub(rf"\b{name}\b", f"__{name.lower()}__", cleaned)
         for i, letter in enumerate(self.vars):
@@ -150,13 +204,26 @@ class _FormulaEvaluator:
 
     def eval_row(self, values: list[float], dt_s: float, bp_index: int) -> float | None:
         env: dict[str, Any] = {"v": values, "math": math}
+        call_i = [0]
 
         def band_pass_filter(x: float, low: float, high: float) -> float:
-            return self.band_pass.filter(float(x), float(low), float(high), f"bp{bp_index}", dt_s)
+            call_i[0] += 1
+            return self.band_pass.filter(
+                float(x), float(low), float(high), f"bp{call_i[0]}", dt_s
+            )
+
+        def _rolling_fn(op: str):
+            def fn(x: float, window: float = 1) -> float:
+                call_i[0] += 1
+                return self.rolling.apply(op, float(x), int(window), f"{op}{call_i[0]}")
+
+            return fn
 
         for name, fn in self.ALLOWED_NAMES.items():
             env[f"__{name.lower()}__"] = fn
         env["band_pass_filter"] = band_pass_filter
+        for op in set(self.ROLLING_FUNCS.values()):
+            env[f"rolling_{op}"] = _rolling_fn(op)
         try:
             result = eval(self.code, {"__builtins__": {}}, env)
             val = float(result)
@@ -166,7 +233,7 @@ class _FormulaEvaluator:
 
 
 def _eval_formula(base: list[TimeSeriesPoint], spec: CalculatedChannelSpec) -> list[TimeSeriesPoint]:
-    if len(spec.channels or []) < 2 or not spec.formula:
+    if len(spec.channels or []) < 1 or not spec.formula:
         return []
 
     dep_names = []
@@ -190,7 +257,9 @@ def _eval_formula(base: list[TimeSeriesPoint], spec: CalculatedChannelSpec) -> l
                 slot["ts"] = ts
 
     try:
-        evaluator = _FormulaEvaluator(spec.formula, len(dep_names), _BandPassState())
+        evaluator = _FormulaEvaluator(
+            spec.formula, len(dep_names), _BandPassState(), _RollingWindowState()
+        )
     except Exception as exc:
         raise ValueError(f"Invalid formula: {exc}") from exc
 
