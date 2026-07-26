@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 import uuid
 
-from fastapi import Body, FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, Response
 
 from .engine.arrow_codec import arrow_ipc_to_points, _time_to_epoch_ms
@@ -32,7 +32,7 @@ from .services.timeseries import (
     list_test_tables,
     list_tests,
 )
-from .services.file_sources import file_channels, file_tests, file_timeseries
+from .services.file_sources import detect_source_type, file_channels, file_tests, file_timeseries
 from .services.unit_library import clean_unit_library_rows, default_unit_library_rows
 from .services.query_router import resolve_overlay_targets
 from .config import settings
@@ -49,13 +49,14 @@ _LEGACY_TS_HEADERS = {
 def _mark_legacy_timeseries(response: Response) -> None:
     for key, value in _LEGACY_TS_HEADERS.items():
         response.headers[key] = value
+
+
 STATIC_DIR = Path(__file__).resolve().parent / "static"
-UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 APPEARANCE_FILE = Path(__file__).resolve().parents[1] / ".nova_appearance.json"
 DATABASE_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_database_library.json"
 UNIT_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_unit_library.json"
 CONFIG_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_config_library.json"
+SOURCES_WORKSPACE_FILE = Path(__file__).resolve().parents[1] / ".nova_sources_workspace.json"
 
 
 @app.get("/", include_in_schema=False)
@@ -95,6 +96,36 @@ def save_database_library(payload: dict = Body(...)) -> dict:
     cleaned = _clean_database_library_rows(rows)
     _write_database_library_rows(cleaned)
     return {"ok": True, "count": len(cleaned)}
+
+
+@app.get("/api/sources-workspace")
+def get_sources_workspace() -> dict:
+    if not SOURCES_WORKSPACE_FILE.exists():
+        return {}
+    try:
+        data = json.loads(SOURCES_WORKSPACE_FILE.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+@app.post("/api/sources-workspace")
+def save_sources_workspace(payload: dict = Body(...)) -> dict:
+    if not isinstance(payload, dict):
+        return {"ok": False, "error": "request body must be a JSON object"}
+    # Keep payload compact: drop bulky probe snapshots if present.
+    sources = payload.get("sources")
+    if isinstance(sources, list):
+        cleaned_sources = []
+        for row in sources:
+            if not isinstance(row, dict):
+                continue
+            item = dict(row)
+            item.pop("probe_snapshot", None)
+            cleaned_sources.append(item)
+        payload = {**payload, "sources": cleaned_sources}
+    SOURCES_WORKSPACE_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return {"ok": True}
 
 
 @app.post("/api/database-library/test")
@@ -670,13 +701,91 @@ def file_timeseries_api(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.post("/api/file/upload")
-async def upload_file(file: UploadFile = File(...)) -> dict:
-    safe_name = Path(file.filename or "uploaded.bin").name
-    out_path = UPLOADS_DIR / safe_name
-    content = await file.read()
-    out_path.write_bytes(content)
-    return {"path": str(out_path)}
+@app.post("/api/desktop/pick-folder")
+def pick_folder_dialog() -> dict:
+    """Native folder dialog; returns the absolute folder path (no file copy)."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Folder picker unavailable: {exc}") from exc
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        root.attributes("-topmost", True)
+    except Exception:
+        pass
+    try:
+        chosen = filedialog.askdirectory(title="Select data folder")
+    finally:
+        root.destroy()
+    if not chosen:
+        return {"path": None, "cancelled": True}
+    return {"path": str(Path(chosen).resolve()), "cancelled": False}
+
+
+@app.post("/api/desktop/pick-files")
+def pick_files_dialog() -> dict:
+    """Native multi-file dialog; returns absolute paths (no file copy)."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"File picker unavailable: {exc}") from exc
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        root.attributes("-topmost", True)
+    except Exception:
+        pass
+    filetypes = [
+        ("Data files", "*.csv *.tdms *.h5 *.hdf5 *.parquet *.pq *.arrow *.arrows *.feather"),
+        ("CSV", "*.csv"),
+        ("TDMS", "*.tdms"),
+        ("HDF5", "*.h5 *.hdf5"),
+        ("Parquet", "*.parquet *.pq"),
+        ("Arrow", "*.arrow *.arrows *.feather"),
+        ("All files", "*.*"),
+    ]
+    try:
+        chosen = filedialog.askopenfilenames(title="Select data files", filetypes=filetypes)
+    finally:
+        root.destroy()
+    paths = [str(Path(p).resolve()) for p in (chosen or []) if p]
+    return {"paths": paths, "cancelled": not paths}
+
+
+@app.get("/api/file/scan-folder")
+def scan_folder_files(path: str = Query(..., description="Absolute folder path to scan.")) -> dict:
+    root = Path(path)
+    if not root.exists() or not root.is_dir():
+        raise HTTPException(status_code=400, detail=f"Not a directory: {path}")
+    root = root.resolve()
+    files: list[dict] = []
+    for candidate in root.rglob("*"):
+        if not candidate.is_file():
+            continue
+        try:
+            source_type = detect_source_type(str(candidate))
+        except ValueError:
+            continue
+        rel = candidate.relative_to(root).as_posix()
+        files.append(
+            {
+                "path": str(candidate.resolve()),
+                "name": candidate.name,
+                "relative_path": rel,
+                "source_type": source_type,
+            }
+        )
+    files.sort(key=lambda row: str(row["relative_path"]).lower())
+    parent_name = root.parent.name if root.parent and root.parent != root else ""
+    return {
+        "root": str(root),
+        "root_name": root.name,
+        "parent_name": parent_name,
+        "files": files,
+    }
 
 
 def _load_unit_library_rows() -> list[dict]:

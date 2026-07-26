@@ -11,13 +11,13 @@ __pycache__/
 .env
 backend/.env
 
-# Uploaded and sample runtime files
-backend/uploads/
+# Sample runtime files
 backend/.nova_appearance.json
 backend/.nova_source_defaults.json
 backend/.nova_config_library.json
 backend/.nova_database_library.json
 backend/.nova_unit_library.json
+backend/.nova_sources_workspace.json
 backend/.nova_sessions/
 
 # OS/editor noise

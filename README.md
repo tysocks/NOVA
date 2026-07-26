@@ -190,7 +190,7 @@ Session artifacts live under `backend/.nova_sessions/` (safe to delete to reclai
 - `backend/app/static/index.html`: single-page UI; `static/js/nova-v3.js` v3 query client.
 - `backend/desktop_app.py`: PySide6 desktop launcher with splash screen and backend lifecycle.
 
-Local runtime data (gitignored): `backend/.nova_database_library.json` (PostgreSQL profiles), `backend/.nova_unit_library.json` (unit categories), `backend/.nova_config_library.json`, `backend/.nova_sessions/`, `backend/uploads/`.
+Local runtime data (gitignored): `backend/.nova_database_library.json` (PostgreSQL profiles), `backend/.nova_unit_library.json` (unit categories), `backend/.nova_config_library.json`, `backend/.nova_sessions/`.
 
 ## Install (Fresh Clone)
 
@@ -299,14 +299,16 @@ Example template:
 - `GET /api/file/tests`
 - `GET /api/file/channels`
 - `GET /api/file/timeseries` — **legacy**; uses Parquet when indexed, otherwise slow full-file parse
-- `POST /api/file/upload`
+- `POST /api/desktop/pick-folder` — native folder dialog (absolute path, no copy)
+- `POST /api/desktop/pick-files` — native multi-file dialog (absolute paths, no copy)
+- `GET /api/file/scan-folder` — list supported data files under a folder path
 
 ## Troubleshooting
 
 - If desktop launch fails, run `backend/desktop_app.py` in terminal to see immediate errors.
 - If backend data is empty, verify DB credentials and that required tables exist.
 - If database sources fail to list databases, open **Database Manager**, verify the profile password, click **Save**, then retry **Sources `+` → Database**.
-- If file sources fail, re-upload the file and confirm CSV/TDMS format compatibility.
+- If file sources fail, confirm the original file path still exists and that CSV/TDMS format is compatible.
 - If Chooch is slow on large TDMS/CSV, confirm ingest completed (status bar) and that `.nova_sessions/` contains the artifact.
 - If zoom feels sluggish on fully loaded file data, overview is already at full resolution — detail refetch is skipped automatically; disable **Zoom-in detail refetch** to force-off LOD refetch.
 - To reclaim disk space, delete `backend/.nova_sessions/` (or individual artifact folders). Re-add file sources afterward so NOVA can re-ingest them.
