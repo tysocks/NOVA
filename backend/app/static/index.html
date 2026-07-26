@@ -175,9 +175,158 @@
     .itemMeta{ font-size:0.72rem; color:var(--nova-text-dim); line-height:1.3; }
     /* Form elements */
     label{ display:block; margin:6px 0 4px 0; font-size:0.72rem; color:var(--nova-text-dim); letter-spacing:0.01em; text-transform:none; font-weight:500; }
-    input,select,button{ width:100%; border:1px solid var(--nova-divider); border-radius:4px; background:var(--nova-input-bg); color:var(--nova-text); padding:6px 10px; font-size:0.875rem; outline:none; font-family:inherit; }
-    input:focus,select:focus{ border-color:var(--nova-line); box-shadow:0 0 0 2px rgba(255,255,255,0.06); }
-    html.light-mode input:focus,html.light-mode select:focus{ box-shadow:0 0 0 2px rgba(55,53,47,0.08); }
+    input,select,button{ width:100%; border:1px solid var(--nova-divider); border-radius:4px; background:var(--nova-input-bg); color:var(--nova-text); padding:6px 10px; font-size:0.875rem; outline:none; font-family:inherit; box-sizing:border-box; }
+    input:focus{ border-color:var(--nova-line); box-shadow:0 0 0 2px rgba(255,255,255,0.06); }
+    html.light-mode input:focus{ box-shadow:0 0 0 2px rgba(55,53,47,0.08); }
+    /* Selects must not use focus ring shadows — they expand bottom/right edges and leave whitespace gaps */
+    select:focus,
+    html.light-mode select:focus{
+      border-color:var(--nova-line);
+      box-shadow:none;
+      outline:none;
+    }
+    /* Stable native select — locked size + custom chevron (all dropdowns) */
+    select{
+      -webkit-appearance:none;
+      appearance:none;
+      field-sizing:fixed;
+      background-color:var(--nova-input-bg);
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%23888888' d='M4.2 6.2L8 10l3.8-3.8-.9-.9L8 8.2 5.1 5.3l-.9.9z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:right 10px center;
+      background-size:12px 12px;
+      padding:6px 30px 6px 10px;
+      line-height:1.2;
+      min-width:0;
+      width:100%;
+      max-width:100%;
+      min-height:34px;
+      height:34px;
+      max-height:34px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      vertical-align:top;
+    }
+    .selectLock{
+      display:block;
+      position:relative;
+      width:100%;
+      max-width:100%;
+      min-width:0;
+      height:34px;
+      max-height:34px;
+      overflow:hidden;
+      box-sizing:border-box;
+      border-radius:4px;
+    }
+    .selectLock > select{
+      width:100%;
+      height:34px;
+      max-height:34px;
+    }
+    /* Custom select — native <select> open/resizes in Qt WebEngine; use fixed chrome + floating menu */
+    .novaSelect{
+      position:relative;
+      display:block;
+      width:100%;
+      max-width:100%;
+      min-width:0;
+      height:34px;
+      max-height:34px;
+      box-sizing:border-box;
+    }
+    .novaSelect > select{
+      position:absolute !important;
+      left:0 !important;
+      top:0 !important;
+      width:1px !important;
+      height:1px !important;
+      min-width:0 !important;
+      min-height:0 !important;
+      max-width:1px !important;
+      max-height:1px !important;
+      margin:0 !important;
+      padding:0 !important;
+      opacity:0 !important;
+      border:none !important;
+      outline:none !important;
+      box-shadow:none !important;
+      background:transparent !important;
+      pointer-events:none !important;
+      overflow:hidden !important;
+    }
+    .novaSelectBtn{
+      width:100% !important;
+      min-width:0 !important;
+      height:34px !important;
+      min-height:34px !important;
+      max-height:34px !important;
+      margin:0 !important;
+      box-sizing:border-box !important;
+      border:1px solid var(--nova-divider) !important;
+      border-radius:4px !important;
+      background-color:var(--nova-input-bg) !important;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%23888888' d='M4.2 6.2L8 10l3.8-3.8-.9-.9L8 8.2 5.1 5.3l-.9.9z'/%3E%3C/svg%3E") !important;
+      background-repeat:no-repeat !important;
+      background-position:right 10px center !important;
+      background-size:12px 12px !important;
+      color:var(--nova-text) !important;
+      padding:6px 30px 6px 10px !important;
+      font-size:0.875rem !important;
+      font-family:inherit !important;
+      line-height:1.2 !important;
+      text-align:left !important;
+      overflow:hidden !important;
+      text-overflow:ellipsis !important;
+      white-space:nowrap !important;
+      cursor:pointer !important;
+      box-shadow:none !important;
+      outline:none !important;
+    }
+    .novaSelectBtn:hover{ background-color:var(--nova-hover) !important; }
+    .novaSelectBtn:focus,
+    .novaSelect.open .novaSelectBtn{
+      border-color:var(--nova-line) !important;
+      box-shadow:none !important;
+      outline:none !important;
+    }
+    .novaSelectMenu{
+      position:fixed;
+      z-index:400;
+      min-width:80px;
+      max-width:min(480px, 90vw);
+      max-height:240px;
+      overflow-x:hidden;
+      overflow-y:auto;
+      padding:4px;
+      box-sizing:border-box;
+      background:var(--nova-elevated);
+      border:1px solid var(--nova-divider);
+      border-radius:var(--nova-radius-md);
+      box-shadow:var(--nova-shadow);
+      scrollbar-width:thin;
+    }
+    .novaSelectItem{
+      display:block;
+      width:100%;
+      box-sizing:border-box;
+      border:none;
+      border-radius:4px;
+      background:transparent;
+      color:var(--nova-text);
+      text-align:left;
+      padding:6px 10px;
+      font-size:0.875rem;
+      font-family:inherit;
+      line-height:1.2;
+      cursor:pointer;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .novaSelectItem:hover,
+    .novaSelectItem.active{ background:var(--nova-hover); }
+    .novaSelectItem.selected{ background:var(--nova-active); font-weight:500; }
     button{ cursor:pointer; background:var(--nova-btn-bg); border:1px solid transparent; }
     button:hover{ background:var(--nova-hover); }
     button:active{ background:var(--nova-active); }
@@ -504,7 +653,7 @@
       box-shadow:none;
       outline:none;
     }
-    .formField{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+    .formField{ display:flex; flex-direction:column; gap:5px; min-width:0; overflow:hidden; }
     .formField > label{
       margin:0;
       font-size:0.72rem;
@@ -518,6 +667,7 @@
       box-sizing:border-box;
       min-height:34px;
       height:34px;
+      max-height:34px;
       margin:0;
     }
     .formField > .formNameInput{
@@ -574,11 +724,12 @@
       box-sizing:border-box;
       user-select:none;
     }
-    /* Stable native select — avoid focus/open layout jump */
+    /* Keep formSelectStable as an explicit alias of the global select lock */
     select.formSelectStable,
     .formField > select{
       -webkit-appearance:none;
       appearance:none;
+      field-sizing:fixed;
       background-color:var(--nova-input-bg);
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%23888888' d='M4.2 6.2L8 10l3.8-3.8-.9-.9L8 8.2 5.1 5.3l-.9.9z'/%3E%3C/svg%3E");
       background-repeat:no-repeat;
@@ -588,9 +739,19 @@
       border:1px solid var(--nova-divider);
       border-radius:4px;
       line-height:1.2;
+      width:100%;
+      max-width:100%;
+      min-width:0;
+      min-height:34px;
+      height:34px;
+      max-height:34px;
+      box-sizing:border-box;
+      overflow:hidden;
     }
     select.formSelectStable:focus,
-    .formField > select:focus{
+    .formField > select:focus,
+    html.light-mode select.formSelectStable:focus,
+    html.light-mode .formField > select:focus{
       border-color:var(--nova-line);
       box-shadow:none;
       outline:none;
@@ -690,6 +851,25 @@
       flex:0 0 auto;
     }
     .calcFormulaPad .formField{ gap:5px; }
+    .maskConditionPad{
+      padding:0 16px 10px;
+      box-sizing:border-box;
+      flex:0 0 auto;
+    }
+    .maskConditionPad .formFieldRow{
+      gap:12px;
+    }
+    .maskConditionPad .formFieldRow > .formField{
+      flex:0 0 150px;
+      width:150px;
+      max-width:150px;
+      min-width:0;
+      overflow:hidden;
+    }
+    .maskConditionPad .formField > select{
+      width:100%;
+      max-width:100%;
+    }
     .aliasMemberList .selectRowVar{
       position:static;
       float:none;
@@ -804,7 +984,8 @@
     .appWindow.modalAliasForm .appWindowBody>.modalActions{
       flex:0 0 auto;
     }
-    .appWindow.modalAliasForm .calcFormulaPad{ flex:0 0 auto; }
+    .appWindow.modalAliasForm .calcFormulaPad,
+    .appWindow.modalAliasForm .maskConditionPad{ flex:0 0 auto; }
     .appWindow.modalAliasForm .modalActions.modalActionsIconOnly{ padding:8px 12px; }
     .appWindowBody{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
     .appWindowContent{ flex:1 1 auto; min-height:0; overflow:auto; display:flex; flex-direction:column; }
@@ -873,7 +1054,7 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" d="M1.5 8h2l1.4-4.2L7.2 12l2.1-6.3L11 9.5h3.5"/></svg>
         </button>
         <button type="button" class="railBtn" data-toolbar="masks" title="Masks" aria-label="Masks">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 3.5h11v1.5h-11V3.5zm0 3.75h7v1.5h-7v-1.5zm0 3.75h9v1.5h-9V11zM12.2 8.1l1.1 1.1-2.85 2.85-1.1-1.1L12.2 8.1z"/></svg>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.2 2.5h11.6c.4 0 .6.45.35.75L9.5 8.2v4.05c0 .2-.1.38-.28.48l-2.2 1.2c-.35.2-.77-.06-.77-.48V8.2L1.85 3.25c-.25-.3-.05-.75.35-.75z"/></svg>
         </button>
         <button type="button" class="railBtn" data-toolbar="ranges" title="Ranges" aria-label="Ranges">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 7.25h12v1.5H2v-1.5zm2.25-3.5h1.5v8.5h-1.5v-8.5zm6 0h1.5v8.5h-1.5v-8.5z"/></svg>
@@ -915,7 +1096,12 @@
         <section class="toolbarSection" data-section="masks" id="section_masks">
           <div class="toolbarSectionHeader">
             <h3>Masks</h3>
-            <div class="headerBtns"><button id="addMaskBtn" class="addBtn" type="button" title="Add mask">+</button></div>
+            <div class="headerBtns">
+              <button id="addIndexMaskBtn" class="addBtn" type="button" title="Index mask" aria-label="Index mask">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M8 1.5A6.5 6.5 0 1 0 14.5 8 6.51 6.51 0 0 0 8 1.5zm0 11.6A5.1 5.1 0 1 1 13.1 8 5.11 5.11 0 0 1 8 13.1zM8.7 4.5H7.3v4.05l3.2 1.9.7-1.18-2.5-1.48V4.5z"/></svg>
+              </button>
+              <button id="addMaskBtn" class="addBtn" type="button" title="Channel mask" aria-label="Channel mask">+</button>
+            </div>
           </div>
           <div id="masksList" class="list"></div>
         </section>
@@ -4821,6 +5007,120 @@
       [...root.childNodes].forEach((node)=>{ if(node!==actions) content.appendChild(node); });
       root.insertBefore(content, actions);
     }
+    let activeNovaSelect=null;
+    function closeNovaSelect(wrap){
+      const target=wrap||activeNovaSelect;
+      if(!target) return;
+      const menu=target._novaMenu;
+      if(menu) menu.remove();
+      target._novaMenu=null;
+      target.classList.remove("open");
+      if(activeNovaSelect===target) activeNovaSelect=null;
+    }
+    function closeAllNovaSelects(){ closeNovaSelect(activeNovaSelect); }
+    function novaSelectLabel(sel){
+      const opt=sel.options[sel.selectedIndex];
+      return opt ? String(opt.textContent||opt.value||"") : "";
+    }
+    function syncNovaSelectBtn(wrap){
+      const sel=wrap?.querySelector?.("select");
+      const btn=wrap?.querySelector?.(".novaSelectBtn");
+      if(!sel || !btn) return;
+      btn.textContent=novaSelectLabel(sel)||"\u00a0";
+    }
+    function openNovaSelect(wrap){
+      const sel=wrap.querySelector("select");
+      const btn=wrap.querySelector(".novaSelectBtn");
+      if(!sel || !btn) return;
+      closeAllNovaSelects();
+      const menu=document.createElement("div");
+      menu.className="novaSelectMenu";
+      [...sel.options].forEach((opt, idx)=>{
+        const item=document.createElement("button");
+        item.type="button";
+        item.className="novaSelectItem"+(opt.selected?" selected":"");
+        item.textContent=String(opt.textContent||opt.value||"");
+        item.disabled=Boolean(opt.disabled);
+        item.onmouseenter=()=>menu.querySelectorAll(".novaSelectItem").forEach((el)=>el.classList.toggle("active", el===item));
+        item.onclick=(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          if(opt.disabled) return;
+          const prev=sel.value;
+          sel.selectedIndex=idx;
+          if(sel.value!==prev){
+            sel.dispatchEvent(new Event("change", { bubbles:true }));
+            sel.dispatchEvent(new Event("input", { bubbles:true }));
+          }
+          syncNovaSelectBtn(wrap);
+          closeNovaSelect(wrap);
+        };
+        menu.appendChild(item);
+      });
+      document.body.appendChild(menu);
+      const rect=btn.getBoundingClientRect();
+      const menuW=Math.max(rect.width, 120);
+      let left=rect.left;
+      let top=rect.bottom+4;
+      menu.style.minWidth=`${Math.round(rect.width)}px`;
+      menu.style.width=`${Math.round(menuW)}px`;
+      // Measure then clamp into viewport.
+      const mh=menu.offsetHeight;
+      const mw=menu.offsetWidth;
+      if(top+mh>window.innerHeight-8) top=Math.max(8, rect.top-mh-4);
+      if(left+mw>window.innerWidth-8) left=Math.max(8, window.innerWidth-mw-8);
+      menu.style.left=`${Math.round(left)}px`;
+      menu.style.top=`${Math.round(top)}px`;
+      wrap._novaMenu=menu;
+      wrap.classList.add("open");
+      activeNovaSelect=wrap;
+    }
+    function mountNovaSelect(sel){
+      if(!sel || sel.tagName!=="SELECT" || sel.dataset.novaSelect==="1") return;
+      sel.dataset.novaSelect="1";
+      sel.tabIndex=-1;
+      sel.setAttribute("aria-hidden","true");
+      const parent=sel.parentNode;
+      const wrap=document.createElement("div");
+      wrap.className="novaSelect";
+      if(parent?.classList?.contains("selectLock")){
+        parent.replaceWith(wrap);
+        wrap.appendChild(sel);
+      }else{
+        parent.insertBefore(wrap, sel);
+        wrap.appendChild(sel);
+      }
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.className="novaSelectBtn";
+      btn.tabIndex=0;
+      btn.setAttribute("aria-haspopup","listbox");
+      wrap.appendChild(btn);
+      syncNovaSelectBtn(wrap);
+      btn.onclick=(ev)=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        if(wrap.classList.contains("open")) closeNovaSelect(wrap);
+        else openNovaSelect(wrap);
+      };
+      sel.addEventListener("change",()=>syncNovaSelectBtn(wrap));
+    }
+    function lockSelectGeometry(root){
+      if(!root) return;
+      root.querySelectorAll("select").forEach((sel)=>mountNovaSelect(sel));
+    }
+    document.addEventListener("mousedown",(e)=>{
+      if(!activeNovaSelect) return;
+      const t=e.target;
+      if(activeNovaSelect.contains(t)) return;
+      if(activeNovaSelect._novaMenu && activeNovaSelect._novaMenu.contains(t)) return;
+      closeAllNovaSelects();
+    });
+    document.addEventListener("keydown",(e)=>{
+      if(e.key==="Escape") closeAllNovaSelects();
+    });
+    window.addEventListener("resize", closeAllNovaSelects);
+    window.addEventListener("scroll", closeAllNovaSelects, true);
     function openAppWindow(title,bodyHtml,saveFn,layoutOpts){
       const layer=byId("appWindowLayer");
       const dialogId=crypto.randomUUID();
@@ -4857,6 +5157,7 @@
         el,
         root,
         close:()=>{
+          closeAllNovaSelects();
           if(entry._cleanupDrag) entry._cleanupDrag();
           removeAppWindowEntry(dialogId);
           unregisterDialogClose(entry.close);
@@ -4878,6 +5179,17 @@
       el.querySelectorAll("[title]").forEach((node)=>node.removeAttribute("title"));
       bringAppWindowToFront(el);
       layer.appendChild(el);
+      lockSelectGeometry(el);
+      if(sizeKey==="modalAliasForm"){
+        requestAnimationFrame(()=>{
+          if(!el.isConnected) return;
+          const h=Math.ceil(el.getBoundingClientRect().height);
+          if(h>0){
+            el.style.height=`${h}px`;
+            el.style.minHeight=`${h}px`;
+          }
+        });
+      }
       return entry;
     }
     function setModalLayout(sizeClass, compact, modalEl){
@@ -4941,6 +5253,7 @@
       setModalLayout(sizeClass, compact);
       byId("modalCloseBtn").onclick = closeModal;
       wireModalActions(byId("modalBody"), saveFn);
+      lockSelectGeometry(byId("modalBody"));
       for(let i=dialogCloseStack.length-1;i>=0;i-=1){
         if(dialogCloseStack[i]?.backdrop) dialogCloseStack.splice(i,1);
       }
@@ -6034,33 +6347,11 @@
       showAddChannelWiseModal();
     }
     function showMaskAddMenu(x,y){
-      const m=byId("maskAddMenu");
-      m.innerHTML=`<div class="miniMenuItem" data-t="source">Add mask from channel/time</div><div class="miniMenuItem" data-t="calc">Calculated mask...</div>`;
-      m.style.left=`${x}px`;
-      m.style.top=`${y}px`;
-      m.style.display="block";
-      m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{
-        const t=el.getAttribute("data-t");
-        const rect=el.getBoundingClientRect();
-        hideMenus();
-        if(t==="source") showAddMaskModal();
-        if(t==="calc") showCalculatedMaskPicker(rect);
-      });
+      // Legacy submenu removed — + opens Create directly.
+      openMaskEditorModal({ mode:"create" });
     }
     function showCalculatedMaskPicker(anchorRect){
-      const m=byId("maskAddMenu");
-      m.innerHTML=`<div class="miniMenuItem" data-t="rolling">Rolling calculation</div><div class="miniMenuItem" data-t="formula">Channel-wise calculation</div>`;
-      const x=anchorRect?.left ?? 80;
-      const y=(anchorRect?.bottom ?? 80)+4;
-      m.style.left=`${x}px`;
-      m.style.top=`${y}px`;
-      m.style.display="block";
-      m.querySelectorAll(".miniMenuItem").forEach((el)=>el.onclick=()=>{
-        const t=el.getAttribute("data-t");
-        hideMenus();
-        if(t==="rolling") showAddRollingMaskModal();
-        if(t==="formula") showAddChannelWiseMaskModal();
-      });
+      openMaskEditorModal({ mode:"create" });
     }
     document.addEventListener("click", (e) => {
       const menu = byId("sourceAddMenu");
@@ -6070,10 +6361,11 @@
       const addCalcChannelBtn = byId("addCalcChannelBtn");
       const maskMenu = byId("maskAddMenu");
       const addMaskBtn = byId("addMaskBtn");
+      const addIndexMaskBtn = byId("addIndexMaskBtn");
       const ctxMenu=byId("contextMenu");
       if(ctxMenu&&ctxMenu.contains(e.target)) return;
       if(e.target.closest&&e.target.closest(".cfgMenuBtn")) return;
-      if (menu.contains(e.target) || addBtn.contains(e.target) || channelMenu.contains(e.target) || addChannelBtn.contains(e.target) || (addCalcChannelBtn&&addCalcChannelBtn.contains(e.target)) || maskMenu.contains(e.target) || addMaskBtn.contains(e.target)) return;
+      if (menu.contains(e.target) || addBtn.contains(e.target) || channelMenu.contains(e.target) || addChannelBtn.contains(e.target) || (addCalcChannelBtn&&addCalcChannelBtn.contains(e.target)) || maskMenu.contains(e.target) || addMaskBtn.contains(e.target) || (addIndexMaskBtn&&addIndexMaskBtn.contains(e.target))) return;
       hideMenus();
     });
     const PLOTS_KEY = "nova.plots.v1";
@@ -7009,13 +7301,14 @@
             return;
           }
           if(kind==="mask"){
-            menu.unshift({label:"Edit mask",action:()=>editMask(it.id)});
+            menu.unshift({label:"Edit",action:()=>editMask(it.id)});
           }
           showContextMenu(ev.clientX,ev.clientY,menu);
         };
         row.ondblclick=()=>{
           if(kind==="source") editSource(it.id);
           if(kind==="channel") editChannel(it.id);
+          if(kind==="mask") editMask(it.id);
         };
         root.appendChild(row);
       });
@@ -7927,11 +8220,7 @@
         "masksList",
         (state.masks||[]).map((m)=>({
           id:m.id,
-          primary: m.kind==="rolling"
-            ? `rolling(${m.sourceChannel.split("|")[1]}, ${m.rollingOp}, w=${m.window}) ${m.op}${(m.op==="between"||m.op==="outside")?` ${m.valueA}..${m.valueB}`:` ${m.valueA}`}`
-            : m.kind==="formula"
-              ? `formula(${(m.channels||[]).map((ch)=>ch.split("|")[1]).join(",")}) ${m.op}${(m.op==="between"||m.op==="outside")?` ${m.valueA}..${m.valueB}`:` ${m.valueA}`}`
-              : `${m.channels.map((ch)=>ch==="__time__"?"time":ch.split("|")[1]).join(", ")} ${m.op}${(m.op==="between"||m.op==="outside")?` ${m.valueA}..${m.valueB}`:` ${m.valueA}`}`,
+          primary: maskDisplayName(m),
         })),
         selectedMaskIds,
         "mask",
@@ -8191,7 +8480,11 @@
           if(!compiled.ok) return;
           const byTime=new Map();
           deps.forEach((dep, idx)=>{
-            rows.filter((r)=>r.__dbId===dep.dbId && r.channel_name===dep.name).forEach((r)=>{
+            rows.filter((r)=>{
+              if(r.channel_name!==dep.name) return false;
+              if(dep.dbId && r.__dbId!==dep.dbId) return false;
+              return true;
+            }).forEach((r)=>{
               const t=String(r.time);
               const k=`${r.__dbId}|${r.test_run_id}|${t}`;
               if(!byTime.has(t)) byTime.set(t,{ vals:Array(deps.length).fill(NaN), keys:new Set(), ts:r.__ts??Date.parse(r.time) });
@@ -8248,43 +8541,280 @@
       });
       return kept;
     }
-    async function showAddMaskModal(){
-      if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; }
-      await refreshCatalogsForSelections();
-      const rows=[{id:"__time__",primary:"time",meta:"Uses UTC in Absolute mode, seconds from t0 in relative modes"}, ...channelsData.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`DB ${c.__dbId.slice(0,8)} | unit ${c.unit||"unitless"}`}))];
-      const chosen=new Set();
-      openModal("Add Mask",`${searchableRowsHtml("mm",rows,chosen)}<div class="maskFormPad"><label>Condition</label><select id="m_mask_op"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select><label id="m_mask_a_label">Value A</label><input id="m_mask_a" type="number" step="any" placeholder="e.g. 0" /><div id="m_mask_b_wrap" style="display:none;"><label id="m_mask_b_label">Value B</label><input id="m_mask_b" type="number" step="any" placeholder="e.g. 100" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(!channels.length){ setStatus("Select at least one channel for the mask.",true); return false; } const op=byId("m_mask_op").value; const isTimeMask=channels.every((ch)=>ch==="__time__"); const rawA=byId("m_mask_a").value.trim(); const rawB=byId("m_mask_b").value.trim(); const needsB=maskOpNeedsTwoValues(op); const parsedA=isTimeMask && plotUsesDateAxis(latestRows) ? parseUtcInput(rawA) : Number(rawA); const parsedB=isTimeMask && plotUsesDateAxis(latestRows) ? parseUtcInput(rawB) : Number(rawB); if(!Number.isFinite(parsedA)){ setStatus(isTimeMask&&plotUsesDateAxis(latestRows)?"Value A must be valid UTC time.":"Value A is required.",true); return false; } if(needsB && !Number.isFinite(parsedB)){ setStatus(isTimeMask&&plotUsesDateAxis(latestRows)?"Value B must be valid UTC time.":"Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), channels, op, valueA:rawA, valueB:needsB?rawB:null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Mask added."); return true; });
-      bindSearchableModal("mm",chosen);
-      const opSel=byId("m_mask_op"), bWrap=byId("m_mask_b_wrap");
-      const aInput=byId("m_mask_a"), bInput=byId("m_mask_b"), aLabel=byId("m_mask_a_label"), bLabel=byId("m_mask_b_label");
-      const refreshMaskInputs=()=>{ const isTime=[...chosen].every((ch)=>ch==="__time__")&&chosen.size>0; const absoluteMode=plotUsesDateAxis(latestRows); bWrap.style.display=maskOpNeedsTwoValues(opSel.value)?"block":"none"; if(isTime&&absoluteMode){ aInput.type="datetime-local"; bInput.type="datetime-local"; aInput.placeholder=""; bInput.placeholder=""; aLabel.textContent="UTC Time A"; bLabel.textContent="UTC Time B"; } else if(isTime){ aInput.type="number"; bInput.type="number"; aInput.step="any"; bInput.step="any"; aInput.placeholder="seconds from t0 (e.g. 0)"; bInput.placeholder="seconds from t0 (e.g. 30)"; aLabel.textContent="t0 Seconds A"; bLabel.textContent="t0 Seconds B"; } else { aInput.type="number"; bInput.type="number"; aInput.step="any"; bInput.step="any"; aInput.placeholder="e.g. 0"; bInput.placeholder="e.g. 100"; aLabel.textContent="Value A"; bLabel.textContent="Value B"; } };
-      opSel.onchange=refreshMaskInputs;
-      const mmList=byId("mm_list");
-      if(mmList) mmList.addEventListener("click",()=>setTimeout(refreshMaskInputs,0));
-      refreshMaskInputs();
+    function maskDepNames(mask){
+      return [...new Set((mask?.channels||[]).map((id)=>channelKeyFromId(id)).filter((n)=>n && n!=="__time__"))];
     }
-    async function showAddRollingMaskModal(){
-      const sourceChannels=await ensureCalcSourceChannelsLoaded();
-      if(!sourceChannels) return;
-      const options=rollingSourceChannelOptions(sourceChannels);
-      openModal("Rolling Mask Calculation",`<div class="modalGrid"><div style="grid-column:1 / -1;"><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean">mean</option><option value="sum">sum</option><option value="min">min</option><option value="max">max</option><option value="std">std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="10" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" /></div><div id="m_mask_val_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const sourceChannel=byId("m_mask_src").value; const dbId=sourceChannel.split("|")[0]; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"rolling", dbId, sourceChannel, rollingOp, window, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Rolling mask added."); return true; });
-      const cond=byId("m_mask_cond"), wrap=byId("m_mask_val_b_wrap");
-      cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
+    function maskConditionSummary(m){
+      if(maskOpNeedsTwoValues(m.op)) return `${m.op} ${m.valueA}..${m.valueB}`;
+      return `${m.op} ${m.valueA}`;
     }
-    async function showAddChannelWiseMaskModal(){
-      const sourceChannels=await ensureCalcSourceChannelsLoaded();
-      if(!sourceChannels) return;
-      if(sourceChannels.length<2){ setStatus("Need at least two source channels for channel-wise mask.",true); return; }
-      const rows=calcChannelPickerRows(sourceChannels);
-      const chosen=new Set();
-      openModal("Channel Wise Mask Calculation",`${searchableRowsHtml("mfm",rows,chosen)}<div class="maskFormPad"><label>Formula</label><input id="m_mask_formula" type="text" placeholder="A + B" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=">=</option><option value=">">></option><option value="<"><</option><option value="!=">!=</option><option value="between">between</option><option value="outside">outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" /><div id="m_mask_formula_b_wrap" style="display:none;"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } const dbId=channels[0].split("|")[0]; const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } const mask={ id:crypto.randomUUID(), kind:"formula", dbId, channels, formula:compiled.expr, op, valueA:String(valueA), valueB:needsB?String(valueB):null }; state.masks.push(mask); selectedMaskIds.add(mask.id); renderAll(); saveState(); setStatus("Channel-wise mask added."); return true; });
-      bindSearchableModal("mfm",chosen);
-      const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); byId("m_mask_formula_hint").textContent=ordered.map((id,i)=>`${letters[i]}=${sourceLabelForDbId(id.split("|")[0])}/${id.split("|")[1]}`).join(" | ")||"Select channels to map A, B, C..."; };
-      const list=byId("mfm_list");
-      if(list) list.addEventListener("click",()=>setTimeout(refreshHint,0));
-      refreshHint();
-      const cond=byId("m_mask_formula_cond"), wrap=byId("m_mask_formula_b_wrap");
-      cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
+    function maskDisplayName(m){
+      if(m?.name) return String(m.name);
+      if(m?.kind==="rolling"){
+        const ch=(m.sourceChannel||"").includes("|") ? m.sourceChannel.split("|").slice(1).join("|") : (m.sourceChannel||"?");
+        return `rolling(${ch}, ${m.rollingOp}, w=${m.window}) ${maskConditionSummary(m)}`;
+      }
+      if(m?.kind==="formula"){
+        const chs=(m.channels||[]).map((ch)=>channelKeyFromId(ch)).filter(Boolean).join(",");
+        return `formula(${chs}) ${maskConditionSummary(m)}`;
+      }
+      const chs=(m?.channels||[]).map((ch)=>ch==="__time__"?"time":channelKeyFromId(ch)).join(", ");
+      return `${chs} ${maskConditionSummary(m)}`;
+    }
+    function nextMaskName(base, excludeName){
+      const stem=(base||"mask").trim()||"mask";
+      let name=stem;
+      let n=1;
+      const existing=new Set();
+      (state.masks||[]).forEach((m)=>{ if(m.name && m.name!==excludeName) existing.add(m.name); });
+      while(existing.has(name)){ n+=1; name=`${stem}_${n}`; }
+      return name;
+    }
+    function maskConditionOptionsHtml(selected=""){
+      return ["=",">","<","!=","between","outside"].map((op)=>`<option value="${escAttr(op)}" ${selected===op?"selected":""}>${escAttr(op)}</option>`).join("");
+    }
+    function masksWindowTitleHtml(...leaves){
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.2 2.5h11.6c.4 0 .6.45.35.75L9.5 8.2v4.05c0 .2-.1.38-.28.48l-2.2 1.2c-.35.2-.77-.06-.77-.48V8.2L1.85 3.25c-.25-.3-.05-.75.35-.75z"/></svg></span>`;
+      const sep=`<span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span>`;
+      const parts=[`<span>Masks</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${leaf}</span>`));
+      return `${icon}${parts.join("")}`;
+    }
+    function bindMaskConditionRow(selectedOp, { timeMode=false }={}){
+      const opSel=byId("m_mask_op");
+      const bWrap=byId("m_mask_b_wrap");
+      const aLabel=byId("m_mask_a_label");
+      const bLabel=byId("m_mask_b_label");
+      const aInput=byId("m_mask_a");
+      const bInput=byId("m_mask_b");
+      if(!opSel) return;
+      const refresh=()=>{
+        const two=maskOpNeedsTwoValues(opSel.value);
+        if(bWrap) bWrap.style.display=two?"":"none";
+        if(timeMode){
+          const absolute=plotUsesDateAxis(latestRows);
+          if(aInput && bInput){
+            if(absolute){
+              aInput.type="datetime-local";
+              bInput.type="datetime-local";
+              aInput.removeAttribute("step");
+              bInput.removeAttribute("step");
+              aInput.placeholder="";
+              bInput.placeholder="";
+            }else{
+              aInput.type="number";
+              bInput.type="number";
+              aInput.step="any";
+              bInput.step="any";
+              aInput.placeholder="seconds from t0";
+              bInput.placeholder="seconds from t0";
+            }
+          }
+          if(aLabel) aLabel.textContent=absolute ? (two?"Start":"Time") : (two?"Min (s)":"Value (s)");
+          if(bLabel) bLabel.textContent=absolute ? "End" : "Max (s)";
+          return;
+        }
+        if(aInput){ aInput.type="number"; aInput.step="any"; aInput.placeholder="e.g. 0"; }
+        if(bInput){ bInput.type="number"; bInput.step="any"; bInput.placeholder="e.g. 100"; }
+        if(aLabel) aLabel.textContent=two?"Min":"Value";
+        if(bLabel) bLabel.textContent="Max";
+      };
+      if(selectedOp) opSel.value=selectedOp;
+      opSel.onchange=()=>{
+        refresh();
+        const win=opSel.closest(".appWindow");
+        if(win) lockSelectGeometry(win);
+      };
+      refresh();
+    }
+    function maskConditionFieldsHtml({ opCurrent="=", valueA="", valueB="", twoVals=false }={}){
+      return `<div class="maskConditionPad">
+          <div class="formFieldRow">
+            <div class="formField">
+              <label>Condition</label>
+              <div class="selectLock"><select id="m_mask_op" class="formSelectStable">${maskConditionOptionsHtml(opCurrent)}</select></div>
+            </div>
+            <div class="formField">
+              <label id="m_mask_a_label">${twoVals?"Min":"Value"}</label>
+              <input id="m_mask_a" type="number" step="any" value="${escAttr(valueA)}" placeholder="e.g. 0" />
+            </div>
+            <div class="formField" id="m_mask_b_wrap" style="display:${twoVals?"":"none"};">
+              <label id="m_mask_b_label">Max</label>
+              <input id="m_mask_b" type="number" step="any" value="${escAttr(valueB)}" placeholder="e.g. 100" />
+            </div>
+          </div>
+        </div>`;
+    }
+    function isIndexMask(mask){
+      if(!mask) return false;
+      if(mask.kind==="index") return true;
+      if(mask.kind==="formula" || mask.kind==="rolling") return false;
+      const chs=mask.channels||[];
+      return chs.length===1 && chs[0]==="__time__";
+    }
+    function openMaskEditorModal({ mode, mask=null }){
+      const isEdit=mode==="edit";
+      const leaf="Channel Mask";
+      const deps=isEdit ? maskDepNames(mask) : [];
+      const chosen=new Set(deps);
+      const defaultName=isEdit ? (mask?.name || "mask") : "mask";
+      const formulaCurrent=isEdit ? String(mask?.formula || (deps.length ? "A" : "")) : "";
+      const opCurrent=isEdit ? String(mask?.op || "=") : "=";
+      const valueACurrent=isEdit ? String(mask?.valueA ?? "") : "";
+      const valueBCurrent=isEdit ? String(mask?.valueB ?? "") : "";
+      const twoVals=maskOpNeedsTwoValues(opCurrent);
+      openModal(`Masks > ${leaf}`,`
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="m_mask_name" class="formNameInput" type="text" value="${escAttr(defaultName)}" spellcheck="false" />
+          </div>
+        </div>
+        <div class="aliasMembersBlock">
+          <div class="aliasMembersHeader">
+            <label>Channels</label>
+            <button type="button" class="addBtn" id="m_mask_add_ch" title="Add channel" aria-label="Add channel">+</button>
+          </div>
+          <div id="m_mask_members" class="aliasMemberList"></div>
+        </div>
+        <div class="calcFormulaPad">
+          <div class="formField">
+            <label>Formula</label>
+            <input id="m_mask_formula" type="text" value="${escAttr(formulaCurrent)}" placeholder="A + B" spellcheck="false" />
+          </div>
+        </div>
+        ${maskConditionFieldsHtml({ opCurrent, valueA:valueACurrent, valueB:valueBCurrent, twoVals })}
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_ALIAS_FORM, titleHtml:masksWindowTitleHtml(leaf) },async()=>{
+        const ordered=[...chosen].map((id)=>channelKeyFromId(id)).filter(Boolean);
+        if(ordered.length<1){ setStatus("Add at least one channel.", true); return false; }
+        const compiled=compileFormula(byId("m_mask_formula").value||"", ordered.length);
+        if(!compiled.ok){ setStatus(compiled.error, true); return false; }
+        const rawName=(byId("m_mask_name").value||"").trim();
+        if(!rawName){ setStatus("Mask name is required.", true); return false; }
+        const op=byId("m_mask_op").value;
+        const rawA=(byId("m_mask_a").value||"").trim();
+        const rawB=(byId("m_mask_b").value||"").trim();
+        const needsB=maskOpNeedsTwoValues(op);
+        const valueA=Number(rawA);
+        const valueB=Number(rawB);
+        if(!Number.isFinite(valueA)){ setStatus(needsB?"Min is required.":"Value is required.", true); return false; }
+        if(needsB && !Number.isFinite(valueB)){ setStatus("Max is required for this condition.", true); return false; }
+        if(isEdit){
+          const oldName=mask.name||"";
+          const name=nextMaskName(rawName, oldName);
+          delete mask.dbId;
+          delete mask.sourceChannel;
+          delete mask.rollingOp;
+          delete mask.window;
+          mask.kind="formula";
+          mask.name=name;
+          mask.channels=ordered;
+          mask.formula=compiled.expr;
+          mask.op=op;
+          mask.valueA=String(valueA);
+          mask.valueB=needsB?String(valueB):null;
+          renderAll();
+          saveState();
+          setStatus(`Updated mask '${name}'.`);
+          return true;
+        }
+        const name=nextMaskName(rawName);
+        const next={ id:crypto.randomUUID(), kind:"formula", name, channels:ordered, formula:compiled.expr, op, valueA:String(valueA), valueB:needsB?String(valueB):null };
+        state.masks=state.masks||[];
+        state.masks.push(next);
+        selectedMaskIds.add(next.id);
+        renderAll();
+        saveState();
+        setStatus(`Added mask '${name}'.`);
+        return true;
+      });
+      const listEl=byId("m_mask_members");
+      const refresh=()=>renderCalcMemberList(listEl, chosen);
+      refresh();
+      const addBtn=byId("m_mask_add_ch");
+      if(addBtn) addBtn.onclick=()=>showAddAliasMembersModal(chosen, refresh, { leaf, titleHtml:masksWindowTitleHtml(leaf, "Add") });
+      bindMaskConditionRow(opCurrent);
+      bindAliasEditorManualResize(listEl);
+      requestAnimationFrame(()=>fitAliasEditorWindow(listEl));
+    }
+    function openIndexMaskEditorModal({ mode, mask=null }){
+      const isEdit=mode==="edit";
+      const leaf="Index Mask";
+      const defaultName=isEdit ? (mask?.name || "index_mask") : "index_mask";
+      const indexCurrent=isEdit && Array.isArray(mask?.channels) && mask.channels[0] ? mask.channels[0] : "__time__";
+      const opCurrent=isEdit ? String(mask?.op || "=") : "=";
+      const valueACurrent=isEdit ? String(mask?.valueA ?? "") : "";
+      const valueBCurrent=isEdit ? String(mask?.valueB ?? "") : "";
+      const twoVals=maskOpNeedsTwoValues(opCurrent);
+      const indexOptions=[
+        { id:"__time__", label:"Time" },
+      ].map((o)=>`<option value="${escAttr(o.id)}" ${indexCurrent===o.id?"selected":""}>${escAttr(o.label)}</option>`).join("");
+      openModal(`Masks > ${leaf}`,`
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="m_mask_name" class="formNameInput" type="text" value="${escAttr(defaultName)}" spellcheck="false" />
+          </div>
+          <div class="formField">
+            <label>Index<span class="reqMark" aria-hidden="true">*</span></label>
+            <div class="selectLock"><select id="m_mask_index" class="formSelectStable">${indexOptions}</select></div>
+          </div>
+        </div>
+        ${maskConditionFieldsHtml({ opCurrent, valueA:valueACurrent, valueB:valueBCurrent, twoVals })}
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_ALIAS_FORM, titleHtml:masksWindowTitleHtml(leaf) },async()=>{
+        const rawName=(byId("m_mask_name").value||"").trim();
+        if(!rawName){ setStatus("Mask name is required.", true); return false; }
+        const indexId=(byId("m_mask_index").value||"").trim();
+        if(!indexId){ setStatus("Select an index.", true); return false; }
+        const op=byId("m_mask_op").value;
+        const rawA=(byId("m_mask_a").value||"").trim();
+        const rawB=(byId("m_mask_b").value||"").trim();
+        const needsB=maskOpNeedsTwoValues(op);
+        const isTimeMask=indexId==="__time__";
+        const absolute=isTimeMask && plotUsesDateAxis(latestRows);
+        const parsedA=absolute ? parseUtcInput(rawA) : Number(rawA);
+        const parsedB=absolute ? parseUtcInput(rawB) : Number(rawB);
+        if(!Number.isFinite(parsedA)){
+          setStatus(absolute ? (needsB?"Start must be a valid UTC time.":"Time must be a valid UTC time.") : (needsB?"Min is required.":"Value is required."), true);
+          return false;
+        }
+        if(needsB && !Number.isFinite(parsedB)){
+          setStatus(absolute ? "End must be a valid UTC time." : "Max is required for this condition.", true);
+          return false;
+        }
+        if(isEdit){
+          const oldName=mask.name||"";
+          const name=nextMaskName(rawName, oldName);
+          delete mask.dbId;
+          delete mask.sourceChannel;
+          delete mask.rollingOp;
+          delete mask.window;
+          delete mask.formula;
+          mask.kind="index";
+          mask.name=name;
+          mask.channels=[indexId];
+          mask.op=op;
+          mask.valueA=rawA;
+          mask.valueB=needsB?rawB:null;
+          renderAll();
+          saveState();
+          setStatus(`Updated index mask '${name}'.`);
+          return true;
+        }
+        const name=nextMaskName(rawName);
+        const next={ id:crypto.randomUUID(), kind:"index", name, channels:[indexId], op, valueA:rawA, valueB:needsB?rawB:null };
+        state.masks=state.masks||[];
+        state.masks.push(next);
+        selectedMaskIds.add(next.id);
+        renderAll();
+        saveState();
+        setStatus(`Added index mask '${name}'.`);
+        return true;
+      });
+      bindMaskConditionRow(opCurrent, { timeMode:true });
     }
     async function editMask(maskId){
       const mask=(state.masks||[]).find((m)=>m.id===maskId);
@@ -8294,38 +8824,16 @@
         if(!sourceChannels) return;
         const selectedId=mask.sourceChannel||null;
         const options=rollingSourceChannelOptions(sourceChannels, selectedId);
-        openModal("Edit Rolling Mask",`<div class="modalGrid"><div style="grid-column:1 / -1;"><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean" ${mask.rollingOp==="mean"?"selected":""}>mean</option><option value="sum" ${mask.rollingOp==="sum"?"selected":""}>sum</option><option value="min" ${mask.rollingOp==="min"?"selected":""}>min</option><option value="max" ${mask.rollingOp==="max"?"selected":""}>max</option><option value="std" ${mask.rollingOp==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="${mask.window||10}" /></div><div><label>Condition</label><select id="m_mask_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" value="${mask.valueA??""}" /></div><div id="m_mask_val_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const sourceChannel=byId("m_mask_src").value; mask.dbId=sourceChannel.split("|")[0]; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.sourceChannel=sourceChannel; mask.rollingOp=rollingOp; mask.window=window; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Rolling mask updated."); return true; });
+        openModal("Edit Rolling Mask",`<div class="modalGrid"><div style="grid-column:1 / -1;"><label>Source Channel</label><select id="m_mask_src">${options}</select></div><div><label>Rolling Calculation</label><select id="m_mask_rolling_op"><option value="mean" ${mask.rollingOp==="mean"?"selected":""}>mean</option><option value="sum" ${mask.rollingOp==="sum"?"selected":""}>sum</option><option value="min" ${mask.rollingOp==="min"?"selected":""}>min</option><option value="max" ${mask.rollingOp==="max"?"selected":""}>max</option><option value="std" ${mask.rollingOp==="std"?"selected":""}>std</option></select></div><div><label>Window Size (samples)</label><input id="m_mask_window" type="number" min="1" step="1" value="${mask.window||10}" /></div><div><label>Condition</label><select id="m_mask_cond" class="formSelectStable"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select></div><div><label>Value A</label><input id="m_mask_val_a" type="number" step="any" value="${mask.valueA??""}" /></div><div id="m_mask_val_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_val_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const sourceChannel=byId("m_mask_src").value; mask.dbId=sourceChannel.split("|")[0]; const rollingOp=byId("m_mask_rolling_op").value; const window=Math.max(1, Number(byId("m_mask_window").value||1)); const op=byId("m_mask_cond").value; const valueA=Number(byId("m_mask_val_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_val_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.sourceChannel=sourceChannel; mask.rollingOp=rollingOp; mask.window=window; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Rolling mask updated."); return true; });
         const cond=byId("m_mask_cond"), wrap=byId("m_mask_val_b_wrap");
         cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
         return;
       }
-      if(mask.kind==="formula"){
-        const sourceChannels=await ensureCalcSourceChannelsLoaded();
-        if(!sourceChannels) return;
-        const rows=calcChannelPickerRows(sourceChannels);
-        const chosen=new Set(mask.channels||[]);
-        openModal("Edit Channel Wise Mask",`${searchableRowsHtml("emfm",rows,chosen)}<div class="maskFormPad"><label>Formula</label><input id="m_mask_formula" type="text" value="${mask.formula||""}" /><div id="m_mask_formula_hint" class="itemMeta" style="margin-top:6px;"></div><label>Condition</label><select id="m_mask_formula_cond"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select><label>Value A</label><input id="m_mask_formula_a" type="number" step="any" value="${mask.valueA??""}" /><div id="m_mask_formula_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label>Value B</label><input id="m_mask_formula_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(channels.length<2){ setStatus("Select at least two channels.",true); return false; } const compiled=compileFormula(byId("m_mask_formula").value||"", channels.length); if(!compiled.ok){ setStatus(compiled.error,true); return false; } mask.dbId=channels[0].split("|")[0]; const op=byId("m_mask_formula_cond").value; const valueA=Number(byId("m_mask_formula_a").value); const needsB=maskOpNeedsTwoValues(op); const valueB=Number(byId("m_mask_formula_b").value); if(!Number.isFinite(valueA)){ setStatus("Value A is required.",true); return false; } if(needsB && !Number.isFinite(valueB)){ setStatus("Value B is required for this condition.",true); return false; } mask.channels=channels; mask.formula=compiled.expr; mask.op=op; mask.valueA=String(valueA); mask.valueB=needsB?String(valueB):null; renderAll(); saveState(); setStatus("Channel-wise mask updated."); return true; });
-        bindSearchableModal("emfm",chosen);
-        const refreshHint=()=>{ const ordered=[...chosen]; const letters=varLetters(ordered.length); byId("m_mask_formula_hint").textContent=ordered.map((id,i)=>`${letters[i]}=${sourceLabelForDbId(id.split("|")[0])}/${id.split("|")[1]}`).join(" | ")||"Select channels to map A, B, C..."; };
-        const list=byId("emfm_list");
-        if(list) list.addEventListener("click",()=>setTimeout(refreshHint,0));
-        refreshHint();
-        const cond=byId("m_mask_formula_cond"), wrap=byId("m_mask_formula_b_wrap");
-        cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
+      if(isIndexMask(mask)){
+        openIndexMaskEditorModal({ mode:"edit", mask });
         return;
       }
-      await refreshCatalogsForSelections();
-      const rows=[{id:"__time__",primary:"time",meta:"Uses UTC in Absolute mode, seconds from t0 in relative modes"}, ...channelsData.map((c)=>({id:`${c.__dbId}|${c.channel_name}`,primary:c.channel_name,meta:`DB ${c.__dbId.slice(0,8)} | unit ${c.unit||"unitless"}`}))];
-      const chosen=new Set(mask.channels||[]);
-      openModal("Edit Mask",`${searchableRowsHtml("emm",rows,chosen)}<div class="maskFormPad"><label>Condition</label><select id="m_mask_op"><option value="=" ${mask.op==="="?"selected":""}>=</option><option value=">" ${mask.op===">"?"selected":""}>></option><option value="<" ${mask.op==="<"?"selected":""}><</option><option value="!=" ${mask.op==="!="?"selected":""}>!=</option><option value="between" ${mask.op==="between"?"selected":""}>between</option><option value="outside" ${mask.op==="outside"?"selected":""}>outside</option></select><label id="m_mask_a_label">Value A</label><input id="m_mask_a" type="number" step="any" value="${mask.valueA??""}" /><div id="m_mask_b_wrap" style="display:${maskOpNeedsTwoValues(mask.op)?"block":"none"};"><label id="m_mask_b_label">Value B</label><input id="m_mask_b" type="number" step="any" value="${mask.valueB??""}" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Save</button></div>`, MASK_MODAL_LAYOUT, async()=>{ const channels=[...chosen]; if(!channels.length){ setStatus("Select at least one channel for the mask.",true); return false; } const op=byId("m_mask_op").value; const isTimeMask=channels.every((ch)=>ch==="__time__"); const rawA=byId("m_mask_a").value.trim(); const rawB=byId("m_mask_b").value.trim(); const needsB=maskOpNeedsTwoValues(op); const parsedA=isTimeMask && plotUsesDateAxis(latestRows) ? parseUtcInput(rawA) : Number(rawA); const parsedB=isTimeMask && plotUsesDateAxis(latestRows) ? parseUtcInput(rawB) : Number(rawB); if(!Number.isFinite(parsedA)){ setStatus(isTimeMask&&plotUsesDateAxis(latestRows)?"Value A must be valid UTC time.":"Value A is required.",true); return false; } if(needsB && !Number.isFinite(parsedB)){ setStatus(isTimeMask&&plotUsesDateAxis(latestRows)?"Value B must be valid UTC time.":"Value B is required for this condition.",true); return false; } mask.channels=channels; mask.op=op; mask.valueA=rawA; mask.valueB=needsB?rawB:null; renderAll(); saveState(); setStatus("Mask updated."); return true; });
-      bindSearchableModal("emm",chosen);
-      const opSel=byId("m_mask_op"), bWrap=byId("m_mask_b_wrap");
-      const aInput=byId("m_mask_a"), bInput=byId("m_mask_b"), aLabel=byId("m_mask_a_label"), bLabel=byId("m_mask_b_label");
-      const refreshMaskInputs=()=>{ const isTime=[...chosen].every((ch)=>ch==="__time__")&&chosen.size>0; const absoluteMode=plotUsesDateAxis(latestRows); bWrap.style.display=maskOpNeedsTwoValues(opSel.value)?"block":"none"; if(isTime&&absoluteMode){ aInput.type="datetime-local"; bInput.type="datetime-local"; aLabel.textContent="UTC Time A"; bLabel.textContent="UTC Time B"; } else if(isTime){ aInput.type="number"; bInput.type="number"; aInput.step="any"; bInput.step="any"; aLabel.textContent="t0 Seconds A"; bLabel.textContent="t0 Seconds B"; } else { aInput.type="number"; bInput.type="number"; aInput.step="any"; bInput.step="any"; aLabel.textContent="Value A"; bLabel.textContent="Value B"; } };
-      opSel.onchange=refreshMaskInputs;
-      const mmList=byId("emm_list");
-      if(mmList) mmList.addEventListener("click",()=>setTimeout(refreshMaskInputs,0));
-      refreshMaskInputs();
+      openMaskEditorModal({ mode:"edit", mask });
     }
     function renameSource(sourceId){
       const src = state.sources.find((s)=>s.id===sourceId);
@@ -8417,7 +8925,7 @@
         const indexField=src.type==="tdms" ? "" : `
           <div class="formField">
             <label>Index${src.needs_time_index?'<span class="reqMark" aria-hidden="true">*</span>':""}</label>
-            <select id="m_edit_time" class="formSelectStable">${timeOptions}</select>
+            <div class="selectLock"><select id="m_edit_time" class="formSelectStable">${timeOptions}</select></div>
           </div>`;
         const unitsField=supportsHeaderUnitParsing(src.type) ? `
           <label class="formCheckRow"><input id="m_edit_units" type="checkbox" ${src.units_in_headers?"checked":""} /> Parse units from header</label>` : "";
@@ -8483,6 +8991,8 @@
             sel.innerHTML=[`<option value="">(none / missing)</option>`].concat(
               next.map((c)=>`<option value="${escAttr(c)}"${c===cur?" selected":""}>${escAttr(c)}</option>`)
             ).join("");
+            const wrap=sel.closest(".novaSelect");
+            if(wrap) syncNovaSelectBtn(wrap);
           }).catch(()=>{});
         }
         return;
@@ -8534,8 +9044,17 @@
         ev.stopPropagation();
         if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
       }
-      const rect = byId("addMaskBtn").getBoundingClientRect();
-      showMaskAddMenu(rect.left, rect.bottom + 4);
+      hideMenus();
+      openMaskEditorModal({ mode:"create" });
+    }
+    function showAddIndexMaskMenu(ev){
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      }
+      hideMenus();
+      openIndexMaskEditorModal({ mode:"create" });
     }
     function nextCalcName(base, excludeName){
       const stem=(base||"calc_channel").trim()||"calc_channel";
@@ -8942,7 +9461,11 @@
       const measured=Math.ceil(win.scrollHeight);
       const next=Math.min(Math.max(measured, 280), Math.floor(window.innerHeight*0.96));
       win.style.height=`${next}px`;
-      requestAnimationFrame(()=>{ win._aliasAutoFitting=false; });
+      win.style.minHeight=`${next}px`;
+      requestAnimationFrame(()=>{
+        win._aliasAutoFitting=false;
+        lockSelectGeometry(win);
+      });
     }
     function bindAliasEditorManualResize(listEl){
       const win=listEl?.closest?.(".appWindow");
@@ -8991,7 +9514,7 @@
       });
       fitAliasEditorWindow(listEl);
     }
-    async function showAddAliasMembersModal(chosen, onChanged, { leaf="Edit Alias" }={}){
+    async function showAddAliasMembersModal(chosen, onChanged, { leaf="Edit Alias", titleHtml=null }={}){
       if(!selectedSourceIds.size || !effectiveSelectedSourceIds().length){
         setStatus("Select at least one source first.", true);
         return;
@@ -9098,7 +9621,7 @@
         renderAllTransfer();
       };
 
-      const sourceSelectHtml=`<div id="aam_source_wrap" style="margin-bottom:8px;"><label>Source</label><select id="aam_source_sel">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div>`;
+      const sourceSelectHtml=`<div class="formField" id="aam_source_wrap" style="margin-bottom:8px;"><label>Source</label><div class="selectLock"><select id="aam_source_sel" class="formSelectStable">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div></div>`;
 
       openModal(`Channels > ${leaf} > Add`,`
         <div class="modalBodyPad">
@@ -9115,7 +9638,7 @@
         <div class="modalActions modalActionsIconOnly">
           <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Apply">${modalCheckIconHtml()}</button>
         </div>
-      `,{ ...WF_CHANNELS, closable:true, titleHtml:channelsWindowTitleHtml(leaf, "Add") },async()=>{
+      `,{ ...WF_CHANNELS, closable:true, titleHtml: titleHtml || channelsWindowTitleHtml(leaf, "Add") },async()=>{
         const next=[...selected].map((id)=>channelKeyFromId(id)).filter((n)=>n && !isCalculatedChannelKey(n) && !isAliasChannelKey(n));
         chosen.clear();
         next.forEach((n)=>chosen.add(n));
@@ -9378,7 +9901,7 @@
         renderAllTransfer();
       };
 
-      const sourceSelectHtml=`<div id="cm_source_wrap" style="margin-bottom:8px;"><label>Source</label><select id="cm_source_sel">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div>`;
+      const sourceSelectHtml=`<div class="formField" id="cm_source_wrap" style="margin-bottom:8px;"><label>Source</label><div class="selectLock"><select id="cm_source_sel" class="formSelectStable">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div></div>`;
 
       openModal("Channels > Add",`
         <div class="modalBodyPad">
@@ -10429,6 +10952,12 @@
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     });
     byId("addMaskBtn").onclick=showAddMasksMenu;
+    byId("addIndexMaskBtn")?.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    });
+    if(byId("addIndexMaskBtn")) byId("addIndexMaskBtn").onclick=showAddIndexMaskMenu;
     byId("addRangeBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Ranges are coming soon."); });
     byId("addObjectBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Plot objects are coming soon."); });
     byId("addIngestionBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Ingestion rules are coming soon."); });
