@@ -10,13 +10,9 @@ import pandas as pd
 
 from ..models import ChannelItem, TestRunItem
 from ..services.file_sources import (
-    DEFAULT_TIME_COLUMN_NAMES,
-    _apply_units_in_headers,
-    _csv_frame,
     _h5_datasets,
     _h5_frame,
     _tabular_channel_units,
-    _tabular_frame_from_arrow,
 )
 from .session_store import (
     artifact_dir,
@@ -27,6 +23,12 @@ from .session_store import (
     load_manifest,
     sanitize_channel_filename,
     save_manifest,
+)
+from .catalog_store import register_ingested_artifact
+from .polars_tabular import (
+    normalize_csv_polars,
+    normalize_tabular_polars,
+    write_channel_parquets_from_polars,
 )
 
 
@@ -164,28 +166,29 @@ def ingest_csv(
     *,
     units_in_headers: bool = False,
     time_index_channel: str | None = None,
+    out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    df, unit_map = _csv_frame(
+    df, unit_map, time_col = normalize_csv_polars(
         file_path,
         units_in_headers=units_in_headers,
         time_col=time_index_channel,
     )
-    time_col = time_index_channel
-    if not time_col:
-        for c in DEFAULT_TIME_COLUMN_NAMES:
-            if c in df.columns:
-                time_col = c
-                break
-    skip = {"__time__"}
-    if time_col:
-        skip.add(time_col)
-    return _ingest_dataframe(
+    skip = {"__time__", time_col}
+    target = out_dir or data_dir(artifact_id)
+    target.mkdir(parents=True, exist_ok=True)
+    channel_rows, time_bounds = write_channel_parquets_from_polars(
         df,
-        artifact_id,
-        run_code=Path(file_path).stem,
+        target,
         unit_map=unit_map,
         skip_columns=skip,
+        sanitize_name=sanitize_channel_filename,
     )
+    return {
+        "run_code": Path(file_path).stem,
+        "channels": channel_rows,
+        "time_bounds": time_bounds,
+        "data_dir": str(target.resolve()),
+    }
 
 
 def ingest_h5(
@@ -211,34 +214,30 @@ def ingest_tabular(
     source_type: str,
     time_index_channel: str | None = None,
     units_in_headers: bool = False,
+    out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    df = _tabular_frame_from_arrow(
+    df, unit_map, time_col = normalize_tabular_polars(
         file_path,
-        time_col=time_index_channel,
         source_type=source_type,
+        time_col=time_index_channel,
+        units_in_headers=units_in_headers,
     )
-    unit_map = _tabular_channel_units(file_path, source_type)
-    time_col = time_index_channel
-    if not time_col:
-        for c in DEFAULT_TIME_COLUMN_NAMES:
-            if c in df.columns:
-                time_col = c
-                break
-    skip = {"__time__"}
-    if time_col:
-        skip.add(time_col)
-    if units_in_headers:
-        df, header_unit_map = _apply_units_in_headers(df, skip_columns=skip)
-        for col, unit in header_unit_map.items():
-            if unit:
-                unit_map[col] = unit
-    return _ingest_dataframe(
+    skip = {"__time__", time_col}
+    target = out_dir or data_dir(artifact_id)
+    target.mkdir(parents=True, exist_ok=True)
+    channel_rows, time_bounds = write_channel_parquets_from_polars(
         df,
-        artifact_id,
-        run_code=Path(file_path).stem,
+        target,
         unit_map=unit_map,
         skip_columns=skip,
+        sanitize_name=sanitize_channel_filename,
     )
+    return {
+        "run_code": Path(file_path).stem,
+        "channels": channel_rows,
+        "time_bounds": time_bounds,
+        "data_dir": str(target.resolve()),
+    }
 
 
 def ingest_tdms(file_path: str, artifact_id: str) -> dict[str, Any]:
@@ -359,13 +358,43 @@ def run_ingest(
     *,
     units_in_headers: bool = False,
     time_index_channel: str | None = None,
+    ingest_mode: str | None = None,
+    parameters: dict[str, Any] | None = None,
+    apply_range_rule_ids: list[int] | None = None,
+    catalog_id: str | None = None,
 ) -> dict[str, Any]:
-    """Ingest a file into .nova_sessions/{artifact_id}/ and return manifest."""
+    """Ingest a file into Parquet artifacts and register in the DuckDB catalog.
+
+    Temporary ingest always uses the hidden system local catalog.
+    Permanent ingest requires a user project catalog_id.
+    """
+    from ..config import settings
+    from ..services.database_library import LOCAL_CATALOG_ID, resolve_duckdb_profile
+    from .catalog_store import catalog_path_override
     from .file_schema import validate_file_schema
+    from .range_detect import apply_range_rule_to_test
 
     st = source_type.strip().lower()
     if st not in {"csv", "h5", "tdms", "parquet", "arrow"}:
         raise ValueError("source_type must be csv, h5, tdms, parquet, or arrow.")
+
+    requested_mode = (ingest_mode or "").strip().lower() if ingest_mode else None
+    if requested_mode and requested_mode not in {"temporary", "permanent"}:
+        raise ValueError("ingest_mode must be temporary or permanent.")
+
+    use_permanent = requested_mode == "permanent" or (
+        catalog_id is not None
+        and str(catalog_id) != LOCAL_CATALOG_ID
+        and requested_mode != "temporary"
+    )
+    if use_permanent:
+        if not catalog_id or str(catalog_id) == LOCAL_CATALOG_ID:
+            raise ValueError("Permanent ingest requires a project catalog_id from Database Manager.")
+        profile = resolve_duckdb_profile(catalog_id)
+        mode = "permanent"
+    else:
+        profile = resolve_duckdb_profile(LOCAL_CATALOG_ID)
+        mode = "temporary"
 
     path = Path(file_path)
     if not path.is_file():
@@ -382,7 +411,7 @@ def run_ingest(
         raise ValueError(validation.errors[0] if validation.errors else validation.summary)
     existing = find_artifact_for_path(resolved)
     artifact_id = existing or artifact_id_for_path(st, resolved)
-    if existing:
+    if existing and mode == "temporary":
         manifest = load_manifest(existing)
         if manifest and manifest.get("status") == "ready":
             if not _manifest_should_refresh(
@@ -404,17 +433,29 @@ def run_ingest(
     save_manifest(artifact_id, manifest)
 
     try:
+        run_code = path.stem
+        out_dir: Path | None = None
+        if mode == "permanent":
+            lake_root = Path(str(profile.get("parquet_root") or settings.parquet_root))
+            out_dir = lake_root / run_code / "data"
+            out_dir.mkdir(parents=True, exist_ok=True)
+
         if st == "csv":
             result = ingest_csv(
                 str(path),
                 artifact_id,
                 units_in_headers=units_in_headers,
                 time_index_channel=time_index_channel,
+                out_dir=out_dir,
             )
         elif st == "h5":
             result = ingest_h5(str(path), artifact_id, time_index_channel=time_index_channel)
+            if out_dir is not None:
+                result = _copy_channels_to_dir(artifact_id, result, out_dir)
         elif st == "tdms":
             result = ingest_tdms(str(path), artifact_id)
+            if out_dir is not None:
+                result = _copy_channels_to_dir(artifact_id, result, out_dir)
         else:
             result = ingest_tabular(
                 str(path),
@@ -422,6 +463,7 @@ def run_ingest(
                 source_type=st,
                 time_index_channel=time_index_channel,
                 units_in_headers=units_in_headers,
+                out_dir=out_dir,
             )
         manifest = _finalize_manifest(
             manifest,
@@ -430,12 +472,63 @@ def run_ingest(
             status="ready",
         )
         manifest["run_code"] = result["run_code"]
+        manifest["durability"] = mode
+        manifest["catalog_id"] = profile.get("id")
+
+        channel_uris: dict[str, str] = {}
+        data_root = Path(result.get("data_dir") or (out_dir or data_dir(artifact_id)))
+        for row in result["channels"]:
+            rel = str(row.get("parquet") or "")
+            name = str(row.get("channel_name") or "")
+            if not name or not rel:
+                continue
+            fname = Path(rel).name
+            channel_uris[name] = str((data_root / fname).resolve())
+
+        with catalog_path_override(profile["catalog_path"]):
+            test_id = register_ingested_artifact(
+                manifest,
+                source_type=st,
+                file_path=str(path.resolve()),
+                parameters=parameters or {},
+                durability=mode,
+                channel_parquet_uris=channel_uris,
+            )
+            manifest["test_run_id"] = test_id
+
+            applied_ranges = []
+            for rule_id in apply_range_rule_ids or []:
+                applied_ranges.extend(apply_range_rule_to_test(test_id, int(rule_id)))
+            manifest["applied_ranges"] = [r.model_dump(mode="json") for r in applied_ranges]
+
         save_manifest(artifact_id, manifest)
         return manifest
     except Exception as exc:
         manifest = _finalize_manifest(manifest, channels=[], time_bounds=None, status="failed", error=str(exc))
         save_manifest(artifact_id, manifest)
         raise
+
+
+
+def _copy_channels_to_dir(artifact_id: str, result: dict[str, Any], out_dir: Path) -> dict[str, Any]:
+    """Copy session-written channel parquet into a permanent lake directory."""
+    import shutil
+
+    src_root = data_dir(artifact_id)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for row in result.get("channels") or []:
+        if not isinstance(row, dict):
+            continue
+        rel = str(row.get("parquet") or "")
+        if not rel:
+            continue
+        src = src_root / Path(rel).name
+        dst = out_dir / Path(rel).name
+        if src.is_file():
+            shutil.copy2(src, dst)
+    result = dict(result)
+    result["data_dir"] = str(out_dir.resolve())
+    return result
 
 
 def get_ingest_status(artifact_id: str) -> dict[str, Any] | None:

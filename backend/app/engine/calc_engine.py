@@ -63,10 +63,28 @@ def _eval_rolling(
     if not spec.channels:
         return []
     src_name = spec.channels[0].split("|")[-1] if "|" in spec.channels[0] else spec.channels[0]
-    out: list[TimeSeriesPoint] = []
     op = (spec.op or "mean").strip().lower()
     window = max(1, int(spec.window or 1))
+    _ = grouped
 
+    # Prefer Polars rolling transforms for the hot path.
+    try:
+        from .polars_series import apply_rolling_polars, frame_from_points, points_from_frame
+
+        df = frame_from_points(base)
+        rolled = apply_rolling_polars(
+            df,
+            source_channel=src_name,
+            name=spec.name,
+            unit=spec.unit,
+            op=op,
+            window=window,
+        )
+        return points_from_frame(rolled)
+    except Exception:
+        pass
+
+    out: list[TimeSeriesPoint] = []
     by_test: dict[tuple[int, str], list[TimeSeriesPoint]] = defaultdict(list)
     for pt in base:
         if pt.channel_name != src_name:

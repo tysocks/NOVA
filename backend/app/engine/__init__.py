@@ -1,7 +1,7 @@
 """NOVA v3 query engine (columnar series, LOD planning)."""
 
 from .arrow_codec import arrow_ipc_to_points, encode_series_arrow_ipc, points_to_arrow_table
-from .duckdb_source import fetch_artifact_timeseries
+from .duckdb_source import fetch_artifact_timeseries, fetch_catalog_timeseries
 from .file_index import get_ingest_status, run_ingest
 from .postgres_source import (
     bucket_interval_seconds,
@@ -19,6 +19,7 @@ __all__ = [
     "engine_enabled",
     "execute_series_query",
     "fetch_artifact_timeseries",
+    "fetch_catalog_timeseries",
     "fetch_postgres_timeseries",
     "fetch_timeseries_aggregate",
     "get_ingest_status",

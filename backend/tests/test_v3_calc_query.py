@@ -12,7 +12,9 @@ BASE = datetime(2024, 1, 1, tzinfo=timezone.utc)
 client = TestClient(app)
 
 
-def test_v3_series_query_applies_calculated_channels():
+def test_v3_series_query_applies_calculated_channels(monkeypatch):
+    monkeypatch.setattr("app.config.settings.enable_postgres", True)
+
     mock_points = [
         TimeSeriesPoint(
             test_run_id=1,
@@ -57,7 +59,7 @@ def test_v3_series_query_applies_calculated_channels():
             },
         )
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     restored = arrow_ipc_to_points(response.content)
     calc = [p for p in restored if p.channel_name == "sumAB"]
     assert len(calc) == 1

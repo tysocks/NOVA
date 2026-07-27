@@ -688,6 +688,17 @@
       max-width:150px;
       box-sizing:border-box;
     }
+    .formFieldRow.formFieldRowGrow > .formField{
+      flex:1 1 0;
+      width:auto;
+      max-width:none;
+      min-width:0;
+    }
+    .formFieldRow.formFieldRowGrow > .formField.formFieldNarrow{
+      flex:0 0 110px;
+      width:110px;
+      max-width:110px;
+    }
     .inputWithSuffix{
       display:flex;
       align-items:stretch;
@@ -723,6 +734,29 @@
       font-size:0.75rem;
       box-sizing:border-box;
       user-select:none;
+    }
+    .inputWithSuffix > button.inputSuffix{
+      cursor:pointer;
+      font:inherit;
+      line-height:1;
+      width:34px;
+      height:34px;
+      min-width:34px;
+      max-width:34px;
+      min-height:34px;
+      max-height:34px;
+      padding:0;
+      flex:0 0 34px;
+      box-sizing:border-box;
+    }
+    .inputWithSuffix > button.inputSuffix:hover{
+      color:var(--nova-text);
+      background:var(--nova-hover);
+    }
+    .inputWithSuffix > button.inputSuffix svg{
+      width:14px;
+      height:14px;
+      display:block;
     }
     /* Keep formSelectStable as an explicit alias of the global select lock */
     select.formSelectStable,
@@ -910,6 +944,133 @@
     .cfgManagerToolbar{ display:flex; align-items:center; gap:6px; padding:8px 10px 4px; }
     .cfgManagerToolbar input{ flex:1; min-width:0; }
     .cfgMenuBtn{ width:28px; height:28px; min-width:28px; font-size:1.1rem; letter-spacing:0.02em; }
+    .searchInput{
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='%23888888' stroke-width='1.5' stroke-linecap='round'%3E%3Ccircle cx='6.75' cy='6.75' r='4.1'/%3E%3Cpath d='M9.75 9.75L13.25 13.25'/%3E%3C/g%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:10px center;
+      background-size:12px 12px;
+      padding-left:30px !important;
+    }
+    .dbTagChipRow{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+      gap:4px;
+      min-width:0;
+    }
+    .dbTagChipRow.dbTagChipRowEdit{
+      justify-content:flex-start;
+      flex-wrap:wrap;
+      gap:4px;
+      min-height:22px;
+    }
+    .dbTagChip{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      max-width:140px;
+      padding:1px 7px;
+      border:1px solid var(--nova-divider);
+      border-radius:4px;
+      background:var(--nova-hover);
+      color:var(--nova-text-dim);
+      font-size:0.7rem;
+      line-height:1.4;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      border-color:var(--tag-bd, var(--nova-divider));
+      background:var(--tag-bg, var(--nova-hover));
+      color:var(--tag-fg, var(--nova-text-dim));
+    }
+    .dbTagChip button{
+      border:none;
+      background:transparent;
+      color:inherit;
+      cursor:pointer;
+      padding:0;
+      width:12px;
+      height:12px;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:0.7rem;
+    }
+    .dbTagChip button:hover{ color:var(--nova-text); }
+    .dbTagAddBtn{
+      width:22px;
+      min-width:22px;
+      height:22px;
+      padding:0;
+      border:1px solid var(--nova-divider);
+      border-radius:4px;
+      background:transparent;
+      color:var(--nova-text-dim);
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:0.9rem;
+      line-height:1;
+    }
+    .dbTagAddBtn:hover{
+      background:var(--nova-hover);
+      color:var(--nova-text);
+    }
+    .dbTagInput{
+      width:130px;
+      min-height:24px;
+      height:24px;
+      font-size:0.75rem;
+      padding:2px 8px;
+    }
+    .dbFilterBtn.active{
+      background:var(--nova-active);
+      color:var(--nova-text);
+    }
+    /* Synnax-style database manager list */
+    .dbManagerToolbar{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px 4px;
+      flex:0 0 auto;
+    }
+    .dbManagerToolbar .searchInput{ flex:1; min-width:0; }
+    .dbManagerRow{
+      gap:8px;
+      min-width:0;
+    }
+    .dbManagerRow .itemPrimary{
+      flex:1 1 auto;
+      min-width:72px;
+      max-width:none;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .dbManagerRow .dbTagChipRowList{
+      flex:0 1 auto;
+      min-width:0;
+      max-width:40%;
+      justify-content:flex-end;
+      flex-wrap:nowrap;
+      overflow:hidden;
+    }
+    .dbManagerRow .dbTagChipRowList .dbTagChip{
+      max-width:88px;
+      flex:0 1 auto;
+    }
+    .dbRowUpdated{
+      flex:0 0 auto;
+      margin-left:auto;
+      font-size:0.72rem;
+      color:var(--nova-text-dim);
+      line-height:1.2;
+      white-space:nowrap;
+    }
     #appWindowLayer{ position:fixed; inset:0; pointer-events:none; z-index:110; }
     .appWindow{ position:fixed; pointer-events:auto; display:flex; flex-direction:column; min-width:220px; min-height:140px; max-width:96vw; max-height:96vh; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-lg); box-shadow:var(--nova-shadow); overflow:hidden; z-index:111; }
     .appWindow.modalScale{ width:420px; height:520px; }
@@ -1013,7 +1174,7 @@
     <div class="menuItem" data-menu="file">File
       <div class="menuDropdown" id="menu_file">
         <div class="menuAction" id="file_configManager">Configuration Manager...</div>
-        <div class="menuAction" id="file_databaseManager">Database Manager...</div>
+        <div class="menuAction" id="file_databaseManager">Databases...</div>
         <div class="menuAction" id="file_unitManager">Unit Manager...</div>
         <div class="menuSep"></div>
         <div class="menuAction" id="file_exportPlot">Export Current View (CSV)...</div>
@@ -1108,10 +1269,13 @@
         <section class="toolbarSection" data-section="ranges" id="section_ranges">
           <div class="toolbarSectionHeader">
             <h3>Ranges</h3>
-            <div class="headerBtns"><button id="addRangeBtn" class="addBtn" type="button" title="Add range" disabled>+</button></div>
+            <div class="headerBtns">
+              <button id="applyRangeRuleBtn" class="addBtn" type="button" title="Apply range rule">⚡</button>
+              <button id="addRangeBtn" class="addBtn" type="button" title="Add range">+</button>
+            </div>
           </div>
           <div id="rangesList" class="list"></div>
-          <div class="toolbarPlaceholder"><strong>Coming soon.</strong> Create named time ranges, child ranges, and attach metadata — similar to Synnax ranges.</div>
+          <div class="toolbarPlaceholder" id="rangesPlaceholder">Select a catalog test, then create or apply ranges.</div>
         </section>
         <section class="toolbarSection" data-section="objects" id="section_objects">
           <div class="toolbarSectionHeader">
@@ -1238,6 +1402,7 @@
       return spans.size>0;
     }
     let latestRows = [], metadataRows = [], testsData = [], channelsData = [], previewVisible = false, focusedItem = null;
+    let catalogRanges = [];
     let selectedSourceIds = new Set(), selectedDatabaseIds = new Set(), selectedTestIds = new Set(), selectedChannelIds = new Set(), selectedMaskIds = new Set();
     let addedTestIds = new Set(), addedChannelIds = new Set();
     function channelKeyFromId(id){
@@ -1427,6 +1592,7 @@
     const catalogCache = new Map();
     const seriesCache = window.NovaV3 ? new NovaV3.SeriesCache() : null;
     let databaseLibrary = null;
+    let activeCatalogId = null;
     let unitLibrary = { categories: [] };
     function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
     function bsearch(arr, target){ let lo=0, hi=arr.length; while(lo<hi){ const mid=(lo+hi)>>1; if(arr[mid]<=target) lo=mid+1; else hi=mid; } return lo; }
@@ -3925,13 +4091,29 @@
         }catch(err){
           setStatus(`Failed to load channels for '${db.name}': ${err}`, true);
         }
+      } else if(isCatalogSource(src) || src.test_id){
+        const tid=Number(src.test_id);
+        if(!Number.isFinite(tid)) return rows;
+        try{
+          const q=src.catalog_id?`?catalog_id=${encodeURIComponent(src.catalog_id)}`:"";
+          const ch=await getJson(`/api/catalog/tests/${tid}/channels${q}`);
+          ch.forEach((c)=>rows.push({
+            id:`${dbId}|${c.channel_name}`,
+            primary:c.channel_name,
+            meta:`unit ${resolveChannelUnit(`${dbId}|${c.channel_name}`, c.unit)||"unitless"} | catalog #${tid}`
+          }));
+        }catch(err){
+          setStatus(`Failed to load catalog channels: ${err}`, true);
+        }
       } else {
         const fileSrc=isFileSource(src) ? src : state.sources.find((s)=>s.id===db.sourceId);
         if(!fileSrc) return rows;
         try{
           await linkArtifactForSource(fileSrc);
           let ch;
-          if(fileSrc.artifact_id){
+          if(fileSrc.test_id){
+            ch=await getJson(`/api/catalog/tests/${Number(fileSrc.test_id)}/channels`);
+          } else if(fileSrc.artifact_id){
             ch=await getJson(`/api/v3/ingest/${encodeURIComponent(fileSrc.artifact_id)}/channels`);
           } else {
             const p=new URLSearchParams();
@@ -3980,26 +4162,172 @@
     async function loadDatabaseLibrary(){
       try{
         const data=await getJson("/api/database-library");
-        databaseLibrary=Array.isArray(data?.databases) ? data.databases : [];
+        databaseLibrary=(Array.isArray(data?.databases) ? data.databases : []).filter((p)=>!isHiddenLocalCatalogProfile(p));
+        activeCatalogId=data?.active_catalog_id || null;
+        if(String(activeCatalogId||"")==="local") activeCatalogId=null;
       }catch{
         databaseLibrary=databaseLibrary ?? [];
       }
       return databaseLibrary;
     }
-    async function saveDatabaseLibrary(rows){
-      const out=(rows||[]).map((row)=>({
-        id:String(row.id||crypto.randomUUID()),
-        type:"postgres",
-        name:String(row.name||"PostgreSQL Database"),
-        host:String(row.host||"localhost"),
-        port:Number(row.port||5432),
-        user:String(row.user||"pipeline"),
-        password:String(row.password||""),
-        sslmode:String(row.sslmode||"disable"),
-      })).filter((row)=>row.name&&row.host&&row.user&&Number.isFinite(row.port)&&row.port>0);
-      const saved=await postJson("/api/database-library",{databases:out});
+    function isDuckdbProfile(row){
+      const t=String(row?.type||"").toLowerCase();
+      return t==="duckdb" || t==="catalog";
+    }
+    function isPostgresProfile(row){
+      return String(row?.type||"").toLowerCase()==="postgres";
+    }
+    function normalizeDatabaseTags(value){
+      const raw=Array.isArray(value)?value:(value==null||value===""?[]:[value]);
+      const out=[];
+      const seen=new Set();
+      raw.forEach((item)=>{
+        const tag=String(item||"").trim();
+        if(!tag) return;
+        const key=tag.toLowerCase();
+        if(seen.has(key)) return;
+        seen.add(key);
+        out.push(tag);
+      });
+      return out;
+    }
+    function tagColorFor(tag){
+      const text=String(tag||"");
+      let hash=0;
+      for(let i=0;i<text.length;i+=1){
+        hash=((hash*31) + text.charCodeAt(i))|0;
+      }
+      const hue=Math.abs(hash)%360;
+      return {
+        bg:`hsl(${hue} 60% 18% / 0.42)`,
+        bd:`hsl(${hue} 62% 45% / 0.55)`,
+        fg:`hsl(${hue} 90% 82%)`,
+      };
+    }
+    function databaseTagsHtml(tags, { removable=false }={}){
+      const list=normalizeDatabaseTags(tags);
+      if(!list.length) return "";
+      return list.map((tag)=>{
+        const c=tagColorFor(tag);
+        const remove=removable
+          ? `<button type="button" data-tag="${escAttr(tag)}" aria-label="Remove tag">×</button>`
+          : "";
+        return `<span class="dbTagChip" style="--tag-bg:${c.bg};--tag-bd:${c.bd};--tag-fg:${c.fg}" title="${escAttr(tag)}">${escapeHtml(tag)}${remove}</span>`;
+      }).join("");
+    }
+    function formatDatabaseUpdatedAt(iso){
+      const raw=String(iso||"").trim();
+      if(!raw) return "—";
+      const d=new Date(raw);
+      if(!Number.isFinite(d.getTime())) return "—";
+      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    }
+    function wireDatabaseTagEditor(chosen){
+      const row=byId("m_db_tag_row");
+      const input=byId("m_db_tag_input");
+      const addBtn=byId("m_db_tag_add");
+      const render=()=>{
+        if(!row || !addBtn) return;
+        row.querySelectorAll(".dbTagChip").forEach((el)=>el.remove());
+        const chipsHtml=databaseTagsHtml([...chosen], { removable:true });
+        if(chipsHtml){
+          addBtn.insertAdjacentHTML("beforebegin", chipsHtml);
+        }
+        row.querySelectorAll("button[data-tag]").forEach((btn)=>{
+          btn.onclick=(ev)=>{
+            if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+            const tag=btn.getAttribute("data-tag");
+            const key=String(tag||"").toLowerCase();
+            [...chosen].forEach((t)=>{ if(String(t).toLowerCase()===key) chosen.delete(t); });
+            render();
+          };
+        });
+      };
+      const setInputVisible=(show)=>{
+        if(!input) return;
+        input.style.display=show?"":"none";
+        if(show) setTimeout(()=>input.focus(), 0);
+      };
+      const addTag=()=>{
+        const tag=(input?.value||"").trim();
+        if(!tag) return;
+        const key=tag.toLowerCase();
+        if([...chosen].some((t)=>String(t).toLowerCase()===key)){
+          if(input) input.value="";
+          return;
+        }
+        chosen.add(tag);
+        if(input) input.value="";
+        setInputVisible(false);
+        render();
+      };
+      if(addBtn) addBtn.onclick=(ev)=>{
+        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+        if(input && input.style.display!=="none"){
+          addTag();
+          return;
+        }
+        setInputVisible(true);
+      };
+      if(input){
+        input.style.display="none";
+        input.onkeydown=(ev)=>{
+          if(ev.key==="Enter"){
+            ev.preventDefault();
+            addTag();
+          }else if(ev.key==="Escape"){
+            input.value="";
+            setInputVisible(false);
+          }
+        };
+        input.onblur=()=>{
+          if(!(input.value||"").trim()) setInputVisible(false);
+        };
+      }
+      render();
+      return ()=>normalizeDatabaseTags([...chosen]);
+    }
+    async function saveDatabaseLibrary(rows, activeId=null){
+      const out=(rows||[]).map((row)=>{
+        const tags=normalizeDatabaseTags(row.tags);
+        if(isDuckdbProfile(row) || !row.type){
+          return {
+            id:String(row.id||crypto.randomUUID()),
+            type:"duckdb",
+            name:String(row.name||"DuckDB Catalog"),
+            catalog_path:String(row.catalog_path||"").trim(),
+            parquet_root:String(row.parquet_root||"").trim(),
+            default_ingest_mode:"permanent",
+            is_default:Boolean(row.is_default),
+            tags,
+          };
+        }
+        return {
+          id:String(row.id||crypto.randomUUID()),
+          type:"postgres",
+          name:String(row.name||"PostgreSQL Database"),
+          host:String(row.host||"localhost"),
+          port:Number(row.port||5432),
+          user:String(row.user||"pipeline"),
+          password:String(row.password||""),
+          sslmode:String(row.sslmode||"disable"),
+          is_default:Boolean(row.is_default),
+          tags,
+        };
+      }).filter((row)=>{
+        if(row.type==="duckdb"){
+          if(String(row.id)==="local" || String(row.name||"").trim().toLowerCase()==="local catalog") return false;
+          return row.name && row.catalog_path;
+        }
+        return row.name&&row.host&&row.user&&Number.isFinite(row.port)&&row.port>0;
+      });
+      const payload={ databases:out };
+      const active=activeId || activeCatalogId || out.find((r)=>r.type==="duckdb"&&r.is_default)?.id || out.find((r)=>r.type==="duckdb")?.id || null;
+      if(active) payload.active_catalog_id=active;
+      const saved=await postJson("/api/database-library", payload);
       if(!saved?.ok) throw new Error(saved?.error||"Failed to save database library.");
       databaseLibrary=out;
+      activeCatalogId=saved.active_catalog_id||active;
       return out;
     }
     async function loadUnitLibrary(){
@@ -4066,6 +4394,24 @@
     }
     async function testDatabaseProfile(profile){
       if(!profile) return false;
+      if(isDuckdbProfile(profile)){
+        setStatus(`Testing catalog: ${profile.name||"profile"}...`);
+        try{
+          const res=await postJson("/api/database-library/test", {
+            type:"duckdb",
+            name:profile.name,
+            catalog_path:profile.catalog_path,
+            parquet_root:profile.parquet_root,
+            default_ingest_mode:profile.default_ingest_mode,
+          });
+          if(!res?.ok) throw new Error(res?.error||"Catalog test failed");
+          setStatus(`Catalog OK: ${profile.name||"profile"} (${res.test_count||0} tests, ${res.channel_count||0} channels).`);
+          return true;
+        }catch(err){
+          setStatus(`Catalog test failed: ${err}`, true);
+          return false;
+        }
+      }
       const host=String(profile.host||"localhost").trim();
       const user=String(profile.user||"pipeline").trim();
       const port=Number(profile.port||5432);
@@ -4075,17 +4421,14 @@
         setStatus("Host and user are required to test a connection.", true);
         return false;
       }
-      const q=new URLSearchParams();
-      q.append("db_host", host);
-      q.append("db_port", String(port));
-      q.append("db_user", user);
-      q.append("db_password", password);
-      q.append("db_sslmode", sslmode);
       setStatus(`Testing connection: ${profile.name||"profile"}...`);
       try{
-        const dbs=await getJson(`/api/databases?${q.toString()}`);
-        const count=Array.isArray(dbs)?dbs.length:0;
-        setStatus(`Connection OK: ${profile.name||"profile"} (${count} database(s) found).`);
+        const res=await postJson("/api/database-library/test", {
+          type:"postgres",
+          host, user, port, password, sslmode,
+        });
+        if(!res?.ok) throw new Error(res?.error||"Connection failed");
+        setStatus(`Connection OK: ${profile.name||"profile"} (${res.database_count||0} database(s) found).`);
         return true;
       }catch(err){
         setStatus(`Connection failed: ${err}`, true);
@@ -4096,17 +4439,36 @@
       const rows=Array.isArray(obj?.databases)?obj.databases:(Array.isArray(obj)?obj:[obj]);
       return rows
         .filter((r)=>r&&typeof r==="object")
-        .map((r)=>({
-          id:String(r.id||crypto.randomUUID()),
-          type:"postgres",
-          name:String(r.name||"PostgreSQL Database").trim(),
-          host:String(r.host||"localhost").trim(),
-          port:Number(r.port||5432),
-          user:String(r.user||"pipeline").trim(),
-          password:String(r.password||""),
-          sslmode:String(r.sslmode||"disable").trim()||"disable",
-        }))
-        .filter((r)=>r.name&&r.host&&r.user&&Number.isFinite(r.port)&&r.port>0);
+        .map((r)=>{
+          if(String(r.type||"duckdb").toLowerCase()==="postgres"){
+            return {
+              id:String(r.id||crypto.randomUUID()),
+              type:"postgres",
+              name:String(r.name||"PostgreSQL Database").trim(),
+              host:String(r.host||"localhost").trim(),
+              port:Number(r.port||5432),
+              user:String(r.user||"pipeline").trim(),
+              password:String(r.password||""),
+              sslmode:String(r.sslmode||"disable").trim()||"disable",
+              tags:normalizeDatabaseTags(r.tags),
+            };
+          }
+          return {
+            id:String(r.id||crypto.randomUUID()),
+            type:"duckdb",
+            name:String(r.name||"DuckDB Catalog").trim(),
+            catalog_path:String(r.catalog_path||"").trim(),
+            parquet_root:String(r.parquet_root||"").trim(),
+            default_ingest_mode:"permanent",
+            is_default:Boolean(r.is_default),
+            tags:normalizeDatabaseTags(r.tags),
+          };
+        })
+        .filter((r)=>{
+          if(isHiddenLocalCatalogProfile(r)) return false;
+          if(r.type==="postgres") return r.name&&r.host&&r.user&&Number.isFinite(r.port)&&r.port>0;
+          return r.name&&r.catalog_path;
+        });
     }
     function pickDatabaseJsonFile(){
       return new Promise((resolve)=>{
@@ -4268,12 +4630,21 @@
     }
     async function queryV3ForDb(dbId, src, db, channels, testRunIds, { mode="overview", timeRange=null, resolutionPx=1400, calculatedChannels=null, signal=null }={}){
       const sources=[];
-      if(src.type==="postgres"){
+      if(src.type==="catalog" || src.leaf_kind==="catalog_test"){
+        const tid=Number(src.test_id || testRunIds[0]);
+        if(Number.isFinite(tid)){
+          const body={ type:"catalog", test_id:tid, channel_names:channels };
+          if(src.catalog_id) body.catalog_id=src.catalog_id;
+          sources.push(body);
+        }
+      }else if(src.type==="postgres"){
         sources.push(buildPostgresV3Source(src, db, testRunIds, channels));
+      }else if(src.test_id){
+        sources.push({ type:"catalog", test_id:Number(src.test_id), channel_names:channels });
       }else if(src.artifact_id){
         sources.push({ type:"file", artifact_id:src.artifact_id, channel_names:channels });
       }
-      if(!sources.length) return { rows:[], meta:null };
+      if(!sources.length) return { rows:[], series:[], meta:null };
       const body={
         sources,
         mode,
@@ -4283,8 +4654,8 @@
       if(timeRange) body.time_range=timeRange;
       const calcs=calculatedChannels!==null ? calculatedChannels : (preferences.useServerCalc!==false ? buildCalculatedSpecsForDb(dbId) : []);
       if(calcs.length) body.calculated_channels=calcs;
-      const out=await NovaV3.querySeries(body, { format:"json", signal });
-      return { rows:NovaV3.stampRows(out.rows||[], dbId), meta:out.meta||null };
+      const out=await NovaV3.querySeries(body, { format:"series", signal });
+      return { rows:NovaV3.stampRows(out.rows||[], dbId), series:out.series||[], meta:out.meta||null };
     }
     function postgresConnForSource(src){
       if(!src) return null;
@@ -4599,37 +4970,36 @@
         }
       });
     }
+    function isHiddenLocalCatalogProfile(profile){
+      if(!profile) return false;
+      if(profile.hidden || String(profile.role||"").toLowerCase()==="local") return true;
+      if(String(profile.id||"")==="local") return true;
+      if(String(profile.name||"").trim().toLowerCase()==="local catalog") return true;
+      return false;
+    }
+    function purgeHiddenLocalCatalogSources(){
+      state.sources=state.sources.filter((s)=>{
+        if(!s) return false;
+        if(s.type==="duckdb_catalog" && (String(s.catalog_id||"")==="local" || String(s.id||"")==="local" || String(s.name||"").trim().toLowerCase()==="local catalog")) return false;
+        if(isCatalogSource(s) && String(s.catalog_id||"")==="local") return false;
+        return true;
+      });
+    }
     function sourcesListItems(){
       const items=[];
-      // Database manager profiles (auto) — only accessible profiles with data
+      // Database manager profiles always appear in Sources (even when empty / unreachable)
       (databaseLibrary||[]).forEach((profile)=>{
+        if(isHiddenLocalCatalogProfile(profile)) return;
         const profileId=String(profile.id||"");
         if(!profileId) return;
         const cache=dbBrowseCache.get(profileId);
-        if(!cache || cache.loading){
-          // Still discovering — show a lightweight loading row once per refresh
-          if(cache?.loading){
-            items.push({
-              id:`dbconn:${profileId}:loading`,
-              treeKey:`dbconn:${profileId}:loading`,
-              primary:`Checking ${profile.name||"database"}…`,
-              depth:0,
-              rowKind:"hint",
-              expandable:false,
-              selectable:false,
-              icon:"database",
-              loading:true,
-            });
-          }
-          return;
-        }
-        if(cache.accessible===false || !(cache.databases||[]).length) return;
         const connKey=`dbconn:${profileId}`;
         const expanded=isSourceTreeExpanded(connKey);
+        const isDuck=isDuckdbProfile(profile) || cache?.kind==="duckdb";
         items.push({
           id:connKey,
           treeKey:connKey,
-          primary:profile.name||"PostgreSQL Database",
+          primary:profile.name||(isDuck?"DuckDB Catalog":"PostgreSQL Database"),
           depth:0,
           rowKind:"db_conn",
           expandable:true,
@@ -4639,6 +5009,74 @@
           profileId,
         });
         if(!expanded) return;
+        if(!cache || cache.loading){
+          items.push({
+            id:`${connKey}:loading`,
+            treeKey:`${connKey}:loading`,
+            primary:cache?.loading ? "Loading…" : "Expand to load…",
+            depth:1,
+            rowKind:"hint",
+            expandable:false,
+            selectable:false,
+            icon:"none",
+            loading:true,
+          });
+          return;
+        }
+        if(cache.accessible===false){
+          items.push({
+            id:`${connKey}:error`,
+            treeKey:`${connKey}:error`,
+            primary:cache.error || "Unavailable",
+            depth:1,
+            rowKind:"hint",
+            expandable:false,
+            selectable:false,
+            icon:"none",
+            error:true,
+          });
+          return;
+        }
+        if(isDuck){
+          const testCache=cache.tests && (cache.tests.catalog || cache.tests[cache.databases?.[0]]);
+          if(!testCache || testCache.loading){
+            items.push({ id:`${connKey}:loading`, treeKey:`${connKey}:loading`, primary:"Loading tests…", depth:1, rowKind:"hint", expandable:false, selectable:false, icon:"none", loading:true });
+            return;
+          }
+          if(testCache.error){
+            items.push({ id:`${connKey}:error`, treeKey:`${connKey}:error`, primary:testCache.error, depth:1, rowKind:"hint", expandable:false, selectable:false, icon:"none", error:true });
+            return;
+          }
+          if(!(testCache.rows||[]).length){
+            items.push({ id:`${connKey}:empty`, treeKey:`${connKey}:empty`, primary:"No tests in catalog", depth:1, rowKind:"hint", expandable:false, selectable:false, icon:"none" });
+            return;
+          }
+          (testCache.rows||[]).forEach((t)=>{
+            const leaf=state.sources.find((s)=>isCatalogSource(s)&&String(s.catalog_id||"")===String(profileId)&&String(s.test_id)===String(t.test_run_id));
+            const leafId=leaf ? leaf.id : `dbtest:${profileId}|catalog|tests|${t.test_run_id}`;
+            items.push({
+              id:leafId,
+              treeKey:leafId,
+              primary:t.primary,
+              depth:1,
+              rowKind:"db_test",
+              expandable:false,
+              selectable:true,
+              icon:"test",
+              profileId,
+              dbName:"catalog",
+              testTable:"tests",
+              testRunId:String(t.test_run_id),
+              runCode:t.runCode,
+              provisional:!leaf,
+            });
+          });
+          return;
+        }
+        if(!(cache.databases||[]).length){
+          items.push({ id:`${connKey}:empty`, treeKey:`${connKey}:empty`, primary:"No databases found", depth:1, rowKind:"hint", expandable:false, selectable:false, icon:"none" });
+          return;
+        }
         (cache.databases||[]).forEach((dbName)=>{
           const dbKey=`dbdb:${profileId}|${dbName}`;
           const dbExpanded=isSourceTreeExpanded(dbKey);
@@ -4727,6 +5165,17 @@
             probeClass:fileProbeClass(s),
             tipHtml:fileSourceHoverHtml(s),
           });
+        } else if(isCatalogSource(s)){
+          items.push({
+            id:s.id,
+            treeKey:s.id,
+            primary:s.name||`catalog #${s.test_id}`,
+            depth:0,
+            rowKind:"catalog",
+            expandable:false,
+            selectable:true,
+            icon:"test",
+          });
         }
       });
       return items;
@@ -4742,7 +5191,7 @@
           folderDescendantFileSources(id).forEach((child)=>out.add(child.id));
           return;
         }
-        if(src && (isFileSource(src)||isPostgresTestLeaf(src))) out.add(id);
+        if(src && (isFileSource(src)||isPostgresTestLeaf(src)||isCatalogSource(src))) out.add(id);
       });
       return [...out];
     }
@@ -5299,8 +5748,40 @@
       });
     }
     function ensureLibraryConnSource(profile){
+      if(isHiddenLocalCatalogProfile(profile)) return null;
       const libId=String(profile.id||"");
       if(!libId) return null;
+      if(isDuckdbProfile(profile)){
+        let existing=state.sources.find((s)=>s.library_id===libId || (isCatalogSource(s)&&s.catalog_id===libId&&s.library_id));
+        if(!existing){
+          existing=state.sources.find((s)=>s.type==="duckdb_catalog"&&s.library_id===libId);
+        }
+        if(existing){
+          existing.library_id=libId;
+          existing.catalog_id=libId;
+          existing.type="duckdb_catalog";
+          existing.name=profile.name||existing.name||"DuckDB Catalog";
+          existing.catalog_path=profile.catalog_path||"";
+          existing.parquet_root=profile.parquet_root||"";
+          existing.default_ingest_mode="permanent";
+          existing.is_default=Boolean(profile.is_default)||String(activeCatalogId)===libId;
+          return existing;
+        }
+        const entry={
+          id:libId,
+          library_id:libId,
+          catalog_id:libId,
+          type:"duckdb_catalog",
+          name:profile.name||"DuckDB Catalog",
+          catalog_path:profile.catalog_path||"",
+          parquet_root:profile.parquet_root||"",
+          default_ingest_mode:"permanent",
+          is_default:Boolean(profile.is_default)||String(activeCatalogId)===libId,
+          file_path:"",
+        };
+        state.sources.push(entry);
+        return entry;
+      }
       let existing=state.sources.find((s)=>s.library_id===libId || (isPostgresConnSource(s)&&s.id===libId));
       if(!existing){
         existing=state.sources.find((s)=>isPostgresConnSource(s)&&s.host===profile.host&&Number(s.port)===Number(profile.port)&&s.user===profile.user&&s.name===profile.name);
@@ -5331,14 +5812,22 @@
       state.sources.push(entry);
       return entry;
     }
+    function isDuckdbCatalogSource(s){ return s && (s.type==="duckdb_catalog" || (s.library_id && isDuckdbProfile({ type:s.type, catalog_path:s.catalog_path }) && s.catalog_path)); }
     function addDatabaseLibrarySource(profile){
       return ensureLibraryConnSource(profile);
     }
     function syncDatabaseLibrarySources(){
-      const libIds=new Set((databaseLibrary||[]).map((p)=>String(p.id||"")).filter(Boolean));
-      (databaseLibrary||[]).forEach((profile)=>ensureLibraryConnSource(profile));
-      // Drop browse cache for removed profiles
+      purgeHiddenLocalCatalogSources();
+      const visible=(databaseLibrary||[]).filter((p)=>!isHiddenLocalCatalogProfile(p));
+      const libIds=new Set(visible.map((p)=>String(p.id||"")).filter(Boolean));
+      visible.forEach((profile)=>ensureLibraryConnSource(profile));
+      // Drop browse cache for removed / hidden profiles
       [...dbBrowseCache.keys()].forEach((k)=>{ if(!libIds.has(String(k))) dbBrowseCache.delete(k); });
+      // Drop duckdb_catalog sources no longer in the library
+      state.sources=state.sources.filter((s)=>{
+        if(s.type!=="duckdb_catalog") return true;
+        return libIds.has(String(s.library_id||s.catalog_id||s.id||""));
+      });
     }
     function profileConnQueryFrom(profile){
       const q=new URLSearchParams();
@@ -5353,6 +5842,14 @@
       if(!item || item.rowKind!=="db_test") return null;
       const profile=(databaseLibrary||[]).find((p)=>String(p.id)===String(item.profileId));
       if(!profile) return null;
+      if(isDuckdbProfile(profile)){
+        return addCatalogTestSource({
+          test_id:Number(item.testRunId),
+          run_code:item.runCode||item.testRunId,
+          catalog_id:String(profile.id),
+          select:false,
+        });
+      }
       const parentSrc=ensureLibraryConnSource(profile);
       const leaf=addPostgresTestLeaf({
         parentSrc,
@@ -5365,7 +5862,7 @@
       return leaf;
     }
     async function showAddDatabaseSourceModal(){
-      setStatus("Database profiles appear automatically in Sources. Use File → Database Manager to add connections.");
+      setStatus("Databases from File → Databases appear automatically in Sources.");
     }
     function showAddSourceMenu(ev){
       if(ev){
@@ -5375,6 +5872,39 @@
       }
       hideMenus();
       startFolderSourcePicker();
+    }
+    function isCatalogSource(s){ return s && (s.type==="catalog" || s.leaf_kind==="catalog_test"); }
+    function addCatalogTestSource({ test_id, run_code, select=true, catalog_id=null }){
+      const catId=catalog_id || activeCatalogId || null;
+      const existing=state.sources.find((s)=>isCatalogSource(s)&&Number(s.test_id)===Number(test_id)&&String(s.catalog_id||"")===String(catId||""));
+      if(existing){
+        if(select) selectedSourceIds.add(existing.id);
+        return existing;
+      }
+      const entry={
+        id:crypto.randomUUID(),
+        type:"catalog",
+        leaf_kind:"catalog_test",
+        name:run_code||`catalog-${test_id}`,
+        test_id:Number(test_id),
+        catalog_id:catId,
+        run_code:run_code||String(test_id),
+        file_path:"",
+        artifact_id:"",
+      };
+      state.sources.push(entry);
+      let db=state.databases.find((d)=>d.sourceId===entry.id);
+      if(!db){
+        db={ id:crypto.randomUUID(), sourceId:entry.id, sourceType:"catalog", name:entry.name, catalog_id:catId };
+        state.databases.push(db);
+      }
+      const testKey=`${db.id}|${test_id}`;
+      addedTestIds.add(testKey);
+      selectedTestIds.add(testKey);
+      selectedDatabaseIds.add(db.id);
+      if(select) selectedSourceIds.add(entry.id);
+      clearCatalogCache();
+      return entry;
     }
     function fileNeedsTimeIndex(fileType, probe){
       if(fileType==="tdms") return false;
@@ -5409,10 +5939,42 @@
       }
     }
     async function browseProfileAccessible(profile, { force=false }={}){
+      if(isHiddenLocalCatalogProfile(profile)) return;
       const profileId=String(profile.id||"");
       if(!profileId) return;
       const existing=dbBrowseCache.get(profileId);
       if(!force && existing && existing.accessible!==undefined && !existing.loading) return;
+      if(isDuckdbProfile(profile)){
+        dbBrowseCache.set(profileId, { loading:true, accessible:false, error:null, databases:[], tests:{}, kind:"duckdb" });
+        renderAll();
+        try{
+          const tests=await getJson(`/api/catalog/tests?limit=500&catalog_id=${encodeURIComponent(profileId)}`);
+          const rows=(tests||[]).map((t)=>({
+            test_run_id:String(t.test_run_id),
+            runCode:String(t.run_code||t.test_run_id),
+            primary:String(t.run_code||t.test_run_id),
+          }));
+          dbBrowseCache.set(profileId, {
+            loading:false,
+            accessible:true,
+            error:null,
+            kind:"duckdb",
+            databases:["catalog"],
+            tests:{ catalog:{ loading:false, error:null, table:"tests", rows } },
+          });
+        }catch(err){
+          dbBrowseCache.set(profileId, {
+            loading:false,
+            accessible:false,
+            error:String(err.message||err||"Catalog open failed"),
+            kind:"duckdb",
+            databases:[],
+            tests:{},
+          });
+        }
+        renderAll();
+        return;
+      }
       dbBrowseCache.set(profileId, { loading:true, accessible:false, error:null, databases:[], tests:{} });
       renderAll();
       try{
@@ -5420,7 +5982,6 @@
         const names=(dbs||[]).map((d)=>String(d.name)).filter(Boolean);
         const tests={};
         const accessible=[];
-        // Check databases in parallel for data presence
         const checked=await Promise.all(names.map(async(dbName)=>{
           const packed=await probeDbHasTests(profile, dbName);
           return packed ? { dbName, packed } : null;
@@ -5515,7 +6076,7 @@
           await refreshFileProbeStatus(files[i]);
         }
         // Drop unsupported non-file entries that may have snuck in
-        state.sources=state.sources.filter((s)=>!s.type || isFolderSource(s) || isFileSource(s) || s.type==="postgres");
+        state.sources=state.sources.filter((s)=>!s.type || isFolderSource(s) || isFileSource(s) || isCatalogSource(s) || s.type==="duckdb_catalog" || s.type==="postgres");
         renderAll();
         saveState();
         const shownProfiles=(databaseLibrary||[]).filter((p)=>{
@@ -5899,204 +6460,427 @@
       })();
     }
 
+    function databasesWindowTitleHtml(...leaves){
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="3.2" rx="5.2" ry="1.8" fill="none" stroke="currentColor" stroke-width="1.2"/><path fill="none" stroke="currentColor" stroke-width="1.2" d="M2.8 3.2v8.2c0 1 2.3 1.8 5.2 1.8s5.2-.8 5.2-1.8V3.2"/><path fill="none" stroke="currentColor" stroke-width="1.2" d="M2.8 6.4c0 1 2.3 1.8 5.2 1.8s5.2-.8 5.2-1.8M2.8 9.6c0 1 2.3 1.8 5.2 1.8s5.2-.8 5.2-1.8"/></svg></span>`;
+      const sep=`<span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span>`;
+      const parts=[`<span>Databases</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${leaf}</span>`));
+      return `${icon}${parts.join("")}`;
+    }
+    function openDatabaseProfileForm({ mode="create", profile=null, onSaved=null }={}){
+      const isEdit=mode==="edit" && profile;
+      if(isEdit && isPostgresProfile(profile)){
+        const chosenTags=new Set(normalizeDatabaseTags(profile.tags));
+        let readTags=()=>normalizeDatabaseTags([...chosenTags]);
+        openModal("Databases > Manager > Edit",`
+          <div class="formStack">
+            <div class="formField">
+              <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+              <input id="m_db_name" class="formNameInput" type="text" value="${escAttr(profile.name||"")}" spellcheck="false" />
+            </div>
+            <div class="formFieldRow formFieldRowGrow">
+              <div class="formField">
+                <label>Host<span class="reqMark" aria-hidden="true">*</span></label>
+                <input id="m_db_host" type="text" value="${escAttr(profile.host||"localhost")}" spellcheck="false" />
+              </div>
+              <div class="formField formFieldNarrow">
+                <label>Port</label>
+                <input id="m_db_port" type="number" value="${Number(profile.port||5432)}" />
+              </div>
+            </div>
+            <div class="formFieldRow formFieldRowGrow">
+              <div class="formField">
+                <label>User<span class="reqMark" aria-hidden="true">*</span></label>
+                <input id="m_db_user" type="text" value="${escAttr(profile.user||"")}" spellcheck="false" />
+              </div>
+              <div class="formField">
+                <label>Password</label>
+                <input id="m_db_password" type="password" value="${escAttr(profile.password||"")}" />
+              </div>
+            </div>
+            <div class="formField">
+              <label>Secure</label>
+              <input id="m_db_ssl" type="text" value="${escAttr(profile.sslmode||"disable")}" spellcheck="false" placeholder="disable / require" />
+            </div>
+            <div class="formField">
+              <label>Tags</label>
+              <div id="m_db_tag_row" class="dbTagChipRow dbTagChipRowEdit">
+                <button type="button" id="m_db_tag_add" class="dbTagAddBtn" aria-label="Add tag">+</button>
+                <input id="m_db_tag_input" class="dbTagInput" type="text" placeholder="Tag" spellcheck="false" />
+              </div>
+            </div>
+          </div>
+          <div class="modalActions modalActionsIconOnly">
+            <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+          </div>`,{ ...WF_ALIAS_FORM, titleHtml:databasesWindowTitleHtml("Manager", "Edit") },async()=>{
+          const name=(byId("m_db_name")?.value||"").trim();
+          const host=(byId("m_db_host")?.value||"").trim();
+          const user=(byId("m_db_user")?.value||"").trim();
+          if(!name||!host||!user){ setStatus("Name, Host, and User are required.", true); return false; }
+          try{
+            await loadDatabaseLibrary();
+            let rows=Array.isArray(databaseLibrary) ? structuredClone(databaseLibrary) : [];
+            const idx=rows.findIndex((r)=>String(r.id)===String(profile.id));
+            if(idx<0){ setStatus("Database not found.", true); return false; }
+            rows[idx]={
+              ...rows[idx],
+              type:"postgres",
+              name,
+              host,
+              port:Number(byId("m_db_port")?.value||5432),
+              user,
+              password:byId("m_db_password")?.value||"",
+              sslmode:(byId("m_db_ssl")?.value||"disable").trim()||"disable",
+              tags:readTags(),
+              updated_at:new Date().toISOString(),
+            };
+            const saved=await saveDatabaseLibrary(rows, activeCatalogId);
+            databaseLibrary=saved;
+            syncDatabaseLibrarySources();
+            (databaseLibrary||[]).forEach((p)=>browseProfileAccessible(p, { force:true }));
+            renderAll();
+            setStatus(`Updated database '${name}'.`);
+            if(typeof onSaved==="function") onSaved();
+            return true;
+          }catch(err){
+            setStatus(`Failed to save database: ${err}`, true);
+            return false;
+          }
+        });
+        readTags=wireDatabaseTagEditor(chosenTags);
+        return;
+      }
+      const leaf=isEdit ? "Edit" : "Create";
+      const titleParts=isEdit ? ["Manager", "Edit"] : ["Manager", "Create"];
+      const defaultName=isEdit ? (profile.name||"") : "";
+      const defaultPath=isEdit ? (profile.catalog_path||"") : "";
+      const chosenTags=new Set(normalizeDatabaseTags(isEdit ? profile.tags : []));
+      let readTags=()=>normalizeDatabaseTags([...chosenTags]);
+      const folderIcon=`<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.5 3.2h4.2l1.2 1.3H14.5c.5 0 .9.4.9.9v6.5c0 .5-.4.9-.9.9H1.5c-.5 0-.9-.4-.9-.9V4.1c0-.5.4-.9.9-.9zm.3 2.2v6.3h12.4V5.4H1.8z"/></svg>`;
+      openModal(`Databases > Manager > ${leaf}`,`
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="m_db_name" class="formNameInput" type="text" value="${escAttr(defaultName)}" spellcheck="false" placeholder="Project catalog" />
+          </div>
+          <div class="formField">
+            <label>Filepath<span class="reqMark" aria-hidden="true">*</span></label>
+            <div class="inputWithSuffix">
+              <input id="m_db_path" type="text" value="${escAttr(defaultPath)}" spellcheck="false" placeholder="D:/projects/a/catalog.duckdb" />
+              <button type="button" id="m_db_path_browse" class="inputSuffix" aria-label="Browse folder">${folderIcon}</button>
+            </div>
+          </div>
+          <div class="formField">
+            <label>Tags</label>
+            <div id="m_db_tag_row" class="dbTagChipRow dbTagChipRowEdit">
+              <button type="button" id="m_db_tag_add" class="dbTagAddBtn" aria-label="Add tag">+</button>
+              <input id="m_db_tag_input" class="dbTagInput" type="text" placeholder="Tag" spellcheck="false" />
+            </div>
+          </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_ALIAS_FORM, titleHtml:databasesWindowTitleHtml(...titleParts) },async()=>{
+        const name=(byId("m_db_name")?.value||"").trim();
+        const filepath=(byId("m_db_path")?.value||"").trim();
+        if(!name){ setStatus("Name is required.", true); return false; }
+        if(!filepath){ setStatus("Filepath is required.", true); return false; }
+        const tags=readTags();
+        const updatedAt=new Date().toISOString();
+        try{
+          await loadDatabaseLibrary();
+          let rows=Array.isArray(databaseLibrary) ? structuredClone(databaseLibrary) : [];
+          if(isEdit){
+            const idx=rows.findIndex((r)=>String(r.id)===String(profile.id));
+            if(idx<0){ setStatus("Database not found.", true); return false; }
+            rows[idx]={
+              ...rows[idx],
+              type:"duckdb",
+              name,
+              catalog_path:filepath,
+              parquet_root:rows[idx].parquet_root||"",
+              default_ingest_mode:"permanent",
+              tags,
+              updated_at:updatedAt,
+            };
+          }else{
+            const id=crypto.randomUUID();
+            rows.unshift({
+              id,
+              type:"duckdb",
+              name,
+              catalog_path:filepath,
+              parquet_root:"",
+              default_ingest_mode:"permanent",
+              is_default:!rows.some((r)=>isDuckdbProfile(r)),
+              tags,
+              updated_at:updatedAt,
+            });
+            if(!activeCatalogId) activeCatalogId=id;
+          }
+          const saved=await saveDatabaseLibrary(rows, activeCatalogId);
+          databaseLibrary=saved;
+          syncDatabaseLibrarySources();
+          rebuildChannelsDataLocal();
+          (databaseLibrary||[]).forEach((p)=>browseProfileAccessible(p, { force:true }));
+          renderAll();
+          setStatus(isEdit ? `Updated database '${name}'.` : `Created database '${name}'.`);
+          if(typeof onSaved==="function") onSaved();
+          return true;
+        }catch(err){
+          setStatus(`Failed to save database: ${err}`, true);
+          return false;
+        }
+      });
+      readTags=wireDatabaseTagEditor(chosenTags);
+      const browseBtn=byId("m_db_path_browse");
+      if(browseBtn){
+        browseBtn.onclick=async(ev)=>{
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          try{
+            const picked=await postJson("/api/desktop/pick-folder", {});
+            if(!picked || picked.cancelled || !picked.path) return;
+            const folder=String(picked.path).replace(/[/\\]+$/,"");
+            const sep=folder.includes("\\") ? "\\" : "/";
+            const pathInput=byId("m_db_path");
+            const nameInput=byId("m_db_name");
+            const existing=(pathInput?.value||"").trim();
+            let fileName="catalog.duckdb";
+            if(existing && /\.duckdb$/i.test(existing)){
+              fileName=existing.split(/[/\\]/).pop()||fileName;
+            }else{
+              const stem=((nameInput?.value||"").trim()||"catalog")
+                .replace(/[<>:"/\\|?*\u0000-\u001f]/g,"_")
+                .replace(/\s+/g,"_")
+                .replace(/\.duckdb$/i,"")
+                || "catalog";
+              fileName=`${stem}.duckdb`;
+            }
+            if(pathInput) pathInput.value=`${folder}${sep}${fileName}`;
+          }catch(err){
+            setStatus(`Folder picker failed: ${err}`, true);
+          }
+        };
+      }
+    }
     async function openDatabaseManagerModal(){
       await loadDatabaseLibrary();
       let library = Array.isArray(databaseLibrary) ? structuredClone(databaseLibrary) : [];
       library = library.map((r) => ({ ...r, id: String(r.id || crypto.randomUUID()) }));
-      const expanded = new Set(); // holds profile ids
 
       const profileById = (id) => library.find((r) => String(r.id) === String(id)) || null;
 
-      const normalizedMeta = (r) => {
-        const host = (r.host || "localhost").trim();
-        const port = Number(r.port || 5432);
-        const user = (r.user || "pipeline").trim();
-        const ssl = (r.sslmode || "disable").trim();
-        return `${user}@${host}:${port} · ssl=${ssl}`;
+      const selectedTagFilters = new Set();
+
+      const allLibraryTags = () => {
+        const seen = new Set();
+        const out = [];
+        library.forEach((r) => {
+          normalizeDatabaseTags(r.tags).forEach((tag) => {
+            const key = tag.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push(tag);
+          });
+        });
+        return out.sort((a, b) => a.localeCompare(b));
       };
 
       const filterList = (list) => {
         const q = (byId("m_db_search")?.value || "").trim().toLowerCase();
-        if (!q) return list;
+        const activeTags = [...selectedTagFilters];
         return list.filter((r) => {
-          const hay = `${r.name || ""} ${r.host || ""} ${r.user || ""} ${r.sslmode || ""} ${r.port || ""}`.toLowerCase();
+          if (activeTags.length) {
+            const tags = normalizeDatabaseTags(r.tags).map((t) => t.toLowerCase());
+            if (!activeTags.every((t) => tags.includes(String(t).toLowerCase()))) return false;
+          }
+          if (!q) return true;
+          const hay = `${r.name || ""} ${r.type || ""} ${r.catalog_path || ""} ${r.parquet_root || ""} ${r.host || ""} ${r.user || ""} ${(r.tags || []).join(" ")} ${r.sslmode || ""} ${r.port || ""}`.toLowerCase();
           return hay.includes(q);
         });
       };
 
-      const editHtml = (r) => `
-        <div style="padding:6px 8px 8px;">
-          <div class="modalGrid" style="grid-template-columns:1fr 1fr; gap:8px; padding:0;">
-            <div><label>Name</label><input data-k="name" data-id="${escAttr(r.id)}" type="text" value="${escAttr(r.name || "")}" /></div>
-            <div><label>Host</label><input data-k="host" data-id="${escAttr(r.id)}" type="text" value="${escAttr(r.host || "localhost")}" /></div>
-            <div><label>User</label><input data-k="user" data-id="${escAttr(r.id)}" type="text" value="${escAttr(r.user || "pipeline")}" /></div>
-            <div><label>Port</label><input data-k="port" data-id="${escAttr(r.id)}" type="number" value="${Number(r.port || 5432)}" /></div>
-            <div><label>SSL</label><input data-k="sslmode" data-id="${escAttr(r.id)}" type="text" value="${escAttr(r.sslmode || "disable")}" /></div>
-            <div><label>Password</label><input data-k="password" data-id="${escAttr(r.id)}" type="password" value="${escAttr(r.password || "")}" /></div>
-          </div>
-        </div>
-      `;
+      const updateFilterBtn = () => {
+        const btn = byId("m_db_filter_btn");
+        if (!btn) return;
+        btn.classList.toggle("active", selectedTagFilters.size > 0);
+        btn.setAttribute("aria-label", selectedTagFilters.size ? `Filter tags (${selectedTagFilters.size} active)` : "Filter by tags");
+      };
 
       const rowHtml = (r) => {
-        const isOpen = expanded.has(String(r.id));
+        const kind = isDuckdbProfile(r) ? "DuckDB" : "PostgreSQL";
+        const tagsHtml = databaseTagsHtml(r.tags);
+        const updated = formatDatabaseUpdatedAt(r.updated_at);
         return `
-          <div class="selectRow ${isOpen ? "active" : ""}" data-id="${escAttr(r.id)}" style="display:block;">
-            <div style="display:flex;align-items:center;gap:4px;">
-              <div style="flex:1;min-width:0;">
-                <div class="itemPrimary">${escapeHtml(r.name || "PostgreSQL Database")}</div>
-                <div class="itemMeta">${escapeHtml(normalizedMeta(r))}</div>
-              </div>
-              <button type="button" class="iconBtn" data-a="test" data-id="${escAttr(r.id)}" title="Test connection">&#9889;</button>
-              <button type="button" class="iconBtn" data-a="toggle" data-id="${escAttr(r.id)}" title="${isOpen ? "Collapse" : "Edit"}">${isOpen ? "▴" : "✎"}</button>
-              <button type="button" class="iconBtn" data-a="delete" data-id="${escAttr(r.id)}" title="Delete">×</button>
-            </div>
-            ${isOpen ? editHtml(r) : ""}
+          <div class="selectRow dbManagerRow" data-id="${escAttr(r.id)}" title="${escAttr(r.name || kind)}">
+            <div class="itemPrimary">${escapeHtml(r.name || kind)}</div>
+            ${tagsHtml ? `<div class="dbTagChipRow dbTagChipRowList">${tagsHtml}</div>` : ""}
+            <div class="dbRowUpdated">${escapeHtml(updated)}</div>
           </div>
         `;
+      };
+
+      const persistLibrary = async () => {
+        try{
+          const saved = await saveDatabaseLibrary(library, activeCatalogId);
+          library = structuredClone(saved);
+          databaseLibrary = saved;
+          syncDatabaseLibrarySources();
+          rebuildChannelsDataLocal();
+          (databaseLibrary||[]).forEach((profile)=>{ browseProfileAccessible(profile, { force:true }); });
+          renderAll();
+          return true;
+        }catch(err){
+          setStatus(`Failed to save databases: ${err}`, true);
+          return false;
+        }
+      };
+
+      const refreshFromServer = async () => {
+        await loadDatabaseLibrary();
+        library = Array.isArray(databaseLibrary) ? structuredClone(databaseLibrary) : [];
+        library = library.map((r) => ({ ...r, id: String(r.id || crypto.randomUUID()) }));
+        const available = new Set(allLibraryTags().map((t) => t.toLowerCase()));
+        [...selectedTagFilters].forEach((t) => {
+          if (!available.has(String(t).toLowerCase())) selectedTagFilters.delete(t);
+        });
+        renderList();
+        renderAll();
+      };
+
+      const deleteProfile = async (id) => {
+        const idx = library.findIndex((x) => String(x.id) === String(id));
+        if (idx < 0) return;
+        const removed = library[idx];
+        library.splice(idx, 1);
+        if(String(activeCatalogId)===String(id)){
+          activeCatalogId = library.find((r)=>isDuckdbProfile(r))?.id || null;
+        }
+        const ok = await persistLibrary();
+        if(ok){
+          setStatus(`Deleted database '${removed?.name || id}'.`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
       };
 
       const renderList = () => {
         const el = byId("m_db_list");
         if (!el) return;
         const filtered = filterList(library);
+        const emptyMsg = !library.length
+          ? "No databases yet. Use + to create one."
+          : (selectedTagFilters.size ? "No databases match the selected tags." : "No matching databases.");
         el.innerHTML = filtered.length
           ? filtered.map((r) => rowHtml(r)).join("")
-          : `<div class="empty">${library.length ? "No matching profiles." : "No saved database profiles yet."}</div>`;
+          : `<div class="empty">${emptyMsg}</div>`;
+        updateFilterBtn();
 
-        el.querySelectorAll("button[data-a]").forEach((b) => {
-          b.onclick = (ev) => {
-            if (ev) {
-              ev.preventDefault();
-              ev.stopPropagation();
-            }
-            const action = b.getAttribute("data-a");
-            const id = b.getAttribute("data-id");
-            const row = profileById(id);
-            if (!row) return;
-            if (action === "toggle") {
-              const key = String(id);
-              if (expanded.has(key)) expanded.delete(key);
-              else expanded.add(key);
-              renderList();
-              return;
-            }
-            if (action === "test") {
-              syncLibraryFromDom();
-              void testDatabaseProfile(profileById(id));
-              return;
-            }
-            if (action === "delete") {
-              const idx = library.findIndex((x) => String(x.id) === String(id));
-              if (idx < 0) return;
-              library.splice(idx, 1);
-              expanded.delete(String(id));
-              renderList();
-              return;
-            }
+        el.querySelectorAll(".selectRow[data-id]").forEach((row) => {
+          const id = row.getAttribute("data-id");
+          row.oncontextmenu = (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const profile = profileById(id);
+            if(!profile) return;
+            const z = Math.max(200, appWindowZ + 15);
+            const items = [
+              {
+                label: "Edit",
+                action: () => openDatabaseProfileForm({
+                  mode: "edit",
+                  profile,
+                  onSaved: () => { void refreshFromServer(); },
+                }),
+              },
+              {
+                label: "Delete",
+                action: () => { void deleteProfile(id); },
+              },
+            ];
+            showContextMenu(ev.clientX, ev.clientY, items, { zIndex: z });
           };
-        });
-
-        el.querySelectorAll("input[data-k]").forEach((inp) => {
-          inp.oninput = () => {
-            const k = inp.getAttribute("data-k");
-            const id = inp.getAttribute("data-id");
-            const row = profileById(id);
-            if (!k || !row) return;
-            if (k === "port") row[k] = Number(inp.value || "5432");
-            else row[k] = inp.value;
+          row.ondblclick = () => {
+            const profile = profileById(id);
+            if(profile){
+              openDatabaseProfileForm({
+                mode: "edit",
+                profile,
+                onSaved: () => { void refreshFromServer(); },
+              });
+            }
           };
         });
       };
 
-      const addProfile = () => {
-        const id = crypto.randomUUID();
-        library.unshift({ id, type: "postgres", name: "PostgreSQL Database", host: "localhost", port: 5432, user: "pipeline", password: "", sslmode: "disable" });
-        expanded.clear();
-        expanded.add(id);
-        renderList();
-      };
-
-      const syncLibraryFromDom = () => {
-        const root = byId("m_db_list");
-        if (!root) return;
-        root.querySelectorAll("input[data-k]").forEach((inp) => {
-          const k = inp.getAttribute("data-k");
-          const id = inp.getAttribute("data-id");
-          const row = profileById(id);
-          if (!k || !row) return;
-          if (k === "port") row[k] = Number(inp.value || "5432");
-          else row[k] = inp.value;
-        });
-      };
-
+      const filterIcon = `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 3h12l-4.5 5.2V13l-3 1.5V8.2L2 3z"/></svg>`;
       openModal(
-        "Database Manager",
-        `<div class="cfgManagerToolbar">
-            <input id="m_db_search" type="text" placeholder="Search databases..." />
-            <button id="m_db_menu_btn" type="button" class="iconBtn cfgMenuBtn">&#8943;</button>
+        "Databases > Manager",
+        `<div class="maskSearchPad dbManagerToolbar">
+            <button id="m_db_filter_btn" type="button" class="addBtn dbFilterBtn" aria-label="Filter by tags">${filterIcon}</button>
+            <input id="m_db_search" class="searchInput" type="text" placeholder="Search..." />
+            <button id="m_db_add_btn" type="button" class="addBtn" aria-label="Create database">+</button>
          </div>
-         <div style="padding:0 10px 10px;">
+         <div class="maskListPad">
            <div id="m_db_list" class="modalList"></div>
          </div>
-         <div class="modalActions">
-           <button id="modalCancelBtn" type="button">Close</button>
-           <button id="modalSaveCloseBtn" type="button">Save</button>
-         </div>`,
-        async () => {
-          syncLibraryFromDom();
-          try {
-            const saved = await saveDatabaseLibrary(library);
-            library = structuredClone(saved);
-            syncDatabaseLibrarySources();
-            rebuildChannelsDataLocal();
-            renderAll();
-            setStatus(`Saved ${saved.length} database profile(s).`);
-            return true;
-          } catch (err) {
-            setStatus(`Failed to save database profiles: ${err}`, true);
-            return false;
-          }
-        },
-        WF_CFG
+         <div class="modalActions" style="display:none" aria-hidden="true"></div>`,
+        async () => true,
+        { ...WF_CFG, closable:true, titleHtml:databasesWindowTitleHtml("Manager") }
       );
 
-      const importProfiles = async () => {
-        const obj = await pickDatabaseJsonFile();
-        if (!obj) return;
-        const imported = normalizeImportedDatabaseLibrary(obj);
-        if (!imported.length) {
-          setStatus("No valid database profiles found in import file.", true);
-          return;
-        }
-        library = [...imported, ...library];
-        renderList();
-        setStatus(`Imported ${imported.length} database profile(s). Click Save to persist.`);
-      };
-      const exportProfiles = async () => {
-        syncLibraryFromDom();
-        const payload = { databases: library };
-        const result = await saveJsonToFile("nova_database_library.json", payload);
-        if (result.ok && result.viaPicker) setStatus("Database library exported.");
-        if (result.ok && !result.viaPicker) setStatus("Database library downloaded (save dialog unavailable in this environment).");
-        if (!result.ok && result.cancelled) setStatus("Database library export cancelled.");
-      };
-
       byId("m_db_search").oninput = () => renderList();
-      byId("m_db_menu_btn").onclick = (ev) => {
-        ev.stopPropagation();
+      byId("m_db_filter_btn").onclick = (ev) => {
+        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
         const rect = ev.currentTarget.getBoundingClientRect();
         const z = Math.max(200, appWindowZ + 15);
+        const tags = allLibraryTags();
+        const items = [];
+        if(selectedTagFilters.size){
+          items.push({
+            label: "Clear filters",
+            action: () => {
+              selectedTagFilters.clear();
+              renderList();
+            },
+          });
+          items.push({ sep: true });
+        }
+        if(!tags.length){
+          items.push({ label: "No tags yet", action: () => {} });
+        }else{
+          tags.forEach((tag)=>{
+            const key = tag.toLowerCase();
+            const active = [...selectedTagFilters].some((t)=>String(t).toLowerCase()===key);
+            items.push({
+              label: tag,
+              checked: active,
+              action: () => {
+                if(active){
+                  [...selectedTagFilters].forEach((t)=>{ if(String(t).toLowerCase()===key) selectedTagFilters.delete(t); });
+                }else{
+                  selectedTagFilters.add(tag);
+                }
+                renderList();
+              },
+            });
+          });
+        }
         setTimeout(() => {
-          showContextMenu(rect.right - 180, rect.bottom + 2, [
-            { label: "Add database profile", action: () => addProfile() },
-            { label: "Import profiles...", action: () => importProfiles() },
-            { label: "Export profiles...", action: () => exportProfiles() },
-          ], { zIndex: z });
+          showContextMenu(rect.left, rect.bottom + 2, items, { zIndex: z });
         }, 0);
+      };
+      byId("m_db_add_btn").onclick = (ev) => {
+        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+        openDatabaseProfileForm({
+          mode: "create",
+          onSaved: () => { void refreshFromServer(); },
+        });
       };
 
       renderList();
     }
+
     async function openUnitManagerModal(){
       await loadUnitLibrary();
       let library=structuredClone(unitLibrary.categories||[]);
@@ -6280,7 +7064,7 @@
       openModal(
         "Unit Manager",
         `<div class="cfgManagerToolbar">
-            <input id="m_unit_search" type="text" placeholder="Search categories..." />
+            <input id="m_unit_search" class="searchInput" type="text" placeholder="Search categories..." />
             <button id="m_unit_menu_btn" type="button" class="iconBtn cfgMenuBtn">&#8943;</button>
          </div>
          <div style="padding:0 10px 10px;">
@@ -6687,7 +7471,7 @@
         el.innerHTML=filtered.map(row).join("")||`<div class="empty">${library.length?"No matching configs.":"No saved configs yet."}</div>`;
         wireRows();
       };
-      openModal("Configuration Manager",`<div class="cfgManagerToolbar"><input id="m_cfg_search" type="text" placeholder="Search configs..." /><button id="m_cfg_menu_btn" type="button" class="iconBtn cfgMenuBtn">&#8943;</button></div><div style="padding:0 10px 10px;"><div id="m_cfg_list" class="modalList"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true, WF_CFG);
+      openModal("Configuration Manager",`<div class="cfgManagerToolbar"><input id="m_cfg_search" class="searchInput" type="text" placeholder="Search configs..." /><button id="m_cfg_menu_btn" type="button" class="iconBtn cfgMenuBtn">&#8943;</button></div><div style="padding:0 10px 10px;"><div id="m_cfg_list" class="modalList"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true, WF_CFG);
       const refreshLibrary=async()=>{
         library=await loadConfigLibrary();
         renderList();
@@ -6985,8 +7769,17 @@
       if(!src || !isFileSource(src) || !src.file_path) return src;
       ensureFileSourceCatalog(src);
       if(src.artifact_id){
-        await linkArtifactForSource(src);
-        return src;
+        try{
+          const st=await getJson(`/api/v3/ingest/${encodeURIComponent(src.artifact_id)}/status`);
+          if(st && st.status==="ready" && st.artifact_id){
+            if(st.test_id!=null) src.test_id=Number(st.test_id);
+            src.durability=st.durability||src.durability||"temporary";
+            return src;
+          }
+        }catch{}
+        // Stale after process restart (temporary cache cleared) — re-ingest.
+        src.artifact_id="";
+        delete src.test_id;
       }
       setStatus(`Indexing ${src.name||src.type}...`);
       await attachArtifactToSource(src, src.type, src.file_path, {
@@ -7090,7 +7883,7 @@
       const items=sourcesListItems();
       root.innerHTML="";
       if(!items.length){
-        root.innerHTML=`<div class="empty">No sources yet. Add a data file/folder, or configure databases in Database Manager.</div>`;
+        root.innerHTML=`<div class="empty">No sources yet. Add a folder/files with +, or create a database in File → Databases.</div>`;
         return;
       }
       root.onclick=(ev)=>{
@@ -7151,7 +7944,27 @@
         row.oncontextmenu=(ev)=>{
           ev.preventDefault();
           if(ev.stopPropagation) ev.stopPropagation();
-          if(it.selectable===false || it.rowKind==="hint") return;
+          if(it.rowKind==="hint") return;
+          if(it.rowKind==="db_conn"){
+            const profile=(databaseLibrary||[]).find((p)=>String(p.id)===String(it.profileId));
+            if(!profile){ setStatus("Database profile not found.", true); return; }
+            showContextMenu(ev.clientX,ev.clientY,[
+              {
+                label:"Edit",
+                action:()=>openDatabaseProfileForm({
+                  mode:"edit",
+                  profile,
+                  onSaved:()=>{
+                    syncDatabaseLibrarySources();
+                    browseProfileAccessible(profile, { force:true });
+                    renderAll();
+                  },
+                }),
+              },
+            ]);
+            return;
+          }
+          if(it.selectable===false) return;
           if(!isSourceTreeRowActive(it)){
             selectedSourceIds.clear();
             if(it.rowKind==="db_test" && it.provisional){
@@ -8161,6 +8974,159 @@
       });
       rebuildChannelUnitMap();
     }
+    function activeCatalogTestId(){
+      for(const id of selectedSourceIds){
+        const src=state.sources.find((s)=>s.id===id);
+        if(src && (isCatalogSource(src) || src.test_id)) return Number(src.test_id);
+      }
+      for(const src of state.sources){
+        if((isCatalogSource(src) || src.test_id) && selectedSourceIds.has(src.id)) return Number(src.test_id);
+      }
+      const fileWithId=state.sources.find((s)=>isFileSource(s)&&s.test_id&&selectedSourceIds.has(s.id));
+      return fileWithId ? Number(fileWithId.test_id) : null;
+    }
+    async function refreshCatalogRanges(){
+      const tid=activeCatalogTestId();
+      const list=byId("rangesList");
+      const ph=byId("rangesPlaceholder");
+      if(!tid){
+        catalogRanges=[];
+        if(list) list.innerHTML="";
+        if(ph){ ph.style.display=""; ph.textContent="Select a catalog/file source with a registered test_id."; }
+        return;
+      }
+      const src=state.sources.find((s)=>(isCatalogSource(s)||s.test_id)&&Number(s.test_id)===Number(tid));
+      const catQ=src?.catalog_id?`&catalog_id=${encodeURIComponent(src.catalog_id)}`:"";
+      try{
+        catalogRanges=await getJson(`/api/catalog/ranges?test_id=${tid}${catQ}`);
+      }catch(err){
+        catalogRanges=[];
+        setStatus(`Failed to load ranges: ${err}`, true);
+      }
+      renderRangesList();
+      void applyRangeOverlaysToPlot();
+    }
+    function renderRangesList(){
+      const list=byId("rangesList");
+      const ph=byId("rangesPlaceholder");
+      if(!list) return;
+      if(!catalogRanges.length){
+        list.innerHTML="";
+        if(ph){ ph.style.display=""; ph.textContent="No ranges yet. Use + to create, or ⚡ to apply a rule."; }
+        return;
+      }
+      if(ph) ph.style.display="none";
+      list.innerHTML=catalogRanges.map((r)=>{
+        const label=escapeHtml(r.label||r.name||`range ${r.range_id}`);
+        const src=escapeHtml(r.source||"user");
+        return `<div class="itemRow" data-range-id="${r.range_id}"><div class="itemPrimary">${label}</div><div class="itemMeta">${src} · ${escapeHtml(String(r.start_time||""))} → ${escapeHtml(String(r.end_time||""))}</div></div>`;
+      }).join("");
+    }
+    function rangeShapesForPlot(){
+      if(!catalogRanges.length) return [];
+      return catalogRanges.map((r)=>{
+        const x0=Date.parse(String(r.start_time||""));
+        const x1=Date.parse(String(r.end_time||""));
+        if(!Number.isFinite(x0)||!Number.isFinite(x1)) return null;
+        return {
+          type:"rect",
+          xref:"x",
+          yref:"paper",
+          x0:new Date(x0),
+          x1:new Date(x1),
+          y0:0,
+          y1:1,
+          fillcolor:r.color||"rgba(59,130,246,0.18)",
+          line:{ width:0 },
+          layer:"below",
+        };
+      }).filter(Boolean);
+    }
+    async function applyRangeOverlaysToPlot(){
+      const gd=plotlyGraphDiv();
+      if(!gd || !window.Plotly) return;
+      try{
+        await Plotly.relayout(gd, { shapes: rangeShapesForPlot() });
+      }catch{}
+    }
+    async function openCreateRangeModal(){
+      const tid=activeCatalogTestId();
+      if(!tid){ setStatus("Select a catalog test (or ingested file with test_id) first.", true); return; }
+      openModal("Create Range", `
+        <div class="modalGrid">
+          <div><label>Name</label><input id="m_range_name" value="Range" /></div>
+          <div><label>Label</label><input id="m_range_label" value="" /></div>
+          <div><label>Start (ISO UTC)</label><input id="m_range_start" placeholder="1970-01-01T00:00:00Z" /></div>
+          <div><label>End (ISO UTC)</label><input id="m_range_end" placeholder="1970-01-01T00:00:01Z" /></div>
+          <div><label>Color</label><input id="m_range_color" value="#3b82f6" /></div>
+        </div>
+        <div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>
+      `, async()=>{
+        const name=(byId("m_range_name").value||"").trim()||"Range";
+        const start=(byId("m_range_start").value||"").trim();
+        const end=(byId("m_range_end").value||"").trim();
+        if(!start||!end){ setStatus("Start and end are required.", true); return false; }
+        const r=await fetch("/api/catalog/ranges",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+          test_id:tid,
+          name,
+          label:(byId("m_range_label").value||"").trim()||null,
+          start_time:start,
+          end_time:end,
+          color:(byId("m_range_color").value||"").trim()||null,
+          source:"user",
+        })});
+        if(!r.ok){ let msg=`Create range failed (${r.status})`; try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{} setStatus(msg,true); return false; }
+        await refreshCatalogRanges();
+        setStatus("Range created.");
+        return true;
+      });
+    }
+    async function openApplyRangeRuleModal(){
+      const tid=activeCatalogTestId();
+      if(!tid){ setStatus("Select a catalog test first.", true); return; }
+      let rules=[];
+      try{ rules=await getJson("/api/catalog/range-rules"); }
+      catch(err){ setStatus(`Failed to load range rules: ${err}`, true); return; }
+      if(!rules.length){
+        openModal("Apply Range Rule", `<p>No rules yet. Create one with threshold/edge config via API, or add a quick threshold rule below.</p>
+          <div class="modalGrid">
+            <div><label>Channel</label><input id="m_rule_ch" value="THRUST" /></div>
+            <div><label>Op</label><select id="m_rule_op"><option value=">">&gt;</option><option value=">=">&gt;=</option><option value="<">&lt;</option><option value="<=">&lt;=</option></select></div>
+            <div><label>Value</label><input id="m_rule_val" type="number" value="10" /></div>
+          </div>
+          <div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create &amp; Apply</button></div>`, async()=>{
+          const ch=(byId("m_rule_ch").value||"").trim();
+          const op=byId("m_rule_op").value;
+          const value=Number(byId("m_rule_val").value);
+          if(!ch||!Number.isFinite(value)){ setStatus("Channel and value required.", true); return false; }
+          const created=await fetch("/api/catalog/range-rules",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+            name:`${ch} ${op} ${value}`,
+            kind:"threshold",
+            channel_name:ch,
+            config:JSON.stringify({ op, value, sustain_ms:0 }),
+            default_label:`${ch}${op}${value}`,
+          })});
+          if(!created.ok){ setStatus("Failed to create rule.", true); return false; }
+          const rule=await created.json();
+          const applied=await fetch("/api/catalog/range-rules/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ test_id:tid, rule_id:rule.rule_id })});
+          if(!applied.ok){ setStatus("Failed to apply rule.", true); return false; }
+          await refreshCatalogRanges();
+          setStatus("Rule applied.");
+          return true;
+        });
+        return;
+      }
+      const opts=rules.map((r)=>`<option value="${r.rule_id}">${escapeHtml(r.name)} (${escapeHtml(r.kind)} · ${escapeHtml(r.channel_name)})</option>`).join("");
+      openModal("Apply Range Rule", `<div><label>Rule</label><select id="m_rule_id">${opts}</select></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply</button></div>`, async()=>{
+        const ruleId=Number(byId("m_rule_id").value);
+        const applied=await fetch("/api/catalog/range-rules/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ test_id:tid, rule_id:ruleId })});
+        if(!applied.ok){ let msg=`Apply failed (${applied.status})`; try{ const e=await applied.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{} setStatus(msg,true); return false; }
+        await refreshCatalogRanges();
+        setStatus("Rule applied.");
+        return true;
+      });
+    }
+
     function renderAll() {
       const dup = {};
       testsData.forEach((t) => {
@@ -8168,6 +9134,7 @@
       });
 
       renderSourcesTree();
+      void refreshCatalogRanges();
 
       const activeSourceIdSet=new Set(effectiveSelectedSourceIds());
       const activeDbIdSet=new Set(effectiveSelectedDatabaseIds());
@@ -8275,16 +9242,29 @@
         selectedSourceIds.delete(id);
         clearCatalogCache();
       } else if(kind==="database"){ state.databases=state.databases.filter((d)=>d.id!==id); selectedDatabaseIds.delete(id); clearCatalogCache(); } else if(kind==="test"){ selectedTestIds.delete(id); addedTestIds.delete(id); } else if(kind==="channel"){ selectedChannelIds.delete(id); addedChannelIds.delete(id); state.calculatedChannels=(state.calculatedChannels||[]).filter((c)=>c.name!==id); state.channelAliases=(state.channelAliases||[]).filter((a)=>a.name!==id); if(state.channelLabels) delete state.channelLabels[id]; clearChannelOverrideKeys(state.freqOverrides, id); clearChannelOverrideKeys(state.unitOverrides, id); } else if(kind==="mask"){ state.masks=(state.masks||[]).filter((m)=>m.id!==id); selectedMaskIds.delete(id); } focusedItem=null; renderAll(); saveStateDeferred(); }
-    async function ingestDataFile(sourceType, filePath, { unitsInHeaders=false, timeIndexChannel=null }={}){
-      const r=await fetch("/api/v3/ingest/file",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source_type:sourceType,file_path:filePath,units_in_headers:!!unitsInHeaders,time_index_channel:timeIndexChannel||null})});
+    async function ingestDataFile(sourceType, filePath, { unitsInHeaders=false, timeIndexChannel=null, ingestMode=null, catalogId=null }={}){
+      const body={source_type:sourceType,file_path:filePath,units_in_headers:!!unitsInHeaders,time_index_channel:timeIndexChannel||null};
+      // File open / plot path is always temporary into the hidden local catalog.
+      // Permanent project ingest must pass an explicit catalogId + ingestMode.
+      if(ingestMode) body.ingest_mode=ingestMode;
+      else body.ingest_mode="temporary";
+      if(catalogId!=null && String(catalogId) && String(catalogId)!=="local"){
+        body.catalog_id=catalogId;
+        if(!ingestMode) body.ingest_mode="permanent";
+      }
+      const r=await fetch("/api/v3/ingest/file",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
       if(!r.ok){ let msg=`Ingest failed (${r.status})`; try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail); }catch{} throw new Error(msg); }
       return await r.json();
     }
     async function attachArtifactToSource(entry, sourceType, filePath, { unitsInHeaders=false, timeIndexChannel=null }={}){
       setStatus("Indexing file...");
       await nextPaint();
-      const ing=await ingestDataFile(sourceType, filePath, { unitsInHeaders, timeIndexChannel });
+      const ing=await ingestDataFile(sourceType, filePath, { unitsInHeaders, timeIndexChannel, ingestMode:"temporary", catalogId:null });
       entry.artifact_id=ing.artifact_id||"";
+      if(ing.test_id!=null) entry.test_id=Number(ing.test_id);
+      // Temporary cache lives in the hidden local catalog — do not bind file sources to a project catalog.
+      delete entry.catalog_id;
+      entry.durability=ing.durability||"temporary";
       entry.time_index_channel=timeIndexChannel||entry.time_index_channel||"";
       if(ing.status!=="ready") setStatus(`Index status: ${ing.status}${ing.error?": "+ing.error:""}`, true);
       else setStatus(`Indexed ${(ing.channels||[]).length} channel(s).`);
@@ -8356,9 +9336,9 @@
       renderAll(); saveStateDeferred();
       setStatus(`Set frequency to ${hz} Hz for ${targets.length} channel(s).`);
     }
-    function searchableRowsHtml(prefix,rows,set){ return `<div class="maskSearchPad"><input id="${prefix}_search" type="text" placeholder="Search..." /></div><div class="maskListPad"><div id="${prefix}_list" class="modalList">${rows.map((r)=>`<div class="selectRow${set.has(r.id)?" active":""}" data-id="${r.id}"><div class="itemPrimary">${r.primary}</div></div>`).join("")}</div></div>`; }
+    function searchableRowsHtml(prefix,rows,set){ return `<div class="maskSearchPad"><input id="${prefix}_search" class="searchInput" type="text" placeholder="Search..." /></div><div class="maskListPad"><div id="${prefix}_list" class="modalList">${rows.map((r)=>`<div class="selectRow${set.has(r.id)?" active":""}" data-id="${r.id}"><div class="itemPrimary">${r.primary}</div></div>`).join("")}</div></div>`; }
     function formulaChannelRowsHtml(prefix,rows,chosen){
-      return `<div class="maskSearchPad"><input id="${prefix}_search" type="text" placeholder="Search..." /></div><div class="maskListPad"><div id="${prefix}_list" class="modalList">${rows.map((r)=>`<div class="selectRow${chosen.has(r.id)?" active":""}" data-id="${r.id}"><div class="itemPrimary">${r.primary}</div><span class="selectRowVar" hidden></span></div>`).join("")}</div></div>`;
+      return `<div class="maskSearchPad"><input id="${prefix}_search" class="searchInput" type="text" placeholder="Search..." /></div><div class="maskListPad"><div id="${prefix}_list" class="modalList">${rows.map((r)=>`<div class="selectRow${chosen.has(r.id)?" active":""}" data-id="${r.id}"><div class="itemPrimary">${r.primary}</div><span class="selectRowVar" hidden></span></div>`).join("")}</div></div>`;
     }
     function syncFormulaChannelLetters(list, chosen){
       if(!list) return;
@@ -10192,7 +11172,7 @@
           continue;
         }
         if(isFileSource(src)) await linkArtifactForSource(src);
-        const canV3=src.type==="postgres"||(isFileSource(src)&&src.artifact_id);
+        const canV3=src.type==="postgres"||src.type==="catalog"||src.leaf_kind==="catalog_test"||(isFileSource(src)&&(src.artifact_id||src.test_id));
         if(!canV3){
           if(isFileSource(src)){
             setStatus(`File '${src.name||src.type}' is not indexed yet. Wait for ingest to finish or re-add the file.`, true);
@@ -10293,7 +11273,7 @@
       document.addEventListener("click",(e)=>{ if(!byId("menubar").contains(e.target)) hideAll(); });
       document.querySelectorAll(".menuItem").forEach((mi)=>{ mi.onclick=(e)=>{ e.stopPropagation(); const id=mi.getAttribute("data-menu"); const dd=byId(`menu_${id}`); const shown=dd.classList.contains("show"); hideAll(); if(!shown) dd.classList.add("show"); }; });
       byId("help_github").onclick=()=>window.open("https://github.com/tysocks/NOVA","_blank");
-      byId("help_sourceHelp").onclick=()=>setStatus("Sources: + opens a folder picker (nested folders supported). Database Manager profiles appear automatically. Missing time index channels show in red — right-click → Edit. Selecting sources does not load data until Plot.");
+      byId("help_sourceHelp").onclick=()=>setStatus("Sources: + adds a folder/files. Databases from File → Databases appear automatically. Expand a database to browse tests. Missing time index channels show in red — right-click → Edit. Selecting sources does not load data until Plot.");
       byId("help_versionCheck").onclick=()=>{ hideAll(); openVersionCheckModal(); };
       byId("view_togglePreview").onclick=()=>{ setPreviewVisible(!previewVisible); saveState(); };
       byId("edit_showMetadata").onclick=()=>showMetadataModal();
@@ -10715,7 +11695,7 @@
         try{
           if(!v3ClientReady()) return;
           if(isFileSource(src)) await linkArtifactForSource(src);
-          const canV3=src.type==="postgres"||(isFileSource(src)&&src.artifact_id);
+          const canV3=src.type==="postgres"||src.type==="catalog"||src.leaf_kind==="catalog_test"||(isFileSource(src)&&(src.artifact_id||src.test_id));
           if(!canV3) continue;
           const v3res=await queryV3ForDb(dbId, src, db, channels, tests, {
             mode:"detail",
@@ -10958,7 +11938,8 @@
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     });
     if(byId("addIndexMaskBtn")) byId("addIndexMaskBtn").onclick=showAddIndexMaskMenu;
-    byId("addRangeBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Ranges are coming soon."); });
+    byId("addRangeBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); void openCreateRangeModal(); });
+    byId("applyRangeRuleBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); void openApplyRangeRuleModal(); });
     byId("addObjectBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Plot objects are coming soon."); });
     byId("addIngestionBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Ingestion rules are coming soon."); });
     byId("loadBtn").onclick=loadTimeseries;

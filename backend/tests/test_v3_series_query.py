@@ -12,7 +12,10 @@ BASE = datetime(2024, 1, 1, tzinfo=timezone.utc)
 client = TestClient(app)
 
 
-def test_v3_series_query_returns_arrow_and_meta_header():
+def test_v3_series_query_returns_arrow_and_meta_header(monkeypatch):
+    monkeypatch.setattr("app.config.settings.enable_postgres", True)
+    monkeypatch.setattr("app.engine.series_query.settings.enable_postgres", True, raising=False)
+
     mock_points = [
         TimeSeriesPoint(
             test_run_id=1,
@@ -25,6 +28,8 @@ def test_v3_series_query_returns_arrow_and_meta_header():
     ]
 
     with patch("app.engine.series_query.fetch_postgres_timeseries", return_value=mock_points):
+        # series_query imports settings inside postgres branch; patch module settings too
+        monkeypatch.setattr("app.config.settings.enable_postgres", True)
         response = client.post(
             "/api/v3/series/query",
             json={
@@ -41,7 +46,7 @@ def test_v3_series_query_returns_arrow_and_meta_header():
             },
         )
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     assert response.headers["content-type"].startswith("application/vnd.apache.arrow.stream")
     meta_header = response.headers.get("x-nova-series-meta")
     assert meta_header is not None
@@ -62,7 +67,8 @@ def test_v3_series_query_requires_at_least_one_source():
     assert response.status_code == 422
 
 
-def test_legacy_v2_timeseries_deprecation_headers():
+def test_legacy_v2_timeseries_deprecation_headers(monkeypatch):
+    monkeypatch.setattr("app.config.settings.enable_postgres", True)
     with patch("app.main.get_timeseries_envelope") as mock_env:
         from app.models import TimeSeriesEnvelope
 

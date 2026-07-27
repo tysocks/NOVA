@@ -1,9 +1,10 @@
-"""Execute v3 series queries (PostgreSQL + indexed file artifacts)."""
+"""Execute v3 series queries (catalog/file primary; PostgreSQL optional)."""
 
 from __future__ import annotations
 
+from ..config import settings
 from ..models import (
-    CalculatedChannelSpec,
+    CatalogSeriesSource,
     FileSeriesSource,
     PostgresSeriesSource,
     SeriesQueryRequest,
@@ -17,7 +18,7 @@ from .calc_graph import order_calculated_channels
 from ..services.query_router import resolve_overlay_targets
 from ..services.timeseries import build_series_meta
 from .arrow_codec import encode_series_arrow_ipc, series_point_counts
-from .duckdb_source import fetch_artifact_timeseries
+from .duckdb_source import fetch_artifact_timeseries, fetch_catalog_timeseries
 from .postgres_source import fetch_postgres_timeseries
 from .query_planner import plan_points_cap, resolve_fetch_strategy
 
@@ -93,11 +94,41 @@ def _fetch_file_source(
     return points, meta
 
 
+def _fetch_catalog_source(
+    source: CatalogSeriesSource,
+    *,
+    start_time: str | None,
+    end_time: str | None,
+    max_points: int | None,
+    mode: str,
+    aggregation_mode: str,
+) -> tuple[list[TimeSeriesPoint], list[TimeSeriesSeriesMeta]]:
+    if not source.channel_names:
+        return [], []
+
+    from ..services.database_library import resolve_duckdb_profile
+    from .catalog_store import catalog_path_override
+
+    profile = resolve_duckdb_profile(source.catalog_id)
+    with catalog_path_override(profile["catalog_path"]):
+        points = fetch_catalog_timeseries(
+            source.test_id,
+            source.channel_names,
+            start_time=start_time,
+            end_time=end_time,
+            max_points=max_points,
+            mode=mode,
+            aggregation_mode=aggregation_mode,
+        )
+    meta = build_series_meta(points, source="catalog", database=str(source.test_id))
+    return points, meta
+
+
 def execute_series_query(request: SeriesQueryRequest) -> tuple[bytes, SeriesQueryResponseMeta]:
     """
     Run a v3 query and return (Arrow IPC bytes, response metadata).
 
-    Supports postgres and indexed file (artifact) sources.
+    Supports postgres, indexed file artifacts, and catalog test sources.
     """
     cap = plan_points_cap(
         resolution_px=request.resolution_px,
@@ -130,7 +161,29 @@ def execute_series_query(request: SeriesQueryRequest) -> tuple[bytes, SeriesQuer
             )
             all_points.extend(points)
             all_meta.extend(meta)
+        elif isinstance(source, CatalogSeriesSource):
+            strategy = resolve_fetch_strategy(
+                mode=request.mode,
+                aggregation_mode=request.aggregation_mode,
+                max_points=cap,
+            )
+            strategies.add(strategy)
+            points, meta = _fetch_catalog_source(
+                source,
+                start_time=start_time,
+                end_time=end_time,
+                max_points=cap,
+                mode=request.mode,
+                aggregation_mode=request.aggregation_mode,
+            )
+            all_points.extend(points)
+            all_meta.extend(meta)
         elif isinstance(source, PostgresSeriesSource):
+            if not settings.enable_postgres:
+                raise ValueError(
+                    "PostgreSQL series sources are disabled. "
+                    "Use type='catalog' or type='file', or set NOVA_ENABLE_POSTGRES=1."
+                )
             targets = resolve_overlay_targets(
                 source=request.source,
                 overlay_mode=request.overlay_mode,

@@ -107,22 +107,61 @@ No shared time index column is configured in NOVA — the time index dropdown is
 
 ---
 
-## PostgreSQL database requirements
+## DuckDB catalog and Parquet lake
 
-NOVA can query PostgreSQL directly (without file ingest) when a connection profile is saved in **Database Manager** and then used via **Sources `+` → Database**.
+NOVA’s primary analytical store is **DuckDB + Parquet**, not PostgreSQL.
 
-### Database Manager workflow
+- **Catalog** — a DuckDB file (`.duckdb`) holds `tests`, `test_parameters`, `channels`, `ranges`, `range_rules`, and `results`.
+- **Hidden local catalog** — system cache at `backend/.nova_catalog.duckdb` used only for temporary file-open ingest. It is **not** listed in Sources or **Databases > Manager**. Cleared (with `.nova_sessions`) on each backend start.
+- **Project catalogs** — configure durable catalogs in **File → Databases** (`+` to create). Each profile has:
+  - `catalog_path` — path to the `.duckdb` file (Filepath in the create/edit form)
+  - `parquet_root` — permanent lake root (derived next to the catalog file when omitted)
+- **Active catalog** — first/default project DuckDB profile is used as the permanent-ingest target.
+- **Samples** — one Parquet file per channel with columns `x_ms`, `y`.
+- **Temporary ingest** (file open / plot) — always writes under `.nova_sessions/{artifact_id}/data/` and registers `durability=temporary` in the **local** catalog. Re-opening the same file reuses the cached artifact within the same app instance.
+- **Permanent ingest** — requires a project `catalog_id`; writes under `{profile.parquet_root}/{run_code}/data/` with `durability=permanent`.
 
-1. Open **File → Database Manager...**
-2. Add a profile via the `⋯` menu (**Add database profile**), or edit an existing row (✎).
-3. Set **Name**, **Host**, **Port**, **User**, **Password**, and **SSL** (`sslmode`, e.g. `disable` or `require`).
-4. Click **⚡ Test connection** to verify the profile can reach PostgreSQL.
-5. Click **Save** — profiles are written to `backend/.nova_database_library.json` on the backend host.
-6. Open **Sources `+` → Database**, pick **Connection → Database → Tests** (each column has a search box), then **Add Selected Tests**.
+Profiles are stored in `backend/.nova_database_library.json` (also supports optional PostgreSQL profiles when `NOVA_ENABLE_POSTGRES=1`).
 
-On first run with no library file, NOVA auto-creates **RedScale** and **BlueScale** profiles from `NOVA_REDSCALE_*` and `NOVA_BLUESCALE_*` environment variables.
+### APIs
 
-Use **⋯ → Import profiles...** / **Export profiles...** to move profile libraries between machines as JSON.
+- `GET /api/catalog/tests` — list registered tests (also the default for `GET /api/tests`)
+- `GET /api/catalog/tests/{id}/channels` / `.../parameters`
+- `POST /api/v3/ingest/file` — temporary by default (local catalog); permanent requires `catalog_id` of a project profile. Accepts `parameters`, `apply_range_rule_ids`
+- `POST /api/v3/series/query?format=series` — columnar JSON (`series[].x_ms` / `series[].y`); `format=arrow` IPC; `format=json` row compat
+- Ranges: `POST /api/catalog/ranges`, `POST /api/catalog/range-rules`, `POST /api/catalog/range-rules/apply`
+- Results: `GET|POST /api/catalog/results`
+
+### UI
+
+- **Sources** — file folders/files plus every database from **Databases > Manager**. Local temporary cache is invisible. Sources `+` only adds folders/files.
+- **Ranges** panel — create interactive ranges or apply threshold/edge rules; overlays draw on the Plotly timeline.
+
+### Config (`NOVA_` env prefix)
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `NOVA_PARQUET_ROOT` | `backend/.nova_parquet` | Fallback permanent lake root |
+| `NOVA_DEFAULT_INGEST_MODE` | `temporary` | Legacy default (file open is always temporary into local) |
+| `NOVA_ENABLE_POSTGRES` | `false` | Re-enable legacy PostgreSQL sources/APIs |
+
+---
+
+## PostgreSQL database requirements (legacy, opt-in)
+
+PostgreSQL is **disabled by default**. Set `NOVA_ENABLE_POSTGRES=1` to restore Postgres profiles in **File → Databases**.
+
+When enabled, NOVA can query PostgreSQL directly (without file ingest) if a connection profile is present in the database library.
+
+### Databases workflow (DuckDB)
+
+1. Open **File → Databases...**
+2. Click **+** to open **Databases > Manager > Create**
+3. Enter **Name** and **Filepath** (`.duckdb`), then save
+4. The database appears in Sources automatically; expand it to browse tests
+5. Right-click a row in the manager for **Edit** / **Delete**
+
+On first run with Postgres enabled and no library file, NOVA may seed **RedScale** / **BlueScale** from `NOVA_REDSCALE_*` / `NOVA_BLUESCALE_*`.
 
 Each selected test becomes a source entry named `database_name/run_code` (e.g. `hfr_test_data/HFR-0010`).
 
@@ -133,13 +172,11 @@ Each selected test becomes a source entry named `database_name/run_code` (e.g. `
   "databases": [
     {
       "id": "uuid",
-      "type": "postgres",
-      "name": "RedScale",
-      "host": "localhost",
-      "port": 5432,
-      "user": "pipeline",
-      "password": "secret",
-      "sslmode": "disable"
+      "type": "duckdb",
+      "name": "Project A",
+      "catalog_path": "D:/projects/a/catalog.duckdb",
+      "parquet_root": "D:/projects/a/parquet",
+      "default_ingest_mode": "permanent"
     }
   ]
 }
@@ -186,11 +223,10 @@ If your table has these columns, it should be selectable as a test table in NOVA
 
 ### Add Source picker behavior
 
-When adding database sources, NOVA:
+Postgres profiles from **File → Databases** appear in the Sources tree automatically. Expanding a profile:
 
-1. Lists saved profiles from **Database Manager** in the **Connection** column.
-2. Calls `GET /api/databases` with the profile credentials to populate the **Database** column.
-3. Discovers test tables via `GET /api/test-tables` (prefers `test_runs` when present).
-4. Lists tests via `GET /api/tests` for the selected database and test table.
+1. Calls `GET /api/databases` with the profile credentials
+2. Discovers test tables via `GET /api/test-tables` (prefers `test_runs` when present)
+3. Lists tests via `GET /api/tests` for each database
 
-If the **Database** column is empty after selecting a connection, verify credentials in Database Manager (use **Test connection**), click **Save**, and confirm PostgreSQL is reachable from the NOVA backend.
+If a profile shows as unavailable, verify credentials via **Edit** in Databases > Manager and confirm PostgreSQL is reachable from the NOVA backend.

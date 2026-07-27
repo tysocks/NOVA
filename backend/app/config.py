@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     bluescale_password: str = "test"
     bluescale_sslmode: str = "disable"
     default_limit: int = 5000
+    # DuckDB/Parquet lake settings
+    parquet_root: str = str(BASE_DIR / ".nova_parquet")
+    default_ingest_mode: str = "temporary"  # temporary | permanent
+    enable_postgres: bool = False
 
     model_config = SettingsConfigDict(env_prefix="NOVA_", env_file=str(ENV_PATH), extra="ignore")
 

@@ -5,6 +5,7 @@ psycopg2-binary
 pydantic-settings
 PySide6
 pandas
+polars>=1.5.0
 nptdms
 h5py
 pyarrow>=15.0.0

@@ -33,6 +33,63 @@ class DatabaseItem(BaseModel):
     is_default: bool
 
 
+class TestParameterItem(BaseModel):
+    test_id: int
+    key: str
+    value_text: str | None = None
+    value_num: float | None = None
+
+
+class RangeItem(BaseModel):
+    range_id: int
+    test_id: int
+    name: str
+    label: str | None = None
+    start_time: datetime
+    end_time: datetime
+    start_ms: float | None = None
+    end_ms: float | None = None
+    color: str | None = None
+    source: str
+    rule_id: int | None = None
+    notes: str | None = None
+
+
+class RangeParameterItem(BaseModel):
+    range_id: int
+    key: str
+    value_text: str | None = None
+    value_num: float | None = None
+
+
+class RangeParameterWrite(BaseModel):
+    key: str
+    value_text: str | None = None
+    value_num: float | None = None
+
+
+class RangeRuleItem(BaseModel):
+    rule_id: int
+    name: str
+    description: str | None = None
+    kind: str
+    channel_name: str
+    config: str
+    default_label: str | None = None
+    default_color: str | None = None
+
+
+class ResultItem(BaseModel):
+    result_id: int
+    test_id: int
+    range_id: int | None = None
+    analysis_name: str
+    key: str
+    value_text: str | None = None
+    value_num: float | None = None
+    unit: str | None = None
+
+
 class TimeSeriesPoint(BaseModel):
     test_run_id: int
     test_run_code: str
@@ -90,6 +147,15 @@ class FileSeriesSource(BaseModel):
     channel_names: list[str] = Field(min_length=1)
 
 
+class CatalogSeriesSource(BaseModel):
+    """DuckDB catalog-backed series query (preferred for permanent/session Parquet)."""
+
+    type: Literal["catalog"] = "catalog"
+    test_id: int = Field(ge=1)
+    channel_names: list[str] = Field(min_length=1)
+    catalog_id: str | None = None
+
+
 class CalculatedChannelSpec(BaseModel):
     """Server-side calculated channel definition."""
 
@@ -102,7 +168,10 @@ class CalculatedChannelSpec(BaseModel):
     formula: str | None = None
 
 
-SeriesSource = Annotated[PostgresSeriesSource | FileSeriesSource, Field(discriminator="type")]
+SeriesSource = Annotated[
+    PostgresSeriesSource | FileSeriesSource | CatalogSeriesSource,
+    Field(discriminator="type"),
+]
 
 
 class FileIngestRequest(BaseModel):
@@ -110,6 +179,10 @@ class FileIngestRequest(BaseModel):
     file_path: str
     units_in_headers: bool = False
     time_index_channel: str | None = None
+    ingest_mode: Literal["temporary", "permanent"] | None = None
+    parameters: dict[str, str | float | int | bool | None] = Field(default_factory=dict)
+    apply_range_rule_ids: list[int] = Field(default_factory=list)
+    catalog_id: str | None = None
 
 
 class FileProbeChannel(BaseModel):
@@ -159,6 +232,49 @@ class FileIngestResponse(BaseModel):
     channels: list[dict] = Field(default_factory=list)
     time_bounds: dict | None = None
     error: str | None = None
+    test_id: int | None = None
+    durability: str | None = None
+    applied_ranges: list[RangeItem] = Field(default_factory=list)
+
+
+class ApplyRangeRuleRequest(BaseModel):
+    test_id: int = Field(ge=1)
+    rule_id: int = Field(ge=1)
+    catalog_id: str | None = None
+
+
+class RangeCreateRequest(BaseModel):
+    test_id: int
+    name: str = Field(min_length=1)
+    start_time: datetime
+    end_time: datetime
+    label: str | None = None
+    color: str | None = None
+    notes: str | None = None
+    source: Literal["user", "rule"] = "user"
+    rule_id: int | None = None
+    parameters: list[RangeParameterWrite] = Field(default_factory=list)
+    catalog_id: str | None = None
+
+
+class RangeRuleCreateRequest(BaseModel):
+    name: str = Field(min_length=1)
+    kind: Literal["threshold", "edge", "formula"]
+    channel_name: str = Field(min_length=1)
+    config: str = Field(min_length=2)
+    description: str | None = None
+    default_label: str | None = None
+    default_color: str | None = None
+
+
+class ResultWriteRequest(BaseModel):
+    test_id: int
+    range_id: int | None = None
+    analysis_name: str = Field(min_length=1)
+    key: str = Field(min_length=1)
+    value_text: str | None = None
+    value_num: float | None = None
+    unit: str | None = None
 
 
 class SeriesQueryRequest(BaseModel):

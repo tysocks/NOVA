@@ -11,6 +11,7 @@ from app.models import FileSeriesSource, SeriesQueryRequest
 @pytest.fixture
 def sessions_tmp(monkeypatch, tmp_path: Path):
     root = tmp_path / "sessions"
+    catalog = tmp_path / "catalog.duckdb"
 
     def _ensure_root() -> Path:
         root.mkdir(parents=True, exist_ok=True)
@@ -34,6 +35,7 @@ def sessions_tmp(monkeypatch, tmp_path: Path):
         "app.engine.session_store.manifest_path",
         lambda aid: root / aid / "manifest.json",
     )
+    monkeypatch.setattr("app.engine.catalog_store.CATALOG_DB_PATH", catalog)
     return root
 
 

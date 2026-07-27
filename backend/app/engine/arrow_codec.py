@@ -23,29 +23,9 @@ def points_to_arrow_table(points: list[TimeSeriesPoint]) -> pa.Table:
     Columns: test_run_id, test_run_code, channel_name, unit, x_ms, y
     Rows are sorted by (test_run_id, channel_name, x_ms).
     """
-    if not points:
-        return pa.table(
-            {
-                "test_run_id": pa.array([], type=pa.int32()),
-                "test_run_code": pa.array([], type=pa.string()),
-                "channel_name": pa.array([], type=pa.string()),
-                "unit": pa.array([], type=pa.null()),
-                "x_ms": pa.array([], type=pa.float64()),
-                "y": pa.array([], type=pa.float64()),
-            }
-        )
+    from .polars_series import frame_from_points, frame_to_arrow
 
-    ordered = sorted(points, key=lambda p: (p.test_run_id, p.channel_name, p.time))
-    return pa.table(
-        {
-            "test_run_id": [p.test_run_id for p in ordered],
-            "test_run_code": [p.test_run_code for p in ordered],
-            "channel_name": [p.channel_name for p in ordered],
-            "unit": [p.unit for p in ordered],
-            "x_ms": [_time_to_epoch_ms(p.time) for p in ordered],
-            "y": [float(p.value) for p in ordered],
-        }
-    )
+    return frame_to_arrow(frame_from_points(points))
 
 
 def encode_series_arrow_ipc(points: list[TimeSeriesPoint]) -> bytes:

@@ -79,6 +79,44 @@ def find_artifact_for_path(file_path: str) -> str | None:
     return None
 
 
+def clear_temporary_sessions() -> int:
+    """Delete all temporary session Parquet caches. Returns removed artifact count."""
+    import shutil
+
+    root = Path(SESSIONS_ROOT)
+    if not root.exists():
+        return 0
+    removed = 0
+    for child in list(root.iterdir()):
+        try:
+            if child.is_dir():
+                shutil.rmtree(child, ignore_errors=True)
+                removed += 1
+            else:
+                child.unlink(missing_ok=True)
+        except Exception:
+            continue
+    return removed
+
+
+def clear_local_catalog_db() -> None:
+    """Reset the system local DuckDB catalog file used for temporary ingest metadata."""
+    path = Path(SESSIONS_ROOT).parent / ".nova_catalog.duckdb"
+    # Prefer the catalog_store default path when available.
+    try:
+        from .catalog_store import DEFAULT_CATALOG_DB_PATH
+
+        path = Path(DEFAULT_CATALOG_DB_PATH)
+    except Exception:
+        pass
+    for candidate in (path, Path(str(path) + ".wal")):
+        try:
+            if candidate.exists():
+                candidate.unlink()
+        except Exception:
+            continue
+
+
 def initial_manifest(
     *,
     artifact_id: str,
