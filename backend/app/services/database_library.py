@@ -180,6 +180,20 @@ def clean_library_rows(rows: list) -> list[dict]:
     return cleaned
 
 
+def find_duplicate_database_name(rows: list[dict]) -> str | None:
+    """Return the first duplicate profile name (case-insensitive), if any."""
+    seen: set[str] = set()
+    for row in rows:
+        name = str(row.get("name") or "").strip()
+        if not name:
+            continue
+        key = name.casefold()
+        if key in seen:
+            return name
+        seen.add(key)
+    return None
+
+
 def _seed_library_rows() -> list[dict]:
     """User library starts empty (local catalog is system-managed). Optionally seed Postgres."""
     rows: list[dict] = []

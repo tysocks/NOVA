@@ -159,7 +159,14 @@ def save_database_library(payload: dict = Body(...)) -> dict:
     if not isinstance(rows, list):
         return {"ok": False, "error": "databases must be a list"}
     active = payload.get("active_catalog_id") if isinstance(payload, dict) else None
-    db_library.write_library_payload({"databases": rows, "active_catalog_id": active})
+    cleaned = db_library.clean_library_rows(rows)
+    duplicate = db_library.find_duplicate_database_name(cleaned)
+    if duplicate:
+        return {"ok": False, "error": f"A database named '{duplicate}' already exists."}
+    try:
+        db_library.write_library_payload({"databases": cleaned, "active_catalog_id": active})
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
     try:
         db_library.apply_active_catalog_from_library()
     except Exception:

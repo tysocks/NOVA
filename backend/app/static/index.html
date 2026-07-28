@@ -956,26 +956,26 @@
       flex-wrap:wrap;
       align-items:center;
       justify-content:flex-end;
-      gap:4px;
+      gap:5px;
       min-width:0;
     }
     .dbTagChipRow.dbTagChipRowEdit{
       justify-content:flex-start;
       flex-wrap:wrap;
-      gap:4px;
-      min-height:22px;
+      gap:5px;
+      min-height:26px;
     }
     .dbTagChip{
       display:inline-flex;
       align-items:center;
-      gap:4px;
-      max-width:140px;
-      padding:1px 7px;
+      gap:5px;
+      max-width:168px;
+      padding:2px 8px;
       border:1px solid var(--nova-divider);
       border-radius:4px;
       background:var(--nova-hover);
       color:var(--nova-text-dim);
-      font-size:0.7rem;
+      font-size:0.84rem;
       line-height:1.4;
       white-space:nowrap;
       overflow:hidden;
@@ -984,19 +984,46 @@
       background:var(--tag-bg, var(--nova-hover));
       color:var(--tag-fg, var(--nova-text-dim));
     }
+    .dbTagChip.dbTagChipRemovable{
+      position:relative;
+      padding-right:18px;
+      overflow:visible;
+    }
+    .dbTagChip.dbTagChipRemovable > .dbTagChipLabel{
+      display:block;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      max-width:100%;
+    }
     .dbTagChip button{
       border:none;
       background:transparent;
       color:inherit;
       cursor:pointer;
       padding:0;
-      width:12px;
-      height:12px;
+      width:14px;
+      height:14px;
       line-height:1;
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      font-size:0.7rem;
+      font-size:0.84rem;
+    }
+    .dbTagChip.dbTagChipRemovable > button{
+      position:absolute;
+      right:3px;
+      top:50%;
+      transform:translateY(-50%);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 0.15s ease;
+      transition-delay:0s;
+    }
+    .dbTagChip.dbTagChipRemovable:hover > button{
+      opacity:1;
+      transition-delay:0.5s;
+      pointer-events:auto;
     }
     .dbTagChip button:hover{ color:var(--nova-text); }
     .dbTagAddBtn{
@@ -1019,12 +1046,87 @@
       background:var(--nova-hover);
       color:var(--nova-text);
     }
-    .dbTagInput{
-      width:130px;
-      min-height:24px;
-      height:24px;
+    .dbTagPicker{
+      position:fixed;
+      z-index:260;
+      display:none;
+      flex-direction:column;
+      width:240px;
+      max-height:280px;
+      background:var(--nova-elevated);
+      border:1px solid var(--nova-divider);
+      border-radius:var(--nova-radius-md);
+      box-shadow:var(--nova-shadow);
+      overflow:hidden;
+    }
+    .dbTagPicker.show{ display:flex; }
+    .dbTagPickerSearch{
+      padding:6px 8px;
+      border-bottom:1px solid var(--nova-divider);
+      flex:0 0 auto;
+    }
+    .dbTagPickerSearch .searchInput{
+      width:100%;
+      box-sizing:border-box;
+      min-height:28px;
+      height:28px;
+      font-size:0.8rem;
+    }
+    .dbTagPickerList{
+      flex:1 1 auto;
+      min-height:0;
+      overflow-x:hidden;
+      overflow-y:auto;
+      padding:4px;
+      scrollbar-width:none;
+    }
+    .dbTagPickerList::-webkit-scrollbar{ width:0; height:0; }
+    .dbTagPickerItem{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 8px;
+      border-radius:4px;
+      cursor:pointer;
+      font-size:0.875rem;
+      color:var(--nova-text);
+      min-width:0;
+    }
+    .dbTagPickerItem:hover,
+    .dbTagPickerItem.active{ background:var(--nova-hover); }
+    .dbTagPickerSwatch{
+      width:10px;
+      height:10px;
+      min-width:10px;
+      border-radius:999px;
+      box-sizing:border-box;
+      border:1px solid var(--tag-bd, var(--nova-divider));
+      background:var(--tag-bg, var(--nova-hover));
+    }
+    .dbTagPickerItemLabel{
+      flex:1 1 auto;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .dbTagPickerCheck{
+      flex:0 0 auto;
+      width:14px;
+      text-align:center;
+      color:var(--nova-text);
+      font-size:0.8rem;
+      opacity:0;
+    }
+    .dbTagPickerItem.selected .dbTagPickerCheck{ opacity:1; }
+    .dbTagPickerEmpty{
+      padding:10px 8px;
       font-size:0.75rem;
-      padding:2px 8px;
+      color:var(--nova-text-dim);
+    }
+    .dbTagPickerCreate .dbTagPickerItemLabel,
+    .dbTagPickerClear .dbTagPickerItemLabel{
+      color:var(--nova-text-dim);
     }
     .dbFilterBtn.active{
       background:var(--nova-active);
@@ -1040,8 +1142,12 @@
     }
     .dbManagerToolbar .searchInput{ flex:1; min-width:0; }
     .dbManagerRow{
-      gap:8px;
+      gap:10px;
       min-width:0;
+      min-height:34px;
+      padding-left:100px;
+      padding-right:12px;
+      box-sizing:border-box;
     }
     .dbManagerRow .itemPrimary{
       flex:1 1 auto;
@@ -1050,6 +1156,10 @@
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
+      font-size:1.2rem;
+      font-weight:500;
+      letter-spacing:-0.01em;
+      line-height:1.25;
     }
     .dbManagerRow .dbTagChipRowList{
       flex:0 1 auto;
@@ -1060,7 +1170,7 @@
       overflow:hidden;
     }
     .dbManagerRow .dbTagChipRowList .dbTagChip{
-      max-width:88px;
+      max-width:106px;
       flex:0 1 auto;
     }
     .dbRowUpdated{
@@ -1070,6 +1180,27 @@
       color:var(--nova-text-dim);
       line-height:1.2;
       white-space:nowrap;
+    }
+    .unitTranslationList{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    }
+    .unitTranslationRow{
+      display:grid;
+      grid-template-columns:minmax(72px,0.35fr) minmax(0,1fr) 28px;
+      gap:6px;
+      align-items:center;
+      min-width:0;
+    }
+    .unitTranslationRow input{
+      width:100%;
+      min-width:0;
+      box-sizing:border-box;
+      min-height:30px;
+      height:30px;
+      margin:0;
     }
     #appWindowLayer{ position:fixed; inset:0; pointer-events:none; z-index:110; }
     .appWindow{ position:fixed; pointer-events:auto; display:flex; flex-direction:column; min-width:220px; min-height:140px; max-width:96vw; max-height:96vh; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-lg); box-shadow:var(--nova-shadow); overflow:hidden; z-index:111; }
@@ -1173,26 +1304,26 @@
   <div class="menubar" id="menubar">
     <div class="menuItem" data-menu="file">File
       <div class="menuDropdown" id="menu_file">
-        <div class="menuAction" id="file_configManager">Configuration Manager...</div>
-        <div class="menuAction" id="file_databaseManager">Databases...</div>
-        <div class="menuAction" id="file_unitManager">Unit Manager...</div>
+        <div class="menuAction" id="file_configManager">Configuration Manager</div>
+        <div class="menuAction" id="file_databaseManager">Database Manager</div>
+        <div class="menuAction" id="file_unitManager">Unit Manager</div>
         <div class="menuSep"></div>
-        <div class="menuAction" id="file_exportPlot">Export Current View (CSV)...</div>
+        <div class="menuAction" id="file_exportPlot">Export Current View (CSV)</div>
       </div>
     </div>
     <div class="menuItem" data-menu="edit">Edit
       <div class="menuDropdown" id="menu_edit">
         <div class="menuAction" id="edit_showMetadata">Show Metadata</div>
-        <div class="menuAction" id="edit_setMaxFreq">Set Max Sample Frequency...</div>
-        <div class="menuAction" id="edit_realtimeTraces">Real Time Traces...</div>
+        <div class="menuAction" id="edit_setMaxFreq">Set Max Sample Frequency</div>
+        <div class="menuAction" id="edit_realtimeTraces">Real Time Traces</div>
       </div>
     </div>
       <div class="menuItem" data-menu="view">View
       <div class="menuDropdown" id="menu_view">
         <div class="menuAction" id="view_togglePreview">Toggle Data Preview</div>
         <div class="menuSep"></div>
-        <div class="menuAction" id="view_preferences">Preferences...</div>
-          <div class="menuAction" id="view_viewAppearance">View Appearance...</div>
+        <div class="menuAction" id="view_preferences">Preferences</div>
+          <div class="menuAction" id="view_viewAppearance">View Appearance</div>
       </div>
     </div>
     <div class="menuItem" data-menu="help">Help
@@ -1200,7 +1331,7 @@
         <div class="menuAction" id="help_github">Open GitHub Repo</div>
         <div class="menuAction" id="help_sourceHelp">Source Help</div>
         <div class="menuSep"></div>
-        <div class="menuAction" id="help_versionCheck">Version check...</div>
+        <div class="menuAction" id="help_versionCheck">Version check</div>
       </div>
     </div>
     <input id="filePicker" type="file" accept="application/json,.json" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0;" />
@@ -1215,7 +1346,7 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" d="M1.5 8h2l1.4-4.2L7.2 12l2.1-6.3L11 9.5h3.5"/></svg>
         </button>
         <button type="button" class="railBtn" data-toolbar="masks" title="Masks" aria-label="Masks">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.2 2.5h11.6c.4 0 .6.45.35.75L9.5 8.2v4.05c0 .2-.1.38-.28.48l-2.2 1.2c-.35.2-.77-.06-.77-.48V8.2L1.85 3.25c-.25-.3-.05-.75.35-.75z"/></svg>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.5 3.25h13v1.5h-13v-1.5zm2.75 4h7.5v1.5h-7.5v-1.5zM6 11.25h4v1.5H6v-1.5z"/></svg>
         </button>
         <button type="button" class="railBtn" data-toolbar="ranges" title="Ranges" aria-label="Ranges">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 7.25h12v1.5H2v-1.5zm2.25-3.5h1.5v8.5h-1.5v-8.5zm6 0h1.5v8.5h-1.5v-8.5z"/></svg>
@@ -1308,6 +1439,12 @@
   <div id="modalBackdrop" class="modalBackdrop"><div class="modal"><div class="modalHeader"><h4 id="modalTitle" class="modalTitle"></h4><button id="modalCloseBtn" class="modalClose" type="button">X</button></div><div id="modalBody"></div></div></div>
   <div id="appWindowLayer"></div>
   <div id="contextMenu" class="contextMenu"></div>
+  <div id="dbTagPicker" class="dbTagPicker" aria-hidden="true">
+    <div class="dbTagPickerSearch">
+      <input id="dbTagPickerSearch" class="searchInput" type="text" placeholder="Search tags..." spellcheck="false" />
+    </div>
+    <div id="dbTagPickerList" class="dbTagPickerList"></div>
+  </div>
   <div id="sourceAddMenu" class="miniMenu"></div>
   <div id="channelAddMenu" class="miniMenu"></div>
   <div id="maskAddMenu" class="miniMenu"></div>
@@ -4209,10 +4346,10 @@
       if(!list.length) return "";
       return list.map((tag)=>{
         const c=tagColorFor(tag);
-        const remove=removable
-          ? `<button type="button" data-tag="${escAttr(tag)}" aria-label="Remove tag">×</button>`
-          : "";
-        return `<span class="dbTagChip" style="--tag-bg:${c.bg};--tag-bd:${c.bd};--tag-fg:${c.fg}" title="${escAttr(tag)}">${escapeHtml(tag)}${remove}</span>`;
+        if(removable){
+          return `<span class="dbTagChip dbTagChipRemovable" style="--tag-bg:${c.bg};--tag-bd:${c.bd};--tag-fg:${c.fg}" title="${escAttr(tag)}"><span class="dbTagChipLabel">${escapeHtml(tag)}</span><button type="button" data-tag="${escAttr(tag)}" aria-label="Remove tag">×</button></span>`;
+        }
+        return `<span class="dbTagChip" style="--tag-bg:${c.bg};--tag-bd:${c.bd};--tag-fg:${c.fg}" title="${escAttr(tag)}">${escapeHtml(tag)}</span>`;
       }).join("");
     }
     function formatDatabaseUpdatedAt(iso){
@@ -4220,11 +4357,187 @@
       if(!raw) return "—";
       const d=new Date(raw);
       if(!Number.isFinite(d.getTime())) return "—";
-      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+      return d.toLocaleString(undefined, {
+        year:"numeric",
+        month:"short",
+        day:"numeric",
+        hour:"2-digit",
+        minute:"2-digit",
+      });
+    }
+    function databaseNameTaken(name, { excludeId=null, rows=null }={}){
+      const key=String(name||"").trim().toLowerCase();
+      if(!key) return false;
+      const list=Array.isArray(rows) ? rows : (databaseLibrary||[]);
+      return list.some((r)=>{
+        if(excludeId!=null && String(r.id)===String(excludeId)) return false;
+        return String(r.name||"").trim().toLowerCase()===key;
+      });
+    }
+    function allDatabaseLibraryTags(){
+      const seen=new Set();
+      const out=[];
+      (databaseLibrary||[]).forEach((r)=>{
+        normalizeDatabaseTags(r.tags).forEach((tag)=>{
+          const key=tag.toLowerCase();
+          if(seen.has(key)) return;
+          seen.add(key);
+          out.push(tag);
+        });
+      });
+      return out.sort((a,b)=>a.localeCompare(b));
+    }
+    function hideDatabaseTagPicker(){
+      const picker=byId("dbTagPicker");
+      if(!picker) return;
+      picker.classList.remove("show");
+      picker.setAttribute("aria-hidden","true");
+      picker._onPick=null;
+      picker._chosen=null;
+      picker._mode=null;
+      picker._listTags=null;
+      picker._allowCreate=null;
+    }
+    function showDatabaseTagPicker(anchorEl, chosen, onPick, opts={}){
+      const picker=byId("dbTagPicker");
+      const listEl=byId("dbTagPickerList");
+      const search=byId("dbTagPickerSearch");
+      if(!picker || !listEl || !anchorEl) return;
+      const mode=opts.mode==="filter" ? "filter" : "add";
+      const allowCreate=opts.allowCreate!=null ? Boolean(opts.allowCreate) : mode==="add";
+      const listTags=typeof opts.listTags==="function" ? opts.listTags : allDatabaseLibraryTags;
+      hideMenus();
+      picker._onPick=typeof onPick==="function" ? onPick : null;
+      picker._chosen=chosen;
+      picker._mode=mode;
+      picker._listTags=listTags;
+      picker._allowCreate=allowCreate;
+      let activeIdx=-1;
+      const isSelected=(tag)=>{
+        const key=String(tag||"").toLowerCase();
+        return [...chosen].some((t)=>String(t).toLowerCase()===key);
+      };
+      const available=()=>{
+        const all=normalizeDatabaseTags(listTags()||[]);
+        if(mode==="filter") return all;
+        const taken=new Set([...chosen].map((t)=>String(t).toLowerCase()));
+        return all.filter((t)=>!taken.has(String(t).toLowerCase()));
+      };
+      const renderList=()=>{
+        const q=(search?.value||"").trim();
+        const qKey=q.toLowerCase();
+        const tags=available().filter((t)=>!qKey || String(t).toLowerCase().includes(qKey));
+        const exact=qKey && (
+          tags.some((t)=>String(t).toLowerCase()===qKey)
+          || (mode==="add" && isSelected(q))
+        );
+        const canCreate=allowCreate && Boolean(q) && !exact;
+        const rows=[];
+        if(mode==="filter" && chosen.size){
+          rows.push({
+            kind:"clear",
+            html:`<div class="dbTagPickerItem dbTagPickerClear" data-clear="1" role="option"><span class="dbTagPickerItemLabel">Clear filters</span></div>`,
+          });
+        }
+        tags.forEach((tag)=>{
+          const c=tagColorFor(tag);
+          const selected=mode==="filter" && isSelected(tag);
+          rows.push({
+            kind:"tag",
+            tag,
+            html:`<div class="dbTagPickerItem${selected?" selected":""}" data-tag="${escAttr(tag)}" role="option"><span class="dbTagPickerSwatch" style="--tag-bg:${c.bg};--tag-bd:${c.bd}"></span><span class="dbTagPickerItemLabel">${escapeHtml(tag)}</span>${mode==="filter"?`<span class="dbTagPickerCheck" aria-hidden="true">✓</span>`:""}</div>`,
+          });
+        });
+        if(canCreate){
+          const c=tagColorFor(q);
+          rows.push({
+            kind:"create",
+            tag:q,
+            html:`<div class="dbTagPickerItem dbTagPickerCreate" data-create="${escAttr(q)}" role="option"><span class="dbTagPickerSwatch" style="--tag-bg:${c.bg};--tag-bd:${c.bd}"></span><span class="dbTagPickerItemLabel">Create "${escapeHtml(q)}"</span></div>`,
+          });
+        }
+        if(!rows.length){
+          listEl.innerHTML=`<div class="dbTagPickerEmpty">${q ? "No matching tags." : (mode==="filter" ? "No tags yet." : "No tags yet. Type to create one.")}</div>`;
+          activeIdx=-1;
+          return;
+        }
+        if(activeIdx<0 || activeIdx>=rows.length) activeIdx=0;
+        listEl.innerHTML=rows.map((r,idx)=>r.html.replace('class="dbTagPickerItem', `class="dbTagPickerItem${idx===activeIdx?" active":""}`)).join("");
+        listEl.querySelectorAll(".dbTagPickerItem").forEach((el,idx)=>{
+          el.onmouseenter=()=>{ activeIdx=idx; listEl.querySelectorAll(".dbTagPickerItem").forEach((n,i)=>n.classList.toggle("active", i===idx)); };
+          el.onclick=(ev)=>{
+            if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+            if(el.getAttribute("data-clear")){
+              if(picker._onPick) picker._onPick(null, { clear:true });
+              if(search) search.value="";
+              renderList();
+              place();
+              search?.focus();
+              return;
+            }
+            const create=el.getAttribute("data-create");
+            const tag=create || el.getAttribute("data-tag");
+            if(!tag) return;
+            if(picker._onPick) picker._onPick(tag, { create:Boolean(create) });
+            if(mode==="add" && search) search.value="";
+            renderList();
+            place();
+            search?.focus();
+          };
+        });
+      };
+      const place=()=>{
+        const rect=anchorEl.getBoundingClientRect();
+        const z=Math.max(260, appWindowZ + 20);
+        picker.style.zIndex=String(z);
+        picker.classList.add("show");
+        picker.setAttribute("aria-hidden","false");
+        picker.style.visibility="hidden";
+        const width=picker.offsetWidth || 240;
+        const height=picker.offsetHeight || 200;
+        let left=rect.left;
+        let top=rect.bottom + 4;
+        left=Math.max(8, Math.min(left, window.innerWidth - width - 8));
+        if(top + height > window.innerHeight - 8){
+          top=Math.max(8, rect.top - height - 4);
+        }
+        picker.style.left=`${Math.round(left)}px`;
+        picker.style.top=`${Math.round(top)}px`;
+        picker.style.visibility="visible";
+      };
+      if(search){
+        search.value="";
+        search.placeholder="Search tags...";
+        search.oninput=()=>{ activeIdx=0; renderList(); place(); };
+        search.onkeydown=(ev)=>{
+          const items=[...listEl.querySelectorAll(".dbTagPickerItem")];
+          if(ev.key==="ArrowDown"){
+            ev.preventDefault();
+            if(!items.length) return;
+            activeIdx=(activeIdx+1) % items.length;
+            items.forEach((n,i)=>n.classList.toggle("active", i===activeIdx));
+            items[activeIdx]?.scrollIntoView({ block:"nearest" });
+          }else if(ev.key==="ArrowUp"){
+            ev.preventDefault();
+            if(!items.length) return;
+            activeIdx=(activeIdx-1+items.length) % items.length;
+            items.forEach((n,i)=>n.classList.toggle("active", i===activeIdx));
+            items[activeIdx]?.scrollIntoView({ block:"nearest" });
+          }else if(ev.key==="Enter"){
+            ev.preventDefault();
+            items[activeIdx]?.click();
+          }else if(ev.key==="Escape"){
+            ev.preventDefault();
+            hideDatabaseTagPicker();
+          }
+        };
+      }
+      renderList();
+      place();
+      setTimeout(()=>search?.focus(), 0);
     }
     function wireDatabaseTagEditor(chosen){
       const row=byId("m_db_tag_row");
-      const input=byId("m_db_tag_input");
       const addBtn=byId("m_db_tag_add");
       const render=()=>{
         if(!row || !addBtn) return;
@@ -4243,53 +4556,28 @@
           };
         });
       };
-      const setInputVisible=(show)=>{
-        if(!input) return;
-        input.style.display=show?"":"none";
-        if(show) setTimeout(()=>input.focus(), 0);
-      };
-      const addTag=()=>{
-        const tag=(input?.value||"").trim();
-        if(!tag) return;
-        const key=tag.toLowerCase();
-        if([...chosen].some((t)=>String(t).toLowerCase()===key)){
-          if(input) input.value="";
-          return;
-        }
-        chosen.add(tag);
-        if(input) input.value="";
-        setInputVisible(false);
-        render();
-      };
       if(addBtn) addBtn.onclick=(ev)=>{
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
-        if(input && input.style.display!=="none"){
-          addTag();
+        const picker=byId("dbTagPicker");
+        if(picker?.classList.contains("show")){
+          hideDatabaseTagPicker();
           return;
         }
-        setInputVisible(true);
+        showDatabaseTagPicker(addBtn, chosen, (tag)=>{
+          const key=String(tag||"").trim().toLowerCase();
+          if(!key) return;
+          if([...chosen].some((t)=>String(t).toLowerCase()===key)) return;
+          chosen.add(String(tag).trim());
+          render();
+        });
       };
-      if(input){
-        input.style.display="none";
-        input.onkeydown=(ev)=>{
-          if(ev.key==="Enter"){
-            ev.preventDefault();
-            addTag();
-          }else if(ev.key==="Escape"){
-            input.value="";
-            setInputVisible(false);
-          }
-        };
-        input.onblur=()=>{
-          if(!(input.value||"").trim()) setInputVisible(false);
-        };
-      }
       render();
       return ()=>normalizeDatabaseTags([...chosen]);
     }
     async function saveDatabaseLibrary(rows, activeId=null){
       const out=(rows||[]).map((row)=>{
         const tags=normalizeDatabaseTags(row.tags);
+        const updatedAt=String(row.updated_at||"").trim();
         if(isDuckdbProfile(row) || !row.type){
           return {
             id:String(row.id||crypto.randomUUID()),
@@ -4300,6 +4588,7 @@
             default_ingest_mode:"permanent",
             is_default:Boolean(row.is_default),
             tags,
+            updated_at:updatedAt,
           };
         }
         return {
@@ -4313,6 +4602,7 @@
           sslmode:String(row.sslmode||"disable"),
           is_default:Boolean(row.is_default),
           tags,
+          updated_at:updatedAt,
         };
       }).filter((row)=>{
         if(row.type==="duckdb"){
@@ -4321,6 +4611,13 @@
         }
         return row.name&&row.host&&row.user&&Number.isFinite(row.port)&&row.port>0;
       });
+      const seenNames=new Set();
+      for(const row of out){
+        const key=String(row.name||"").trim().toLowerCase();
+        if(!key) continue;
+        if(seenNames.has(key)) throw new Error(`A database named '${row.name}' already exists.`);
+        seenNames.add(key);
+      }
       const payload={ databases:out };
       const active=activeId || activeCatalogId || out.find((r)=>r.type==="duckdb"&&r.is_default)?.id || out.find((r)=>r.type==="duckdb")?.id || null;
       if(active) payload.active_catalog_id=active;
@@ -5708,7 +6005,13 @@
       }
       dialogCloseStack.push({ close:closeBackdropModal, backdrop:true });
     }
-    function hideMenus() { byId("contextMenu").style.display = "none"; byId("sourceAddMenu").style.display = "none"; byId("channelAddMenu").style.display = "none"; byId("maskAddMenu").style.display = "none"; }
+    function hideMenus() {
+      byId("contextMenu").style.display = "none";
+      byId("sourceAddMenu").style.display = "none";
+      byId("channelAddMenu").style.display = "none";
+      byId("maskAddMenu").style.display = "none";
+      hideDatabaseTagPicker();
+    }
     function showContextMenu(x,y,items,opts={}){
       const m=byId("contextMenu");
       m.innerHTML=items.map((i,idx)=>{
@@ -6505,7 +6808,6 @@
               <label>Tags</label>
               <div id="m_db_tag_row" class="dbTagChipRow dbTagChipRowEdit">
                 <button type="button" id="m_db_tag_add" class="dbTagAddBtn" aria-label="Add tag">+</button>
-                <input id="m_db_tag_input" class="dbTagInput" type="text" placeholder="Tag" spellcheck="false" />
               </div>
             </div>
           </div>
@@ -6519,6 +6821,10 @@
           try{
             await loadDatabaseLibrary();
             let rows=Array.isArray(databaseLibrary) ? structuredClone(databaseLibrary) : [];
+            if(databaseNameTaken(name, { excludeId:profile.id, rows })){
+              setStatus(`A database named '${name}' already exists.`, true);
+              return false;
+            }
             const idx=rows.findIndex((r)=>String(r.id)===String(profile.id));
             if(idx<0){ setStatus("Database not found.", true); return false; }
             rows[idx]={
@@ -6573,7 +6879,6 @@
             <label>Tags</label>
             <div id="m_db_tag_row" class="dbTagChipRow dbTagChipRowEdit">
               <button type="button" id="m_db_tag_add" class="dbTagAddBtn" aria-label="Add tag">+</button>
-              <input id="m_db_tag_input" class="dbTagInput" type="text" placeholder="Tag" spellcheck="false" />
             </div>
           </div>
         </div>
@@ -6589,6 +6894,10 @@
         try{
           await loadDatabaseLibrary();
           let rows=Array.isArray(databaseLibrary) ? structuredClone(databaseLibrary) : [];
+          if(databaseNameTaken(name, { excludeId:isEdit ? profile.id : null, rows })){
+            setStatus(`A database named '${name}' already exists.`, true);
+            return false;
+          }
           if(isEdit){
             const idx=rows.findIndex((r)=>String(r.id)===String(profile.id));
             if(idx<0){ setStatus("Database not found.", true); return false; }
@@ -6813,7 +7122,7 @@
         });
       };
 
-      const filterIcon = `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 3h12l-4.5 5.2V13l-3 1.5V8.2L2 3z"/></svg>`;
+      const filterIcon = `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.5 3.25h13v1.5h-13v-1.5zm2.75 4h7.5v1.5h-7.5v-1.5zM6 11.25h4v1.5H6v-1.5z"/></svg>`;
       openModal(
         "Databases > Manager",
         `<div class="maskSearchPad dbManagerToolbar">
@@ -6832,43 +7141,32 @@
       byId("m_db_search").oninput = () => renderList();
       byId("m_db_filter_btn").onclick = (ev) => {
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
-        const rect = ev.currentTarget.getBoundingClientRect();
-        const z = Math.max(200, appWindowZ + 15);
-        const tags = allLibraryTags();
-        const items = [];
-        if(selectedTagFilters.size){
-          items.push({
-            label: "Clear filters",
-            action: () => {
-              selectedTagFilters.clear();
-              renderList();
-            },
-          });
-          items.push({ sep: true });
+        const btn = ev.currentTarget;
+        const picker = byId("dbTagPicker");
+        if(picker?.classList.contains("show") && picker._mode==="filter"){
+          hideDatabaseTagPicker();
+          return;
         }
-        if(!tags.length){
-          items.push({ label: "No tags yet", action: () => {} });
-        }else{
-          tags.forEach((tag)=>{
-            const key = tag.toLowerCase();
-            const active = [...selectedTagFilters].some((t)=>String(t).toLowerCase()===key);
-            items.push({
-              label: tag,
-              checked: active,
-              action: () => {
-                if(active){
-                  [...selectedTagFilters].forEach((t)=>{ if(String(t).toLowerCase()===key) selectedTagFilters.delete(t); });
-                }else{
-                  selectedTagFilters.add(tag);
-                }
-                renderList();
-              },
-            });
-          });
-        }
-        setTimeout(() => {
-          showContextMenu(rect.left, rect.bottom + 2, items, { zIndex: z });
-        }, 0);
+        showDatabaseTagPicker(btn, selectedTagFilters, (tag, meta={})=>{
+          if(meta.clear){
+            selectedTagFilters.clear();
+            renderList();
+            return;
+          }
+          const key=String(tag||"").trim().toLowerCase();
+          if(!key) return;
+          const active=[...selectedTagFilters].some((t)=>String(t).toLowerCase()===key);
+          if(active){
+            [...selectedTagFilters].forEach((t)=>{ if(String(t).toLowerCase()===key) selectedTagFilters.delete(t); });
+          }else{
+            selectedTagFilters.add(String(tag).trim());
+          }
+          renderList();
+        }, {
+          mode: "filter",
+          allowCreate: false,
+          listTags: allLibraryTags,
+        });
       };
       byId("m_db_add_btn").onclick = (ev) => {
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
@@ -6881,162 +7179,200 @@
       renderList();
     }
 
+    function unitsWindowTitleHtml(...leaves){
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 2.5h3.2v11H2.5v-11zm7.8 0h3.2v11H10.3v-11zM6.5 5.2h3v1.4h-3V5.2zm0 4.2h3v1.4h-3V9.4z"/></svg></span>`;
+      const sep=`<span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span>`;
+      const parts=[`<span>Units</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${leaf}</span>`));
+      return `${icon}${parts.join("")}`;
+    }
+    function openUnitCategoryForm({ mode="create", category=null, onSaved=null }={}){
+      const isEdit=mode==="edit" && category;
+      const leaf=isEdit ? "Edit" : "Create";
+      const titleParts=isEdit ? ["Manager", "Edit"] : ["Manager", "Create"];
+      let units=Array.isArray(isEdit ? category.units : null)
+        ? structuredClone(category.units).map((u)=>({
+            symbol:String(u.symbol||""),
+            to_preferred:String(u.to_preferred||""),
+          }))
+        : [];
+      openModal(`Units > Manager > ${leaf}`,`
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="m_unit_name" class="formNameInput" type="text" value="${escAttr(isEdit ? (category.name||"") : "")}" spellcheck="false" placeholder="Temperature" />
+          </div>
+          <div class="formField">
+            <label>Preferred Unit<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="m_unit_preferred" type="text" value="${escAttr(isEdit ? (category.preferred||"") : "")}" spellcheck="false" placeholder="K" />
+          </div>
+          <div class="formField">
+            <div class="aliasMembersHeader" style="margin:0;">
+              <label>Translations</label>
+              <button type="button" class="addBtn" id="m_unit_add_tr" title="Add translation" aria-label="Add translation">+</button>
+            </div>
+            <div id="m_unit_translations" class="unitTranslationList"></div>
+            <div class="itemMeta" style="margin-top:4px;">Formulas convert channel values (<code>x</code>) into the preferred unit.</div>
+          </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_ALIAS_FORM, titleHtml:unitsWindowTitleHtml(...titleParts) },async()=>{
+        const name=(byId("m_unit_name")?.value||"").trim();
+        const preferred=(byId("m_unit_preferred")?.value||"").trim();
+        if(!name){ setStatus("Name is required.", true); return false; }
+        if(!preferred){ setStatus("Preferred unit is required.", true); return false; }
+        const cleanedUnits=units
+          .map((u)=>({
+            symbol:String(u.symbol||"").trim(),
+            to_preferred:String(u.to_preferred||"").trim(),
+          }))
+          .filter((u)=>u.symbol && u.to_preferred);
+        try{
+          await loadUnitLibrary();
+          let rows=Array.isArray(unitLibrary.categories) ? structuredClone(unitLibrary.categories) : [];
+          if(isEdit){
+            const idx=rows.findIndex((r)=>String(r.id)===String(category.id));
+            if(idx<0){ setStatus("Unit category not found.", true); return false; }
+            rows[idx]={
+              ...rows[idx],
+              name,
+              preferred,
+              units:cleanedUnits,
+            };
+          }else{
+            rows.unshift({
+              id:crypto.randomUUID(),
+              name,
+              preferred,
+              units:cleanedUnits,
+            });
+          }
+          const saved=await saveUnitLibrary(rows);
+          unitLibrary={ categories:saved };
+          rebuildChannelUnitMap();
+          overviewTraceCache=null;
+          if(latestRows.length){
+            latestRows=applyRowUnits(latestRows);
+            await plotRows(latestRows, { preserveUi:false, resetView:true });
+          }
+          renderAll();
+          setStatus(isEdit ? `Updated unit category '${name}'.` : `Created unit category '${name}'.`);
+          if(typeof onSaved==="function") onSaved();
+          return true;
+        }catch(err){
+          setStatus(`Failed to save unit category: ${err}`, true);
+          return false;
+        }
+      });
+      const listEl=byId("m_unit_translations");
+      const renderUnits=()=>{
+        if(!listEl) return;
+        if(!units.length){
+          listEl.innerHTML=`<div class="empty" style="padding:6px 0;">No translations yet.</div>`;
+          return;
+        }
+        listEl.innerHTML=units.map((u,idx)=>`
+          <div class="unitTranslationRow" data-idx="${idx}">
+            <input data-k="symbol" type="text" value="${escAttr(u.symbol||"")}" placeholder="C" spellcheck="false" />
+            <input data-k="to_preferred" type="text" value="${escAttr(u.to_preferred||"")}" placeholder="x + 273" spellcheck="false" />
+            <button type="button" class="iconBtn" data-a="del" data-idx="${idx}" aria-label="Remove translation">×</button>
+          </div>
+        `).join("");
+        listEl.querySelectorAll("input[data-k]").forEach((inp)=>{
+          inp.oninput=()=>{
+            const row=inp.closest("[data-idx]");
+            const i=Number(row?.getAttribute("data-idx"));
+            const k=inp.getAttribute("data-k");
+            if(!Number.isFinite(i) || !units[i] || !k) return;
+            units[i][k]=inp.value;
+          };
+        });
+        listEl.querySelectorAll("button[data-a='del']").forEach((btn)=>{
+          btn.onclick=(ev)=>{
+            if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+            const i=Number(btn.getAttribute("data-idx"));
+            if(!Number.isFinite(i) || i<0 || i>=units.length) return;
+            units.splice(i,1);
+            renderUnits();
+          };
+        });
+      };
+      const addBtn=byId("m_unit_add_tr");
+      if(addBtn){
+        addBtn.onclick=(ev)=>{
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          units.push({ symbol:"", to_preferred:"" });
+          renderUnits();
+        };
+      }
+      renderUnits();
+    }
     async function openUnitManagerModal(){
       await loadUnitLibrary();
       let library=structuredClone(unitLibrary.categories||[]);
-      const expanded=new Set();
+      library=library.map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
 
       const categoryById=(id)=>library.find((x)=>String(x.id)===String(id))||null;
       const filterList=(rows)=>{
         const q=(byId("m_unit_search")?.value||"").trim().toLowerCase();
         if(!q) return rows;
         return rows.filter((r)=>{
-          const blob=`${r.name} ${r.preferred} ${(r.units||[]).map((u)=>`${u.symbol} ${u.to_preferred}`).join(" ")}`.toLowerCase();
+          const blob=`${r.name||""} ${r.preferred||""} ${(r.units||[]).map((u)=>`${u.symbol||""} ${u.to_preferred||""}`).join(" ")}`.toLowerCase();
           return blob.includes(q);
         });
       };
 
-      const translationRowsHtml=(cat)=>{
-        const units=Array.isArray(cat.units)?cat.units:[];
-        if(!units.length) return `<div class="empty" style="padding:6px 0;">No translations yet.</div>`;
-        return `<div class="tableWrap" style="max-height:none;margin-top:6px;">
-          <table style="width:100%;">
-            <thead><tr><th>Unit</th><th>To preferred (x = source value)</th><th></th></tr></thead>
-            <tbody>
-              ${units.map((u, idx)=>`<tr>
-                <td><input data-k="symbol" data-cat="${escAttr(cat.id)}" data-idx="${idx}" type="text" value="${escAttr(u.symbol||"")}" placeholder="C" /></td>
-                <td><input data-k="to_preferred" data-cat="${escAttr(cat.id)}" data-idx="${idx}" type="text" value="${escAttr(u.to_preferred||"")}" placeholder="x + 273" /></td>
-                <td><button type="button" class="iconBtn" data-a="del-unit" data-cat="${escAttr(cat.id)}" data-idx="${idx}" title="Remove">×</button></td>
-              </tr>`).join("")}
-            </tbody>
-          </table>
-        </div>`;
-      };
-
-      const editHtml=(cat)=>`
-        <div class="modalGrid" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-          <div><label>Category Name</label><input data-k="name" data-cat="${escAttr(cat.id)}" type="text" value="${escAttr(cat.name||"")}" /></div>
-          <div><label>Preferred Unit</label><input data-k="preferred" data-cat="${escAttr(cat.id)}" type="text" value="${escAttr(cat.preferred||"")}" placeholder="K" /></div>
-        </div>
-        <div style="margin-top:8px;display:flex;justify-content:flex-end;">
-          <button type="button" class="iconBtn" data-a="add-unit" data-cat="${escAttr(cat.id)}" title="Add translation">+</button>
-        </div>
-        <div id="m_unit_trans_${escAttr(cat.id)}">${translationRowsHtml(cat)}</div>
-      `;
-
       const rowHtml=(cat)=>{
-        const isOpen=expanded.has(String(cat.id));
         const count=(cat.units||[]).length;
+        const preferred=String(cat.preferred||"").trim() || "—";
+        const meta=`${preferred} · ${count} translation${count===1?"":"s"}`;
         return `
-          <div class="selectRow ${isOpen?"active":""}" data-id="${escAttr(cat.id)}" style="display:block;">
-            <div style="display:flex;align-items:center;gap:4px;">
-              <div style="flex:1;min-width:0;">
-                <div class="itemPrimary">${escapeHtml(cat.name||"Unit category")}</div>
-                <div class="itemMeta">preferred ${escapeHtml(cat.preferred||"—")} | ${count} translation${count===1?"":"s"}</div>
-              </div>
-              <button type="button" class="iconBtn" data-a="toggle" data-id="${escAttr(cat.id)}" title="${isOpen?"Collapse":"Edit"}">${isOpen?"▴":"✎"}</button>
-              <button type="button" class="iconBtn" data-a="delete" data-id="${escAttr(cat.id)}" title="Delete">×</button>
-            </div>
-            ${isOpen?editHtml(cat):""}
+          <div class="selectRow dbManagerRow" data-id="${escAttr(cat.id)}" title="${escAttr(cat.name||"Unit category")}">
+            <div class="itemPrimary">${escapeHtml(cat.name||"Unit category")}</div>
+            <div class="dbRowUpdated">${escapeHtml(meta)}</div>
           </div>
         `;
       };
 
-      const syncCategoryFromDom=(catId)=>{
-        const cat=categoryById(catId);
-        if(!cat) return;
-        byId("modalBody").querySelectorAll(`input[data-cat="${CSS.escape(String(catId))}"]`).forEach((inp)=>{
-          const k=inp.getAttribute("data-k");
-          const idx=inp.getAttribute("data-idx");
-          if(!k) return;
-          if(idx!==null){
-            const i=Number(idx);
-            if(!Array.isArray(cat.units)) cat.units=[];
-            if(!cat.units[i]) cat.units[i]={ symbol:"", to_preferred:"" };
-            cat.units[i][k]=inp.value;
-            return;
+      const persistLibrary=async()=>{
+        try{
+          const saved=await saveUnitLibrary(library);
+          library=structuredClone(saved);
+          unitLibrary={ categories:saved };
+          rebuildChannelUnitMap();
+          overviewTraceCache=null;
+          if(latestRows.length){
+            latestRows=applyRowUnits(latestRows);
+            await plotRows(latestRows, { preserveUi:false, resetView:true });
           }
-          cat[k]=inp.value;
-        });
+          renderAll();
+          return true;
+        }catch(err){
+          setStatus(`Failed to save unit library: ${err}`, true);
+          return false;
+        }
       };
 
-      const syncLibraryFromDom=()=>{
-        library.forEach((cat)=>syncCategoryFromDom(cat.id));
-      };
-
-      const renderList=()=>{
-        const el=byId("m_unit_list");
-        if(!el) return;
-        const filtered=filterList(library);
-        el.innerHTML=filtered.length
-          ? filtered.map((r)=>rowHtml(r)).join("")
-          : `<div class="empty">${library.length?"No matching categories.":"No unit categories yet."}</div>`;
-
-        el.querySelectorAll("button[data-a]").forEach((b)=>{
-          b.onclick=(ev)=>{
-            if(ev){ ev.preventDefault(); ev.stopPropagation(); }
-            const action=b.getAttribute("data-a");
-            const catId=b.getAttribute("data-cat")||b.getAttribute("data-id");
-            if(action==="toggle"){
-              const key=String(catId);
-              syncCategoryFromDom(catId);
-              if(expanded.has(key)) expanded.delete(key);
-              else{ expanded.clear(); expanded.add(key); }
-              renderList();
-              return;
-            }
-            if(action==="delete"){
-              const idx=library.findIndex((x)=>String(x.id)===String(catId));
-              if(idx<0) return;
-              library.splice(idx,1);
-              expanded.delete(String(catId));
-              renderList();
-              return;
-            }
-            if(action==="add-unit"){
-              syncCategoryFromDom(catId);
-              const cat=categoryById(catId);
-              if(!cat) return;
-              if(!Array.isArray(cat.units)) cat.units=[];
-              cat.units.push({ symbol:"", to_preferred:"" });
-              expanded.add(String(catId));
-              renderList();
-              return;
-            }
-            if(action==="del-unit"){
-              syncCategoryFromDom(catId);
-              const cat=categoryById(catId);
-              const idx=Number(b.getAttribute("data-idx"));
-              if(!cat||!Array.isArray(cat.units)||idx<0||idx>=cat.units.length) return;
-              cat.units.splice(idx,1);
-              renderList();
-            }
-          };
-        });
-
-        el.querySelectorAll("input[data-k]").forEach((inp)=>{
-          inp.oninput=()=>{
-            const k=inp.getAttribute("data-k");
-            const catId=inp.getAttribute("data-cat");
-            const idx=inp.getAttribute("data-idx");
-            const cat=categoryById(catId);
-            if(!k||!cat) return;
-            if(idx!==null){
-              const i=Number(idx);
-              if(!Array.isArray(cat.units)) cat.units=[];
-              if(!cat.units[i]) cat.units[i]={ symbol:"", to_preferred:"" };
-              cat.units[i][k]=inp.value;
-            }else cat[k]=inp.value;
-          };
-        });
-      };
-
-      const addCategory=()=>{
-        const id=crypto.randomUUID();
-        library.unshift({ id, name:"New category", preferred:"", units:[] });
-        expanded.clear();
-        expanded.add(id);
+      const refreshFromServer=async()=>{
+        await loadUnitLibrary();
+        library=structuredClone(unitLibrary.categories||[]);
+        library=library.map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
         renderList();
+        renderAll();
+      };
+
+      const deleteCategory=async(id)=>{
+        const idx=library.findIndex((x)=>String(x.id)===String(id));
+        if(idx<0) return;
+        const removed=library[idx];
+        library.splice(idx,1);
+        const ok=await persistLibrary();
+        if(ok){
+          setStatus(`Deleted unit category '${removed?.name||id}'.`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
       };
 
       const importCategories=async()=>{
@@ -7048,12 +7384,16 @@
           return;
         }
         library=[...imported, ...library];
-        renderList();
-        setStatus(`Imported ${imported.length} unit category(ies). Click Save to persist.`);
+        const ok=await persistLibrary();
+        if(ok){
+          setStatus(`Imported ${imported.length} unit category(ies).`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
       };
 
       const exportCategories=async()=>{
-        syncLibraryFromDom();
         const payload={ categories:library };
         const result=await saveJsonToFile("nova_unit_library.json", payload);
         if(result.ok&&result.viaPicker) setStatus("Unit library exported.");
@@ -7061,57 +7401,104 @@
         if(!result.ok&&result.cancelled) setStatus("Unit library export cancelled.");
       };
 
+      const renderList=()=>{
+        const el=byId("m_unit_list");
+        if(!el) return;
+        const filtered=filterList(library);
+        el.innerHTML=filtered.length
+          ? filtered.map((r)=>rowHtml(r)).join("")
+          : `<div class="empty">${library.length?"No matching categories.":"No unit categories yet. Use + to create one."}</div>`;
+
+        el.querySelectorAll(".selectRow[data-id]").forEach((row)=>{
+          const id=row.getAttribute("data-id");
+          row.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const cat=categoryById(id);
+            if(!cat) return;
+            const z=Math.max(200, appWindowZ+15);
+            showContextMenu(ev.clientX, ev.clientY, [
+              {
+                label:"Edit",
+                action:()=>openUnitCategoryForm({
+                  mode:"edit",
+                  category:cat,
+                  onSaved:()=>{ void refreshFromServer(); },
+                }),
+              },
+              {
+                label:"Delete",
+                action:()=>{ void deleteCategory(id); },
+              },
+              { sep:true },
+              {
+                label:"Import categories...",
+                action:()=>{ void importCategories(); },
+              },
+              {
+                label:"Export categories...",
+                action:()=>{ void exportCategories(); },
+              },
+            ], { zIndex:z });
+          };
+          row.ondblclick=()=>{
+            const cat=categoryById(id);
+            if(cat){
+              openUnitCategoryForm({
+                mode:"edit",
+                category:cat,
+                onSaved:()=>{ void refreshFromServer(); },
+              });
+            }
+          };
+        });
+      };
+
       openModal(
-        "Unit Manager",
-        `<div class="cfgManagerToolbar">
-            <input id="m_unit_search" class="searchInput" type="text" placeholder="Search categories..." />
-            <button id="m_unit_menu_btn" type="button" class="iconBtn cfgMenuBtn">&#8943;</button>
+        "Units > Manager",
+        `<div class="maskSearchPad dbManagerToolbar">
+            <input id="m_unit_search" class="searchInput" type="text" placeholder="Search..." />
+            <button id="m_unit_add_btn" type="button" class="addBtn" aria-label="Create unit category">+</button>
          </div>
-         <div style="padding:0 10px 10px;">
-           <div class="itemMeta" style="margin-bottom:8px;">Define preferred units and formulas that convert channel values (<code>x</code>) into the preferred unit.</div>
+         <div class="maskListPad">
            <div id="m_unit_list" class="modalList"></div>
          </div>
-         <div class="modalActions">
-           <button id="modalCancelBtn" type="button">Close</button>
-           <button id="modalSaveCloseBtn" type="button">Save</button>
-         </div>`,
-        async()=>{
-          syncLibraryFromDom();
-          try{
-            const saved=await saveUnitLibrary(library);
-            library=structuredClone(saved);
-            rebuildChannelUnitMap();
-            overviewTraceCache=null;
-            if(latestRows.length){
-              latestRows=applyRowUnits(latestRows);
-              await plotRows(latestRows, { preserveUi:false, resetView:true });
-            }
-            renderAll();
-            setStatus(`Saved ${saved.length} unit category(ies).`);
-            return true;
-          }catch(err){
-            setStatus(`Failed to save unit library: ${err}`, true);
-            return false;
-          }
-        }
+         <div class="modalActions" style="display:none" aria-hidden="true"></div>`,
+        async()=>true,
+        { ...WF_CFG, closable:true, titleHtml:unitsWindowTitleHtml("Manager") }
       );
 
       byId("m_unit_search").oninput=()=>renderList();
-      byId("m_unit_menu_btn").onclick=(ev)=>{
-        ev.stopPropagation();
-        const rect=ev.currentTarget.getBoundingClientRect();
-        const z=Math.max(200, appWindowZ+15);
-        setTimeout(()=>{
-          showContextMenu(rect.right-180, rect.bottom+2,[
-            { label:"Add category", action:()=>addCategory() },
-            { label:"Import categories...", action:()=>importCategories() },
-            { label:"Export categories...", action:()=>exportCategories() },
-          ], { zIndex:z });
-        }, 0);
+      byId("m_unit_add_btn").onclick=(ev)=>{
+        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+        openUnitCategoryForm({
+          mode:"create",
+          onSaved:()=>{ void refreshFromServer(); },
+        });
       };
+      const listHost=byId("m_unit_list");
+      if(listHost){
+        listHost.oncontextmenu=(ev)=>{
+          if(ev.target.closest && ev.target.closest(".selectRow[data-id]")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const z=Math.max(200, appWindowZ+15);
+          showContextMenu(ev.clientX, ev.clientY, [
+            {
+              label:"Import categories...",
+              action:()=>{ void importCategories(); },
+            },
+            {
+              label:"Export categories...",
+              action:()=>{ void exportCategories(); },
+            },
+          ], { zIndex:z });
+        };
+      }
 
       renderList();
     }
+
     function showChannelAddMenu(x,y){
       const m=byId("channelAddMenu");
       m.innerHTML=`<div class="miniMenuItem" data-t="source">Add channels from source</div><div class="miniMenuItem" data-t="calc">Calculated channel...</div>`;
@@ -7147,7 +7534,11 @@
       const addMaskBtn = byId("addMaskBtn");
       const addIndexMaskBtn = byId("addIndexMaskBtn");
       const ctxMenu=byId("contextMenu");
+      const tagPicker=byId("dbTagPicker");
       if(ctxMenu&&ctxMenu.contains(e.target)) return;
+      if(tagPicker&&tagPicker.contains(e.target)) return;
+      if(e.target.closest&&e.target.closest("#m_db_tag_add")) return;
+      if(e.target.closest&&e.target.closest("#m_db_filter_btn")) return;
       if(e.target.closest&&e.target.closest(".cfgMenuBtn")) return;
       if (menu.contains(e.target) || addBtn.contains(e.target) || channelMenu.contains(e.target) || addChannelBtn.contains(e.target) || (addCalcChannelBtn&&addCalcChannelBtn.contains(e.target)) || maskMenu.contains(e.target) || addMaskBtn.contains(e.target) || (addIndexMaskBtn&&addIndexMaskBtn.contains(e.target))) return;
       hideMenus();

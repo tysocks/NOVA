@@ -126,6 +126,30 @@ def test_save_database_library_rejects_non_list(library_file: Path):
     assert response.json()["ok"] is False
 
 
+def test_save_database_library_rejects_duplicate_names(library_file: Path, tmp_path: Path):
+    a = tmp_path / "a.duckdb"
+    b = tmp_path / "b.duckdb"
+    response = client.post(
+        "/api/database-library",
+        json={
+            "databases": [
+                {"id": "a", "type": "duckdb", "name": "Rocket", "catalog_path": str(a), "is_default": True},
+                {"id": "b", "type": "duckdb", "name": "rocket", "catalog_path": str(b)},
+            ],
+            "active_catalog_id": "a",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is False
+    assert "already exists" in str(body.get("error") or "").lower()
+    # Library file should remain empty / not contain duplicates from this rejected write.
+    if library_file.exists():
+        loaded = client.get("/api/database-library").json()
+        names = [str(r.get("name") or "").lower() for r in loaded.get("databases") or []]
+        assert names.count("rocket") <= 1
+
+
 def test_test_duckdb_catalog_connection(library_file: Path, tmp_path: Path):
     catalog = tmp_path / "proj" / "catalog.duckdb"
     payload = {
