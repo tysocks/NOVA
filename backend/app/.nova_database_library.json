@@ -1,0 +1,21 @@
+{
+  "databases": [
+    {
+      "id": "0add5c1f-ba34-430c-bcaf-7c99a9cea2f8",
+      "type": "duckdb",
+      "name": "Performance Verification",
+      "catalog_path": "C:\\Users\\tyler\\Documents\\PROJECTS\\PR4 - ATHA\\3.0 PUMP STEADY STATE\\SYSTEM SIM\\TEst.duckdb",
+      "parquet_root": "C:\\Users\\tyler\\Documents\\PROJECTS\\PR4 - ATHA\\3.0 PUMP STEADY STATE\\SYSTEM SIM\\parquet",
+      "default_ingest_mode": "permanent",
+      "is_default": true,
+      "role": "project",
+      "hidden": false,
+      "tags": [
+        "test",
+        "dev"
+      ],
+      "updated_at": "2026-07-28T06:49:48.508Z"
+    }
+  ],
+  "active_catalog_id": "0add5c1f-ba34-430c-bcaf-7c99a9cea2f8"
+}

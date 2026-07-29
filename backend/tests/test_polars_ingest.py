@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import datetime, timezone
 
 from app.engine.file_index import run_ingest
 from app.engine.polars_tabular import normalize_csv_polars, normalize_tabular_polars
@@ -39,13 +40,21 @@ def test_normalize_csv_polars_units_and_time(tmp_path: Path):
         "time_s,THRUST (N),P[psi]\n0.0,1.0,10.0\n1.0,2.0,11.0\n",
         encoding="utf-8",
     )
-    df, unit_map, time_col = normalize_csv_polars(str(csv_path), units_in_headers=True)
+    df, unit_map, time_col, t0_utc = normalize_csv_polars(str(csv_path), units_in_headers=True)
     assert time_col == "time_s"
     assert "__time__" in df.columns
     assert "THRUST" in df.columns
     assert unit_map["THRUST"] == "N"
     assert unit_map["P"] == "psi"
     assert df.height == 2
+    assert t0_utc.tzinfo is not None
+    # Relative time_s is anchored so first sample ≈ ingest wall clock.
+    first = df["__time__"][0]
+    first_dt = first if isinstance(first, datetime) else first.to_python()
+    if getattr(first_dt, "tzinfo", None) is None:
+        first_dt = first_dt.replace(tzinfo=timezone.utc)
+    delta_s = abs((first_dt - t0_utc).total_seconds())
+    assert delta_s < 2.0
 
 
 def test_polars_csv_ingest_end_to_end(monkeypatch, tmp_path: Path):
@@ -61,6 +70,17 @@ def test_polars_csv_ingest_end_to_end(monkeypatch, tmp_path: Path):
     assert manifest["channels"][0]["channel_name"] == "THRUST"
     assert manifest["channels"][0]["unit"] == "N"
     assert manifest["channels"][0]["point_count"] == 3
+    assert manifest.get("t0_utc")
+
+    import pyarrow.parquet as pq
+
+    parquet = tmp_path / "sessions" / manifest["artifact_id"] / "data" / "THRUST.parquet"
+    table = pq.read_table(parquet)
+    assert "timestamp_utc" in table.column_names
+    assert "x_ms" in table.column_names
+    assert "y" in table.column_names
+    # Anchored away from Unix epoch for relative time_s.
+    assert float(table.column("x_ms")[0].as_py()) > 1e11
 
 
 def test_polars_parquet_ingest(monkeypatch, tmp_path: Path):
@@ -84,7 +104,7 @@ def test_polars_parquet_ingest(monkeypatch, tmp_path: Path):
     parquet_path = tmp_path / "wide.parquet"
     pq.write_table(table, parquet_path)
 
-    df, unit_map, time_col = normalize_tabular_polars(
+    df, unit_map, time_col, t0_utc = normalize_tabular_polars(
         str(parquet_path),
         source_type="parquet",
         time_col="time_s",
@@ -92,6 +112,7 @@ def test_polars_parquet_ingest(monkeypatch, tmp_path: Path):
     assert time_col == "time_s"
     assert unit_map.get("thrust_n") == "N"
     assert df.height == 3
+    assert t0_utc.tzinfo is not None
 
     manifest = run_ingest("parquet", str(parquet_path), time_index_channel="time_s")
     assert manifest["status"] == "ready"

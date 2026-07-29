@@ -76,8 +76,15 @@ def _write_channel_parquet(
     import pyarrow as pa
     import pyarrow.parquet as pq
 
-    sub = pd.DataFrame({"x_ms": _times_to_epoch_ms(times), "y": pd.to_numeric(values, errors="coerce")})
-    sub = sub.dropna()
+    ts = pd.to_datetime(times, utc=True)
+    sub = pd.DataFrame(
+        {
+            "timestamp_utc": ts,
+            "x_ms": _times_to_epoch_ms(ts),
+            "y": pd.to_numeric(values, errors="coerce"),
+        }
+    )
+    sub = sub.dropna(subset=["x_ms", "y"])
     if sub.empty:
         out_path.write_bytes(b"")
         return 0
@@ -85,6 +92,7 @@ def _write_channel_parquet(
     y_meta = {b"unit": str(unit).encode("utf-8")} if unit else None
     schema = pa.schema(
         [
+            pa.field("timestamp_utc", pa.timestamp("us", tz="UTC")),
             pa.field("x_ms", pa.float64()),
             pa.field("y", pa.float64(), metadata=y_meta),
         ]
@@ -101,13 +109,97 @@ def _finalize_manifest(
     time_bounds: dict[str, float] | None,
     status: str = "ready",
     error: str | None = None,
+    t0_utc: datetime | None = None,
 ) -> dict[str, Any]:
     manifest["status"] = status
     manifest["channels"] = channels
     manifest["time_bounds"] = time_bounds
     manifest["error"] = error
+    if t0_utc is not None:
+        manifest["t0_utc"] = t0_utc.astimezone(timezone.utc).isoformat()
     manifest["updated_at"] = datetime.now(timezone.utc).isoformat()
     return manifest
+
+
+def _ensure_default_source_range(
+    *,
+    manifest: dict[str, Any],
+    test_id: int,
+    profile_catalog_id: str | None,
+    mode: str,
+    file_path: Path,
+) -> None:
+    bounds = manifest.get("time_bounds") or {}
+    start_ms = bounds.get("start_ms")
+    end_ms = bounds.get("end_ms")
+    if start_ms is None or end_ms is None:
+        return
+    start_time = datetime.fromtimestamp(float(start_ms) / 1000.0, tz=timezone.utc)
+    end_time = datetime.fromtimestamp(float(end_ms) / 1000.0, tz=timezone.utc)
+    name = str(manifest.get("run_code") or file_path.stem or "Range")
+    if mode == "temporary":
+        from .range_store import create_temp_range, list_temp_ranges
+
+        artifact_id = str(manifest.get("artifact_id") or "")
+        if not artifact_id or list_temp_ranges(artifact_id):
+            return
+        from ..models import RangeCreateRequest
+
+        create_temp_range(
+            RangeCreateRequest(
+                artifact_id=artifact_id,
+                file_path=str(file_path.resolve()),
+                durability="temporary",
+                name=name,
+                start_time=start_time,
+                end_time=end_time,
+                source="user",
+            )
+        )
+        return
+
+    from .catalog_store import create_range, list_ranges
+    from ..models import RangeCreateRequest
+
+    if list_ranges(test_id, catalog_id=profile_catalog_id):
+        return
+    create_range(
+        RangeCreateRequest(
+            test_id=test_id,
+            catalog_id=profile_catalog_id,
+            durability="permanent",
+            name=name,
+            start_time=start_time,
+            end_time=end_time,
+            source="user",
+        )
+    )
+
+
+def _anchor_pandas_relative_time(
+    df: pd.DataFrame,
+    *,
+    t0_utc: datetime | None = None,
+) -> tuple[pd.DataFrame, datetime]:
+    """If __time__ looks like elapsed-from-epoch, rebase so first sample = ingest wall clock."""
+    t0 = t0_utc or datetime.now(timezone.utc)
+    if t0.tzinfo is None:
+        t0 = t0.replace(tzinfo=timezone.utc)
+    if df.empty or "__time__" not in df.columns:
+        return df, t0
+    times = pd.to_datetime(df["__time__"], utc=True)
+    mn = times.min()
+    mx = times.max()
+    if pd.isna(mn) or pd.isna(mx):
+        return df, t0
+    epoch = pd.Timestamp("1970-01-01", tz="UTC")
+    # Relative elapsed times land near the Unix epoch after numeric→datetime conversion.
+    if mn >= epoch and mx <= epoch + pd.Timedelta(days=365 * 3) and (mx - mn) <= pd.Timedelta(days=365 * 50):
+        delta = pd.Timestamp(t0) - mn
+        out = df.copy()
+        out["__time__"] = times + delta
+        return out, t0
+    return df, times.min().to_pydatetime()
 
 
 def _ingest_dataframe(
@@ -124,6 +216,7 @@ def _ingest_dataframe(
     tmax_ms: float | None = None
     units = unit_map or {}
     excluded = skip_columns or set()
+    df, t0_utc = _anchor_pandas_relative_time(df)
 
     for col in df.columns:
         if col == "__time__" or col in excluded:
@@ -157,6 +250,7 @@ def _ingest_dataframe(
         "run_code": run_code,
         "channels": channel_rows,
         "time_bounds": {"start_ms": tmin_ms, "end_ms": tmax_ms} if tmin_ms is not None else None,
+        "t0_utc": t0_utc,
     }
 
 
@@ -168,7 +262,7 @@ def ingest_csv(
     time_index_channel: str | None = None,
     out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    df, unit_map, time_col = normalize_csv_polars(
+    df, unit_map, time_col, t0_utc = normalize_csv_polars(
         file_path,
         units_in_headers=units_in_headers,
         time_col=time_index_channel,
@@ -188,6 +282,7 @@ def ingest_csv(
         "channels": channel_rows,
         "time_bounds": time_bounds,
         "data_dir": str(target.resolve()),
+        "t0_utc": t0_utc,
     }
 
 
@@ -216,7 +311,7 @@ def ingest_tabular(
     units_in_headers: bool = False,
     out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    df, unit_map, time_col = normalize_tabular_polars(
+    df, unit_map, time_col, t0_utc = normalize_tabular_polars(
         file_path,
         source_type=source_type,
         time_col=time_index_channel,
@@ -237,6 +332,7 @@ def ingest_tabular(
         "channels": channel_rows,
         "time_bounds": time_bounds,
         "data_dir": str(target.resolve()),
+        "t0_utc": t0_utc,
     }
 
 
@@ -249,6 +345,7 @@ def ingest_tdms(file_path: str, artifact_id: str) -> dict[str, Any]:
     channel_rows: list[dict[str, Any]] = []
     tmin_ms: float | None = None
     tmax_ms: float | None = None
+    t0_utc = datetime.now(timezone.utc)
 
     for group in tdms.groups():
         for ch in group.channels():
@@ -270,7 +367,7 @@ def ingest_tdms(file_path: str, artifact_id: str) -> dict[str, Any]:
                     else:
                         st = st.tz_convert(timezone.utc)
                 else:
-                    st = pd.Timestamp.now(tz=timezone.utc)
+                    st = pd.Timestamp(t0_utc)
                 if len(tt) > 0:
                     n = min(len(values), len(tt))
                     times = pd.to_datetime(
@@ -311,10 +408,14 @@ def ingest_tdms(file_path: str, artifact_id: str) -> dict[str, Any]:
     if not channel_rows:
         raise ValueError("TDMS ingest produced no readable channels.")
 
+    if tmin_ms is not None:
+        t0_utc = datetime.fromtimestamp(tmin_ms / 1000.0, tz=timezone.utc)
+
     return {
         "run_code": run_code,
         "channels": channel_rows,
         "time_bounds": {"start_ms": tmin_ms, "end_ms": tmax_ms} if tmin_ms is not None else None,
+        "t0_utc": t0_utc,
     }
 
 
@@ -470,6 +571,7 @@ def run_ingest(
             channels=result["channels"],
             time_bounds=result["time_bounds"],
             status="ready",
+            t0_utc=result.get("t0_utc"),
         )
         manifest["run_code"] = result["run_code"]
         manifest["durability"] = mode
@@ -495,11 +597,23 @@ def run_ingest(
                 channel_parquet_uris=channel_uris,
             )
             manifest["test_run_id"] = test_id
+            _ensure_default_source_range(
+                manifest=manifest,
+                test_id=test_id,
+                profile_catalog_id=profile.get("id"),
+                mode=mode,
+                file_path=path,
+            )
 
             applied_ranges = []
             for rule_id in apply_range_rule_ids or []:
                 applied_ranges.extend(apply_range_rule_to_test(test_id, int(rule_id)))
             manifest["applied_ranges"] = [r.model_dump(mode="json") for r in applied_ranges]
+
+        if mode == "temporary":
+            from .range_store import restore_ranges_from_durable_sidecar
+
+            restore_ranges_from_durable_sidecar(artifact_id, str(path.resolve()))
 
         save_manifest(artifact_id, manifest)
         return manifest

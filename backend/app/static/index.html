@@ -153,6 +153,25 @@
     .itemBadge svg{ width:12px; height:12px; display:block; }
     .item.active .itemBadge{ color:var(--nova-text); opacity:0.85; }
     .item > .itemMeta{ display:none; }
+    .itemRow{
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      gap:1px;
+      min-height:27px;
+      padding:4px 8px;
+      border:none;
+      border-radius:4px;
+      cursor:pointer;
+      user-select:none;
+      -webkit-user-select:none;
+      box-sizing:border-box;
+    }
+    .itemRow.active{ background:var(--nova-active); }
+    .itemRow:hover:not(.active){ background:var(--nova-hover); }
+    .itemRow .itemPrimary{ font-weight:400; }
+    .itemRow.active .itemPrimary{ font-weight:500; }
+    .itemRow .itemMeta{ display:block; margin-left:22px; }
     .treeRow{ gap:4px; padding-left:calc(6px + (var(--depth, 0) * 14px)); }
     .treeTwist{
       width:16px; height:16px; min-width:16px; border:none; border-radius:3px; background:transparent;
@@ -699,6 +718,257 @@
       width:110px;
       max-width:110px;
     }
+    .rangeFormHeader{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-width:0;
+    }
+    .rangeFormNameRow{
+      display:flex;
+      align-items:flex-end;
+      gap:10px;
+      min-width:0;
+      width:100%;
+    }
+    .rangeFormNameRow > .rangeFormName{
+      flex:1 1 0;
+      min-width:0;
+    }
+    .rangeNameWithColor{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+      width:100%;
+    }
+    .rangeNameWithColor > .formNameInput{
+      flex:1 1 0;
+      min-width:0;
+    }
+    .rangeColorMarkerBtn{
+      flex:0 0 auto;
+      width:44px;
+      height:44px;
+      min-width:44px;
+      padding:0;
+      margin:0 0 2px;
+      border:none;
+      border-radius:0;
+      background:transparent;
+      color:inherit;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:none;
+    }
+    .rangeColorMarkerBtn:hover{ background:transparent; }
+    .rangeColorMarker{
+      width:32px;
+      height:32px;
+      border-radius:999px;
+      border:2px solid #3b82f6;
+      box-sizing:border-box;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      background:transparent;
+      line-height:0;
+    }
+    .rangeColorMarkerDot{
+      width:18px;
+      height:18px;
+      border-radius:999px;
+      background:#3b82f6;
+      display:block;
+      flex:0 0 auto;
+    }
+    .rangeColorInputHidden{
+      position:absolute;
+      width:1px;
+      height:1px;
+      opacity:0;
+      pointer-events:none;
+      border:none;
+      padding:0;
+      margin:0;
+    }
+    .rangeFormTimes{
+      display:flex;
+      flex-wrap:nowrap;
+      align-items:flex-start;
+      gap:12px;
+      width:100%;
+      min-width:0;
+    }
+    .rangeFormTimes > .formField{
+      flex:1 1 0;
+      width:auto;
+      max-width:none;
+      min-width:0;
+    }
+    .rangeFormStatusTags{
+      display:flex;
+      flex-wrap:nowrap;
+      align-items:flex-start;
+      gap:12px;
+      width:100%;
+      min-width:0;
+    }
+    .rangeFormStatusTags > .rangeStatusField{
+      flex:0 0 160px;
+      width:160px;
+      max-width:160px;
+    }
+    .rangeFormStatusTags > .rangeTagsField{
+      flex:1 1 0;
+      min-width:0;
+    }
+    .rangeMetaSection{
+      display:flex;
+      flex-direction:column;
+      gap:0;
+      min-width:0;
+      width:100%;
+    }
+    .rangeMetaHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      min-width:0;
+    }
+    .rangeMetaHeader > label{
+      margin:0;
+      font-size:0.72rem;
+      font-weight:500;
+      color:var(--nova-text-dim);
+      letter-spacing:0.01em;
+    }
+    .rangeMetaHeader > .dbTagAddBtn{
+      flex:0 0 auto;
+    }
+    .rangeMetaDivider{
+      height:1px;
+      background:var(--nova-divider);
+      margin:8px 0 0;
+      width:100%;
+    }
+    .rangeMetaTable{
+      display:flex;
+      flex-direction:column;
+      width:100%;
+      min-width:0;
+      border:none;
+      margin:0;
+      padding:4px 0 0;
+    }
+    .rangeMetaRow{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      gap:8px;
+      align-items:center;
+      border:none;
+      background:transparent;
+      padding:4px 0;
+      box-sizing:border-box;
+      cursor:default;
+    }
+    .rangeMetaRow:hover{
+      background:var(--nova-hover);
+    }
+    .rangeMetaCell{
+      min-width:0;
+      min-height:30px;
+      display:flex;
+      align-items:center;
+      border:none;
+      background:transparent;
+      padding:4px 2px;
+      color:var(--nova-text);
+      font-size:0.875rem;
+      line-height:1.3;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .rangeMetaCell.muted,
+    .rangeMetaCell .muted{
+      color:var(--nova-text-dim);
+    }
+    .rangeMetaCellName{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      min-width:0;
+    }
+    .rangeMetaCellName > .rangeMetaNameText{
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .rangeMetaCellName > .rangeListMarker{
+      flex:0 0 auto;
+    }
+    .rangeMetaRow input{
+      width:100%;
+      min-width:0;
+      min-height:30px;
+      height:30px;
+      max-height:30px;
+      margin:0;
+      border:none;
+      border-radius:0;
+      background:transparent;
+      padding:4px 2px;
+      box-shadow:none;
+      outline:none;
+    }
+    .rangeMetaRow input:focus{
+      border:none;
+      box-shadow:none;
+      outline:none;
+    }
+    .itemRow.rangeDragging{
+      opacity:0.45;
+    }
+    .itemRow.rangeDropChild{
+      outline:1px solid var(--nova-line);
+      background:var(--nova-active);
+    }
+    .itemRow.rangeDropBefore{
+      box-shadow:inset 0 2px 0 0 var(--nova-line);
+    }
+    .itemRow.rangeDropAfter{
+      box-shadow:inset 0 -2px 0 0 var(--nova-line);
+    }
+    .item.rangeDropRoot{
+      outline:1px dashed var(--nova-line);
+      background:var(--nova-hover);
+    }
+    .rangeListMarker{
+      width:14px;
+      height:14px;
+      border-radius:999px;
+      border:1.5px solid #3b82f6;
+      box-sizing:border-box;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      background:transparent;
+      flex:0 0 auto;
+      line-height:0;
+    }
+    .rangeListMarkerDot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background:#3b82f6;
+      display:block;
+      flex:0 0 auto;
+    }
     .inputWithSuffix{
       display:flex;
       align-items:stretch;
@@ -1031,7 +1301,7 @@
       min-width:22px;
       height:22px;
       padding:0;
-      border:1px solid var(--nova-divider);
+      border:none;
       border-radius:4px;
       background:transparent;
       color:var(--nova-text-dim);
@@ -1041,6 +1311,7 @@
       justify-content:center;
       font-size:0.9rem;
       line-height:1;
+      box-shadow:none;
     }
     .dbTagAddBtn:hover{
       background:var(--nova-hover);
@@ -1349,7 +1620,7 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.5 3.25h13v1.5h-13v-1.5zm2.75 4h7.5v1.5h-7.5v-1.5zM6 11.25h4v1.5H6v-1.5z"/></svg>
         </button>
         <button type="button" class="railBtn" data-toolbar="ranges" title="Ranges" aria-label="Ranges">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 7.25h12v1.5H2v-1.5zm2.25-3.5h1.5v8.5h-1.5v-8.5zm6 0h1.5v8.5h-1.5v-8.5z"/></svg>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.35" fill="none" stroke="currentColor" stroke-width="1.15"/><path fill="currentColor" d="M8 8L8 2.65A5.35 5.35 0 1 1 4.217 11.783Z"/></svg>
         </button>
         <button type="button" class="railBtn" data-toolbar="objects" title="Objects" aria-label="Objects">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3 3h4.5v4.5H3V3zm5.5 0H13v4.5H8.5V3zM3 8.5h4.5V13H3V8.5zm5.5 0H13V13H8.5V8.5z"/></svg>
@@ -1401,12 +1672,11 @@
           <div class="toolbarSectionHeader">
             <h3>Ranges</h3>
             <div class="headerBtns">
-              <button id="applyRangeRuleBtn" class="addBtn" type="button" title="Apply range rule">⚡</button>
               <button id="addRangeBtn" class="addBtn" type="button" title="Add range">+</button>
             </div>
           </div>
           <div id="rangesList" class="list"></div>
-          <div class="toolbarPlaceholder" id="rangesPlaceholder">Select a catalog test, then create or apply ranges.</div>
+          <div class="toolbarPlaceholder" id="rangesPlaceholder">Select sources with ranges, or create one with +.</div>
         </section>
         <section class="toolbarSection" data-section="objects" id="section_objects">
           <div class="toolbarSectionHeader">
@@ -1486,13 +1756,19 @@
         .replaceAll("'", "&#39;");
     function parseRowTimeMs(row){
       if(!row) return NaN;
-      if(Number.isFinite(row.x_ms)) return row.x_ms;
       if(Number.isFinite(row.__ts)) return row.__ts;
-      if(window.NovaV3 && typeof NovaV3.parseTimeMs==="function") return NovaV3.parseTimeMs(row.time);
+      const timeText = row.timestamp_utc ?? row.time;
+      if(window.NovaV3 && typeof NovaV3.parseTimeMs==="function"){
+        const parsed = NovaV3.parseTimeMs(timeText);
+        if(Number.isFinite(parsed)) return parsed;
+      }
       if(typeof row.time==="number" && Number.isFinite(row.time)){
         return row.time > 1e11 ? row.time : row.time * 1000;
       }
-      return Date.parse(row.time);
+      const parsed = Date.parse(timeText);
+      if(Number.isFinite(parsed)) return parsed;
+      if(Number.isFinite(row.x_ms)) return row.x_ms;
+      return NaN;
     }
     function filterAbsoluteTimeOutliers(pts){
       if(!pts?.length) return pts;
@@ -1508,6 +1784,21 @@
         return filtered.length?filtered:pts;
       }
       return pts;
+    }
+    function traceTimeExtentMs(traces){
+      let min=Infinity, max=-Infinity;
+      (traces||[]).forEach((t)=>{
+        const xs=t?.x||[];
+        for(let i=0;i<xs.length;i+=1){
+          const x=Number(xs[i]);
+          if(!Number.isFinite(x)) continue;
+          if(x<min) min=x;
+          if(x>max) max=x;
+        }
+      });
+      if(!Number.isFinite(min)||!Number.isFinite(max)) return null;
+      if(min===max) return [min-500, max+500];
+      return [min, max];
     }
     function perTestTimeSpans(rows){
       const spans=new Map();
@@ -1540,6 +1831,11 @@
     }
     let latestRows = [], metadataRows = [], testsData = [], channelsData = [], previewVisible = false, focusedItem = null;
     let catalogRanges = [];
+    let collapsedRangeIds = new Set();
+    let collapsedRangeSourceIds = new Set();
+    let rangeSourceCollapseSeeded = new Set();
+    let selectedRangeKeys = new Set();
+    let rangeSiblingOrder = new Map(); // `${sourceId}|${parentKey}` -> [range_id, ...]
     let selectedSourceIds = new Set(), selectedDatabaseIds = new Set(), selectedTestIds = new Set(), selectedChannelIds = new Set(), selectedMaskIds = new Set();
     let addedTestIds = new Set(), addedChannelIds = new Set();
     function channelKeyFromId(id){
@@ -2251,7 +2547,8 @@
           displaylogo:false,
           displayModeBar:false,
           scrollZoom:false,
-          doubleClick:"reset",
+          // Custom dblclick handler owns reset / zoom-to-selected-range.
+          doubleClick:false,
           showTips:false,
           editable:true,
           edits:{
@@ -2294,7 +2591,7 @@
             displaylogo:false,
             displayModeBar:false,
             scrollZoom:false,
-            doubleClick:"reset",
+            doubleClick:false,
             showTips:false,
           });
         }finally{
@@ -2394,6 +2691,8 @@
       let plotEl = null;
       let installed = false;
       let drag = null;
+      let lastTap = null;
+      let lastDoubleActionAt = 0;
 
       function graphDiv(){
         return plotlyGraphDiv(plotEl);
@@ -2767,6 +3066,57 @@
         }
       }
 
+      async function applySelectedRangeXLimits(r){
+        const gd = graphDiv();
+        if(!gd || !r) return false;
+        const bounds = (typeof rangePlotXBounds === "function") ? rangePlotXBounds(r) : null;
+        if(!bounds) return false;
+        const patch = xRangePatch(gd, bounds.lo, bounds.hi);
+        if(!patch) return false;
+        await applyRelayout(patch);
+        return true;
+      }
+
+      async function handleDoubleClickAction(){
+        const now = performance.now();
+        if(now - lastDoubleActionAt < 400) return;
+        lastDoubleActionAt = now;
+        lastTap = null;
+        const selected = (typeof getSelectedRange === "function") ? getSelectedRange() : null;
+        if(!selected){
+          await resetViewLimits();
+          setStatus("Plot view reset.");
+          return;
+        }
+        // Reset axes/view first, then clamp X to the selected range span.
+        await resetViewLimits();
+        const ok = await applySelectedRangeXLimits(selected);
+        if(ok) setStatus(`Zoomed to range: ${selected.name||selected.label||selected.range_id}`);
+        else setStatus("Selected range has invalid times; plot view reset.", true);
+      }
+
+      function maybeHandleDoubleTap(e){
+        if(!plotEl || e.button !== 0) return false;
+        if(PlotAnalysisTools.getMode() === "plotline") return false;
+        if(isPlotlyLegendTarget(e) || isPlotlyModebarTarget(e)) return false;
+        const c = localCoords(e);
+        const now = performance.now();
+        if(lastTap && (now - lastTap.t) <= 350){
+          const dx = c.x - lastTap.x;
+          const dy = c.y - lastTap.y;
+          if((dx * dx + dy * dy) <= 100){
+            lastTap = null;
+            e.preventDefault();
+            e.stopPropagation();
+            if(typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+            void handleDoubleClickAction();
+            return true;
+          }
+        }
+        lastTap = { t: now, x: c.x, y: c.y };
+        return false;
+      }
+
       function onWheel(e){
         if(!plotEl || isPlotlyLegendTarget(e) || isPlotlyModebarTarget(e)) return;
         const c = localCoords(e);
@@ -2783,8 +3133,10 @@
 
       function onMouseDown(e){
         if(!plotEl || e.button !== 0) return;
-        if(PlotAnalysisTools.isActive()) return;
         if(isPlotlyLegendTarget(e) || isPlotlyModebarTarget(e)) return;
+        // Detect double-tap before Plotly zoom-drag can swallow the native dblclick.
+        if(maybeHandleDoubleTap(e)) return;
+        if(PlotAnalysisTools.isActive()) return;
         const c = localCoords(e);
         const axisKey = hitAxis(c.x, c.y);
         if(axisKey){
@@ -2827,29 +3179,36 @@
         if(!plotEl) return;
         if(PlotAnalysisTools.getMode() === "plotline") return;
         if(isPlotlyLegendTarget(e) || isPlotlyModebarTarget(e)) return;
-        const c = localCoords(e);
-        if(hitAxis(c.x, c.y)) return;
-        if(!inPlotArea(c.x, c.y)) return;
+        if(e.target && plotEl.contains && !plotEl.contains(e.target)) return;
         e.preventDefault();
         e.stopPropagation();
-        void resetViewLimits();
+        if(typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+        void handleDoubleClickAction();
       }
 
       function install(el){
         if(!el) return;
-        if(plotEl && plotEl !== el && installed){
+        const hostChanged = plotEl && plotEl !== el;
+        if(hostChanged && installed){
           plotEl.removeEventListener("wheel", onWheel, true);
           plotEl.removeEventListener("mousedown", onMouseDown, true);
           plotEl.removeEventListener("dblclick", onDoubleClick, true);
         }
         plotEl = el;
-        if(installed) return;
-        installed = true;
+        // Keep Plotly's built-in dblclick reset off; we handle it ourselves.
+        try{
+          const gd = graphDiv();
+          if(gd && gd._context) gd._context.doubleClick = false;
+        }catch{}
+        if(installed && !hostChanged) return;
         plotEl.addEventListener("wheel", onWheel, { passive: false, capture: true });
         plotEl.addEventListener("mousedown", onMouseDown, { capture: true });
         plotEl.addEventListener("dblclick", onDoubleClick, { capture: true });
-        window.addEventListener("mousemove", onMouseMove);
-        window.addEventListener("mouseup", onMouseUp);
+        if(!installed){
+          installed = true;
+          window.addEventListener("mousemove", onMouseMove);
+          window.addEventListener("mouseup", onMouseUp);
+        }
       }
 
       function refresh(){
@@ -2957,6 +3316,13 @@
         }else if(mode==="region"){
           if(Math.abs(d.x1-d.x0)<1e-12){ setMode(null); return; }
           commitRegion(d); setMode(null);
+        }else if(mode==="define-range"){
+          if(Math.abs(d.x1-d.x0)<1e-12){ setMode(null); applyOverlays(null, { force:true }); return; }
+          const start=new Date(Math.min(d.x0, d.x1));
+          const end=new Date(Math.max(d.x0, d.x1));
+          setMode(null);
+          applyOverlays(null, { force:true });
+          if(typeof openCreateRangeFromDefine === "function") void openCreateRangeFromDefine(start, end);
         }
       }
 
@@ -2965,14 +3331,14 @@
         const chart = gd(); if(!chart) return;
         const c = C().localCoords(e);
         const pt = dataAt(chart, c.x, c.y, drag.yAxisKey);
-        if(mode==="region"){
+        if(mode==="region" || mode==="define-range"){
           if(Number.isFinite(pt.x)) drag.x1 = pt.x;
         }else if(Number.isFinite(pt.x) && Number.isFinite(pt.y)){
           drag.x1 = pt.x; drag.y1 = pt.y;
         }
         if(mode==="ruler"){
           applyOverlays({ type:"ruler", x0:drag.x0, y0:drag.y0, x1:drag.x1, y1:drag.y1, yAxisKey:drag.yAxisKey }, { save:false });
-        }else if(mode==="region"){
+        }else if(mode==="region" || mode==="define-range"){
           applyOverlays({ type:"region", x0:drag.x0, x1:drag.x1 }, { save:false });
         }
       }
@@ -3538,10 +3904,15 @@
         }
         endOverlayDragSession();
         const built = buildAll(chart, state.overlays, preview ?? null);
-        pushOverlayLayout(chart, built);
+        const rangeShapes = (typeof rangeShapesForPlot === "function") ? rangeShapesForPlot() : [];
+        const merged = {
+          shapes: [...rangeShapes, ...(built.shapes || [])],
+          annotations: built.annotations || [],
+        };
+        pushOverlayLayout(chart, merged);
         suppressZoomRelayout += 1;
         plotProgrammaticUpdate = true;
-        void Plotly.relayout(chart, { shapes: built.shapes, annotations: built.annotations }).finally(()=>{
+        void Plotly.relayout(chart, { shapes: merged.shapes, annotations: merged.annotations }).finally(()=>{
           plotProgrammaticUpdate = false;
           setTimeout(()=>{ suppressZoomRelayout=Math.max(0, suppressZoomRelayout-1); }, 120);
         });
@@ -3631,6 +4002,7 @@
         else if(mode === "line") showHud("Line: click to place · Esc to cancel");
         else if(mode === "ruler") showHud("Ruler: drag to measure · Esc to cancel");
         else if(mode === "region") showHud("Region: drag span · Esc to cancel");
+        else if(mode === "define-range") showHud("Define range: drag time span · Esc to cancel");
         else if(mode) setStatus(`Analysis: ${mode}`);
         else setStatus("Analysis tool off");
       }
@@ -3706,6 +4078,7 @@
       function armTool(next){
         if(next==="line"){ setMode("line"); return; }
         if(next==="plotline"){ setMode("plotline"); return; }
+        if(next==="define-range"){ setMode("define-range"); return; }
         setMode(next);
       }
 
@@ -3714,11 +4087,14 @@
         const c=C().localCoords({ clientX, clientY, target:plotEl });
         if(!C().inPlotArea(c.x,c.y) && !hitAxisAt(c.x,c.y)) return;
         showContextMenu(clientX, clientY, [
+          { label:"Define range", action:()=>armTool("define-range") },
+          { label:"Align Sources", action:()=>{ if(typeof alignSelectedRangesOnPlot === "function") void alignSelectedRangesOnPlot(); } },
           { label:"Add", submenu:[
             { label:"Ruler", action:()=>armTool("ruler") },
             { label:"Region", action:()=>armTool("region") },
             { label:"Line", action:()=>armTool("line") },
             { label:"PlotLine", action:()=>armTool("plotline") },
+            { label:"Range from view", action:()=>{ if(typeof openCreateRangeFromPlot === "function") void openCreateRangeFromPlot(); } },
           ]},
           { label:"Remove", submenu:[
             { label:"All Overlays", action:()=>clearOverlays() },
@@ -3774,7 +4150,7 @@
         const pt=dataAt(chart,c.x,c.y,yAxisKey);
         if(!Number.isFinite(pt.x)||(mode==="ruler"&&!Number.isFinite(pt.y))) return;
         drag={ mode, x0:pt.x, y0:pt.y, x1:pt.x, y1:pt.y, yAxisKey };
-        if(mode==="ruler" || mode==="region") startCreateSession(e);
+        if(mode==="ruler" || mode==="region" || mode==="define-range") startCreateSession(e);
       }
 
       function onPointerDown(e){
@@ -3821,8 +4197,16 @@
           else{ plotlinePoints=null; setMode(null); setStatus("PlotLine cancelled."); }
           return;
         }
-        if(mode){ e.preventDefault(); drag=null; stopPtrSession(); setMode(null); }
-        else if(editDrag){
+        if(mode){
+          e.preventDefault();
+          drag=null;
+          stopPtrSession();
+          const wasDefine=mode==="define-range" || mode==="region" || mode==="ruler";
+          setMode(null);
+          if(wasDefine) applyOverlays(null, { force:true });
+          return;
+        }
+        if(editDrag){
           stopPtrSession();
           editDrag=null;
           flushOverlaySave();
@@ -5500,7 +5884,7 @@
       if(leaf) src=leaf;
       return { db, src, connSrc:postgresConnForSource(src) };
     }
-    const DEFAULT_TIME_REF="first_index";
+    const DEFAULT_TIME_REF="absolute";
     function normalizeTimeRef(mode){
       if(mode==="raw") return "absolute";
       if(mode==="first_sample") return "first_index";
@@ -5571,7 +5955,8 @@
       const d=new Date(iso);
       if(!Number.isFinite(d.getTime())) return "";
       const pad=(n)=>String(n).padStart(2,"0");
-      return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+      const ms=String(d.getUTCMilliseconds()).padStart(3,"0");
+      return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}.${ms}`;
     }
     function collectDatabaseIdsForSources(sourceIds){
       const out=new Set();
@@ -7183,6 +7568,12 @@
       const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 2.5h3.2v11H2.5v-11zm7.8 0h3.2v11H10.3v-11zM6.5 5.2h3v1.4h-3V5.2zm0 4.2h3v1.4h-3V9.4z"/></svg></span>`;
       const sep=`<span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span>`;
       const parts=[`<span>Units</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${leaf}</span>`));
+      return `${icon}${parts.join("")}`;
+    }
+    function rangesWindowTitleHtml(...leaves){
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.35" fill="none" stroke="currentColor" stroke-width="1.15"/><path fill="currentColor" d="M8 8L8 2.65A5.35 5.35 0 1 1 4.217 11.783Z"/></svg></span>`;
+      const sep=`<span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span>`;
+      const parts=[`<span>Ranges</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${leaf}</span>`));
       return `${icon}${parts.join("")}`;
     }
     function openUnitCategoryForm({ mode="create", category=null, onSaved=null }={}){
@@ -9216,6 +9607,7 @@
         if(built.decimated) plotDecimated=true;
         traces.push(built.trace);
       });
+      const resetXRange=useDateAxis && !uiLocks && !realtimeLockedXRange ? traceTimeExtentMs(traces) : null;
       const yLayout=buildUnitAxes(traces, plotWidth), unitCount=Object.keys(yLayout).length;
       if(realtimeLockedYRanges){ Object.keys(realtimeLockedYRanges).forEach((k)=>{ if(yLayout[k]){ yLayout[k].range=realtimeLockedYRanges[k]; yLayout[k].autorange=false; } }); }
       const extraRight=Math.max(0,unitCount-1);
@@ -9244,7 +9636,7 @@
         font:{color:ink.font},
         colorway: parseColorway(),
         showlegend: appearance.showLegend!==false,
-        xaxis:{title:"",automargin:true,type:useDateAxis?"date":"linear",tickfont:{size:Number(appearance.axisTickSize||10),color:ink.tick},titlefont:{size:Number(appearance.axisTitleSize||11),color:ink.title},visible:axisVisible,showgrid:gridVisible,gridcolor:ink.grid,zerolinecolor:ink.zero,...(resetView?{autorange:true}:(realtimeLockedXRange?{range:realtimeLockedXRange,autorange:false}:{}))},
+        xaxis:{title:"",automargin:true,type:useDateAxis?"date":"linear",tickfont:{size:Number(appearance.axisTickSize||10),color:ink.tick},titlefont:{size:Number(appearance.axisTitleSize||11),color:ink.title},visible:axisVisible,showgrid:gridVisible,gridcolor:ink.grid,zerolinecolor:ink.zero,...(resetXRange?{range:resetXRange,autorange:false}:(resetView?{autorange:true}:(realtimeLockedXRange?{range:realtimeLockedXRange,autorange:false}:{})))},
         margin:{l:12,r:Math.max(70,56+extraRight*(axisSpacingPx+6)),t:12,b:48},
         legend:{...legendLayoutForActivePlot(), bgcolor:ink.legendBg, bordercolor:ink.legendBorder, borderwidth:1, font:{color:ink.legendFont} },
         ...yLayout,
@@ -9365,35 +9757,855 @@
       });
       rebuildChannelUnitMap();
     }
-    function activeCatalogTestId(){
-      for(const id of selectedSourceIds){
+    function rangeCapableSources(ids=null){
+      const idSet = ids ? new Set([...ids]) : new Set(effectiveSelectedSourceIds());
+      const out=[];
+      for(const id of idSet){
         const src=state.sources.find((s)=>s.id===id);
-        if(src && (isCatalogSource(src) || src.test_id)) return Number(src.test_id);
+        if(!src) continue;
+        if(isFileSource(src) && (src.artifact_id || src.test_id)){
+          out.push(src);
+          continue;
+        }
+        if(isCatalogSource(src) && src.test_id){
+          out.push(src);
+        }
       }
-      for(const src of state.sources){
-        if((isCatalogSource(src) || src.test_id) && selectedSourceIds.has(src.id)) return Number(src.test_id);
-      }
-      const fileWithId=state.sources.find((s)=>isFileSource(s)&&s.test_id&&selectedSourceIds.has(s.id));
-      return fileWithId ? Number(fileWithId.test_id) : null;
+      return out;
     }
-    async function refreshCatalogRanges(){
-      const tid=activeCatalogTestId();
-      const list=byId("rangesList");
-      const ph=byId("rangesPlaceholder");
-      if(!tid){
-        catalogRanges=[];
-        if(list) list.innerHTML="";
-        if(ph){ ph.style.display=""; ph.textContent="Select a catalog/file source with a registered test_id."; }
+    function rangeSourceRef(src){
+      const durability = isFileSource(src) && (!src.catalog_id || src.catalog_id==="local" || src.durability==="temporary")
+        ? "temporary"
+        : (src.durability || (isCatalogSource(src) ? "permanent" : "temporary"));
+      return {
+        source_id: src.id,
+        source_name: src.name || src.file_path || `source ${src.id}`,
+        artifact_id: src.artifact_id || null,
+        test_id: src.test_id != null ? Number(src.test_id) : null,
+        catalog_id: src.catalog_id || null,
+        file_path: src.file_path || null,
+        durability,
+      };
+    }
+    function rangeIdentityKey(r){
+      if(!r) return "";
+      return [
+        r.source_id||"",
+        r.range_id,
+        r.artifact_id||"",
+        r.test_id??"",
+        r.catalog_id||"",
+        r.durability||"",
+      ].join("|");
+    }
+    function resolveRangeSourceId(r){
+      if(!r) return "";
+      if(r.source_id && state.sources.some((s)=>String(s.id)===String(r.source_id))) return String(r.source_id);
+      const match=state.sources.find((s)=>
+        (r.artifact_id && s.artifact_id===r.artifact_id)
+        || (r.test_id!=null && Number(s.test_id)===Number(r.test_id) && (!r.catalog_id || s.catalog_id===r.catalog_id))
+      );
+      if(match) return String(match.id);
+      return String(r.source_id || `__orphan_${r.range_id}`);
+    }
+    function getSelectedRanges(){
+      if(!selectedRangeKeys.size) return [];
+      const out=[];
+      selectedRangeKeys.forEach((key)=>{
+        const exact=(catalogRanges||[]).find((r)=>rangeIdentityKey(r)===key);
+        if(exact){ out.push(exact); return; }
+        const parts=String(key).split("|");
+        const sid=parts[0]||"";
+        const rid=Number(parts[1]);
+        if(!Number.isFinite(rid)) return;
+        const fallback=(catalogRanges||[]).find((r)=>
+          Number(r.range_id)===rid && (!sid || String(r.source_id||"")===sid)
+        );
+        if(fallback) out.push(fallback);
+      });
+      return out;
+    }
+    function getSelectedRange(){
+      const all=getSelectedRanges();
+      return all.length===1 ? all[0] : null;
+    }
+    function sourceForRange(r){
+      if(!r) return null;
+      const sid=String(r.source_id||resolveRangeSourceId(r)||"");
+      if(!sid) return null;
+      return state.sources.find((s)=>String(s.id)===sid) || null;
+    }
+    function dbIdForRangeSource(src){
+      if(!src) return null;
+      if(isPostgresTestLeaf(src) && src.db_entry_id) return src.db_entry_id;
+      if(isCatalogSource(src)){
+        const db=state.databases.find((d)=>d.sourceId===src.id);
+        return db?.id || null;
+      }
+      if(isFileSource(src)){
+        const db=state.databases.find((d)=>d.sourceId===src.id) || ensureFileSourceCatalog(src);
+        return db?.id || null;
+      }
+      const db=state.databases.find((d)=>d.sourceId===src.id);
+      return db?.id || null;
+    }
+    function utcMsToSourcePlotX(ms, src, rows=latestRows){
+      if(!Number.isFinite(ms)) return Number.NaN;
+      const dbId=dbIdForRangeSource(src);
+      let ref=normalizeTimeRef(src?.timeRef);
+      if(dbId) ref=effectiveTimeRefForDbId(dbId, rows);
+      if(ref==="absolute") return ms;
+      if(ref==="t0_relative"){
+        let t0=src?.t0_utc ? Date.parse(String(src.t0_utc)) : Number.NaN;
+        if(!Number.isFinite(t0) && dbId){
+          const test=(testsData||[]).find((t)=>
+            t.__dbId===dbId
+            && (src?.test_id==null || Number(t.test_run_id)===Number(src.test_id))
+          );
+          if(test) t0=Date.parse(String(test.t0_utc||""));
+        }
+        if(!Number.isFinite(t0)) return Number.NaN;
+        return (ms - t0) / 1000;
+      }
+      let base=Number.NaN;
+      if(dbId && rows?.length){
+        for(const row of rows){
+          if(row.__dbId!==dbId) continue;
+          if(src?.test_id!=null && Number(row.test_run_id)!==Number(src.test_id)) continue;
+          const ts=row.__ts;
+          if(!Number.isFinite(ts)) continue;
+          if(!Number.isFinite(base) || ts<base) base=ts;
+        }
+      }
+      if(!Number.isFinite(base)) return Number.NaN;
+      return (ms - base) / 1000;
+    }
+    function rangePlotXBounds(r, rows=latestRows){
+      if(!r) return null;
+      const a=Date.parse(String(r.start_time||""));
+      const b=Date.parse(String(r.end_time||""));
+      if(!Number.isFinite(a) || !Number.isFinite(b) || a===b) return null;
+      const loMs=Math.min(a,b), hiMs=Math.max(a,b);
+      if(plotUsesDateAxis(rows)){
+        return { lo:loMs, hi:hiMs, date:true };
+      }
+      const src=sourceForRange(r);
+      const x0=utcMsToSourcePlotX(loMs, src, rows);
+      const x1=utcMsToSourcePlotX(hiMs, src, rows);
+      if(!Number.isFinite(x0) || !Number.isFinite(x1)) return null;
+      return { lo:Math.min(x0,x1), hi:Math.max(x0,x1), date:false };
+    }
+    function rangeDescendantRanges(parent){
+      if(!parent) return [];
+      const sid=String(parent.source_id||resolveRangeSourceId(parent)||"");
+      const out=[];
+      const walk=(pid)=>{
+        (catalogRanges||[]).forEach((r)=>{
+          if(String(r.source_id||resolveRangeSourceId(r)||"")!==sid) return;
+          if(Number(r.parent_range_id)!==Number(pid)) return;
+          out.push(r);
+          walk(r.range_id);
+        });
+      };
+      walk(parent.range_id);
+      return out;
+    }
+    function applyRangeListSelection(item, ev, clickIndex, orderedItems){
+      if(!item) return;
+      const key=rangeIdentityKey(item);
+      const shift=Boolean(ev && ev.shiftKey);
+      const meta=hasMetaOrCtrlKey(ev);
+      const descendants=rangeDescendantRanges(item);
+      const hasKids=descendants.length>0;
+
+      if(shift && hasKids){
+        if(!meta) selectedRangeKeys.clear();
+        selectedRangeKeys.add(key);
+        descendants.forEach((r)=>selectedRangeKeys.add(rangeIdentityKey(r)));
+        lastClickedByKind.range=clickIndex;
         return;
       }
-      const src=state.sources.find((s)=>(isCatalogSource(s)||s.test_id)&&Number(s.test_id)===Number(tid));
-      const catQ=src?.catalog_id?`&catalog_id=${encodeURIComponent(src.catalog_id)}`:"";
+      if(shift && Number.isInteger(lastClickedByKind.range) && orderedItems?.length){
+        const anchor=lastClickedByKind.range;
+        if(anchor>=0 && anchor<orderedItems.length && clickIndex>=0 && clickIndex<orderedItems.length){
+          const a=Math.min(anchor, clickIndex);
+          const b=Math.max(anchor, clickIndex);
+          for(let i=a;i<=b;i+=1){
+            const row=orderedItems[i];
+            if(!row) continue;
+            selectedRangeKeys.add(rangeIdentityKey(row));
+          }
+          return;
+        }
+      }
+      if(meta){
+        if(selectedRangeKeys.has(key)) selectedRangeKeys.delete(key);
+        else selectedRangeKeys.add(key);
+        lastClickedByKind.range=clickIndex;
+        return;
+      }
+      selectedRangeKeys.clear();
+      selectedRangeKeys.add(key);
+      lastClickedByKind.range=clickIndex;
+    }
+    function ensureRangeSelected(item){
+      if(!item) return;
+      const key=rangeIdentityKey(item);
+      if(!selectedRangeKeys.has(key)){
+        selectedRangeKeys.clear();
+        selectedRangeKeys.add(key);
+      }
+    }
+    async function alignSelectedRangesOnPlot(){
+      const capable=rangeCapableSources();
+      if(capable.length!==2){
+        setStatus("Align Sources requires exactly 2 selected sources.", true);
+        return;
+      }
+      const selected=getSelectedRanges();
+      if(selected.length<2){
+        setStatus("Select one range from each source to align.", true);
+        return;
+      }
+      const bySource=new Map();
+      selected.forEach((r)=>{
+        const sid=String(r.source_id||resolveRangeSourceId(r)||"");
+        if(!sid || bySource.has(sid)) return;
+        bySource.set(sid, r);
+      });
+      if(bySource.size!==2){
+        setStatus("Selected ranges must be from two different sources.", true);
+        return;
+      }
+      const capableIds=new Set(capable.map((s)=>String(s.id)));
+      for(const sid of bySource.keys()){
+        if(!capableIds.has(sid)){
+          setStatus("Selected ranges must belong to the currently selected sources.", true);
+          return;
+        }
+      }
+      let applied=0;
+      bySource.forEach((range, sid)=>{
+        const src=state.sources.find((s)=>String(s.id)===sid);
+        if(!src) return;
+        const startMs=Date.parse(String(range.start_time||""));
+        if(!Number.isFinite(startMs)){
+          setStatus(`Range "${range.name||range.range_id}" has an invalid From time.`, true);
+          return;
+        }
+        src.timeRef="t0_relative";
+        src.t0_utc=new Date(startMs).toISOString();
+        applied+=1;
+      });
+      if(applied!==2) return;
+      realtimeLockedXRange=null;
+      realtimeLockedYRanges=null;
+      realtimeRows=[];
+      realtimePrecomputed=null;
+      if(latestRows.length) await plotRows(latestRows, { preserveUi:false, resetView:true });
+      renderAll();
+      saveState();
+      setStatus("Aligned sources to selected range start times (t0 relative).");
+    }
+    function sourceIconKindForRanges(src){
+      if(!src) return "file";
+      if(isCatalogSource(src)) return "test";
+      if(src.type==="csv") return "csv";
+      if(src.type==="tdms") return "tdms";
+      if(src.type==="database" || src.leaf_kind==="catalog") return "database";
+      return isFileSource(src) ? "file" : "file";
+    }
+    function tryZoomToSelectedRange(){
+      const r=getSelectedRange();
+      if(!r) return false;
+      const gd=plotlyGraphDiv();
+      if(!gd || !window.Plotly) return false;
+      const bounds=rangePlotXBounds(r);
+      if(!bounds) return false;
+      // Disable any residual Plotly dblclick reset for this graph.
+      try{ if(gd._context) gd._context.doubleClick = false; }catch{}
+      const patch = bounds.date
+        ? { "xaxis.autorange":false, "xaxis.range":[bounds.lo, bounds.hi] }
+        : { "xaxis.autorange":false, "xaxis.range[0]":bounds.lo, "xaxis.range[1]":bounds.hi };
+      suppressZoomRelayout += 1;
+      void Plotly.relayout(gd, patch).then(()=>{
+        try{ PlotRenderer.refreshAxisHitZones(byId("plot")); }catch{}
+      }).finally(()=>{
+        setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 180);
+      });
+      setStatus(`Zoomed to range: ${r.name||r.label||r.range_id}`);
+      return true;
+    }
+    function openCreateRangeFromDefine(start, end){
+      const sel=getSelectedRange();
+      const opts={ start, end, preferPlotted:true };
+      if(sel){
+        opts.parent_range_id=Number(sel.range_id);
+        const src=state.sources.find((s)=>String(s.id)===String(sel.source_id))
+          || state.sources.find((s)=>sel.artifact_id && s.artifact_id===sel.artifact_id)
+          || state.sources.find((s)=>sel.test_id!=null && Number(s.test_id)===Number(sel.test_id));
+        if(src) opts.targets=[src];
+      }
+      void openCreateRangeModal(opts);
+    }
+    function activeCatalogTestId(){
+      const capable=rangeCapableSources();
+      for(const src of capable){
+        if(src.test_id) return Number(src.test_id);
+      }
+      return null;
+    }
+    function toIsoUtc(value){
+      if(value==null || value==="") return "";
+      const d = value instanceof Date ? value : new Date(value);
+      if(!Number.isFinite(d.getTime())) return String(value);
+      return d.toISOString().replace(/\.\d{3}Z$/, "Z");
+    }
+    function formatRangeStamp(value){
+      const d = value instanceof Date ? value : new Date(value);
+      if(!Number.isFinite(d.getTime())) return String(value||"");
+      const pad=(n)=>String(n).padStart(2,"0");
+      return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}-${pad(d.getUTCMinutes())}-${pad(d.getUTCSeconds())}`;
+    }
+    function plotVisibleTimeSpan(){
+      const gd=plotlyGraphDiv();
+      const xa=gd?._fullLayout?.xaxis || gd?.layout?.xaxis || lastChartLayout?.xaxis;
+      const range=xa?.range;
+      if(!Array.isArray(range) || range.length<2) return null;
+      const a=new Date(range[0]).getTime();
+      const b=new Date(range[1]).getTime();
+      if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
+      return { start:new Date(Math.min(a,b)), end:new Date(Math.max(a,b)) };
+    }
+    function latestRegionTimeSpan(){
+      const plot=getActivePlot();
+      const overlays=plot?.analysis?.overlays || [];
+      for(let i=overlays.length-1;i>=0;i-=1){
+        const o=overlays[i];
+        if(o?.type!=="region") continue;
+        const a=new Date(o.x0).getTime();
+        const b=new Date(o.x1).getTime();
+        if(!Number.isFinite(a)||!Number.isFinite(b)) continue;
+        return { start:new Date(Math.min(a,b)), end:new Date(Math.max(a,b)) };
+      }
+      return null;
+    }
+    function allRangeTags(){
+      const seen=new Set();
+      const out=[];
+      (catalogRanges||[]).forEach((r)=>{
+        normalizeDatabaseTags(r.tags).forEach((tag)=>{
+          const key=tag.toLowerCase();
+          if(seen.has(key)) return;
+          seen.add(key);
+          out.push(tag);
+        });
+      });
+      allDatabaseLibraryTags().forEach((tag)=>{
+        const key=tag.toLowerCase();
+        if(seen.has(key)) return;
+        seen.add(key);
+        out.push(tag);
+      });
+      return out.sort((a,b)=>a.localeCompare(b));
+    }
+    function readRangeMetaRows(){
+      const host=byId("m_range_meta_rows");
+      if(!host) return [];
+      const out=[];
+      host.querySelectorAll("[data-meta-row]").forEach((row)=>{
+        const key=(row.querySelector("[data-meta-key]")?.value||"").trim();
+        const value=(row.querySelector("[data-meta-value]")?.value||"").trim();
+        if(!key) return;
+        const num=Number(value);
+        if(value!=="" && Number.isFinite(num) && String(num)===value){
+          out.push({ key, value_num:num, value_text:null });
+        }else{
+          out.push({ key, value_text:value || null, value_num:null });
+        }
+      });
+      return out;
+    }
+    function wireRangeMetaEditor(initial){
+      const host=byId("m_range_meta_rows");
+      const addBtn=byId("m_range_meta_add");
+      if(!host) return ()=>[];
+      const rows=Array.isArray(initial) && initial.length ? initial.map((p)=>({
+        key:String(p.key||""),
+        value: p.value_num!=null ? String(p.value_num) : String(p.value_text||""),
+      })) : [];
+      let editingIdx=null;
+      const commitRow=(idx)=>{
+        const rowEl=host.querySelector(`[data-meta-row="${idx}"]`);
+        if(!rowEl || !rows[idx]) return;
+        const keyInput=rowEl.querySelector("[data-meta-key]");
+        const valInput=rowEl.querySelector("[data-meta-value]");
+        if(keyInput) rows[idx].key=keyInput.value;
+        if(valInput) rows[idx].value=valInput.value;
+        if(!(rows[idx].key||"").trim() && !(rows[idx].value||"").trim()){
+          rows.splice(idx, 1);
+          editingIdx=null;
+          render();
+          return;
+        }
+        editingIdx=null;
+        render();
+      };
+      const render=()=>{
+        if(!rows.length){
+          host.innerHTML="";
+          return;
+        }
+        host.innerHTML=rows.map((row, idx)=>{
+          if(editingIdx===idx){
+            return `<div class="rangeMetaRow" data-meta-row="${idx}">
+              <input data-meta-key type="text" value="${escAttr(row.key)}" placeholder="Key" spellcheck="false" />
+              <input data-meta-value type="text" value="${escAttr(row.value)}" placeholder="Value" spellcheck="false" />
+            </div>`;
+          }
+          const keyLabel=row.key ? escapeHtml(row.key) : `<span class="muted">Key</span>`;
+          const valLabel=row.value ? escapeHtml(row.value) : `<span class="muted">Value</span>`;
+          return `<div class="rangeMetaRow" data-meta-row="${idx}">
+            <div class="rangeMetaCell">${keyLabel}</div>
+            <div class="rangeMetaCell">${valLabel}</div>
+          </div>`;
+        }).join("");
+        host.querySelectorAll("[data-meta-row]").forEach((rowEl)=>{
+          const idx=Number(rowEl.getAttribute("data-meta-row"));
+          rowEl.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            if(!Number.isFinite(idx) || !rows[idx]) return;
+            showContextMenu(ev.clientX, ev.clientY, [
+              { label:"Edit", action:()=>{ editingIdx=idx; render(); } },
+              { label:"Delete", action:()=>{ rows.splice(idx, 1); editingIdx=null; render(); } },
+            ]);
+          };
+          if(editingIdx!==idx) return;
+          const keyInput=rowEl.querySelector("[data-meta-key]");
+          const valInput=rowEl.querySelector("[data-meta-value]");
+          const onCommit=()=>commitRow(idx);
+          [keyInput, valInput].forEach((input)=>{
+            if(!input) return;
+            input.onkeydown=(ev)=>{
+              if(ev.key==="Enter"){ ev.preventDefault(); onCommit(); }
+              if(ev.key==="Escape"){ ev.preventDefault(); editingIdx=null; render(); }
+            };
+            input.onblur=()=>{
+              setTimeout(()=>{
+                if(editingIdx!==idx) return;
+                const active=document.activeElement;
+                if(active===keyInput || active===valInput) return;
+                onCommit();
+              }, 0);
+            };
+          });
+          if(keyInput) keyInput.focus();
+        });
+      };
+      if(addBtn) addBtn.onclick=(ev)=>{
+        ev.preventDefault();
+        rows.push({ key:"", value:"" });
+        editingIdx=rows.length-1;
+        render();
+      };
+      render();
+      return readRangeMetaRows;
+    }
+    function rangeRefBody(item){
+      const src=state.sources.find((s)=>String(s.id)===String(item?.source_id||""))
+        || state.sources.find((s)=>item?.artifact_id && s.artifact_id===item.artifact_id)
+        || state.sources.find((s)=>item?.test_id!=null && Number(s.test_id)===Number(item.test_id));
+      if(src) return rangeSourceRef(src);
+      return {
+        source_id: item?.source_id || null,
+        artifact_id: item?.artifact_id || null,
+        test_id: item?.test_id != null ? Number(item.test_id) : null,
+        catalog_id: item?.catalog_id || null,
+        file_path: item?.file_path || null,
+        durability: item?.durability || null,
+      };
+    }
+    function isRangeAncestor(ancestorId, nodeId){
+      if(ancestorId==null || nodeId==null) return false;
+      if(Number(ancestorId)===Number(nodeId)) return true;
+      const byId=new Map((catalogRanges||[]).map((r)=>[Number(r.range_id), r]));
+      let cur=byId.get(Number(nodeId));
+      const seen=new Set();
+      while(cur?.parent_range_id!=null){
+        const pid=Number(cur.parent_range_id);
+        if(pid===Number(ancestorId)) return true;
+        if(seen.has(pid)) break;
+        seen.add(pid);
+        cur=byId.get(pid);
+      }
+      return false;
+    }
+    function siblingOrderKey(sourceId, parentId){
+      return `${sourceId||""}|${parentId==null ? "root" : String(parentId)}`;
+    }
+    function orderSiblingRanges(kids, sourceId, parentId){
+      const order=rangeSiblingOrder.get(siblingOrderKey(sourceId, parentId));
+      if(!order?.length) return kids;
+      const rank=new Map(order.map((id, i)=>[Number(id), i]));
+      return kids.slice().sort((a, b)=>{
+        const ra=rank.has(Number(a.range_id)) ? rank.get(Number(a.range_id)) : 1e9;
+        const rb=rank.has(Number(b.range_id)) ? rank.get(Number(b.range_id)) : 1e9;
+        if(ra!==rb) return ra-rb;
+        return (Number(a.start_ms)||0)-(Number(b.start_ms)||0) || Number(a.range_id)-Number(b.range_id);
+      });
+    }
+    function setSiblingOrder(sourceId, parentId, orderedIds){
+      rangeSiblingOrder.set(siblingOrderKey(sourceId, parentId), orderedIds.map(Number));
+    }
+    async function patchRangeParent(item, parent_range_id){
+      if(!item) return false;
+      if(parent_range_id!=null && isRangeAncestor(item.range_id, parent_range_id)){
+        setStatus("Cannot move a range under one of its descendants.", true);
+        return false;
+      }
+      const ref=rangeRefBody(item);
+      const r=await fetch(`/api/ranges/${item.range_id}`, {
+        method:"PATCH",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({ ...ref, parent_range_id }),
+      });
+      if(!r.ok){
+        let msg=`Update parent failed (${r.status})`;
+        try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
+        setStatus(msg, true);
+        return false;
+      }
+      await refreshCatalogRanges();
+      return true;
+    }
+    function rangeMetaNameCell(r){
+      const name=escapeHtml(r.name||r.label||`range ${r.range_id}`);
+      const color=r.color||"#3b82f6";
+      return `<div class="rangeMetaCell rangeMetaCellName">
+        <span class="rangeListMarker" style="border-color:${escAttr(color)}"><span class="rangeListMarkerDot" style="background:${escAttr(color)}"></span></span>
+        <span class="rangeMetaNameText">${name}</span>
+      </div>`;
+    }
+    function hideRangeSearchPicker(){
+      hideDatabaseTagPicker();
+    }
+    function showRangeSearchPicker(anchorEl, opts={}){
+      const picker=byId("dbTagPicker");
+      const listEl=byId("dbTagPickerList");
+      const search=byId("dbTagPickerSearch");
+      if(!picker || !listEl || !anchorEl) return;
+      const candidates=Array.isArray(opts.candidates) ? opts.candidates.slice() : [];
+      const selectedId=opts.selectedId!=null ? Number(opts.selectedId) : null;
+      const onPick=typeof opts.onPick==="function" ? opts.onPick : null;
+      hideMenus();
+      hideDatabaseTagPicker();
+      picker._onPick=null;
+      picker._mode="ranges";
+      let activeIdx=-1;
+      const filtered=()=>{
+        const q=(search?.value||"").trim().toLowerCase();
+        if(!q) return candidates;
+        return candidates.filter((r)=>{
+          const name=String(r.name||r.label||`range ${r.range_id}`).toLowerCase();
+          const span=`${formatRangeStamp(r.start_time||"")} ${formatRangeStamp(r.end_time||"")}`.toLowerCase();
+          return name.includes(q) || span.includes(q) || String(r.range_id).includes(q);
+        });
+      };
+      const renderList=()=>{
+        const rows=filtered();
+        if(!rows.length){
+          listEl.innerHTML=`<div class="dbTagPickerEmpty">${(search?.value||"").trim() ? "No matching ranges." : "No ranges available."}</div>`;
+          activeIdx=-1;
+          return;
+        }
+        if(activeIdx<0 || activeIdx>=rows.length) activeIdx=0;
+        listEl.innerHTML=rows.map((r,idx)=>{
+          const name=escapeHtml(r.name||r.label||`range ${r.range_id}`);
+          const color=r.color||"#3b82f6";
+          const selected=selectedId!=null && Number(r.range_id)===selectedId;
+          return `<div class="dbTagPickerItem${selected?" selected":""}${idx===activeIdx?" active":""}" data-range-pick="${r.range_id}" role="option">
+            <span class="rangeListMarker" style="border-color:${escAttr(color)}"><span class="rangeListMarkerDot" style="background:${escAttr(color)}"></span></span>
+            <span class="dbTagPickerItemLabel">${name}</span>
+            ${selected?`<span class="dbTagPickerCheck" aria-hidden="true">✓</span>`:""}
+          </div>`;
+        }).join("");
+        listEl.querySelectorAll(".dbTagPickerItem").forEach((el,idx)=>{
+          el.onmouseenter=()=>{ activeIdx=idx; listEl.querySelectorAll(".dbTagPickerItem").forEach((n,i)=>n.classList.toggle("active", i===idx)); };
+          el.onclick=(ev)=>{
+            if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+            const rid=Number(el.getAttribute("data-range-pick"));
+            const item=candidates.find((r)=>Number(r.range_id)===rid);
+            if(!item) return;
+            if(onPick) onPick(item);
+            hideRangeSearchPicker();
+          };
+        });
+      };
+      const place=()=>{
+        const rect=anchorEl.getBoundingClientRect();
+        const z=Math.max(260, appWindowZ + 20);
+        picker.style.zIndex=String(z);
+        picker.classList.add("show");
+        picker.setAttribute("aria-hidden","false");
+        picker.style.visibility="hidden";
+        const width=picker.offsetWidth || 240;
+        const height=picker.offsetHeight || 200;
+        let left=rect.left;
+        let top=rect.bottom + 4;
+        left=Math.max(8, Math.min(left, window.innerWidth - width - 8));
+        if(top + height > window.innerHeight - 8){
+          top=Math.max(8, rect.top - height - 4);
+        }
+        picker.style.left=`${Math.round(left)}px`;
+        picker.style.top=`${Math.round(top)}px`;
+        picker.style.visibility="visible";
+      };
+      if(search){
+        search.value="";
+        search.placeholder="Search ranges...";
+        search.oninput=()=>{ activeIdx=0; renderList(); place(); };
+        search.onkeydown=(ev)=>{
+          const items=[...listEl.querySelectorAll(".dbTagPickerItem")];
+          if(ev.key==="ArrowDown"){
+            ev.preventDefault();
+            if(!items.length) return;
+            activeIdx=(activeIdx+1) % items.length;
+            items.forEach((n,i)=>n.classList.toggle("active", i===activeIdx));
+            items[activeIdx]?.scrollIntoView({ block:"nearest" });
+          }else if(ev.key==="ArrowUp"){
+            ev.preventDefault();
+            if(!items.length) return;
+            activeIdx=(activeIdx-1+items.length) % items.length;
+            items.forEach((n,i)=>n.classList.toggle("active", i===activeIdx));
+            items[activeIdx]?.scrollIntoView({ block:"nearest" });
+          }else if(ev.key==="Enter"){
+            ev.preventDefault();
+            items[activeIdx]?.click();
+          }else if(ev.key==="Escape"){
+            ev.preventDefault();
+            hideRangeSearchPicker();
+          }
+        };
+      }
+      renderList();
+      place();
+      setTimeout(()=>search?.focus(), 0);
+    }
+    function wireRangeRelatedLists(edit, opts={}){
+      const parentHost=byId("m_range_parent_rows");
+      const childHost=byId("m_range_child_rows");
+      const targetHost=byId("m_range_target_rows");
+      const parentAdd=byId("m_range_parent_add");
+      const childAdd=byId("m_range_child_add");
+      const targets=Array.isArray(opts.targets) ? opts.targets.slice() : [];
+      let pendingParentId = opts.createParentId != null
+        ? Number(opts.createParentId)
+        : (edit?.parent_range_id!=null ? Number(edit.parent_range_id) : null);
+
+      const findById=(rid)=> (catalogRanges||[]).find((r)=>Number(r.range_id)===Number(rid)
+        && (!edit?.source_id || String(r.source_id||"")===String(edit.source_id||"")));
+
+      const parentCandidates=()=>{
+        const exclude=new Set();
+        if(edit) exclude.add(Number(edit.range_id));
+        return (catalogRanges||[]).filter((r)=>{
+          if(exclude.has(Number(r.range_id))) return false;
+          if(edit?.source_id && String(r.source_id||"")!==String(edit.source_id||"")) return false;
+          if(edit && isRangeAncestor(edit.range_id, r.range_id)) return false;
+          return true;
+        });
+      };
+
+      const renderTargets=()=>{
+        if(!targetHost) return;
+        if(!targets.length){
+          targetHost.innerHTML="";
+          return;
+        }
+        targetHost.innerHTML=targets.map((src)=>{
+          const name=escapeHtml(src.name||src.file_path||`source ${src.id}`);
+          const meta=escapeHtml(src.file_path||src.catalog_id||src.type||"");
+          const iconKind=sourceIconKindForRanges(src);
+          return `<div class="rangeMetaRow">
+            <div class="rangeMetaCell rangeMetaCellName">
+              <span class="treeIcon icon-${iconKind}" style="width:14px;height:14px;flex:0 0 auto;">${treeIconSvg(iconKind, false)}</span>
+              <span class="rangeMetaNameText">${name}</span>
+            </div>
+            <div class="rangeMetaCell muted">${meta}</div>
+          </div>`;
+        }).join("");
+      };
+
+      const renderParent=()=>{
+        if(!parentHost) return;
+        const parent = pendingParentId!=null ? findById(pendingParentId) : null;
+        if(!parent){
+          parentHost.innerHTML="";
+          return;
+        }
+        const span=`${escapeHtml(formatRangeStamp(parent.start_time||""))} → ${escapeHtml(formatRangeStamp(parent.end_time||""))}`;
+        parentHost.innerHTML=`<div class="rangeMetaRow" data-parent-range-id="${parent.range_id}">
+          ${rangeMetaNameCell(parent)}
+          <div class="rangeMetaCell muted">${span}</div>
+        </div>`;
+        const rowEl=parentHost.querySelector("[data-parent-range-id]");
+        if(rowEl){
+          rowEl.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const items=[
+              { label:"Edit", action:()=>void openCreateRangeModal({ edit:parent }) },
+            ];
+            if(edit){
+              items.push({
+                label:"Remove",
+                action:async()=>{
+                  const ok=await patchRangeParent(edit, null);
+                  if(!ok) return;
+                  pendingParentId=null;
+                  if(edit) edit.parent_range_id=null;
+                  renderParent();
+                },
+              });
+            }else{
+              items.push({
+                label:"Remove",
+                action:()=>{ pendingParentId=null; renderParent(); },
+              });
+            }
+            showContextMenu(ev.clientX, ev.clientY, items);
+          };
+        }
+      };
+
+      const renderChildren=()=>{
+        if(!childHost) return;
+        if(!edit){
+          childHost.innerHTML="";
+          return;
+        }
+        const children=orderSiblingRanges(
+          (catalogRanges||[]).filter((r)=>
+            Number(r.parent_range_id)===Number(edit.range_id)
+            && (!edit.source_id || String(r.source_id||"")===String(edit.source_id||""))
+          ),
+          edit.source_id,
+          edit.range_id
+        );
+        if(!children.length){
+          childHost.innerHTML="";
+          return;
+        }
+        childHost.innerHTML=children.map((r)=>{
+          const span=`${escapeHtml(formatRangeStamp(r.start_time||""))} → ${escapeHtml(formatRangeStamp(r.end_time||""))}`;
+          return `<div class="rangeMetaRow" data-child-range-id="${r.range_id}">
+            ${rangeMetaNameCell(r)}
+            <div class="rangeMetaCell muted">${span}</div>
+          </div>`;
+        }).join("");
+        childHost.querySelectorAll("[data-child-range-id]").forEach((rowEl)=>{
+          rowEl.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const rid=Number(rowEl.getAttribute("data-child-range-id"));
+            const item=findById(rid);
+            if(!item) return;
+            showContextMenu(ev.clientX, ev.clientY, [
+              { label:"Edit", action:()=>void openCreateRangeModal({ edit:item }) },
+              { label:"Delete", action:async()=>{
+                await deleteUnifiedRange(item);
+                renderChildren();
+              } },
+            ]);
+          };
+        });
+      };
+
+      if(parentAdd){
+        parentAdd.onclick=(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          const picker=byId("dbTagPicker");
+          if(picker?.classList.contains("show") && picker._mode==="ranges"){
+            hideRangeSearchPicker();
+            return;
+          }
+          const candidates=parentCandidates();
+          if(!candidates.length){
+            setStatus("No eligible parent ranges available.", true);
+            return;
+          }
+          showRangeSearchPicker(parentAdd, {
+            candidates,
+            selectedId: pendingParentId,
+            onPick: async(r)=>{
+              if(edit){
+                const ok=await patchRangeParent(edit, Number(r.range_id));
+                if(!ok) return;
+                pendingParentId=Number(r.range_id);
+                edit.parent_range_id=Number(r.range_id);
+                renderParent();
+                return;
+              }
+              pendingParentId=Number(r.range_id);
+              renderParent();
+            },
+          });
+        };
+      }
+      if(childAdd){
+        childAdd.style.display = edit ? "" : "none";
+        childAdd.onclick=(ev)=>{
+          ev.preventDefault();
+          if(!edit) return;
+          const src=state.sources.find((s)=>String(s.id)===String(edit.source_id||""))
+            || state.sources.find((s)=>edit.artifact_id && s.artifact_id===edit.artifact_id)
+            || state.sources.find((s)=>edit.test_id!=null && Number(s.test_id)===Number(edit.test_id));
+          void openCreateRangeModal({
+            parent_range_id: Number(edit.range_id),
+            targets: src ? [src] : undefined,
+            start: edit.start_time,
+            end: edit.end_time,
+          });
+        };
+      }
+      renderTargets();
+      renderParent();
+      renderChildren();
+      return {
+        getParentId:()=>pendingParentId,
+      };
+    }
+    async function refreshCatalogRanges(){
+      const sources=rangeCapableSources();
+      const list=byId("rangesList");
+      const ph=byId("rangesPlaceholder");
+      if(!sources.length){
+        catalogRanges=[];
+        selectedRangeKeys.clear();
+        if(list) list.innerHTML="";
+        if(ph){ ph.style.display=""; ph.textContent="Select sources that have been ingested or catalog tests."; }
+        return;
+      }
       try{
-        catalogRanges=await getJson(`/api/catalog/ranges?test_id=${tid}${catQ}`);
+        catalogRanges=await postJson("/api/ranges/query", {
+          sources: sources.map(rangeSourceRef),
+        });
       }catch(err){
         catalogRanges=[];
         setStatus(`Failed to load ranges: ${err}`, true);
       }
+      sources.forEach((src)=>{
+        const key=String(src.id);
+        if(!rangeSourceCollapseSeeded.has(key)){
+          collapsedRangeSourceIds.add(key);
+          rangeSourceCollapseSeeded.add(key);
+        }
+      });
+      [...selectedRangeKeys].forEach((key)=>{
+        if(!(catalogRanges||[]).some((r)=>rangeIdentityKey(r)===key)) selectedRangeKeys.delete(key);
+      });
       renderRangesList();
       void applyRangeOverlaysToPlot();
     }
@@ -9401,35 +10613,326 @@
       const list=byId("rangesList");
       const ph=byId("rangesPlaceholder");
       if(!list) return;
-      if(!catalogRanges.length){
+      const sources=rangeCapableSources();
+      if(!sources.length){
         list.innerHTML="";
-        if(ph){ ph.style.display=""; ph.textContent="No ranges yet. Use + to create, or ⚡ to apply a rule."; }
+        if(ph){ ph.style.display=""; ph.textContent="Select sources that have been ingested or catalog tests."; }
         return;
       }
       if(ph) ph.style.display="none";
-      list.innerHTML=catalogRanges.map((r)=>{
-        const label=escapeHtml(r.label||r.name||`range ${r.range_id}`);
-        const src=escapeHtml(r.source||"user");
-        return `<div class="itemRow" data-range-id="${r.range_id}"><div class="itemPrimary">${label}</div><div class="itemMeta">${src} · ${escapeHtml(String(r.start_time||""))} → ${escapeHtml(String(r.end_time||""))}</div></div>`;
-      }).join("");
+
+      const bySource=new Map();
+      sources.forEach((src)=>bySource.set(String(src.id), []));
+      (catalogRanges||[]).forEach((r)=>{
+        const key=resolveRangeSourceId(r);
+        if(!bySource.has(key)) bySource.set(key, []);
+        bySource.get(key).push(r);
+      });
+
+      const htmlParts=[];
+      const orderedItems=[];
+      const renderSourceBlock=(src, rangesForSrc)=>{
+        const srcKey=String(src.id);
+        const srcCollapsed=collapsedRangeSourceIds.has(srcKey);
+        const iconKind=sourceIconKindForRanges(src);
+        const srcLabel=escapeHtml(src.name||src.file_path||`source ${src.id}`);
+        htmlParts.push(`<div class="item treeRow" data-range-source-id="${escAttr(srcKey)}" style="--depth:0">
+          <button type="button" class="treeTwist" data-range-source-toggle="${escAttr(srcKey)}" aria-label="${srcCollapsed?"Expand":"Collapse"}">${treeTwistSvg(!srcCollapsed)}</button>
+          <span class="treeIcon icon-${iconKind}">${treeIconSvg(iconKind, !srcCollapsed)}</span>
+          <div class="itemPrimary">${srcLabel}</div>
+        </div>`);
+        if(srcCollapsed) return;
+
+        const idSet=new Set(rangesForSrc.map((r)=>Number(r.range_id)));
+        const byParent=new Map();
+        rangesForSrc.forEach((r)=>{
+          const p=r.parent_range_id;
+          const parentKey=(p!=null && idSet.has(Number(p))) ? String(p) : "root";
+          if(!byParent.has(parentKey)) byParent.set(parentKey, []);
+          byParent.get(parentKey).push(r);
+        });
+        const ordered=[];
+        const walk=(parentKey, depth)=>{
+          const rawKids=byParent.get(parentKey) || [];
+          const parentId=parentKey==="root" ? null : Number(parentKey);
+          const kids=orderSiblingRanges(rawKids, srcKey, parentId);
+          kids.forEach((r)=>{
+            ordered.push({ r, depth });
+            if(!collapsedRangeIds.has(Number(r.range_id))) walk(String(r.range_id), depth+1);
+          });
+        };
+        walk("root", 0);
+        const orderedIds=new Set(ordered.map(({ r })=>Number(r.range_id)));
+        rangesForSrc.forEach((r)=>{
+          if(orderedIds.has(Number(r.range_id))) return;
+          if(r.parent_range_id!=null && idSet.has(Number(r.parent_range_id))) return;
+          ordered.push({ r, depth:0 });
+        });
+        const parentIds=new Set(rangesForSrc.map((r)=>r.parent_range_id).filter((v)=>v!=null).map(Number));
+        ordered.forEach(({ r, depth })=>{
+          orderedItems.push(r);
+          const label=escapeHtml(r.name||r.label||`range ${r.range_id}`);
+          const from=escapeHtml(formatRangeStamp(r.start_time||""));
+          const to=escapeHtml(formatRangeStamp(r.end_time||""));
+          const color=r.color||"#3b82f6";
+          const tagsHtml=databaseTagsHtml(r.tags||[]);
+          const pad=Math.min(48, (depth+1)*14);
+          const isParent=parentIds.has(Number(r.range_id));
+          const collapsed=collapsedRangeIds.has(Number(r.range_id));
+          const key=rangeIdentityKey(r);
+          const active=selectedRangeKeys.has(key) ? " active" : "";
+          const toggle=isParent
+            ? `<button type="button" class="treeTwist" data-range-toggle="${r.range_id}" aria-label="${collapsed?"Expand":"Collapse"}">${treeTwistSvg(!collapsed)}</button>`
+            : `<span class="treeTwist hidden" aria-hidden="true"></span>`;
+          htmlParts.push(`<div class="itemRow${active}" draggable="true" data-range-id="${r.range_id}" data-range-key="${escAttr(key)}" data-source-id="${escAttr(r.source_id||srcKey)}" data-artifact-id="${escAttr(r.artifact_id||"")}" data-test-id="${escAttr(r.test_id||"")}" data-catalog-id="${escAttr(r.catalog_id||"")}" data-durability="${escAttr(r.durability||"")}" data-parent-range-id="${escAttr(r.parent_range_id??"")}" data-range-ord="${orderedItems.length-1}" style="padding-left:${8+pad}px">
+          <div class="itemPrimary" style="display:flex;align-items:center;gap:6px;">
+            ${toggle}
+            <span class="rangeListMarker" style="border-color:${escAttr(color)}"><span class="rangeListMarkerDot" style="background:${escAttr(color)}"></span></span>
+            <span>${label}</span>
+          </div>
+          <div class="itemMeta">${from} → ${to}</div>
+          ${tagsHtml ? `<div class="dbTagChipRow dbTagChipRowList" style="margin-top:4px;margin-left:22px;">${tagsHtml}</div>` : ""}
+        </div>`);
+        });
+      };
+
+      sources.forEach((src)=>renderSourceBlock(src, bySource.get(String(src.id))||[]));
+      // Orphan groups (ranges whose source is not in the capable selection)
+      const known=new Set(sources.map((s)=>String(s.id)));
+      bySource.forEach((rangesForSrc, key)=>{
+        if(known.has(key) || !rangesForSrc.length) return;
+        const fake={ id:key, name:rangesForSrc[0].source_name||`Source ${key}`, type:"file" };
+        renderSourceBlock(fake, rangesForSrc);
+      });
+
+      list.innerHTML=htmlParts.join("");
+      list.onclick=(ev)=>{
+        if(ev.target!==list) return;
+        selectedRangeKeys.clear();
+        renderRangesList();
+        void applyRangeOverlaysToPlot();
+      };
+      list.querySelectorAll("[data-range-source-toggle]").forEach((btn)=>{
+        btn.onclick=(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          const sid=String(btn.getAttribute("data-range-source-toggle")||"");
+          if(!sid) return;
+          if(collapsedRangeSourceIds.has(sid)) collapsedRangeSourceIds.delete(sid);
+          else collapsedRangeSourceIds.add(sid);
+          renderRangesList();
+        };
+      });
+      list.querySelectorAll("[data-range-source-id]").forEach((row)=>{
+        row.onclick=(ev)=>{
+          if(ev.target.closest && ev.target.closest("[data-range-source-toggle]")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const sid=String(row.getAttribute("data-range-source-id")||"");
+          if(!sid) return;
+          if(collapsedRangeSourceIds.has(sid)) collapsedRangeSourceIds.delete(sid);
+          else collapsedRangeSourceIds.add(sid);
+          renderRangesList();
+        };
+      });
+      list.querySelectorAll("[data-range-toggle]").forEach((btn)=>{
+        btn.onclick=(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          const rid=Number(btn.getAttribute("data-range-toggle"));
+          if(collapsedRangeIds.has(rid)) collapsedRangeIds.delete(rid);
+          else collapsedRangeIds.add(rid);
+          renderRangesList();
+        };
+      });
+      list.querySelectorAll(".itemRow[data-range-key]").forEach((row)=>{
+        row.onmousedown=(ev)=>{
+          if(ev && ev.preventDefault) ev.preventDefault();
+        };
+        row.onclick=(ev)=>{
+          if(ev.target.closest && ev.target.closest("[data-range-toggle]")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const rangeId=Number(row.getAttribute("data-range-id"));
+          const item=catalogRanges.find((r)=>Number(r.range_id)===rangeId
+            && String(r.source_id||"")===String(row.getAttribute("data-source-id")||"")
+            && String(r.artifact_id||"")===String(row.getAttribute("data-artifact-id")||"")
+            && String(r.test_id||"")===String(row.getAttribute("data-test-id")||""));
+          if(!item) return;
+          const clickIndex=Number(row.getAttribute("data-range-ord"));
+          applyRangeListSelection(item, ev, clickIndex, orderedItems);
+          renderRangesList();
+          void applyRangeOverlaysToPlot();
+        };
+        row.oncontextmenu=(ev)=>{
+          ev.preventDefault();
+          const rangeId=Number(row.getAttribute("data-range-id"));
+          const item=catalogRanges.find((r)=>Number(r.range_id)===rangeId
+            && String(r.source_id||"")===String(row.getAttribute("data-source-id")||"")
+            && String(r.artifact_id||"")===String(row.getAttribute("data-artifact-id")||"")
+            && String(r.test_id||"")===String(row.getAttribute("data-test-id")||""));
+          if(!item) return;
+          if(!selectedRangeKeys.has(rangeIdentityKey(item))){
+            ensureRangeSelected(item);
+            renderRangesList();
+            void applyRangeOverlaysToPlot();
+          }
+          showContextMenu(ev.clientX, ev.clientY, [
+            { label:"Edit", action:()=>void openCreateRangeModal({ edit:item }) },
+            { label:"Delete", action:()=>void deleteUnifiedRange(item) },
+          ]);
+        };
+        row.addEventListener("dragstart", (ev)=>{
+          if(ev.target.closest && ev.target.closest("[data-range-toggle]")){
+            ev.preventDefault();
+            return;
+          }
+          const key=row.getAttribute("data-range-key")||"";
+          try{ ev.dataTransfer?.setData("text/plain", `nova-range:${key}`); }catch{}
+          try{ ev.dataTransfer?.setData("text/nova-range-key", key); }catch{}
+          ev.dataTransfer.effectAllowed="move";
+          row.classList.add("rangeDragging");
+        });
+        row.addEventListener("dragend", ()=>{
+          row.classList.remove("rangeDragging");
+          list.querySelectorAll(".rangeDropChild,.rangeDropBefore,.rangeDropAfter,.rangeDropRoot").forEach((el)=>{
+            el.classList.remove("rangeDropChild","rangeDropBefore","rangeDropAfter","rangeDropRoot");
+          });
+        });
+        row.addEventListener("dragover", (ev)=>{
+          const raw=ev.dataTransfer?.getData?.("text/plain")||"";
+          const types=ev.dataTransfer?.types;
+          const okType = (types && ((typeof types.contains==="function" && types.contains("text/nova-range-key"))
+            || (typeof types.includes==="function" && types.includes("text/nova-range-key"))
+            || [...(types||[])].includes("text/plain")));
+          if(!okType && !String(raw).startsWith("nova-range:")) return;
+          ev.preventDefault();
+          ev.dataTransfer.dropEffect="move";
+          const rect=row.getBoundingClientRect();
+          const y=(ev.clientY-rect.top)/Math.max(1, rect.height);
+          row.classList.remove("rangeDropChild","rangeDropBefore","rangeDropAfter");
+          if(y < 0.25) row.classList.add("rangeDropBefore");
+          else if(y > 0.75) row.classList.add("rangeDropAfter");
+          else row.classList.add("rangeDropChild");
+        });
+        row.addEventListener("dragleave", ()=>{
+          row.classList.remove("rangeDropChild","rangeDropBefore","rangeDropAfter");
+        });
+        row.addEventListener("drop", async(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          const raw=ev.dataTransfer?.getData("text/plain")||"";
+          const dragKey=(ev.dataTransfer?.getData("text/nova-range-key")||"").trim()
+            || (String(raw).startsWith("nova-range:") ? String(raw).slice("nova-range:".length) : "");
+          row.classList.remove("rangeDropChild","rangeDropBefore","rangeDropAfter");
+          if(!dragKey || dragKey===row.getAttribute("data-range-key")) return;
+          const dragged=catalogRanges.find((r)=>rangeIdentityKey(r)===dragKey);
+          const target=catalogRanges.find((r)=>Number(r.range_id)===Number(row.getAttribute("data-range-id"))
+            && String(r.source_id||"")===String(row.getAttribute("data-source-id")||""));
+          if(!dragged || !target) return;
+          if(String(dragged.source_id||"")!==String(target.source_id||"")){
+            setStatus("Ranges can only be moved within the same source.", true);
+            return;
+          }
+          const rect=row.getBoundingClientRect();
+          const y=(ev.clientY-rect.top)/Math.max(1, rect.height);
+          const asChild = y >= 0.25 && y <= 0.75;
+          if(asChild){
+            if(Number(dragged.range_id)===Number(target.range_id)) return;
+            const ok=await patchRangeParent(dragged, Number(target.range_id));
+            if(ok){
+              collapsedRangeIds.delete(Number(target.range_id));
+              setStatus(`Moved "${dragged.name||dragged.range_id}" under "${target.name||target.range_id}".`);
+            }
+            return;
+          }
+          // Reorder as sibling relative to target (before/after).
+          const nextParent = target.parent_range_id!=null ? Number(target.parent_range_id) : null;
+          const needParentChange = (dragged.parent_range_id==null) !== (nextParent==null)
+            || Number(dragged.parent_range_id||0)!==Number(nextParent||0);
+          if(needParentChange){
+            const ok=await patchRangeParent(dragged, nextParent);
+            if(!ok) return;
+          }
+          const sourceId=String(target.source_id||row.getAttribute("data-source-id")||"");
+          const siblings=(catalogRanges||[])
+            .filter((r)=>String(r.source_id||"")===sourceId
+              && ((nextParent==null && (r.parent_range_id==null || r.parent_range_id===""))
+                || (nextParent!=null && Number(r.parent_range_id)===nextParent)))
+            .map((r)=>Number(r.range_id))
+            .filter((id)=>id!==Number(dragged.range_id));
+          const ordered=orderSiblingRanges(
+            siblings.map((id)=>({ range_id:id })),
+            sourceId,
+            nextParent
+          ).map((r)=>Number(r.range_id));
+          const base=ordered.length ? ordered : siblings;
+          const at=base.indexOf(Number(target.range_id));
+          const pos = y < 0.25 ? Math.max(0, at) : Math.max(0, at+1);
+          const next=[...base];
+          next.splice(pos, 0, Number(dragged.range_id));
+          const seen=new Set();
+          const cleaned=next.filter((id)=>{ if(seen.has(id)) return false; seen.add(id); return true; });
+          setSiblingOrder(sourceId, nextParent, cleaned);
+          renderRangesList();
+          setStatus(`Reordered "${dragged.name||dragged.range_id}".`);
+        });
+      });
+      list.querySelectorAll("[data-range-source-id]").forEach((row)=>{
+        row.addEventListener("dragover", (ev)=>{
+          const types=ev.dataTransfer?.types;
+          const okType = types && ((typeof types.contains==="function" && (types.contains("text/nova-range-key") || types.contains("text/plain")))
+            || [...(types||[])].includes("text/plain")
+            || [...(types||[])].includes("text/nova-range-key"));
+          if(!okType) return;
+          ev.preventDefault();
+          ev.dataTransfer.dropEffect="move";
+          row.classList.add("rangeDropRoot");
+        });
+        row.addEventListener("dragleave", ()=>row.classList.remove("rangeDropRoot"));
+        row.addEventListener("drop", async(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          row.classList.remove("rangeDropRoot");
+          const raw=ev.dataTransfer?.getData("text/plain")||"";
+          const dragKey=(ev.dataTransfer?.getData("text/nova-range-key")||"").trim()
+            || (String(raw).startsWith("nova-range:") ? String(raw).slice("nova-range:".length) : "");
+          const dragged=catalogRanges.find((r)=>rangeIdentityKey(r)===dragKey);
+          const sid=String(row.getAttribute("data-range-source-id")||"");
+          if(!dragged || String(dragged.source_id||"")!==sid) return;
+          if(dragged.parent_range_id==null){
+            setStatus("Range is already at the source root.");
+            return;
+          }
+          const ok=await patchRangeParent(dragged, null);
+          if(ok) setStatus(`Moved "${dragged.name||dragged.range_id}" to source root.`);
+        });
+      });
     }
     function rangeShapesForPlot(){
-      if(!catalogRanges.length) return [];
-      return catalogRanges.map((r)=>{
-        const x0=Date.parse(String(r.start_time||""));
-        const x1=Date.parse(String(r.end_time||""));
-        if(!Number.isFinite(x0)||!Number.isFinite(x1)) return null;
+      const selected=getSelectedRanges();
+      if(!selected.length) return [];
+      const rows=latestRows;
+      const useDate=plotUsesDateAxis(rows);
+      return selected.map((r)=>{
+        const bounds=rangePlotXBounds(r, rows);
+        if(!bounds) return null;
+        const fill=r.color||"rgba(59,130,246,0.18)";
+        const fillcolor = fill.startsWith("#")
+          ? `${fill}2e`
+          : fill;
         return {
           type:"rect",
           xref:"x",
           yref:"paper",
-          x0:new Date(x0),
-          x1:new Date(x1),
+          x0: useDate ? new Date(bounds.lo) : bounds.lo,
+          x1: useDate ? new Date(bounds.hi) : bounds.hi,
           y0:0,
           y1:1,
-          fillcolor:r.color||"rgba(59,130,246,0.18)",
+          fillcolor,
           line:{ width:0 },
           layer:"below",
+          name:`range:${r.range_id}`,
         };
       }).filter(Boolean);
     }
@@ -9437,40 +10940,249 @@
       const gd=plotlyGraphDiv();
       if(!gd || !window.Plotly) return;
       try{
-        await Plotly.relayout(gd, { shapes: rangeShapesForPlot() });
+        const analysis = (typeof AnalysisTools!=="undefined" && AnalysisTools.buildCurrentShapes)
+          ? AnalysisTools.buildCurrentShapes()
+          : null;
+        const analysisShapes = analysis?.shapes
+          || (Array.isArray(gd.layout?.shapes)
+            ? gd.layout.shapes.filter((s)=>!(s?.name||"").startsWith("range:"))
+            : []);
+        const annotations = analysis?.annotations || gd.layout?.annotations || [];
+        await Plotly.relayout(gd, {
+          shapes: [...rangeShapesForPlot(), ...analysisShapes],
+          annotations,
+        });
       }catch{}
     }
-    async function openCreateRangeModal(){
-      const tid=activeCatalogTestId();
-      if(!tid){ setStatus("Select a catalog test (or ingested file with test_id) first.", true); return; }
-      openModal("Create Range", `
-        <div class="modalGrid">
-          <div><label>Name</label><input id="m_range_name" value="Range" /></div>
-          <div><label>Label</label><input id="m_range_label" value="" /></div>
-          <div><label>Start (ISO UTC)</label><input id="m_range_start" placeholder="1970-01-01T00:00:00Z" /></div>
-          <div><label>End (ISO UTC)</label><input id="m_range_end" placeholder="1970-01-01T00:00:01Z" /></div>
-          <div><label>Color</label><input id="m_range_color" value="#3b82f6" /></div>
+    async function deleteUnifiedRange(item){
+      if(!item) return;
+      const body={
+        artifact_id: item.artifact_id || null,
+        test_id: item.test_id != null ? Number(item.test_id) : null,
+        catalog_id: item.catalog_id || null,
+        file_path: null,
+        durability: item.durability || null,
+      };
+      const src=state.sources.find((s)=>s.id===item.source_id);
+      if(src?.file_path) body.file_path=src.file_path;
+      const r=await fetch(`/api/ranges/${item.range_id}`, {
+        method:"DELETE",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify(body),
+      });
+      if(!r.ok){
+        let msg=`Delete failed (${r.status})`;
+        try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
+        setStatus(msg, true);
+        return;
+      }
+      await refreshCatalogRanges();
+      setStatus("Range deleted.");
+    }
+    function openCreateRangeFromPlot(){
+      const span=latestRegionTimeSpan() || plotVisibleTimeSpan();
+      if(!span){
+        setStatus("No plot time span available. Zoom or draw a region first.", true);
+        return;
+      }
+      void openCreateRangeModal({ start:span.start, end:span.end, preferPlotted:true });
+    }
+    async function openCreateRangeModal(opts={}){
+      const edit=opts.edit || null;
+      let targets=Array.isArray(opts.targets) && opts.targets.length
+        ? opts.targets.slice()
+        : (opts.preferPlotted
+          ? rangeCapableSources(selectedSourceIds.size ? selectedSourceIds : effectiveSelectedSourceIds())
+          : rangeCapableSources());
+      if(edit){
+        const src=state.sources.find((s)=>s.id===edit.source_id)
+          || state.sources.find((s)=>edit.artifact_id && s.artifact_id===edit.artifact_id)
+          || state.sources.find((s)=>edit.test_id && Number(s.test_id)===Number(edit.test_id));
+        targets = src ? [src] : [];
+      }
+      if(!targets.length){
+        setStatus("Select one or more ingested sources (or catalog tests) first.", true);
+        return;
+      }
+      const createParentId = opts.parent_range_id != null ? Number(opts.parent_range_id) : null;
+      const startVal=toUtcDatetimeInput(edit?.start_time || opts.start || "");
+      const endVal=toUtcDatetimeInput(edit?.end_time || opts.end || "");
+      const chosenTags=new Set(normalizeDatabaseTags(edit?.tags||[]));
+      const colorVal=edit?.color||"#3b82f6";
+      const leaf=edit ? "Edit" : "Create";
+      let relatedLists=null;
+      openModal(edit ? "Ranges > Edit" : "Ranges > Create", `
+        <div class="formStack">
+          <div class="rangeFormHeader">
+            <div class="formField rangeFormName">
+              <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+              <div class="rangeNameWithColor">
+                <input id="m_range_name" class="formNameInput" value="${escAttr(edit?.name||"Range")}" spellcheck="false" />
+                <button type="button" class="rangeColorMarkerBtn" id="m_range_color_btn" title="Color" aria-label="Color">
+                  <span class="rangeColorMarker" style="border-color:${escAttr(colorVal)}"><span class="rangeColorMarkerDot" style="background:${escAttr(colorVal)}"></span></span>
+                </button>
+                <input id="m_range_color" class="rangeColorInputHidden" type="color" value="${escAttr(colorVal)}" tabindex="-1" aria-hidden="true" />
+              </div>
+            </div>
+            <div class="rangeFormTimes">
+              <div class="formField">
+                <label>From<span class="reqMark" aria-hidden="true">*</span></label>
+                <input id="m_range_start" type="datetime-local" step="0.001" value="${escAttr(startVal)}" />
+              </div>
+              <div class="formField">
+                <label>To<span class="reqMark" aria-hidden="true">*</span></label>
+                <input id="m_range_end" type="datetime-local" step="0.001" value="${escAttr(endVal)}" />
+              </div>
+            </div>
+          </div>
+          <div class="rangeFormStatusTags">
+            <div class="formField rangeStatusField">
+              <label>Status</label>
+              <input id="m_range_status" list="m_range_status_list" value="${escAttr(edit?.status||"completed")}" placeholder="completed / failed / in_progress / success" spellcheck="false" />
+              <datalist id="m_range_status_list">
+                <option value="completed"></option><option value="failed"></option>
+                <option value="in_progress"></option><option value="success"></option>
+              </datalist>
+            </div>
+            <div class="formField rangeTagsField">
+              <label>Tags</label>
+              <div id="m_db_tag_row" class="dbTagChipRow dbTagChipRowEdit">
+                <button type="button" id="m_db_tag_add" class="dbTagAddBtn" aria-label="Add tag">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader">
+              <label>Target</label>
+            </div>
+            <div class="rangeMetaDivider"></div>
+            <div id="m_range_target_rows" class="rangeMetaTable"></div>
+          </div>
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader">
+              <label>Parent Range</label>
+              <button type="button" id="m_range_parent_add" class="dbTagAddBtn" aria-label="Set parent range">+</button>
+            </div>
+            <div class="rangeMetaDivider"></div>
+            <div id="m_range_parent_rows" class="rangeMetaTable"></div>
+          </div>
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader">
+              <label>Child Ranges</label>
+              <button type="button" id="m_range_child_add" class="dbTagAddBtn" aria-label="Add child range">+</button>
+            </div>
+            <div class="rangeMetaDivider"></div>
+            <div id="m_range_child_rows" class="rangeMetaTable"></div>
+          </div>
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader">
+              <label>Metadata</label>
+              <button type="button" id="m_range_meta_add" class="dbTagAddBtn" aria-label="Add metadata field">+</button>
+            </div>
+            <div class="rangeMetaDivider"></div>
+            <div id="m_range_meta_rows" class="rangeMetaTable"></div>
+          </div>
         </div>
-        <div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Create</button></div>
-      `, async()=>{
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>
+      `,{ ...WF_ALIAS_FORM, titleHtml:rangesWindowTitleHtml(leaf) }, async()=>{
         const name=(byId("m_range_name").value||"").trim()||"Range";
-        const start=(byId("m_range_start").value||"").trim();
-        const end=(byId("m_range_end").value||"").trim();
-        if(!start||!end){ setStatus("Start and end are required.", true); return false; }
-        const r=await fetch("/api/catalog/ranges",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-          test_id:tid,
-          name,
-          label:(byId("m_range_label").value||"").trim()||null,
-          start_time:start,
-          end_time:end,
-          color:(byId("m_range_color").value||"").trim()||null,
-          source:"user",
-        })});
-        if(!r.ok){ let msg=`Create range failed (${r.status})`; try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{} setStatus(msg,true); return false; }
+        const status=(byId("m_range_status").value||"").trim()||null;
+        const startRaw=(byId("m_range_start").value||"").trim();
+        const endRaw=(byId("m_range_end").value||"").trim();
+        const color=(byId("m_range_color").value||"").trim()||null;
+        const parent_range_id=relatedLists?.getParentId?.() ?? (edit
+          ? (edit.parent_range_id!=null ? Number(edit.parent_range_id) : null)
+          : createParentId);
+        const tags=normalizeDatabaseTags([...chosenTags]);
+        const parameters=readRangeMetaRows();
+        if(!startRaw||!endRaw){ setStatus("From and To are required.", true); return false; }
+        const startMs=parseUtcInput(startRaw);
+        const endMs=parseUtcInput(endRaw);
+        if(!Number.isFinite(startMs) || !Number.isFinite(endMs)){ setStatus("From and To must be valid UTC datetimes.", true); return false; }
+        const start=new Date(startMs).toISOString();
+        const end=new Date(endMs).toISOString();
+        if(edit){
+          const ref=rangeSourceRef(targets[0]);
+          const r=await fetch(`/api/ranges/${edit.range_id}`, {
+            method:"PATCH",
+            headers:{ "Content-Type":"application/json" },
+            body:JSON.stringify({
+              ...ref,
+              name, status, start_time:start, end_time:end, color, tags, parent_range_id, parameters,
+            }),
+          });
+          if(!r.ok){
+            let msg=`Update failed (${r.status})`;
+            try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
+            setStatus(msg,true); return false;
+          }
+          await refreshCatalogRanges();
+          setStatus("Range updated.");
+          return true;
+        }
+        let created=0;
+        for(const src of targets){
+          const ref=rangeSourceRef(src);
+          const r=await fetch("/api/ranges", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body:JSON.stringify({
+              ...ref,
+              name, status, start_time:start, end_time:end, color, tags, parent_range_id, parameters,
+              source:"user",
+            }),
+          });
+          if(!r.ok){
+            let msg=`Create range failed (${r.status})`;
+            try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
+            setStatus(msg,true); return false;
+          }
+          created+=1;
+        }
+        if(parent_range_id!=null) collapsedRangeIds.delete(Number(parent_range_id));
+        targets.forEach((src)=>collapsedRangeSourceIds.delete(String(src.id)));
         await refreshCatalogRanges();
-        setStatus("Range created.");
+        setStatus(created>1 ? `Created ${created} ranges.` : "Range created.");
         return true;
       });
+      wireDatabaseTagEditor(chosenTags);
+      const colorInput=byId("m_range_color");
+      const colorBtn=byId("m_range_color_btn");
+      if(colorInput && colorBtn){
+        const syncColorMarker=()=>{
+          const c=(colorInput.value||"#3b82f6").trim()||"#3b82f6";
+          const marker=colorBtn.querySelector(".rangeColorMarker");
+          const dot=colorBtn.querySelector(".rangeColorMarkerDot");
+          if(marker) marker.style.borderColor=c;
+          if(dot) dot.style.background=c;
+        };
+        colorBtn.onclick=(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          colorInput.click();
+        };
+        colorInput.oninput=()=>syncColorMarker();
+        colorInput.onchange=()=>syncColorMarker();
+      }
+      const tagAdd=byId("m_db_tag_add");
+      if(tagAdd){
+        tagAdd.onclick=(ev)=>{
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          const picker=byId("dbTagPicker");
+          if(picker?.classList.contains("show")){ hideDatabaseTagPicker(); return; }
+          showDatabaseTagPicker(tagAdd, chosenTags, (tag)=>{
+            const key=String(tag||"").trim().toLowerCase();
+            if(!key) return;
+            if([...chosenTags].some((t)=>String(t).toLowerCase()===key)) return;
+            chosenTags.add(String(tag).trim());
+            wireDatabaseTagEditor(chosenTags);
+          }, { listTags: allRangeTags });
+        };
+      }
+      wireRangeMetaEditor(edit?.parameters||[]);
+      relatedLists=wireRangeRelatedLists(edit, { createParentId, targets });
     }
     async function openApplyRangeRuleModal(){
       const tid=activeCatalogTestId();
@@ -12330,7 +14042,6 @@
     });
     if(byId("addIndexMaskBtn")) byId("addIndexMaskBtn").onclick=showAddIndexMaskMenu;
     byId("addRangeBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); void openCreateRangeModal(); });
-    byId("applyRangeRuleBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); void openApplyRangeRuleModal(); });
     byId("addObjectBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Plot objects are coming soon."); });
     byId("addIngestionBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Ingestion rules are coming soon."); });
     byId("loadBtn").onclick=loadTimeseries;

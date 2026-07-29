@@ -42,17 +42,26 @@ class TestParameterItem(BaseModel):
 
 class RangeItem(BaseModel):
     range_id: int
-    test_id: int
+    test_id: int | None = None
+    artifact_id: str | None = None
+    catalog_id: str | None = None
+    durability: str | None = None
+    source_id: str | None = None
+    source_name: str | None = None
     name: str
     label: str | None = None
+    status: str | None = None
     start_time: datetime
     end_time: datetime
     start_ms: float | None = None
     end_ms: float | None = None
     color: str | None = None
-    source: str
+    tags: list[str] = Field(default_factory=list)
+    parent_range_id: int | None = None
+    source: str = "user"
     rule_id: int | None = None
     notes: str | None = None
+    parameters: list["RangeParameterItem"] = Field(default_factory=list)
 
 
 class RangeParameterItem(BaseModel):
@@ -77,6 +86,47 @@ class RangeRuleItem(BaseModel):
     config: str
     default_label: str | None = None
     default_color: str | None = None
+
+
+class RangeSourceRef(BaseModel):
+    artifact_id: str | None = None
+    test_id: int | None = None
+    catalog_id: str | None = None
+    file_path: str | None = None
+    durability: str | None = None
+    source_id: str | None = None
+    source_name: str | None = None
+
+
+class RangeListRequest(BaseModel):
+    sources: list[RangeSourceRef] = Field(default_factory=list)
+
+
+class RangeUpdateRequest(BaseModel):
+    name: str | None = None
+    label: str | None = None
+    status: str | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    color: str | None = None
+    tags: list[str] | None = None
+    parent_range_id: int | None = None
+    notes: str | None = None
+    parameters: list[RangeParameterWrite] | None = None
+    artifact_id: str | None = None
+    test_id: int | None = None
+    catalog_id: str | None = None
+    file_path: str | None = None
+    durability: str | None = None
+
+
+class RangeDeleteRequest(BaseModel):
+    artifact_id: str | None = None
+    test_id: int | None = None
+    catalog_id: str | None = None
+    file_path: str | None = None
+    durability: str | None = None
+
 
 
 class ResultItem(BaseModel):
@@ -244,17 +294,25 @@ class ApplyRangeRuleRequest(BaseModel):
 
 
 class RangeCreateRequest(BaseModel):
-    test_id: int
+    test_id: int | None = None
+    artifact_id: str | None = None
+    file_path: str | None = None
+    durability: str | None = None
     name: str = Field(min_length=1)
     start_time: datetime
     end_time: datetime
     label: str | None = None
+    status: str | None = "completed"
     color: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    parent_range_id: int | None = None
     notes: str | None = None
     source: Literal["user", "rule"] = "user"
     rule_id: int | None = None
     parameters: list[RangeParameterWrite] = Field(default_factory=list)
     catalog_id: str | None = None
+    source_id: str | None = None
+    source_name: str | None = None
 
 
 class RangeRuleCreateRequest(BaseModel):

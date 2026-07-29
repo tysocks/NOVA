@@ -12,15 +12,23 @@ from .engine.catalog_store import (
     catalog_path_override,
     create_range,
     create_range_rule,
+    delete_range,
     list_catalog_channels,
     list_catalog_tests,
     list_range_rules,
     list_ranges,
     list_results,
     list_test_parameters,
+    update_range,
     write_result,
 )
 from .engine.range_detect import apply_range_rule_to_test
+from .engine.range_store import (
+    create_temp_range,
+    delete_temp_range,
+    list_temp_ranges,
+    update_temp_range,
+)
 from .engine.file_index import get_ingest_status, manifest_to_channels, manifest_to_tests, run_ingest
 from .engine.file_probe import probe_file_with_validation
 from .engine.series_query import execute_series_query
@@ -34,9 +42,13 @@ from .models import (
     FileProbeResponse,
     HealthResponse,
     RangeCreateRequest,
+    RangeDeleteRequest,
     RangeItem,
+    RangeListRequest,
     RangeRuleCreateRequest,
     RangeRuleItem,
+    RangeSourceRef,
+    RangeUpdateRequest,
     ResultItem,
     ResultWriteRequest,
     SeriesQueryRequest,
@@ -110,9 +122,14 @@ SOURCES_WORKSPACE_FILE = Path(__file__).resolve().parents[1] / ".nova_sources_wo
 
 @contextmanager
 def _with_catalog(catalog_id: str | None) -> Iterator[dict]:
-    profile = db_library.resolve_duckdb_profile(catalog_id)
-    with catalog_path_override(profile["catalog_path"]):
-        yield profile
+    try:
+        profile = db_library.resolve_duckdb_profile(catalog_id)
+        with catalog_path_override(profile["catalog_path"]):
+            yield profile
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 try:
@@ -456,15 +473,139 @@ def catalog_ranges(
     catalog_id: str | None = Query(default=None),
 ) -> list[RangeItem]:
     with _with_catalog(catalog_id):
-        return list_ranges(test_id)
+        return list_ranges(test_id, catalog_id=catalog_id)
 
 
 @app.post("/api/catalog/ranges", response_model=RangeItem)
 def create_catalog_range(body: RangeCreateRequest) -> RangeItem:
+    if body.test_id is None:
+        raise HTTPException(status_code=400, detail="test_id is required.")
     if body.end_time <= body.start_time:
         raise HTTPException(status_code=400, detail="end_time must be after start_time.")
     with _with_catalog(body.catalog_id):
         return create_range(body)
+
+
+def _is_temporary_range_target(ref: RangeSourceRef | RangeCreateRequest | RangeUpdateRequest | RangeDeleteRequest) -> bool:
+    durability = str(getattr(ref, "durability", None) or "").strip().lower()
+    if durability == "temporary":
+        return True
+    if durability == "permanent":
+        return False
+    artifact_id = str(getattr(ref, "artifact_id", None) or "").strip()
+    catalog_id = str(getattr(ref, "catalog_id", None) or "").strip()
+    if artifact_id and (not catalog_id or catalog_id == db_library.LOCAL_CATALOG_ID):
+        return True
+    return False
+
+
+def _list_ranges_for_source(ref: RangeSourceRef) -> list[RangeItem]:
+    if _is_temporary_range_target(ref):
+        artifact_id = str(ref.artifact_id or "").strip()
+        if not artifact_id:
+            return []
+        items = list_temp_ranges(artifact_id, source_path=ref.file_path)
+        return [
+            item.model_copy(
+                update={
+                    "artifact_id": artifact_id,
+                    "durability": "temporary",
+                    "source_id": ref.source_id,
+                    "source_name": ref.source_name,
+                    "catalog_id": ref.catalog_id,
+                    "test_id": ref.test_id,
+                }
+            )
+            for item in items
+        ]
+
+    if ref.test_id is None:
+        return []
+    with _with_catalog(ref.catalog_id):
+        items = list_ranges(int(ref.test_id), catalog_id=ref.catalog_id)
+    return [
+        item.model_copy(
+            update={
+                "catalog_id": ref.catalog_id,
+                "durability": "permanent",
+                "source_id": ref.source_id,
+                "source_name": ref.source_name,
+                "artifact_id": ref.artifact_id,
+            }
+        )
+        for item in items
+    ]
+
+
+@app.post("/api/ranges/query", response_model=list[RangeItem])
+def query_ranges(body: RangeListRequest) -> list[RangeItem]:
+    out: list[RangeItem] = []
+    for ref in body.sources or []:
+        try:
+            out.extend(_list_ranges_for_source(ref))
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+    out.sort(key=lambda r: (r.start_ms or 0.0, r.range_id))
+    return out
+
+
+@app.post("/api/ranges", response_model=RangeItem)
+def create_unified_range(body: RangeCreateRequest) -> RangeItem:
+    if body.end_time <= body.start_time:
+        raise HTTPException(status_code=400, detail="end_time must be after start_time.")
+    try:
+        if _is_temporary_range_target(body):
+            if not body.artifact_id:
+                raise ValueError("artifact_id is required for temporary ranges.")
+            item = create_temp_range(body)
+        else:
+            if body.test_id is None:
+                raise ValueError("test_id is required for permanent ranges.")
+            with _with_catalog(body.catalog_id):
+                item = create_range(body)
+        return item.model_copy(
+            update={
+                "source_id": body.source_id,
+                "source_name": body.source_name,
+                "catalog_id": body.catalog_id or item.catalog_id,
+                "artifact_id": body.artifact_id or item.artifact_id,
+            }
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.patch("/api/ranges/{range_id}", response_model=RangeItem)
+def patch_unified_range(range_id: int, body: RangeUpdateRequest) -> RangeItem:
+    try:
+        if _is_temporary_range_target(body):
+            if not body.artifact_id:
+                raise ValueError("artifact_id is required for temporary ranges.")
+            return update_temp_range(range_id, body)
+        with _with_catalog(body.catalog_id):
+            return update_range(range_id, body)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/api/ranges/{range_id}")
+def delete_unified_range(
+    range_id: int,
+    body: RangeDeleteRequest = Body(default_factory=RangeDeleteRequest),
+) -> dict:
+    try:
+        if _is_temporary_range_target(body):
+            if not body.artifact_id:
+                raise ValueError("artifact_id is required for temporary ranges.")
+            ok = delete_temp_range(range_id, artifact_id=body.artifact_id, source_path=body.file_path)
+        else:
+            with _with_catalog(body.catalog_id):
+                ok = delete_range(range_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not ok:
+        raise HTTPException(status_code=404, detail="Range not found.")
+    return {"ok": True}
 
 
 @app.get("/api/catalog/range-rules", response_model=list[RangeRuleItem])

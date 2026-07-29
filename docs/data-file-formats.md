@@ -7,6 +7,7 @@ NOVA ingests telemetry from CSV, Parquet, Arrow/Feather, HDF5, and TDMS files. E
 - **Time index** — One column or dataset defines sample timestamps. It is used for plotting and alignment but does **not** appear in the channel list.
 - **Channels** — Numeric columns/datasets with the same row count as the time index (except TDMS; see below).
 - **Units** — Optional. CSV can encode units in headers; Parquet/Arrow can store `unit` in field metadata; HDF5/TDMS use dataset/channel properties.
+- **Ingest output** — Per-channel Parquet always includes `timestamp_utc` (absolute UTC), `x_ms` (epoch milliseconds), and `y`. Relative inputs such as `time_s` are anchored so the first sample equals ingest wall-clock UTC (`t0_utc` on the test row).
 
 Recognized time column names (first match wins): `timestamp_utc`, `time`, `timestamp`, `datetime`, `time_s`, `x_ms`, `TIME`. You can also pick any column via **Time Index Channel** in the configure modal.
 

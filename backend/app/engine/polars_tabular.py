@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
 import polars as pl
 
 from ..services.file_sources import (
@@ -23,6 +27,33 @@ def _epoch_valid_expr(time_col: str) -> pl.Expr:
         .then(pl.lit(True))
         .otherwise(pl.col(time_col) > 1e8)
     )
+
+
+def _looks_relative_numeric(df: pl.DataFrame, time_col: str, *, force_unit: str | None) -> bool:
+    """Elapsed-time numerics (e.g. time_s from 0) should be anchored to ingest wall clock."""
+    try:
+        stats = df.select(
+            pl.col(time_col).cast(pl.Float64, strict=False).min().alias("mn"),
+            pl.col(time_col).cast(pl.Float64, strict=False).max().alias("mx"),
+        ).row(0)
+        mn = float(stats[0]) if stats[0] is not None else 0.0
+        mx = float(stats[1]) if stats[1] is not None else 0.0
+    except Exception:
+        return False
+    name = str(time_col or "").strip().lower()
+    if force_unit == "ms":
+        # Absolute epoch ms are ~1e12+; elapsed ms stay much smaller.
+        return mx < 1e11 and mn >= 0
+    if force_unit in {"s", "us", "ns"}:
+        # Forced absolute unit: only treat as relative when clearly elapsed-scale.
+        if force_unit == "s":
+            return mx <= 1e8 and mn >= 0
+        if force_unit == "us":
+            return mx < 1e14 and mn >= 0
+        return mx < 1e17 and mn >= 0
+    if name in {"time_s", "time", "t", "elapsed_s", "elapsed"} and mx <= 1e8:
+        return True
+    return mx <= 1e8 and mn >= 0
 
 
 def _numeric_times_to_datetime_expr(time_col: str, *, force_unit: str | None = None) -> pl.Expr:
@@ -80,13 +111,37 @@ def _apply_units_in_headers_polars(
     return df, unit_map
 
 
+def anchor_relative_time_to_ingest_utc(
+    df: pl.DataFrame,
+    *,
+    was_relative: bool,
+    t0_utc: datetime | None = None,
+) -> tuple[pl.DataFrame, datetime]:
+    """Shift relative __time__ so the first sample equals ingest wall-clock UTC."""
+    if df.is_empty() or "__time__" not in df.columns:
+        raise ValueError("Frame has no __time__ column to anchor.")
+    t0 = t0_utc or datetime.now(timezone.utc)
+    if t0.tzinfo is None:
+        t0 = t0.replace(tzinfo=timezone.utc)
+    if not was_relative:
+        return df, t0
+    min_t = df.select(pl.col("__time__").min()).item()
+    if min_t is None:
+        return df, t0
+    if getattr(min_t, "tzinfo", None) is None:
+        min_t = min_t.replace(tzinfo=timezone.utc)
+    delta = t0 - min_t
+    df = df.with_columns((pl.col("__time__") + delta).alias("__time__"))
+    return df, t0
+
+
 def _normalize_time_frame(
     df: pl.DataFrame,
     *,
     time_col: str | None,
     source_label: str,
     force_ms_for_x_ms: bool = False,
-) -> tuple[pl.DataFrame, str]:
+) -> tuple[pl.DataFrame, str, bool]:
     if df.is_empty():
         raise ValueError(f"{source_label} file has no data rows.")
 
@@ -99,8 +154,10 @@ def _normalize_time_frame(
         )
 
     dtype = df.schema[resolved_time_col]
+    was_relative = False
     if dtype.is_numeric():
         force_unit = "ms" if force_ms_for_x_ms and resolved_time_col == "x_ms" else None
+        was_relative = _looks_relative_numeric(df, resolved_time_col, force_unit=force_unit)
         df = df.with_columns(
             _numeric_times_to_datetime_expr(resolved_time_col, force_unit=force_unit).alias("__time__")
         )
@@ -120,7 +177,7 @@ def _normalize_time_frame(
     df = df.sort("__time__")
     if df.is_empty():
         raise ValueError(f"{source_label} time column '{resolved_time_col}' could not be parsed as timestamps.")
-    return df, resolved_time_col
+    return df, resolved_time_col, was_relative
 
 
 def normalize_csv_polars(
@@ -128,24 +185,25 @@ def normalize_csv_polars(
     *,
     units_in_headers: bool = False,
     time_col: str | None = None,
-) -> tuple[pl.DataFrame, dict[str, str | None], str]:
+) -> tuple[pl.DataFrame, dict[str, str | None], str, datetime]:
     try:
         df = pl.read_csv(file_path, infer_schema_length=10000, ignore_errors=False)
     except Exception as exc:
         raise ValueError(f"Unable to read CSV contents: {exc}") from exc
 
-    df, resolved_time_col = _normalize_time_frame(
+    df, resolved_time_col, was_relative = _normalize_time_frame(
         df,
         time_col=time_col,
         source_label="CSV",
     )
+    df, t0_utc = anchor_relative_time_to_ingest_utc(df, was_relative=was_relative)
     unit_map: dict[str, str | None] = {}
     if units_in_headers:
         df, unit_map = _apply_units_in_headers_polars(
             df,
             skip_columns={"__time__", resolved_time_col},
         )
-    return df, unit_map, resolved_time_col
+    return df, unit_map, resolved_time_col, t0_utc
 
 
 def normalize_tabular_polars(
@@ -154,7 +212,7 @@ def normalize_tabular_polars(
     source_type: str,
     time_col: str | None = None,
     units_in_headers: bool = False,
-) -> tuple[pl.DataFrame, dict[str, str | None], str]:
+) -> tuple[pl.DataFrame, dict[str, str | None], str, datetime]:
     try:
         if source_type == "parquet":
             df = pl.read_parquet(file_path)
@@ -164,12 +222,13 @@ def normalize_tabular_polars(
     except Exception as exc:
         raise ValueError(f"Unable to read {source_type.upper()} contents: {exc}") from exc
 
-    df, resolved_time_col = _normalize_time_frame(
+    df, resolved_time_col, was_relative = _normalize_time_frame(
         df,
         time_col=time_col,
         source_label=source_type.upper(),
         force_ms_for_x_ms=True,
     )
+    df, t0_utc = anchor_relative_time_to_ingest_utc(df, was_relative=was_relative)
     unit_map = _tabular_channel_units(file_path, source_type)
     if units_in_headers:
         df, header_unit_map = _apply_units_in_headers_polars(
@@ -179,7 +238,7 @@ def normalize_tabular_polars(
         for col, unit in header_unit_map.items():
             if unit:
                 unit_map[col] = unit
-    return df, unit_map, resolved_time_col
+    return df, unit_map, resolved_time_col, t0_utc
 
 
 def write_channel_parquets_from_polars(
@@ -190,7 +249,7 @@ def write_channel_parquets_from_polars(
     skip_columns: set[str] | None = None,
     sanitize_name,
 ) -> tuple[list[dict[str, Any]], dict[str, float] | None]:
-    """Write per-channel Parquet files with columns x_ms, y. Returns channel rows + bounds."""
+    """Write per-channel Parquet files with timestamp_utc, x_ms, y."""
     import pyarrow as pa
     import pyarrow.parquet as pq
 
@@ -200,13 +259,13 @@ def write_channel_parquets_from_polars(
     tmin_ms: float | None = None
     tmax_ms: float | None = None
 
-    # Convert Datetime[us, UTC] -> epoch ms
     with_ms = df.with_columns(
-        (pl.col("__time__").dt.epoch("ms").cast(pl.Float64)).alias("x_ms")
+        (pl.col("__time__").dt.epoch("ms").cast(pl.Float64)).alias("x_ms"),
+        pl.col("__time__").alias("timestamp_utc"),
     )
 
     for col in with_ms.columns:
-        if col in {"__time__", "x_ms"} or col in excluded:
+        if col in {"__time__", "x_ms", "timestamp_utc"} or col in excluded:
             continue
         dtype = with_ms.schema[col]
         if not dtype.is_numeric():
@@ -214,10 +273,11 @@ def write_channel_parquets_from_polars(
 
         sub = (
             with_ms.select(
+                pl.col("timestamp_utc"),
                 pl.col("x_ms"),
                 pl.col(col).cast(pl.Float64, strict=False).alias("y"),
             )
-            .drop_nulls()
+            .drop_nulls(subset=["x_ms", "y"])
         )
         if sub.is_empty():
             continue
@@ -228,6 +288,7 @@ def write_channel_parquets_from_polars(
         y_meta = {b"unit": str(unit).encode("utf-8")} if unit else None
         schema = pa.schema(
             [
+                pa.field("timestamp_utc", pa.timestamp("us", tz="UTC")),
                 pa.field("x_ms", pa.float64()),
                 pa.field("y", pa.float64(), metadata=y_meta),
             ]

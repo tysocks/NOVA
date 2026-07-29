@@ -17,6 +17,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen
 HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 MAX_PORT = 8010
+BACKEND_HEALTH_TIMEOUT_S = 180.0
 
 
 def port_is_listening(host: str, port: int) -> bool:
@@ -36,7 +37,7 @@ def fetch_nova_health(port: int) -> bool:
         return False
 
 
-def wait_for_nova_health(port: int, timeout_s: float = 20.0) -> bool:
+def wait_for_nova_health(port: int, timeout_s: float = BACKEND_HEALTH_TIMEOUT_S) -> bool:
     start = time.time()
     while time.time() - start < timeout_s:
         if fetch_nova_health(port):
@@ -150,10 +151,14 @@ def resolve_backend_port(
         log_file=log_file,
         port=free_port,
     )
-    if not wait_for_nova_health(free_port, timeout_s=25.0):
+    if not wait_for_nova_health(free_port, timeout_s=BACKEND_HEALTH_TIMEOUT_S):
         extra = ""
         if server.poll() is not None:
             extra = f"\nBackend process exited early (code {server.returncode})."
+        else:
+            extra = (
+                f"\nBackend did not become healthy within {int(BACKEND_HEALTH_TIMEOUT_S)} seconds."
+            )
         if blocked:
             extra += (
                 f"\nPort {DEFAULT_PORT} is used by another application; "

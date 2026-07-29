@@ -111,12 +111,15 @@ def clean_duckdb_row(row: dict) -> dict:
     catalog_path = str(row.get("catalog_path") or "").strip()
     if not catalog_path:
         raise ValueError("catalog_path is required for DuckDB catalogs")
+    catalog_path_obj = Path(catalog_path).expanduser()
+    if catalog_path_obj.exists() and catalog_path_obj.is_dir():
+        raise ValueError("catalog_path must be a DuckDB file, not a directory")
     parquet_root = str(row.get("parquet_root") or "").strip() or default_parquet_root_for(catalog_path)
     return {
         "id": str(row.get("id") or uuid.uuid4()),
         "type": "duckdb",
         "name": str(row.get("name") or "DuckDB Catalog").strip() or "DuckDB Catalog",
-        "catalog_path": str(Path(catalog_path).expanduser()),
+        "catalog_path": str(catalog_path_obj),
         "parquet_root": str(Path(parquet_root).expanduser()),
         "default_ingest_mode": "permanent",
         "is_default": bool(row.get("is_default")),
@@ -319,6 +322,11 @@ def test_duckdb_profile(profile: dict) -> dict:
     path = Path(str(profile.get("catalog_path") or "")).expanduser()
     if not str(path):
         return {"ok": False, "error": "catalog_path is required"}
+    if path.exists() and path.is_dir():
+        return {
+            "ok": False,
+            "error": f"catalog_path must be a DuckDB file, not a directory: {path}",
+        }
     try:
         con = connect_catalog(path)
         try:

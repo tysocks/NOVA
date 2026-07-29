@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone
@@ -13,8 +14,10 @@ from ..models import (
     RangeCreateRequest,
     RangeItem,
     RangeParameterItem,
+    RangeParameterWrite,
     RangeRuleCreateRequest,
     RangeRuleItem,
+    RangeUpdateRequest,
     ResultItem,
     ResultWriteRequest,
     TestParameterItem,
@@ -77,6 +80,147 @@ def _parse_dt(value: Any) -> datetime | None:
 def _next_id(con: duckdb.DuckDBPyConnection, table: str, column: str) -> int:
     row = con.execute(f"SELECT COALESCE(MAX({column}), 0) + 1 FROM {table}").fetchone()
     return int(row[0] if row and row[0] is not None else 1)
+
+
+def _tags_to_json(tags: list[str] | None) -> str:
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for tag in tags or []:
+        text = str(tag or "").strip()
+        if not text:
+            continue
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(text)
+    return json.dumps(cleaned)
+
+
+def _tags_from_json(raw: Any) -> list[str]:
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return [str(t).strip() for t in raw if str(t).strip()]
+    text = str(raw).strip()
+    if not text:
+        return []
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, list):
+            return [str(t).strip() for t in parsed if str(t).strip()]
+    except Exception:
+        pass
+    return [text]
+
+
+def _load_range_parameters(con: duckdb.DuckDBPyConnection, range_id: int) -> list[RangeParameterItem]:
+    rows = con.execute(
+        """
+        SELECT range_id, key, value_text, value_num
+        FROM range_parameters
+        WHERE range_id = ?
+        ORDER BY key
+        """,
+        [range_id],
+    ).fetchall()
+    return [
+        RangeParameterItem(
+            range_id=int(row[0]),
+            key=str(row[1]),
+            value_text=row[2],
+            value_num=row[3],
+        )
+        for row in rows
+    ]
+
+
+def _replace_range_parameters(
+    con: duckdb.DuckDBPyConnection,
+    range_id: int,
+    parameters: list[RangeParameterWrite] | None,
+) -> None:
+    con.execute("DELETE FROM range_parameters WHERE range_id = ?", [range_id])
+    for param in parameters or []:
+        con.execute(
+            "INSERT INTO range_parameters (range_id, key, value_text, value_num) VALUES (?, ?, ?, ?)",
+            [range_id, param.key, param.value_text, param.value_num],
+        )
+
+
+def _row_to_range_item(
+    row: tuple[Any, ...],
+    *,
+    parameters: list[RangeParameterItem] | None = None,
+    catalog_id: str | None = None,
+    durability: str | None = "permanent",
+) -> RangeItem:
+    return RangeItem(
+        range_id=int(row[0]),
+        test_id=int(row[1]),
+        catalog_id=catalog_id,
+        durability=durability,
+        name=str(row[2]),
+        label=row[3],
+        status=row[4],
+        start_time=_parse_dt(row[5]) or _utc_now(),
+        end_time=_parse_dt(row[6]) or _utc_now(),
+        start_ms=row[7],
+        end_ms=row[8],
+        color=row[9],
+        tags=_tags_from_json(row[10]),
+        parent_range_id=int(row[11]) if row[11] is not None else None,
+        source=str(row[12] or "user"),
+        rule_id=row[13],
+        notes=row[14],
+        parameters=parameters or [],
+    )
+
+
+def _validate_catalog_parent_containment(
+    *,
+    con: duckdb.DuckDBPyConnection,
+    test_id: int,
+    range_id: int | None,
+    parent_range_id: int | None,
+    start_time: datetime,
+    end_time: datetime,
+) -> None:
+    if parent_range_id is None:
+        return
+    if range_id is not None and int(parent_range_id) == int(range_id):
+        raise ValueError("A range cannot be its own parent.")
+    row = con.execute(
+        """
+        SELECT
+          range_id,
+          test_id,
+          name,
+          label,
+          status,
+          CAST(start_time AS VARCHAR),
+          CAST(end_time AS VARCHAR),
+          start_ms,
+          end_ms,
+          color,
+          tags,
+          parent_range_id,
+          source,
+          rule_id,
+          notes
+        FROM ranges
+        WHERE range_id = ?
+        LIMIT 1
+        """,
+        [parent_range_id],
+    ).fetchone()
+    if not row:
+        raise ValueError(f"Parent range {parent_range_id} not found.")
+    parent = _row_to_range_item(row)
+    if parent.test_id != test_id:
+        raise ValueError("Parent range must belong to the same source/test.")
+    if start_time < parent.start_time or end_time > parent.end_time:
+        raise ValueError("Child ranges must be fully contained within the selected parent range.")
 
 
 def connect_catalog(catalog_path: str | Path | None = None) -> duckdb.DuckDBPyConnection:
@@ -150,11 +294,14 @@ def ensure_catalog_schema(con: duckdb.DuckDBPyConnection | None = None) -> None:
               test_id BIGINT NOT NULL,
               name VARCHAR NOT NULL,
               label VARCHAR,
+              status VARCHAR,
               start_time TIMESTAMPTZ NOT NULL,
               end_time TIMESTAMPTZ NOT NULL,
               start_ms DOUBLE,
               end_ms DOUBLE,
               color VARCHAR,
+              tags VARCHAR,
+              parent_range_id BIGINT,
               source VARCHAR NOT NULL,
               rule_id BIGINT,
               notes VARCHAR,
@@ -163,6 +310,13 @@ def ensure_catalog_schema(con: duckdb.DuckDBPyConnection | None = None) -> None:
             )
             """
         )
+        range_cols = {str(r[1]) for r in con.execute("PRAGMA table_info('ranges')").fetchall()}
+        if "status" not in range_cols:
+            con.execute("ALTER TABLE ranges ADD COLUMN status VARCHAR")
+        if "tags" not in range_cols:
+            con.execute("ALTER TABLE ranges ADD COLUMN tags VARCHAR")
+        if "parent_range_id" not in range_cols:
+            con.execute("ALTER TABLE ranges ADD COLUMN parent_range_id BIGINT")
         con.execute(
             """
             CREATE TABLE IF NOT EXISTS range_parameters (
@@ -229,6 +383,7 @@ def register_ingested_artifact(
     start_time = datetime.fromtimestamp(start_ms / 1000.0, tz=timezone.utc) if start_ms is not None else None
     end_time = datetime.fromtimestamp(end_ms / 1000.0, tz=timezone.utc) if end_ms is not None else None
     duration_s = (end_time - start_time).total_seconds() if start_time and end_time else None
+    t0_utc = _parse_dt(manifest.get("t0_utc")) or start_time
     now = _utc_now()
     con = connect_catalog()
     try:
@@ -250,7 +405,7 @@ def register_ingested_artifact(
                 start_time,
                 end_time,
                 duration_s,
-                start_time,
+                t0_utc,
                 source_type,
                 str(Path(file_path).resolve()),
                 artifact_id,
@@ -498,29 +653,43 @@ def list_test_parameters(test_id: int) -> list[TestParameterItem]:
 
 
 def create_range(request: RangeCreateRequest) -> RangeItem:
+    if request.test_id is None:
+        raise ValueError("test_id is required for catalog ranges.")
     con = connect_catalog()
     now = _utc_now()
     try:
         range_id = _next_id(con, "ranges", "range_id")
         start_ms = request.start_time.timestamp() * 1000.0
         end_ms = request.end_time.timestamp() * 1000.0
+        tags_json = _tags_to_json(request.tags)
+        _validate_catalog_parent_containment(
+            con=con,
+            test_id=request.test_id,
+            range_id=None,
+            parent_range_id=request.parent_range_id,
+            start_time=request.start_time,
+            end_time=request.end_time,
+        )
         con.execute(
             """
             INSERT INTO ranges (
-              range_id, test_id, name, label, start_time, end_time, start_ms, end_ms,
-              color, source, rule_id, notes, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              range_id, test_id, name, label, status, start_time, end_time, start_ms, end_ms,
+              color, tags, parent_range_id, source, rule_id, notes, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 range_id,
                 request.test_id,
                 request.name,
                 request.label,
+                request.status,
                 request.start_time,
                 request.end_time,
                 start_ms,
                 end_ms,
                 request.color,
+                tags_json,
+                request.parent_range_id,
                 request.source,
                 request.rule_id,
                 request.notes,
@@ -528,30 +697,33 @@ def create_range(request: RangeCreateRequest) -> RangeItem:
                 now,
             ],
         )
-        for param in request.parameters:
-            con.execute(
-                "INSERT INTO range_parameters (range_id, key, value_text, value_num) VALUES (?, ?, ?, ?)",
-                [range_id, param.key, param.value_text, param.value_num],
-            )
+        _replace_range_parameters(con, range_id, request.parameters)
+        params = _load_range_parameters(con, range_id)
         return RangeItem(
             range_id=range_id,
             test_id=request.test_id,
+            catalog_id=request.catalog_id,
+            durability="permanent",
             name=request.name,
             label=request.label,
+            status=request.status,
             start_time=request.start_time,
             end_time=request.end_time,
             start_ms=start_ms,
             end_ms=end_ms,
             color=request.color,
+            tags=list(request.tags or []),
+            parent_range_id=request.parent_range_id,
             source=request.source,
             rule_id=request.rule_id,
             notes=request.notes,
+            parameters=params,
         )
     finally:
         con.close()
 
 
-def list_ranges(test_id: int) -> list[RangeItem]:
+def list_ranges(test_id: int, *, catalog_id: str | None = None) -> list[RangeItem]:
     con = connect_catalog()
     try:
         rows = con.execute(
@@ -561,11 +733,14 @@ def list_ranges(test_id: int) -> list[RangeItem]:
               test_id,
               name,
               label,
+              status,
               CAST(start_time AS VARCHAR),
               CAST(end_time AS VARCHAR),
               start_ms,
               end_ms,
               color,
+              tags,
+              parent_range_id,
               source,
               rule_id,
               notes
@@ -575,26 +750,149 @@ def list_ranges(test_id: int) -> list[RangeItem]:
             """,
             [test_id],
         ).fetchall()
-        return [
-            RangeItem(
-                range_id=int(row[0]),
-                test_id=int(row[1]),
-                name=str(row[2]),
-                label=row[3],
-                start_time=_parse_dt(row[4]) or _utc_now(),
-                end_time=_parse_dt(row[5]) or _utc_now(),
-                start_ms=row[6],
-                end_ms=row[7],
-                color=row[8],
-                source=str(row[9]),
-                rule_id=row[10],
-                notes=row[11],
-            )
-            for row in rows
-        ]
+        out: list[RangeItem] = []
+        for row in rows:
+            params = _load_range_parameters(con, int(row[0]))
+            out.append(_row_to_range_item(row, parameters=params, catalog_id=catalog_id))
+        return out
     finally:
         con.close()
 
+
+def get_range(range_id: int, *, catalog_id: str | None = None) -> RangeItem | None:
+    con = connect_catalog()
+    try:
+        row = con.execute(
+            """
+            SELECT
+              range_id,
+              test_id,
+              name,
+              label,
+              status,
+              CAST(start_time AS VARCHAR),
+              CAST(end_time AS VARCHAR),
+              start_ms,
+              end_ms,
+              color,
+              tags,
+              parent_range_id,
+              source,
+              rule_id,
+              notes
+            FROM ranges
+            WHERE range_id = ?
+            LIMIT 1
+            """,
+            [range_id],
+        ).fetchone()
+        if not row:
+            return None
+        params = _load_range_parameters(con, int(row[0]))
+        return _row_to_range_item(row, parameters=params, catalog_id=catalog_id)
+    finally:
+        con.close()
+
+
+def update_range(range_id: int, request: RangeUpdateRequest) -> RangeItem:
+    existing = get_range(range_id, catalog_id=request.catalog_id)
+    if existing is None:
+        raise ValueError(f"Range {range_id} not found.")
+    name = request.name if request.name is not None else existing.name
+    label = request.label if request.label is not None else existing.label
+    status = request.status if request.status is not None else existing.status
+    start_time = request.start_time if request.start_time is not None else existing.start_time
+    end_time = request.end_time if request.end_time is not None else existing.end_time
+    color = request.color if request.color is not None else existing.color
+    tags = request.tags if request.tags is not None else existing.tags
+    parent_range_id = existing.parent_range_id
+    if "parent_range_id" in request.model_fields_set:
+        parent_range_id = request.parent_range_id
+    notes = request.notes if request.notes is not None else existing.notes
+    if end_time <= start_time:
+        raise ValueError("end_time must be after start_time.")
+    start_ms = start_time.timestamp() * 1000.0
+    end_ms = end_time.timestamp() * 1000.0
+    now = _utc_now()
+    con = connect_catalog()
+    try:
+        _validate_catalog_parent_containment(
+            con=con,
+            test_id=int(existing.test_id or 0),
+            range_id=range_id,
+            parent_range_id=parent_range_id,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        con.execute(
+            """
+            UPDATE ranges SET
+              name = ?, label = ?, status = ?, start_time = ?, end_time = ?,
+              start_ms = ?, end_ms = ?, color = ?, tags = ?, parent_range_id = ?,
+              notes = ?, updated_at = ?
+            WHERE range_id = ?
+            """,
+            [
+                name,
+                label,
+                status,
+                start_time,
+                end_time,
+                start_ms,
+                end_ms,
+                color,
+                _tags_to_json(tags),
+                parent_range_id,
+                notes,
+                now,
+                range_id,
+            ],
+        )
+        if request.parameters is not None:
+            _replace_range_parameters(con, range_id, request.parameters)
+        params = _load_range_parameters(con, range_id)
+        return RangeItem(
+            range_id=range_id,
+            test_id=existing.test_id,
+            catalog_id=request.catalog_id or existing.catalog_id,
+            durability="permanent",
+            name=name,
+            label=label,
+            status=status,
+            start_time=start_time,
+            end_time=end_time,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            color=color,
+            tags=list(tags or []),
+            parent_range_id=parent_range_id,
+            source=existing.source,
+            rule_id=existing.rule_id,
+            notes=notes,
+            parameters=params,
+        )
+    finally:
+        con.close()
+
+
+def delete_range(range_id: int) -> bool:
+    con = connect_catalog()
+    try:
+        existing = con.execute(
+            "SELECT range_id FROM ranges WHERE range_id = ?",
+            [range_id],
+        ).fetchone()
+        if not existing:
+            return False
+        con.execute("DELETE FROM range_parameters WHERE range_id = ?", [range_id])
+        con.execute(
+            "UPDATE ranges SET parent_range_id = NULL WHERE parent_range_id = ?",
+            [range_id],
+        )
+        con.execute("DELETE FROM ranges WHERE range_id = ?", [range_id])
+        return True
+    finally:
+        con.close()
 
 def create_range_rule(request: RangeRuleCreateRequest) -> RangeRuleItem:
     con = connect_catalog()
