@@ -26,6 +26,7 @@ from .engine.range_detect import apply_range_rule_to_test
 from .engine.range_store import (
     create_temp_range,
     delete_temp_range,
+    ensure_source_range_from_manifest,
     list_temp_ranges,
     update_temp_range,
 )
@@ -540,13 +541,45 @@ def _list_ranges_for_source(ref: RangeSourceRef) -> list[RangeItem]:
 @app.post("/api/ranges/query", response_model=list[RangeItem])
 def query_ranges(body: RangeListRequest) -> list[RangeItem]:
     out: list[RangeItem] = []
+    seen_keys: set[tuple[int, str | None, int | None]] = set()
     for ref in body.sources or []:
         try:
-            out.extend(_list_ranges_for_source(ref))
+            for item in _list_ranges_for_source(ref):
+                key = (item.range_id, item.artifact_id, item.test_id)
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                out.append(item)
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     out.sort(key=lambda r: (r.start_ms or 0.0, r.range_id))
     return out
+
+
+@app.post("/api/ranges/ensure-source", response_model=RangeItem | None)
+def ensure_source_range(body: RangeSourceRef) -> RangeItem | None:
+    """Ensure the locked full-span source range exists for an indexed temporary file source."""
+    try:
+        if not _is_temporary_range_target(body):
+            return None
+        artifact_id = str(body.artifact_id or "").strip()
+        if not artifact_id:
+            return None
+        item = ensure_source_range_from_manifest(artifact_id, source_path=body.file_path)
+        if item is None:
+            return None
+        return item.model_copy(
+            update={
+                "artifact_id": artifact_id,
+                "durability": "temporary",
+                "source_id": body.source_id,
+                "source_name": body.source_name,
+                "catalog_id": body.catalog_id,
+                "test_id": body.test_id,
+            }
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/ranges", response_model=RangeItem)

@@ -307,7 +307,7 @@ class RangeCreateRequest(BaseModel):
     tags: list[str] = Field(default_factory=list)
     parent_range_id: int | None = None
     notes: str | None = None
-    source: Literal["user", "rule"] = "user"
+    source: Literal["user", "rule", "source"] = "user"
     rule_id: int | None = None
     parameters: list[RangeParameterWrite] = Field(default_factory=list)
     catalog_id: str | None = None

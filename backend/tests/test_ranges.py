@@ -255,6 +255,7 @@ def test_unified_ranges_api_permanent_and_temp(monkeypatch, tmp_path: Path):
     remaining = list_temp_ranges(temp_manifest["artifact_id"], source_path=str(csv_path))
     assert len(remaining) == 1
     assert remaining[0].name == "hotfire"
+    assert remaining[0].source == "source"
 
 
 def test_ingest_creates_default_full_span_range(monkeypatch, tmp_path: Path):
@@ -267,5 +268,57 @@ def test_ingest_creates_default_full_span_range(monkeypatch, tmp_path: Path):
     rows = list_temp_ranges(manifest["artifact_id"], source_path=str(csv_path))
     assert len(rows) == 1
     assert rows[0].name == "full_span"
+    assert rows[0].source == "source"
+    assert rows[0].parent_range_id is None
     assert rows[0].start_ms == manifest["time_bounds"]["start_ms"]
     assert rows[0].end_ms == manifest["time_bounds"]["end_ms"]
+
+
+def test_user_ranges_nest_under_source_range(monkeypatch, tmp_path: Path):
+    _patch_sessions(monkeypatch, tmp_path / "sessions")
+    _patch_catalog(monkeypatch, tmp_path / "local.duckdb")
+    csv_path = tmp_path / "nested.csv"
+    csv_path.write_text("time_s,THRUST\n0.0,10.0\n0.5,20.0\n1.0,30.0\n", encoding="utf-8")
+    manifest = run_ingest("csv", str(csv_path), ingest_mode="temporary")
+    source_rows = list_temp_ranges(manifest["artifact_id"], source_path=str(csv_path))
+    source = source_rows[0]
+    start = datetime.fromtimestamp(source.start_ms / 1000.0, tz=timezone.utc)
+    end = start + timedelta(milliseconds=200)
+    created = create_temp_range(
+        RangeCreateRequest(
+            artifact_id=manifest["artifact_id"],
+            file_path=str(csv_path),
+            durability="temporary",
+            name="Ignition",
+            start_time=start,
+            end_time=end,
+        )
+    )
+    assert created.parent_range_id == source.range_id
+    assert created.source == "user"
+
+    locked = client.patch(
+        f"/api/ranges/{source.range_id}",
+        json={
+            "artifact_id": manifest["artifact_id"],
+            "file_path": str(csv_path),
+            "durability": "temporary",
+            "start_time": (start + timedelta(seconds=1)).isoformat(),
+            "end_time": (start + timedelta(seconds=2)).isoformat(),
+        },
+    )
+    assert locked.status_code == 200, locked.text
+    assert locked.json()["start_ms"] == source.start_ms
+    assert locked.json()["end_ms"] == source.end_ms
+
+    deleted = client.request(
+        "DELETE",
+        f"/api/ranges/{source.range_id}",
+        json={
+            "artifact_id": manifest["artifact_id"],
+            "file_path": str(csv_path),
+            "durability": "temporary",
+        },
+    )
+    assert deleted.status_code == 400, deleted.text
+    assert "cannot be deleted" in deleted.json()["detail"].lower()

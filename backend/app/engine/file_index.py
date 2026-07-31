@@ -121,6 +121,18 @@ def _finalize_manifest(
     return manifest
 
 
+def _source_range_name(file_path: Path, manifest: dict[str, Any] | None = None) -> str:
+    """Default source-range name is the file name (basename without extension)."""
+    stem = str(file_path.stem or "").strip()
+    if stem:
+        return stem
+    name = str(file_path.name or "").strip()
+    if name:
+        return name
+    run_code = str((manifest or {}).get("run_code") or "").strip()
+    return run_code or "Source"
+
+
 def _ensure_default_source_range(
     *,
     manifest: dict[str, Any],
@@ -136,43 +148,30 @@ def _ensure_default_source_range(
         return
     start_time = datetime.fromtimestamp(float(start_ms) / 1000.0, tz=timezone.utc)
     end_time = datetime.fromtimestamp(float(end_ms) / 1000.0, tz=timezone.utc)
-    name = str(manifest.get("run_code") or file_path.stem or "Range")
+    name = _source_range_name(file_path, manifest)
     if mode == "temporary":
-        from .range_store import create_temp_range, list_temp_ranges
+        from .range_store import ensure_temp_source_range
 
         artifact_id = str(manifest.get("artifact_id") or "")
-        if not artifact_id or list_temp_ranges(artifact_id):
+        if not artifact_id:
             return
-        from ..models import RangeCreateRequest
-
-        create_temp_range(
-            RangeCreateRequest(
-                artifact_id=artifact_id,
-                file_path=str(file_path.resolve()),
-                durability="temporary",
-                name=name,
-                start_time=start_time,
-                end_time=end_time,
-                source="user",
-            )
-        )
-        return
-
-    from .catalog_store import create_range, list_ranges
-    from ..models import RangeCreateRequest
-
-    if list_ranges(test_id, catalog_id=profile_catalog_id):
-        return
-    create_range(
-        RangeCreateRequest(
-            test_id=test_id,
-            catalog_id=profile_catalog_id,
-            durability="permanent",
+        ensure_temp_source_range(
+            artifact_id=artifact_id,
+            file_path=str(file_path.resolve()),
             name=name,
             start_time=start_time,
             end_time=end_time,
-            source="user",
         )
+        return
+
+    from .catalog_store import ensure_catalog_source_range
+
+    ensure_catalog_source_range(
+        test_id=test_id,
+        catalog_id=profile_catalog_id,
+        name=name,
+        start_time=start_time,
+        end_time=end_time,
     )
 
 

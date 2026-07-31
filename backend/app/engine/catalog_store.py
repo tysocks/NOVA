@@ -652,21 +652,185 @@ def list_test_parameters(test_id: int) -> list[TestParameterItem]:
         con.close()
 
 
+def _find_catalog_source_range_id(
+    con: duckdb.DuckDBPyConnection,
+    test_id: int,
+    *,
+    exclude_id: int | None = None,
+) -> int | None:
+    rows = con.execute(
+        "SELECT range_id FROM ranges WHERE test_id = ? AND source = 'source' ORDER BY range_id",
+        [test_id],
+    ).fetchall()
+    for row in rows:
+        rid = int(row[0])
+        if exclude_id is not None and rid == int(exclude_id):
+            continue
+        return rid
+    return None
+
+
+def _reparent_catalog_roots_under_source(
+    con: duckdb.DuckDBPyConnection,
+    test_id: int,
+    source_range_id: int,
+) -> None:
+    con.execute(
+        """
+        UPDATE ranges
+        SET parent_range_id = NULL
+        WHERE range_id = ? AND test_id = ?
+        """,
+        [source_range_id, test_id],
+    )
+    con.execute(
+        """
+        UPDATE ranges AS child
+        SET parent_range_id = ?
+        FROM ranges AS src
+        WHERE src.range_id = ?
+          AND src.test_id = ?
+          AND child.test_id = ?
+          AND child.range_id <> ?
+          AND child.parent_range_id IS NULL
+          AND child.start_time >= src.start_time
+          AND child.end_time <= src.end_time
+        """,
+        [source_range_id, source_range_id, test_id, test_id, source_range_id],
+    )
+
+
+def _coerce_catalog_parent_to_source_range(
+    con: duckdb.DuckDBPyConnection,
+    test_id: int,
+    *,
+    start_time: datetime,
+    end_time: datetime,
+    exclude_id: int | None = None,
+) -> int | None:
+    source_id = _find_catalog_source_range_id(con, test_id, exclude_id=exclude_id)
+    if source_id is None:
+        return None
+    try:
+        _validate_catalog_parent_containment(
+            con=con,
+            test_id=test_id,
+            range_id=exclude_id,
+            parent_range_id=source_id,
+            start_time=start_time,
+            end_time=end_time,
+        )
+    except ValueError:
+        return None
+    return source_id
+
+
+def ensure_catalog_source_range(
+    *,
+    test_id: int,
+    catalog_id: str | None,
+    name: str,
+    start_time: datetime,
+    end_time: datetime,
+    tags: list[str] | None = None,
+) -> RangeItem:
+    existing = list_ranges(test_id, catalog_id=catalog_id)
+    source = next((r for r in existing if str(r.source or "") == "source"), None)
+    if source is None:
+        legacy = next(
+            (
+                r
+                for r in existing
+                if r.parent_range_id is None
+                and r.start_ms is not None
+                and r.end_ms is not None
+                and abs(float(r.start_ms) - float(start_time.timestamp() * 1000.0)) < 1e-6
+                and abs(float(r.end_ms) - float(end_time.timestamp() * 1000.0)) < 1e-6
+            ),
+            None,
+        )
+        if legacy is None and existing:
+            candidate = next((r for r in existing if r.parent_range_id is None), None)
+            if candidate is not None and int(candidate.range_id) == 1:
+                legacy = candidate
+        if legacy is not None:
+            con = connect_catalog()
+            now = _utc_now()
+            try:
+                con.execute(
+                    """
+                    UPDATE ranges SET
+                      name = ?, start_time = ?, end_time = ?, start_ms = ?, end_ms = ?,
+                      parent_range_id = NULL, source = 'source', tags = ?, updated_at = ?
+                    WHERE range_id = ?
+                    """,
+                    [
+                        name or legacy.name,
+                        start_time,
+                        end_time,
+                        float(start_time.timestamp() * 1000.0),
+                        float(end_time.timestamp() * 1000.0),
+                        _tags_to_json(tags if tags is not None else legacy.tags),
+                        now,
+                        legacy.range_id,
+                    ],
+                )
+                _reparent_catalog_roots_under_source(con, test_id, int(legacy.range_id))
+            finally:
+                con.close()
+            refreshed = get_range(int(legacy.range_id), catalog_id=catalog_id)
+            if refreshed is None:
+                raise ValueError("Failed to promote source range.")
+            return refreshed
+        return create_range(
+            RangeCreateRequest(
+                test_id=test_id,
+                catalog_id=catalog_id,
+                durability="permanent",
+                name=name,
+                start_time=start_time,
+                end_time=end_time,
+                tags=list(tags or []),
+                source="source",
+            )
+        )
+
+    con = connect_catalog()
+    try:
+        _reparent_catalog_roots_under_source(con, test_id, int(source.range_id))
+    finally:
+        con.close()
+    refreshed = get_range(int(source.range_id), catalog_id=catalog_id)
+    return refreshed or source
+
+
 def create_range(request: RangeCreateRequest) -> RangeItem:
     if request.test_id is None:
         raise ValueError("test_id is required for catalog ranges.")
     con = connect_catalog()
     now = _utc_now()
     try:
+        if request.source == "source" and _find_catalog_source_range_id(con, int(request.test_id)) is not None:
+            raise ValueError("A source range already exists for this source.")
         range_id = _next_id(con, "ranges", "range_id")
         start_ms = request.start_time.timestamp() * 1000.0
         end_ms = request.end_time.timestamp() * 1000.0
         tags_json = _tags_to_json(request.tags)
+        parent_range_id = request.parent_range_id
+        if request.source == "source":
+            parent_range_id = None
+        elif parent_range_id is None:
+            parent_range_id = _coerce_catalog_parent_to_source_range(
+                con,
+                int(request.test_id),
+                start_time=request.start_time,
+                end_time=request.end_time,
+            )
         _validate_catalog_parent_containment(
             con=con,
             test_id=request.test_id,
             range_id=None,
-            parent_range_id=request.parent_range_id,
+            parent_range_id=parent_range_id,
             start_time=request.start_time,
             end_time=request.end_time,
         )
@@ -689,7 +853,7 @@ def create_range(request: RangeCreateRequest) -> RangeItem:
                 end_ms,
                 request.color,
                 tags_json,
-                request.parent_range_id,
+                parent_range_id,
                 request.source,
                 request.rule_id,
                 request.notes,
@@ -697,6 +861,8 @@ def create_range(request: RangeCreateRequest) -> RangeItem:
                 now,
             ],
         )
+        if request.source == "source":
+            _reparent_catalog_roots_under_source(con, int(request.test_id), range_id)
         _replace_range_parameters(con, range_id, request.parameters)
         params = _load_range_parameters(con, range_id)
         return RangeItem(
@@ -713,7 +879,7 @@ def create_range(request: RangeCreateRequest) -> RangeItem:
             end_ms=end_ms,
             color=request.color,
             tags=list(request.tags or []),
-            parent_range_id=request.parent_range_id,
+            parent_range_id=parent_range_id,
             source=request.source,
             rule_id=request.rule_id,
             notes=request.notes,
@@ -726,6 +892,25 @@ def create_range(request: RangeCreateRequest) -> RangeItem:
 def list_ranges(test_id: int, *, catalog_id: str | None = None) -> list[RangeItem]:
     con = connect_catalog()
     try:
+        has_source = con.execute(
+            "SELECT 1 FROM ranges WHERE test_id = ? AND source = 'source' LIMIT 1",
+            [test_id],
+        ).fetchone()
+        if not has_source:
+            legacy = con.execute(
+                """
+                SELECT range_id FROM ranges
+                WHERE test_id = ? AND range_id = 1 AND parent_range_id IS NULL AND source = 'user'
+                LIMIT 1
+                """,
+                [test_id],
+            ).fetchone()
+            if legacy:
+                con.execute(
+                    "UPDATE ranges SET source = 'source' WHERE range_id = ?",
+                    [int(legacy[0])],
+                )
+                _reparent_catalog_roots_under_source(con, int(test_id), int(legacy[0]))
         rows = con.execute(
             """
             SELECT
@@ -801,13 +986,21 @@ def update_range(range_id: int, request: RangeUpdateRequest) -> RangeItem:
     name = request.name if request.name is not None else existing.name
     label = request.label if request.label is not None else existing.label
     status = request.status if request.status is not None else existing.status
-    start_time = request.start_time if request.start_time is not None else existing.start_time
-    end_time = request.end_time if request.end_time is not None else existing.end_time
+    if str(existing.source or "") == "source":
+        start_time = existing.start_time
+        end_time = existing.end_time
+    else:
+        start_time = request.start_time if request.start_time is not None else existing.start_time
+        end_time = request.end_time if request.end_time is not None else existing.end_time
     color = request.color if request.color is not None else existing.color
     tags = request.tags if request.tags is not None else existing.tags
     parent_range_id = existing.parent_range_id
     if "parent_range_id" in request.model_fields_set:
         parent_range_id = request.parent_range_id
+    if str(existing.source or "") == "source":
+        if parent_range_id is not None:
+            raise ValueError("Source ranges cannot have a parent.")
+        parent_range_id = None
     notes = request.notes if request.notes is not None else existing.notes
     if end_time <= start_time:
         raise ValueError("end_time must be after start_time.")
@@ -816,6 +1009,14 @@ def update_range(range_id: int, request: RangeUpdateRequest) -> RangeItem:
     now = _utc_now()
     con = connect_catalog()
     try:
+        if str(existing.source or "") != "source" and parent_range_id is None and existing.test_id is not None:
+            parent_range_id = _coerce_catalog_parent_to_source_range(
+                con,
+                int(existing.test_id),
+                start_time=start_time,
+                end_time=end_time,
+                exclude_id=range_id,
+            )
         _validate_catalog_parent_containment(
             con=con,
             test_id=int(existing.test_id or 0),
@@ -879,15 +1080,23 @@ def delete_range(range_id: int) -> bool:
     con = connect_catalog()
     try:
         existing = con.execute(
-            "SELECT range_id FROM ranges WHERE range_id = ?",
+            "SELECT range_id, source, test_id FROM ranges WHERE range_id = ?",
             [range_id],
         ).fetchone()
         if not existing:
             return False
+        if str(existing[1] or "") == "source":
+            raise ValueError("Source ranges cannot be deleted.")
+        test_id = int(existing[2]) if existing[2] is not None else None
+        fallback_parent = (
+            _find_catalog_source_range_id(con, test_id, exclude_id=range_id)
+            if test_id is not None
+            else None
+        )
         con.execute("DELETE FROM range_parameters WHERE range_id = ?", [range_id])
         con.execute(
-            "UPDATE ranges SET parent_range_id = NULL WHERE parent_range_id = ?",
-            [range_id],
+            "UPDATE ranges SET parent_range_id = ? WHERE parent_range_id = ?",
+            [fallback_parent, range_id],
         )
         con.execute("DELETE FROM ranges WHERE range_id = ?", [range_id])
         return True

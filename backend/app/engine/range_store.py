@@ -224,6 +224,169 @@ def restore_ranges_from_durable_sidecar(artifact_id: str, source_path: str) -> b
     return False
 
 
+def is_source_range_row(row: dict[str, Any] | RangeItem | None) -> bool:
+    if row is None:
+        return False
+    if isinstance(row, RangeItem):
+        return str(row.source or "") == "source"
+    return str(row.get("source") or "") == "source"
+
+
+def _find_source_range_id(rows: list[dict[str, Any]], *, exclude_id: int | None = None) -> int | None:
+    for row in rows:
+        if not isinstance(row, dict) or not is_source_range_row(row):
+            continue
+        rid = int(row.get("range_id") or -1)
+        if exclude_id is not None and rid == int(exclude_id):
+            continue
+        return rid
+    return None
+
+
+def _reparent_root_ranges_under_source(rows: list[dict[str, Any]], source_range_id: int) -> bool:
+    changed = False
+    source_row = next(
+        (
+            row
+            for row in rows
+            if isinstance(row, dict) and int(row.get("range_id") or -1) == int(source_range_id)
+        ),
+        None,
+    )
+    if source_row is None:
+        return False
+    source_item = _row_to_item(source_row, artifact_id=str(source_row.get("artifact_id") or ""))
+    for i, row in enumerate(rows):
+        if not isinstance(row, dict):
+            continue
+        rid = int(row.get("range_id") or -1)
+        if rid == int(source_range_id):
+            if row.get("parent_range_id") is not None:
+                rows[i] = dict(row)
+                rows[i]["parent_range_id"] = None
+                changed = True
+            continue
+        if row.get("parent_range_id") is not None:
+            continue
+        child = _row_to_item(row, artifact_id="")
+        if child.start_time < source_item.start_time or child.end_time > source_item.end_time:
+            continue
+        rows[i] = dict(row)
+        rows[i]["parent_range_id"] = int(source_range_id)
+        changed = True
+    return changed
+
+
+def _coerce_parent_to_source_range(
+    rows: list[dict[str, Any]],
+    *,
+    start_time: datetime,
+    end_time: datetime,
+    exclude_id: int | None = None,
+) -> int | None:
+    source_id = _find_source_range_id(rows, exclude_id=exclude_id)
+    if source_id is None:
+        return None
+    try:
+        _validate_parent_containment(
+            rows=rows,
+            artifact_id="",
+            range_id=exclude_id,
+            parent_range_id=source_id,
+            start_time=start_time,
+            end_time=end_time,
+        )
+    except ValueError:
+        return None
+    return source_id
+
+
+def ensure_temp_source_range(
+    *,
+    artifact_id: str,
+    file_path: str | None,
+    name: str,
+    start_time: datetime,
+    end_time: datetime,
+    tags: list[str] | None = None,
+) -> RangeItem:
+    """Ensure a locked full-span source range exists and owns other root ranges."""
+    doc = _load_or_create(artifact_id, file_path)
+    rows = [row for row in (doc.get("ranges") or []) if isinstance(row, dict)]
+    source_id = _find_source_range_id(rows)
+    changed = False
+    if source_id is None:
+        # Promote the earliest legacy full-span root range (ingest used to create these as user ranges).
+        legacy = next(
+            (
+                row
+                for row in rows
+                if isinstance(row, dict)
+                and row.get("parent_range_id") is None
+                and abs(float(row.get("start_ms") or 0.0) - float(start_time.timestamp() * 1000.0)) < 1e-6
+                and abs(float(row.get("end_ms") or 0.0) - float(end_time.timestamp() * 1000.0)) < 1e-6
+            ),
+            None,
+        )
+        if legacy is None and rows:
+            legacy = next(
+                (
+                    row
+                    for row in rows
+                    if isinstance(row, dict) and row.get("parent_range_id") is None
+                ),
+                None,
+            )
+            if legacy is not None and int(legacy.get("range_id") or -1) != 1:
+                legacy = None
+        if legacy is not None:
+            idx = rows.index(legacy)
+            promoted = dict(legacy)
+            promoted["source"] = "source"
+            promoted["parent_range_id"] = None
+            promoted["name"] = name or str(promoted.get("name") or "Source")
+            promoted["start_time"] = start_time.astimezone(timezone.utc).isoformat()
+            promoted["end_time"] = end_time.astimezone(timezone.utc).isoformat()
+            promoted["start_ms"] = float(start_time.timestamp() * 1000.0)
+            promoted["end_ms"] = float(end_time.timestamp() * 1000.0)
+            if tags is not None:
+                promoted["tags"] = _normalize_tags(tags)
+            rows[idx] = promoted
+            source_id = int(promoted["range_id"])
+            changed = True
+        else:
+            created = create_temp_range(
+                RangeCreateRequest(
+                    artifact_id=artifact_id,
+                    file_path=file_path,
+                    durability="temporary",
+                    name=name,
+                    start_time=start_time,
+                    end_time=end_time,
+                    tags=_normalize_tags(tags),
+                    source="source",
+                )
+            )
+            return created
+
+    if source_id is not None and _reparent_root_ranges_under_source(rows, source_id):
+        changed = True
+    if changed:
+        doc["ranges"] = rows
+        _persist(artifact_id, doc, file_path)
+    item = next(
+        (
+            _row_to_item(row, artifact_id=artifact_id, source_path=doc.get("source_path"))
+            for row in rows
+            if isinstance(row, dict) and int(row.get("range_id") or -1) == int(source_id)
+        ),
+        None,
+    )
+    if item is None:
+        raise ValueError("Failed to ensure source range.")
+    return item
+
+
 def _validate_parent_containment(
     *,
     rows: list[dict[str, Any]],
@@ -255,13 +418,70 @@ def _validate_parent_containment(
 def list_temp_ranges(artifact_id: str, *, source_path: str | None = None) -> list[RangeItem]:
     doc = _load_or_create(artifact_id, source_path)
     resolved = doc.get("source_path")
+    rows = [row for row in (doc.get("ranges") or []) if isinstance(row, dict)]
+    if rows and _find_source_range_id(rows) is None:
+        # Promote legacy ingest default (range_id 1, root) to a source range.
+        legacy = next(
+            (
+                row
+                for row in rows
+                if isinstance(row, dict)
+                and int(row.get("range_id") or -1) == 1
+                and row.get("parent_range_id") is None
+                and str(row.get("source") or "user") == "user"
+            ),
+            None,
+        )
+        if legacy is not None:
+            idx = rows.index(legacy)
+            promoted = dict(legacy)
+            promoted["source"] = "source"
+            rows[idx] = promoted
+            _reparent_root_ranges_under_source(rows, 1)
+            doc["ranges"] = rows
+            _persist(artifact_id, doc, source_path or resolved)
     items = [
         _row_to_item(row, artifact_id=artifact_id, source_path=resolved)
-        for row in doc.get("ranges") or []
+        for row in (doc.get("ranges") or [])
         if isinstance(row, dict)
     ]
     items.sort(key=lambda r: (r.start_ms or 0.0, r.range_id))
     return items
+
+
+def ensure_source_range_from_manifest(
+    artifact_id: str,
+    *,
+    source_path: str | None = None,
+) -> RangeItem | None:
+    """Create/promote the locked source range for an already-indexed temporary artifact."""
+    doc = _load_or_create(artifact_id, source_path)
+    rows = [row for row in (doc.get("ranges") or []) if isinstance(row, dict)]
+    existing_id = _find_source_range_id(rows)
+    if existing_id is not None:
+        return next(
+            (
+                _row_to_item(row, artifact_id=artifact_id, source_path=doc.get("source_path"))
+                for row in rows
+                if int(row.get("range_id") or -1) == int(existing_id)
+            ),
+            None,
+        )
+    manifest = load_manifest(artifact_id) or {}
+    bounds = manifest.get("time_bounds") or {}
+    start_ms = bounds.get("start_ms")
+    end_ms = bounds.get("end_ms")
+    if start_ms is None or end_ms is None:
+        return None
+    fp = Path(str(source_path or manifest.get("file_path") or "source"))
+    name = str(fp.stem or fp.name or manifest.get("run_code") or "Source")
+    return ensure_temp_source_range(
+        artifact_id=artifact_id,
+        file_path=str(source_path or manifest.get("file_path") or ""),
+        name=name,
+        start_time=datetime.fromtimestamp(float(start_ms) / 1000.0, tz=timezone.utc),
+        end_time=datetime.fromtimestamp(float(end_ms) / 1000.0, tz=timezone.utc),
+    )
 
 
 def create_temp_range(request: RangeCreateRequest) -> RangeItem:
@@ -271,12 +491,24 @@ def create_temp_range(request: RangeCreateRequest) -> RangeItem:
     if request.end_time <= request.start_time:
         raise ValueError("end_time must be after start_time.")
     doc = _load_or_create(artifact_id, request.file_path)
+    rows = [row for row in (doc.get("ranges") or []) if isinstance(row, dict)]
+    if request.source == "source" and _find_source_range_id(rows) is not None:
+        raise ValueError("A source range already exists for this source.")
     next_id = 1
-    for row in doc.get("ranges") or []:
+    for row in rows:
         if isinstance(row, dict) and row.get("range_id") is not None:
             next_id = max(next_id, int(row["range_id"]) + 1)
     start_ms = request.start_time.timestamp() * 1000.0
     end_ms = request.end_time.timestamp() * 1000.0
+    parent_range_id = request.parent_range_id
+    if request.source == "source":
+        parent_range_id = None
+    elif parent_range_id is None:
+        parent_range_id = _coerce_parent_to_source_range(
+            rows,
+            start_time=request.start_time,
+            end_time=request.end_time,
+        )
     item = RangeItem(
         range_id=next_id,
         test_id=None,
@@ -291,7 +523,7 @@ def create_temp_range(request: RangeCreateRequest) -> RangeItem:
         end_ms=end_ms,
         color=request.color,
         tags=_normalize_tags(request.tags),
-        parent_range_id=request.parent_range_id,
+        parent_range_id=parent_range_id,
         source=request.source,
         rule_id=request.rule_id,
         notes=request.notes,
@@ -305,7 +537,6 @@ def create_temp_range(request: RangeCreateRequest) -> RangeItem:
             for p in request.parameters
         ],
     )
-    rows = [row for row in (doc.get("ranges") or []) if isinstance(row, dict)]
     _validate_parent_containment(
         rows=rows,
         artifact_id=artifact_id,
@@ -315,6 +546,8 @@ def create_temp_range(request: RangeCreateRequest) -> RangeItem:
         end_time=item.end_time,
     )
     rows.append(_item_to_row(item))
+    if request.source == "source":
+        _reparent_root_ranges_under_source(rows, item.range_id)
     doc["ranges"] = rows
     _persist(artifact_id, doc, request.file_path)
     return item
@@ -333,13 +566,29 @@ def update_temp_range(range_id: int, request: RangeUpdateRequest) -> RangeItem:
     name = request.name if request.name is not None else existing.name
     label = request.label if request.label is not None else existing.label
     status = request.status if request.status is not None else existing.status
-    start_time = request.start_time if request.start_time is not None else existing.start_time
-    end_time = request.end_time if request.end_time is not None else existing.end_time
+    # Source ranges always keep their full-span bounds.
+    if is_source_range_row(existing):
+        start_time = existing.start_time
+        end_time = existing.end_time
+    else:
+        start_time = request.start_time if request.start_time is not None else existing.start_time
+        end_time = request.end_time if request.end_time is not None else existing.end_time
     color = request.color if request.color is not None else existing.color
     tags = _normalize_tags(request.tags if request.tags is not None else existing.tags)
     parent_range_id = existing.parent_range_id
     if "parent_range_id" in request.model_fields_set:
         parent_range_id = request.parent_range_id
+    if is_source_range_row(existing):
+        if parent_range_id is not None:
+            raise ValueError("Source ranges cannot have a parent.")
+        parent_range_id = None
+    elif parent_range_id is None:
+        parent_range_id = _coerce_parent_to_source_range(
+            rows,
+            start_time=start_time,
+            end_time=end_time,
+            exclude_id=range_id,
+        )
     notes = request.notes if request.notes is not None else existing.notes
     if end_time <= start_time:
         raise ValueError("end_time must be after start_time.")
@@ -392,19 +641,22 @@ def update_temp_range(range_id: int, request: RangeUpdateRequest) -> RangeItem:
 def delete_temp_range(range_id: int, *, artifact_id: str, source_path: str | None = None) -> bool:
     doc = _load_or_create(artifact_id, source_path)
     rows = [row for row in (doc.get("ranges") or []) if isinstance(row, dict)]
+    target = next((row for row in rows if int(row.get("range_id") or -1) == range_id), None)
+    if target is None:
+        return False
+    if is_source_range_row(target):
+        raise ValueError("Source ranges cannot be deleted.")
+    source_id = _find_source_range_id(rows, exclude_id=range_id)
     keep: list[dict[str, Any]] = []
-    found = False
     for row in rows:
         rid = int(row.get("range_id") or -1)
         if rid == range_id:
-            found = True
             continue
         if row.get("parent_range_id") is not None and int(row["parent_range_id"]) == range_id:
             row = dict(row)
-            row["parent_range_id"] = None
+            row["parent_range_id"] = source_id
         keep.append(row)
-    if not found:
-        return False
     doc["ranges"] = keep
     _persist(artifact_id, doc, source_path)
     return True
+
