@@ -70,6 +70,8 @@ from .services.timeseries import (
 )
 from .services.file_sources import detect_source_type, file_channels, file_tests, file_timeseries
 from .services.unit_library import clean_unit_library_rows, default_unit_library_rows
+from .services.config_library import clean_config_library_rows
+from .services.range_definition_library import clean_range_definition_rows
 from .services.query_router import resolve_overlay_targets
 from .services import database_library as db_library
 from .config import settings
@@ -118,6 +120,7 @@ APPEARANCE_FILE = Path(__file__).resolve().parents[1] / ".nova_appearance.json"
 DATABASE_LIBRARY_FILE = db_library.DATABASE_LIBRARY_FILE
 UNIT_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_unit_library.json"
 CONFIG_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_config_library.json"
+RANGE_DEFINITION_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_range_definition_library.json"
 SOURCES_WORKSPACE_FILE = Path(__file__).resolve().parents[1] / ".nova_sources_workspace.json"
 
 
@@ -281,30 +284,33 @@ def save_sources_workspace(payload: dict = Body(...)) -> dict:
     return {"ok": True}
 
 
-@app.get("/api/config-library")
-def get_config_library() -> dict:
+def _load_config_library_rows() -> list[dict]:
     if not CONFIG_LIBRARY_FILE.exists():
-        return {"configs": []}
+        return []
     try:
         payload = json.loads(CONFIG_LIBRARY_FILE.read_text(encoding="utf-8"))
     except Exception:
-        return {"configs": []}
+        return []
     rows = payload.get("configs") if isinstance(payload, dict) else None
     if not isinstance(rows, list):
-        return {"configs": []}
-    cleaned: list[dict] = []
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        cleaned.append(
-            {
-                "id": str(row.get("id") or ""),
-                "name": str(row.get("name") or "Unnamed Config"),
-                "savedAt": str(row.get("savedAt") or ""),
-                "payload": row.get("payload") if isinstance(row.get("payload"), dict) else {},
-            }
-        )
-    return {"configs": cleaned}
+        return []
+    try:
+        return clean_config_library_rows(rows)
+    except Exception:
+        return []
+
+
+def _write_config_library_rows(rows: list[dict]) -> None:
+    CONFIG_LIBRARY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_LIBRARY_FILE.write_text(
+        json.dumps({"configs": rows}, indent=2),
+        encoding="utf-8",
+    )
+
+
+@app.get("/api/config-library")
+def get_config_library() -> dict:
+    return {"configs": _load_config_library_rows()}
 
 
 @app.post("/api/config-library")
@@ -312,22 +318,49 @@ def save_config_library(payload: dict = Body(...)) -> dict:
     rows = payload.get("configs") if isinstance(payload, dict) else None
     if not isinstance(rows, list):
         return {"ok": False, "error": "configs must be a list"}
-    cleaned: list[dict] = []
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        cfg_payload = row.get("payload")
-        if not isinstance(cfg_payload, dict):
-            continue
-        cleaned.append(
-            {
-                "id": str(row.get("id") or ""),
-                "name": str(row.get("name") or "Unnamed Config"),
-                "savedAt": str(row.get("savedAt") or ""),
-                "payload": cfg_payload,
-            }
-        )
-    CONFIG_LIBRARY_FILE.write_text(json.dumps({"configs": cleaned}, indent=2), encoding="utf-8")
+    try:
+        cleaned = clean_config_library_rows(rows)
+    except (ValueError, TypeError) as exc:
+        return {"ok": False, "error": str(exc)}
+    _write_config_library_rows(cleaned)
+    return {"ok": True, "count": len(cleaned)}
+
+
+def _load_json_library_rows(path: Path, key: str) -> list[dict]:
+    if not path.exists():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    rows = payload.get(key) if isinstance(payload, dict) else None
+    return rows if isinstance(rows, list) else []
+
+
+def _write_json_library_rows(path: Path, key: str, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({key: rows}, indent=2), encoding="utf-8")
+
+
+@app.get("/api/range-definition-library")
+def get_range_definition_library() -> dict:
+    rows = _load_json_library_rows(RANGE_DEFINITION_LIBRARY_FILE, "definitions")
+    try:
+        return {"definitions": clean_range_definition_rows(rows)}
+    except Exception:
+        return {"definitions": []}
+
+
+@app.post("/api/range-definition-library")
+def save_range_definition_library(payload: dict = Body(...)) -> dict:
+    rows = payload.get("definitions") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return {"ok": False, "error": "definitions must be a list"}
+    try:
+        cleaned = clean_range_definition_rows(rows)
+    except (ValueError, TypeError) as exc:
+        return {"ok": False, "error": str(exc)}
+    _write_json_library_rows(RANGE_DEFINITION_LIBRARY_FILE, "definitions", cleaned)
     return {"ok": True, "count": len(cleaned)}
 
 

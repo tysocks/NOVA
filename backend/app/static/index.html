@@ -921,6 +921,18 @@
       max-width:none;
       min-width:0;
     }
+    .rangeFormTimes > .formField > input{
+      border:none;
+      background:transparent;
+      padding-left:0;
+      padding-right:0;
+      box-shadow:none;
+    }
+    .rangeFormTimes > .formField > input:focus{
+      outline:none;
+      border:none;
+      box-shadow:none;
+    }
     .rangeFormStatusTags{
       display:flex;
       flex-wrap:nowrap;
@@ -928,11 +940,6 @@
       gap:12px;
       width:100%;
       min-width:0;
-    }
-    .rangeFormStatusTags > .rangeStatusField{
-      flex:0 0 160px;
-      width:160px;
-      max-width:160px;
     }
     .rangeFormStatusTags > .rangeTagsField{
       flex:1 1 0;
@@ -1048,7 +1055,9 @@
     #m_obj_props select,
     #m_obj_props .objPropControl,
     #m_ov_def select,
-    #m_ov_def .objPropControl{
+    #m_ov_def .objPropControl,
+    #m_mask_props select,
+    #m_mask_props .objPropControl{
       -webkit-appearance:none !important;
       appearance:none !important;
       width:100%;
@@ -1072,12 +1081,14 @@
       color:var(--nova-text);
     }
     #m_obj_props input.objPropControl,
-    #m_ov_def input.objPropControl{
+    #m_ov_def input.objPropControl,
+    #m_mask_props input.objPropControl{
       cursor:text;
     }
     /* Properties table uses novaSelect chrome — strip border + chevron there */
     #m_obj_props .novaSelect,
-    #m_ov_def .novaSelect{
+    #m_ov_def .novaSelect,
+    #m_mask_props .novaSelect{
       height:30px !important;
       max-height:30px !important;
       min-height:30px !important;
@@ -1089,7 +1100,11 @@
     #m_ov_def .novaSelectBtn,
     #m_ov_def .novaSelectBtn:hover,
     #m_ov_def .novaSelectBtn:focus,
-    #m_ov_def .novaSelect.open .novaSelectBtn{
+    #m_ov_def .novaSelect.open .novaSelectBtn,
+    #m_mask_props .novaSelectBtn,
+    #m_mask_props .novaSelectBtn:hover,
+    #m_mask_props .novaSelectBtn:focus,
+    #m_mask_props .novaSelect.open .novaSelectBtn{
       height:30px !important;
       min-height:30px !important;
       max-height:30px !important;
@@ -1107,7 +1122,9 @@
     #m_obj_props select:focus,
     #m_obj_props .objPropControl:focus,
     #m_ov_def select:focus,
-    #m_ov_def .objPropControl:focus{
+    #m_ov_def .objPropControl:focus,
+    #m_mask_props select:focus,
+    #m_mask_props .objPropControl:focus{
       border:0 !important;
       border-width:0 !important;
       box-shadow:none !important;
@@ -1116,7 +1133,8 @@
     }
     .rangeMetaRow select::-ms-expand,
     #m_obj_props select::-ms-expand,
-    #m_ov_def select::-ms-expand{
+    #m_ov_def select::-ms-expand,
+    #m_mask_props select::-ms-expand{
       display:none;
     }
     .ovDefPointTable{
@@ -1278,6 +1296,17 @@
       width:14px;
       height:14px;
       display:block;
+    }
+    .channelEditorForm .aliasMembersHeader{
+      padding-bottom:8px;
+      border-bottom:1px solid var(--nova-divider);
+    }
+    .channelEditorForm .aliasMemberList,
+    .channelEditorForm .aliasMemberList:has(.empty){
+      border:none;
+      background:transparent;
+      padding-left:0;
+      padding-right:0;
     }
     /* Keep formSelectStable as an explicit alias of the global select lock */
     select.formSelectStable,
@@ -1453,12 +1482,6 @@
     html.light-mode .iconActionBtn{ background:rgba(55,53,47,0.08); }
     html.light-mode .iconActionBtn:hover{ background:rgba(55,53,47,0.14); }
     .iconActionBtn svg{ width:15px; height:15px; display:block; }
-    /* Realtime panel */
-    #realtimePanel{ background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); box-shadow:var(--nova-shadow); }
-    .realtimeBtn{ width:26px; height:26px; min-width:26px; border-radius:var(--nova-radius-xs); padding:0; font-size:0.75rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--nova-text-dim); }
-    .realtimeBtn:hover{ background:var(--nova-hover); color:var(--nova-text); }
-    .realtimeBtn.active{ background:var(--nova-active); color:var(--nova-text); }
-    #realtimeCloseBtn{ border-radius:var(--nova-radius-xs); }
     /* Load dock (legacy; plot action lives on the rail) */
     .choochDock{ display:none !important; }
     .panel-legacy{ display:none !important; }
@@ -1716,6 +1739,74 @@
       align-items:center;
       min-width:0;
     }
+    .rangeDefTreeList{
+      border:1px solid var(--nova-divider);
+      border-radius:4px;
+      min-height:120px;
+      max-height:min(360px, 50vh);
+      overflow:auto;
+      background:var(--nova-elevated);
+    }
+    .rangeDefTreeList .empty{
+      padding:12px 10px;
+      color:var(--nova-text-dim);
+      font-size:0.78rem;
+    }
+    .rangeDefTreeList .itemRow{
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      gap:2px;
+      padding:7px 10px;
+      border-bottom:1px solid var(--nova-divider);
+      cursor:pointer;
+      min-width:0;
+    }
+    .rangeDefTreeList .itemRow:last-child{ border-bottom:none; }
+    .rangeDefTreeList .itemRow:hover{ background:var(--nova-hover); }
+    .rangeDefTreeList .itemRow.active{ background:var(--nova-hover); }
+    .rangeDefTreeList .itemPrimary{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      min-width:0;
+    }
+    .rangeDefTreeList .itemPrimary > span:last-child{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .rangeDefTreeList .itemMeta{
+      padding-left:20px;
+      font-size:0.72rem;
+      color:var(--nova-text-dim);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .rangeDefCondBlock.aliasMembersBlock{
+      padding:0;
+      margin:0;
+      width:100%;
+      min-width:0;
+    }
+    .rangeDefCondBlock .maskConditionPad{
+      padding:0;
+    }
+    .rangeDefCondBlock .calcFormulaPad{
+      padding:0;
+    }
+    .rangeDefCondBlock .formFieldRow{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(88px, 1fr));
+      gap:6px;
+    }
+    .rangeDefCondBlock .maskConditionPad .formFieldRow > .formField{
+      flex:1 1 auto;
+      width:auto;
+      max-width:none;
+      min-width:0;
+    }
     .unitTranslationRow input{
       width:100%;
       min-width:0;
@@ -1729,6 +1820,12 @@
     .appWindow.modalScale{ width:420px; height:520px; }
     .appWindow.modalSourceForm{ width:598px; height:300px; }
     .appWindow.modalAliasForm{ width:598px; height:auto; min-height:280px; max-height:96vh; }
+    .appWindow.modalRangeDef{
+      width:640px;
+      height:720px;
+      min-height:360px;
+      max-height:96vh;
+    }
     .appWindow.modalChannels{ width:960px; height:560px; }
     .appWindow.modalDbSource{ width:960px; height:640px; }
     .appWindow.modalMask{ width:360px; height:500px; }
@@ -1801,6 +1898,54 @@
     .appWindow.modalAliasForm .calcFormulaPad,
     .appWindow.modalAliasForm .maskConditionPad{ flex:0 0 auto; }
     .appWindow.modalAliasForm .modalActions.modalActionsIconOnly{ padding:8px 12px; }
+    .appWindow.modalRangeDef .appWindowHeader.modalHeader{ padding:8px 14px; }
+    .appWindow.modalRangeDef .appWindowHeader .appWindowClose{ width:20px; min-width:20px; height:20px; }
+    .appWindow.modalRangeDef .appWindowHeader .modalTitle{ font-size:0.85rem; }
+    .appWindow.modalRangeDef .appWindowBody{
+      flex:1 1 auto;
+      min-height:0;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    .appWindow.modalRangeDef .appWindowContent{
+      flex:1 1 auto;
+      min-height:0;
+      overflow-x:hidden;
+      overflow-y:auto;
+      display:block;
+      scrollbar-width:thin;
+      -ms-overflow-style:auto;
+    }
+    .appWindow.modalRangeDef .appWindowContent::-webkit-scrollbar{
+      width:8px;
+      height:8px;
+      display:block;
+    }
+    .appWindow.modalRangeDef .appWindowContent::-webkit-scrollbar-thumb{
+      background:var(--nova-divider);
+      border-radius:4px;
+    }
+    .appWindow.modalRangeDef .formStack{
+      padding:10px 16px 8px;
+      gap:12px;
+      flex:0 0 auto;
+      overflow:visible;
+    }
+    .appWindow.modalRangeDef .appWindowBody>.modalActions{
+      flex:0 0 auto;
+    }
+    .appWindow.modalRangeDef .modalActions.modalActionsIconOnly{ padding:8px 12px; }
+    .appWindow.modalRangeDef #m_rdef_nodes{
+      min-width:0;
+    }
+    .appWindow.modalChannels .modalBodyPad > .formField,
+    .appWindow.modalChannels #aam_source_wrap,
+    .appWindow.modalChannels #cm_source_wrap{
+      flex:0 0 auto !important;
+      min-height:52px;
+      overflow:visible;
+    }
     .appWindowBody{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
     .appWindowContent{ flex:1 1 auto; min-height:0; overflow:auto; display:flex; flex-direction:column; }
     .appWindowBody>.modalActions{ flex:0 0 auto; }
@@ -1829,21 +1974,16 @@
         <div class="menuAction" id="file_configManager">Configuration Manager</div>
         <div class="menuAction" id="file_databaseManager">Database Manager</div>
         <div class="menuAction" id="file_unitManager">Unit Manager</div>
-        <div class="menuSep"></div>
-        <div class="menuAction" id="file_exportPlot">Export Current View (CSV)</div>
+        <div class="menuAction" id="file_rangeDefinitionManager">Range Definitions</div>
       </div>
     </div>
     <div class="menuItem" data-menu="edit">Edit
       <div class="menuDropdown" id="menu_edit">
         <div class="menuAction" id="edit_showMetadata">Show Metadata</div>
-        <div class="menuAction" id="edit_setMaxFreq">Set Max Sample Frequency</div>
-        <div class="menuAction" id="edit_realtimeTraces">Real Time Traces</div>
       </div>
     </div>
       <div class="menuItem" data-menu="view">View
       <div class="menuDropdown" id="menu_view">
-        <div class="menuAction" id="view_togglePreview">Toggle Data Preview</div>
-        <div class="menuSep"></div>
         <div class="menuAction" id="view_preferences">Preferences</div>
           <div class="menuAction" id="view_viewAppearance">View Appearance</div>
       </div>
@@ -1911,8 +2051,8 @@
           <div class="toolbarSectionHeader">
             <h3>Masks</h3>
             <div class="headerBtns">
-              <button id="addIndexMaskBtn" class="addBtn" type="button" title="Index mask" aria-label="Index mask">
-                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M8 1.5A6.5 6.5 0 1 0 14.5 8 6.51 6.51 0 0 0 8 1.5zm0 11.6A5.1 5.1 0 1 1 13.1 8 5.11 5.11 0 0 1 8 13.1zM8.7 4.5H7.3v4.05l3.2 1.9.7-1.18-2.5-1.48V4.5z"/></svg>
+              <button id="addRangeMaskBtn" class="addBtn" type="button" title="Range mask" aria-label="Range mask">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M2 3.2h1.6v9.6H2V3.2zm10.4 0H14v9.6h-1.6V3.2zM5.2 7h5.6v2H5.2V7z"/></svg>
               </button>
               <button id="addMaskBtn" class="addBtn" type="button" title="Channel mask" aria-label="Channel mask">+</button>
             </div>
@@ -1923,6 +2063,9 @@
           <div class="toolbarSectionHeader">
             <h3>Ranges</h3>
             <div class="headerBtns">
+              <button id="rangeDefinitionBtn" class="addBtn" type="button" title="Range definitions" aria-label="Range definitions">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M3 2.5h10v1.4H3V2.5zm0 4.8h6.5v1.4H3V7.3zm0 4.8h10v1.4H3v-1.4zM12.2 6.2l1.1 1.1-3.4 3.4H8.8V9.6l3.4-3.4z"/></svg>
+              </button>
               <button id="addRangeBtn" class="addBtn" type="button" title="Add range">+</button>
             </div>
           </div>
@@ -1972,19 +2115,6 @@
   <div id="sourceAddMenu" class="miniMenu"></div>
   <div id="channelAddMenu" class="miniMenu"></div>
   <div id="maskAddMenu" class="miniMenu"></div>
-  <div id="realtimePanel" style="display:none;position:fixed;right:16px;top:64px;z-index:130;min-width:214px;">
-    <div id="realtimePanelHeader" style="padding:6px;cursor:move;display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--nova-divider);">
-      <button id="realtimePauseBtn" class="realtimeBtn" type="button" title="Pause">&#10074;&#10074;</button>
-      <button id="realtimePlayBtn" class="realtimeBtn" type="button" title="Play">&#9654;</button>
-      <button id="realtimeForwardBtn" class="realtimeBtn" type="button" title="Forward">&#9197;</button>
-      <button id="realtimeReplayBtn" class="realtimeBtn" type="button" title="Replay">&#8635;</button>
-      <button id="realtimeLoopBtn" class="realtimeBtn" type="button" title="Loop">&#128257;</button>
-      <button id="realtimeExportBtn" class="realtimeBtn" type="button" title="Save animation">&#128190;</button>
-      <button id="realtimeCloseBtn" class="realtimeBtn" type="button" title="Close">&#10005;</button>
-    </div>
-    <div id="realtimeStatus" style="padding:5px 8px;font-size:0.65rem;color:var(--nova-text-dim);letter-spacing:0.04em;">Idle</div>
-  </div>
-
   <script src="/js/nova-v3.js"></script>
   <script>
     const STORAGE_KEY = "nova.uiState.v7";
@@ -2230,9 +2360,6 @@
       });
       return out;
     }
-    let maxSampleHzGlobal = null;
-    let realtimeRows = [];
-    let realtimePrecomputed = null; // [{xFull, yFull, rtFull, xIsNumeric, traceIdx}] | null
     let overviewRows = [];
     let overviewEpochStartMs = null;
     let overviewEpochEndMs = null;
@@ -2255,21 +2382,6 @@
     let plotProgrammaticUpdate = false;
     let loadInProgress = false;
     let lastPlotRenderMeta = null;
-    let realtimeTimer = null;
-    let realtimeDirection = 1;
-    let realtimeCurrentMs = null;
-    let realtimeStartDataMs = null;
-    let realtimeStartWallMs = null;
-    let realtimeMinMs = null;
-    let realtimeMaxMs = null;
-    let realtimeLockedXRange = null;
-    let realtimeLockedYRanges = null;
-    let realtimeLoopEnabled = false;
-    let realtimeFrameIndex = 0;
-    let realtimeLastDrawMs = 0;
-    let realtimeFrameStepMs = 16;
-    let realtimeExporting = false;
-    let realtimeExportRenderOptions = null;
     let channelUnitMap = new Map();
     let state = { sources: [], databases: [], masks: [], calculatedChannels: [], channelAliases: [], channelLabels: {}, freqOverrides: {}, unitOverrides: {}, collapsed: {}, activeToolbar: "sources", sourceTreeExpanded: [] };
     let activeToolbar = "sources";
@@ -2282,7 +2394,6 @@
     let activeCatalogId = null;
     let unitLibrary = { categories: [] };
     function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
-    function bsearch(arr, target){ let lo=0, hi=arr.length; while(lo<hi){ const mid=(lo+hi)>>1; if(arr[mid]<=target) lo=mid+1; else hi=mid; } return lo; }
     function clearCatalogCache(){ catalogCache.clear(); }
     function nextPaint(){ return new Promise((resolve)=>requestAnimationFrame(()=>resolve())); }
     function runDeferred(fn){ return new Promise((resolve)=>setTimeout(()=>resolve(fn()), 0)); }
@@ -2552,7 +2663,7 @@
         if(t.marker) o.marker={ size:Number(t.marker.size)||4 };
         if(t.connectgaps===false) o.connectgaps=false;
         if(t.yaxis) o.yaxis=t.yaxis;
-        if(t._unit) o._unit=t._unit;
+        if(t._unit) o._unit=normalizePlotUnit(t._unit);
         return o;
       }).filter((t)=>t.x.length>0);
     }
@@ -2701,7 +2812,8 @@
         axisRegistry.xAxisHitZone = null;
         axisRegistry.rightMargin = null;
         for(const t of (traces || [])){
-          const unit = String(t?._unit || "unitless");
+          if(!traceHasFinitePoints(t)) continue;
+          const unit = normalizePlotUnit(t?._unit);
           const yref = String(t?.yaxis || "y");
           const axisKey = yrefToAxisKey(yref);
           const axisId = axisKey === "yaxis" ? 1 : Number(axisKey.replace("yaxis","")) || 1;
@@ -2890,7 +3002,7 @@
         }
       }
 
-      async function draw({ plotEl, traces, layoutOut, unitCount, drawGen, dataOnly, applyAxisLocks }){
+      async function draw({ plotEl, traces, layoutOut, unitCount, drawGen, dataOnly, applyAxisLocks, forceFullRebuild }){
         if(drawGen !== undefined && drawGen !== plotDrawGeneration) return plotEl;
         await nextPaint();
         if(drawGen !== undefined && drawGen !== plotDrawGeneration) return plotEl;
@@ -2904,14 +3016,14 @@
         const forceDataOnly = dataOnly === true;
         const skipAxisRelayout = forceDataOnly || (dataOnly !== false && !applyAxisLocks);
 
-        if(needsFullRebuild(plotEl, traces, nextSig, unitCount)){
+        if(forceFullRebuild || needsFullRebuild(plotEl, traces, nextSig, unitCount)){
           await fullDraw(plotEl, traces, layoutWithDrag, cfg);
         }else if(forceDataOnly || (!layoutChanged && skipAxisRelayout)){
           await dataOnlyDraw(plotEl, traces);
         }else{
           await fastDraw(plotEl, traces, layoutWithDrag, {
             applyLayout:true,
-            applyAxisLocks:!skipAxisRelayout,
+            applyAxisLocks:true,
           });
         }
 
@@ -5866,6 +5978,7 @@
         drawGen,
         dataOnly: plotOpts.dataOnly,
         applyAxisLocks: plotOpts.applyAxisLocks,
+        forceFullRebuild: plotOpts.forceFullRebuild===true,
       });
     }
     async function plotlyDraw(plotDiv, traces, layout, config){
@@ -5880,7 +5993,7 @@
       return (pts[0].__ts||0)>(pts[pts.length-1].__ts||0);
     }
     function buildDecimatedTimeTrace(pts, legendName, opts){
-      const { t0FirstSample, t0Meta, rtMaskMs, pointCap, lineW, chId, timeRef }=opts;
+      const { t0FirstSample, t0Meta, pointCap, lineW, chId, timeRef }=opts;
       const t0Mode=timeRef||effectiveTimeRefForDbId(pts[0].__dbId, pts);
       let down=applyFreq(pts, chId);
       if(t0Mode==="absolute") down=filterAbsoluteTimeOutliers(down);
@@ -5903,7 +6016,7 @@
         }
         if(!Number.isFinite(xv)) continue;
         const rawUnit=getChannelSourceUnit(chId, pts[0]?.unit);
-        const yvBase=(rtMaskMs===null||!Number.isFinite(p.__rt))?Number(p.value):(p.__rt<=rtMaskMs?Number(p.value):NaN);
+        const yvBase=Number(p.value);
         const yv=Number.isFinite(yvBase)?convertValueToPreferred(yvBase, rawUnit):yvBase;
         if(!Number.isFinite(yv)) continue;
         x[oi]=xv;
@@ -5921,7 +6034,7 @@
           name:legendName,
           x,
           y,
-          _unit:channelUnitMap.get(chId)||resolveChannelUnit(chId, pts[0]?.unit)||"unitless",
+          _unit:normalizePlotUnit(channelUnitMap.get(chId)||resolveChannelUnit(chId, pts[0]?.unit)),
           _novaSourceKey:legendName,
         },
         original:n,
@@ -6882,21 +6995,36 @@
           .map((c)=>c.channel_name)
       );
       return selectedCalculatedChannels()
-        .filter((c)=>{
+        .map((c)=>{
           const deps=calcDepNames(c);
-          if(c.kind==="rolling") return Boolean(deps[0]) && (!available.size || available.has(deps[0]));
-          if(c.kind==="formula") return deps.length>=1 && (!available.size || deps.every((n)=>available.has(n)));
-          return false;
+          if(c.kind==="rolling"){
+            const src=resolveCalcDepForEval(deps[0], available);
+            if(!src) return null;
+            return {
+              kind:c.kind,
+              name:c.name,
+              unit:c.unit||null,
+              channels:[src],
+              op:c.op||null,
+              window:c.window||null,
+              formula:c.formula||null,
+            };
+          }
+          if(c.kind==="formula"){
+            if(!calcDepsResolvable(deps, available)) return null;
+            return {
+              kind:c.kind,
+              name:c.name,
+              unit:c.unit||null,
+              channels:deps.map((n)=>resolveCalcDepForEval(n, available)),
+              op:c.op||null,
+              window:c.window||null,
+              formula:c.formula||null,
+            };
+          }
+          return null;
         })
-        .map((c)=>({
-          kind:c.kind,
-          name:c.name,
-          unit:c.unit||null,
-          channels:calcDepNames(c),
-          op:c.op||null,
-          window:c.window||null,
-          formula:c.formula||null,
-        }));
+        .filter(Boolean);
     }
     async function queryV3ForDb(dbId, src, db, channels, testRunIds, { mode="overview", timeRange=null, resolutionPx=1400, calculatedChannels=null, signal=null }={}){
       const sources=[];
@@ -7525,10 +7653,6 @@
         if(next==="absolute") src.timeRef="absolute";
         else if(src.t0_utc) src.timeRef="t0_relative";
       });
-      realtimeLockedXRange=null;
-      realtimeLockedYRanges=null;
-      realtimeRows=[];
-      realtimePrecomputed=null;
       if(latestRows.length) await plotRows(latestRows, { preserveUi:false, resetView:true });
       saveState();
       if(!silent) setStatus(`Plot time mode: ${timeRefLabel(next)}.`);
@@ -7692,7 +7816,7 @@
       });
     }
     function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); const toolbar = Object.prototype.hasOwnProperty.call(s, "activeToolbar") ? s.activeToolbar : "sources"; state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:migrateCalculatedChannels(s.calculatedChannels || []), channelAliases:migrateChannelAliases(s.channelAliases || []), channelLabels:(s.channelLabels && typeof s.channelLabels==="object" && !Array.isArray(s.channelLabels))?s.channelLabels:{}, freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {}, activeToolbar: toolbar, sourceTreeExpanded: Array.isArray(s.sourceTreeExpanded)?s.sourceTreeExpanded:[] }; migrateLegacyTimeRef(state.sources, s.t0Mode); plotTimeMode=DEFAULT_TIME_REF; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = migrateChannelKeySet(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = migrateChannelKeySet(s.addedChannelIds || []); previewVisible = Boolean(s.previewVisible); activeToolbar = state.activeToolbar ?? null; if(activeToolbar && !["sources","channels","masks","ranges","objects","ingestion"].includes(activeToolbar)) activeToolbar="sources"; sourceTreeExpanded = new Set(state.sourceTreeExpanded || s.sourceTreeExpanded || []); } catch {} }
-    const MODAL_SIZE_CLASSES=["modalScale","modalSourceForm","modalAliasForm","modalChannels","modalDbSource","modalNarrow","modalMask","modalCompact"];
+    const MODAL_SIZE_CLASSES=["modalScale","modalSourceForm","modalAliasForm","modalRangeDef","modalChannels","modalDbSource","modalNarrow","modalMask","modalCompact"];
     const WF={ floating:true };
     const WF_CHANNELS={ floating:true, size:"modalChannels", compact:true };
     const WF_DB_SOURCE={ floating:true, size:"modalDbSource", compact:true };
@@ -7700,8 +7824,9 @@
     const WF_CFG={ floating:true, size:"default", compact:true };
     const WF_SOURCE_FORM={ floating:true, size:"modalSourceForm", closable:true };
     const WF_ALIAS_FORM={ floating:true, size:"modalAliasForm", closable:true };
+    const WF_RANGE_DEF_FORM={ floating:true, size:"modalRangeDef", closable:true };
     const dialogCloseStack=[];
-    const APP_WINDOW_SIZES={ modalScale:[420,520], modalSourceForm:[598,300], modalAliasForm:[598,320], modalChannels:[960,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], default:[520,560] };
+    const APP_WINDOW_SIZES={ modalScale:[420,520], modalSourceForm:[598,300], modalAliasForm:[598,320], modalRangeDef:[640,720], modalChannels:[960,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], default:[520,560] };
     function removeAppWindowEntry(dialogId){
       const idx=appWindowStack.findIndex((e)=>e.dialogId===dialogId);
       if(idx>=0) appWindowStack.splice(idx,1);
@@ -9279,6 +9404,15 @@
       const parts=[`<span>Ranges</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${leaf}</span>`));
       return `${icon}${parts.join("")}`;
     }
+    function configsWindowTitleHtml(...leaves){
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 2.5h4.2v4.2H2.5V2.5zm6.8 0H13.5v4.2H9.3V2.5zM2.5 9.3h4.2V13.5H2.5V9.3zm6.8 0H13.5V13.5H9.3V9.3z"/></svg></span>`;
+      const sep=`<span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span>`;
+      const parts=[`<span>Configurations</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${leaf}</span>`));
+      return `${icon}${parts.join("")}`;
+    }
+    function rangeDefsWindowTitleHtml(...leaves){
+      return rangesWindowTitleHtml("Definitions", ...(leaves||[]));
+    }
     const OBJ_TRACE_ICON_PATH="M1.8 11.2 5.2 6.8 8.1 9.4 12.2 3.6 14.2 5.2";
     const OBJ_TRACE_ICON_MARKERS=[{x:1.8,y:11.2},{x:5.2,y:6.8},{x:8.1,y:9.4},{x:12.2,y:3.6},{x:14.2,y:5.2}];
     function dashArrayForStyle(dash){
@@ -9737,7 +9871,7 @@
       const addCalcChannelBtn = byId("addCalcChannelBtn");
       const maskMenu = byId("maskAddMenu");
       const addMaskBtn = byId("addMaskBtn");
-      const addIndexMaskBtn = byId("addIndexMaskBtn");
+      const addRangeMaskBtn = byId("addRangeMaskBtn");
       const ctxMenu=byId("contextMenu");
       const tagPicker=byId("dbTagPicker");
       if(ctxMenu&&ctxMenu.contains(e.target)) return;
@@ -9745,7 +9879,7 @@
       if(e.target.closest&&e.target.closest("#m_db_tag_add")) return;
       if(e.target.closest&&e.target.closest("#m_db_filter_btn")) return;
       if(e.target.closest&&e.target.closest(".cfgMenuBtn")) return;
-      if (menu.contains(e.target) || addBtn.contains(e.target) || channelMenu.contains(e.target) || addChannelBtn.contains(e.target) || (addCalcChannelBtn&&addCalcChannelBtn.contains(e.target)) || maskMenu.contains(e.target) || addMaskBtn.contains(e.target) || (addIndexMaskBtn&&addIndexMaskBtn.contains(e.target))) return;
+      if (menu.contains(e.target) || addBtn.contains(e.target) || channelMenu.contains(e.target) || addChannelBtn.contains(e.target) || (addCalcChannelBtn&&addCalcChannelBtn.contains(e.target)) || maskMenu.contains(e.target) || addMaskBtn.contains(e.target) || (addRangeMaskBtn&&addRangeMaskBtn.contains(e.target))) return;
       hideMenus();
     });
     const PLOTS_KEY = "nova.plots.v1";
@@ -9884,70 +10018,57 @@
       };
     }
     function buildConfigPayload(){
-      const active=getActivePlot();
-      if(active){
-        active.selections=snapshotSelections();
-        active.latestRows=latestRows;
-        active.metadataRows=metadataRows;
-      }
+      const channels=[...addedChannelIds].map((id)=>channelKeyFromId(id)).filter(Boolean);
+      const masks=structuredClone(state.masks||[]);
       return {
-        version:2,
-        savedAt:new Date().toISOString(),
-        app:{
-          sources:state.sources,
-          databases:state.databases,
-          masks:state.masks,
-          calculatedChannels:state.calculatedChannels,
-          channelAliases:state.channelAliases,
-          channelLabels:state.channelLabels,
-          freqOverrides:state.freqOverrides,
-          unitOverrides:state.unitOverrides,
-          collapsed:state.collapsed||{},
-          appearance,
-        },
-        activeSelections:snapshotSelections(),
-        plots:{
-          activePlotId,
-          tabs:plots.map((p)=>({
-            id:p.id,
-            name:p.name,
-            selections:p.selections||null,
-          })),
-        },
+        channels,
+        calculatedChannels:structuredClone(state.calculatedChannels||[]),
+        channelAliases:structuredClone(state.channelAliases||[]),
+        masks,
       };
     }
+    function formatConfigUpdatedAt(iso){
+      const raw=String(iso||"").trim();
+      if(!raw) return "—";
+      const d=new Date(raw);
+      if(Number.isNaN(d.getTime())) return raw;
+      return d.toLocaleString();
+    }
     async function applyConfigObject(obj){
-      const app=obj.app||obj;
-      if(app.sources) state.sources=app.sources;
-      migrateLegacyTimeRef(state.sources, obj.t0Mode || obj.app?.t0Mode);
-      if(app.databases) state.databases=app.databases;
-      if(app.masks) state.masks=app.masks;
-      if(app.calculatedChannels) state.calculatedChannels=migrateCalculatedChannels(app.calculatedChannels);
-      if(app.channelAliases) state.channelAliases=migrateChannelAliases(app.channelAliases);
-      if(app.channelLabels && typeof app.channelLabels==="object" && !Array.isArray(app.channelLabels)) state.channelLabels=app.channelLabels;
-      if(app.freqOverrides) state.freqOverrides=app.freqOverrides;
-      if(app.unitOverrides) state.unitOverrides=app.unitOverrides;
-      if(app.collapsed) state.collapsed=app.collapsed;
-      const tabs=obj.plots?.tabs;
-      if(Array.isArray(tabs) && tabs.length){
-        plots=tabs.map((p, idx)=>({
-          id:p.id||crypto.randomUUID(),
-          name:p.name||`View ${idx+1}`,
-          selections:p.selections||null,
-          latestRows:[],
-          metadataRows:[],
-        }));
-        const requestedId=obj.plots?.activePlotId;
-        activePlotId=plots.some((p)=>p.id===requestedId)?requestedId:plots[0].id;
-      }
-      if(obj.activeSelections) restoreSelections(obj.activeSelections);
-      else if(obj.selections) restoreSelections(obj.selections);
+      const src=obj && typeof obj==="object" ? obj : {};
+      const legacyApp=src.payload?.app || src.app || null;
+      const channels=_asStrList(
+        src.channels
+        ?? src.payload?.activeSelections?.addedChannelIds
+        ?? legacyApp?.channels
+      );
+      const calculated=migrateCalculatedChannels(
+        src.calculatedChannels
+        ?? legacyApp?.calculatedChannels
+        ?? []
+      );
+      const aliases=migrateChannelAliases(
+        src.channelAliases
+        ?? legacyApp?.channelAliases
+        ?? []
+      );
+      const masks=Array.isArray(src.masks)
+        ? structuredClone(src.masks)
+        : (Array.isArray(legacyApp?.masks) ? structuredClone(legacyApp.masks) : []);
+
+      state.calculatedChannels=calculated;
+      state.channelAliases=aliases;
+      state.masks=masks;
+      addedChannelIds=new Set(channels);
+      // Keep calcs/aliases present in the channel list even if omitted from channels[].
+      calculated.forEach((c)=>{ if(c?.name) addedChannelIds.add(c.name); });
+      aliases.forEach((a)=>{ if(a?.name) addedChannelIds.add(a.name); });
+      selectedChannelIds=new Set(addedChannelIds);
+      selectedMaskIds=new Set((state.masks||[]).map((m)=>m.id).filter(Boolean));
       sanitizeAliasedChannelLists();
-      selectedMaskIds=new Set((state.masks||[]).map((m)=>m.id));
       clearCatalogCache();
       await refreshCatalogsForSelections();
       renderAll();
-      renderPlotTabs();
       latestRows=[];
       metadataRows=[];
       renderRows([]);
@@ -9955,15 +10076,89 @@
       savePlots();
       saveState();
     }
+    function _asStrList(value){
+      if(!Array.isArray(value)) return [];
+      const out=[];
+      const seen=new Set();
+      value.forEach((item)=>{
+        const key=String(item||"").trim();
+        if(!key || seen.has(key)) return;
+        seen.add(key);
+        out.push(key);
+      });
+      return out;
+    }
+    function normalizeConfigRow(row){
+      if(!row || typeof row!=="object") return null;
+      const payload=row.payload && typeof row.payload==="object" ? row.payload : null;
+      const app=payload?.app && typeof payload.app==="object" ? payload.app : null;
+      const selections=payload?.activeSelections && typeof payload.activeSelections==="object" ? payload.activeSelections : null;
+      const channels=Array.isArray(row.channels)
+        ? row.channels
+        : (Array.isArray(selections?.addedChannelIds) ? selections.addedChannelIds : []);
+      const calculatedChannels=Array.isArray(row.calculatedChannels)
+        ? row.calculatedChannels
+        : (Array.isArray(app?.calculatedChannels) ? app.calculatedChannels : []);
+      const channelAliases=Array.isArray(row.channelAliases)
+        ? row.channelAliases
+        : (Array.isArray(app?.channelAliases) ? app.channelAliases : []);
+      const masks=Array.isArray(row.masks)
+        ? row.masks
+        : (Array.isArray(app?.masks) ? app.masks : []);
+      return {
+        id:String(row.id||crypto.randomUUID()),
+        name:String(row.name||"").trim()||"Unnamed Config",
+        updated_at:String(row.updated_at||row.savedAt||""),
+        channels:channels.map((c)=>String(c||"").trim()).filter(Boolean),
+        calculatedChannels:calculatedChannels.filter((c)=>c&&typeof c==="object"),
+        channelAliases:channelAliases.filter((a)=>a&&typeof a==="object"),
+        masks:masks.filter((m)=>m&&typeof m==="object"),
+      };
+    }
     async function loadConfigLibrary(){
       try{
         const data=await getJson("/api/config-library");
-        if(Array.isArray(data?.configs)) return data.configs;
+        if(Array.isArray(data?.configs)){
+          return data.configs.map(normalizeConfigRow).filter(Boolean);
+        }
       }catch{}
       return [];
     }
     async function saveConfigLibrary(list){
-      return postJson("/api/config-library",{configs:list||[]});
+      const configs=(list||[]).map((row)=>normalizeConfigRow(row)).filter(Boolean).map((row)=>{
+        // Dual-format: flat fields for the new API, nested payload for older backends
+        // that only persisted rows with a `payload` object.
+        return {
+          id:row.id,
+          name:row.name,
+          updated_at:row.updated_at||new Date().toISOString(),
+          savedAt:row.updated_at||new Date().toISOString(),
+          channels:row.channels,
+          calculatedChannels:row.calculatedChannels,
+          channelAliases:row.channelAliases,
+          masks:row.masks,
+          payload:{
+            app:{
+              masks:row.masks,
+              calculatedChannels:row.calculatedChannels,
+              channelAliases:row.channelAliases,
+            },
+            activeSelections:{
+              addedChannelIds:row.channels,
+            },
+          },
+        };
+      });
+      const saved=await postJson("/api/config-library",{configs});
+      if(!saved?.ok) throw new Error(saved?.error||"Failed to save configurations.");
+      if(configs.length && !Number(saved.count)){
+        throw new Error("Server stored 0 configurations. Restart the NOVA backend to pick up the updated config-library API.");
+      }
+      const loaded=await loadConfigLibrary();
+      if(configs.length && !loaded.length){
+        throw new Error("Configuration save did not persist. Restart the NOVA backend and try again.");
+      }
+      return loaded;
     }
     async function migrateLegacyConfigLibraryIfNeeded(){
       let legacy=[];
@@ -10045,83 +10240,1299 @@
         picker.click();
       });
     }
+    function openConfigForm({ mode="create", config=null, onSaved=null }={}){
+      const isEdit=mode==="edit" && config;
+      const leaf=isEdit ? "Edit" : "Create";
+      const titleParts=isEdit ? ["Manager", "Edit"] : ["Manager", "Create"];
+      const snapshot=buildConfigPayload();
+      const channelCount=isEdit ? (config.channels||[]).length : snapshot.channels.length;
+      const calcCount=isEdit ? (config.calculatedChannels||[]).length : snapshot.calculatedChannels.length;
+      const aliasCount=isEdit ? (config.channelAliases||[]).length : snapshot.channelAliases.length;
+      const masks=isEdit ? (config.masks||[]) : snapshot.masks;
+      const rangeMaskCount=masks.filter((m)=>String(m.kind||"")==="range").length;
+      const channelMaskCount=masks.length - rangeMaskCount;
+      let entry=null;
+      entry=openModal(`Configurations > Manager > ${leaf}`,`
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="m_cfg_name" class="formNameInput" type="text" value="${escAttr(isEdit ? (config.name||"") : "")}" spellcheck="false" placeholder="Hotfire channels" />
+          </div>
+          <div class="itemMeta" style="padding:0 2px;">
+            Captures current channels (${channelCount}), calculated (${calcCount}), aliases (${aliasCount}),
+            range masks (${rangeMaskCount}), and channel masks (${channelMaskCount}).
+          </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_ALIAS_FORM, titleHtml:configsWindowTitleHtml(...titleParts) },async()=>{
+        const nameInput=entry?.root?.querySelector?.("#m_cfg_name") || byId("m_cfg_name");
+        const name=(nameInput?.value||"").trim();
+        if(!name){ setStatus("Name is required.", true); nameInput?.focus?.(); return false; }
+        try{
+          let library=await loadConfigLibrary();
+          const snap=isEdit
+            ? {
+                channels:Array.isArray(config.channels)?config.channels.slice():[],
+                calculatedChannels:Array.isArray(config.calculatedChannels)?structuredClone(config.calculatedChannels):[],
+                channelAliases:Array.isArray(config.channelAliases)?structuredClone(config.channelAliases):[],
+                masks:Array.isArray(config.masks)?structuredClone(config.masks):[],
+              }
+            : buildConfigPayload();
+          const body={
+            id: isEdit ? String(config.id) : crypto.randomUUID(),
+            name,
+            updated_at:new Date().toISOString(),
+            channels:snap.channels||[],
+            calculatedChannels:snap.calculatedChannels||[],
+            channelAliases:snap.channelAliases||[],
+            masks:snap.masks||[],
+          };
+          if(isEdit){
+            const idx=library.findIndex((r)=>String(r.id)===String(config.id));
+            if(idx<0){ setStatus("Configuration not found.", true); return false; }
+            library[idx]=body;
+          }else{
+            library.unshift(body);
+          }
+          const saved=await saveConfigLibrary(library);
+          const confirmed=saved.find((r)=>String(r.id)===String(body.id)) || saved.find((r)=>r.name===name) || body;
+          setStatus(isEdit ? `Updated configuration '${name}'.` : `Created configuration '${name}'.`);
+          if(typeof onSaved==="function") onSaved(confirmed);
+          return true;
+        }catch(err){
+          setStatus(`Failed to save configuration: ${err}`, true);
+          return false;
+        }
+      });
+      requestAnimationFrame(()=>{
+        const input=entry?.root?.querySelector?.("#m_cfg_name");
+        if(input){ input.focus(); input.select?.(); }
+      });
+    }
     async function openConfigManagerModal(){
       await migrateLegacyConfigLibraryIfNeeded();
       let library=await loadConfigLibrary();
-      const row=(item)=>`<div class="selectRow" data-id="${item.id}" style="display:flex;align-items:center;gap:4px;">
-        <div style="flex:1;min-width:0;"><div class="itemPrimary">${item.name||"Unnamed Config"}</div><div class="itemMeta">${item.savedAt||""}</div></div>
-        <button type="button" class="iconBtn" data-a="load" title="Load">&#9654;</button>
-        <button type="button" class="iconBtn" data-a="update" title="Update to current scope">&#8635;</button>
-        <button type="button" class="iconBtn" data-a="rename" title="Rename">&#9998;</button>
-        <button type="button" class="iconBtn" data-a="delete" title="Delete">&#10005;</button>
-      </div>`;
-      const filterList=(list)=>{
+      library=(library||[]).map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
+
+      const configById=(id)=>library.find((x)=>String(x.id)===String(id))||null;
+      const filterList=(rows)=>{
         const q=(byId("m_cfg_search")?.value||"").trim().toLowerCase();
-        if(!q) return list;
-        return list.filter((item)=>{
-          const name=(item.name||"").toLowerCase();
-          const savedAt=(item.savedAt||"").toLowerCase();
-          return name.includes(q)||savedAt.includes(q);
+        if(!q) return rows;
+        return rows.filter((r)=>{
+          const blob=`${r.name||""} ${(r.channels||[]).join(" ")}`.toLowerCase();
+          return blob.includes(q);
         });
       };
-      const wireRows=()=>{ byId("m_cfg_list").querySelectorAll(".selectRow").forEach((r)=>{ const id=r.getAttribute("data-id"); r.querySelectorAll("button[data-a]").forEach((b)=>{ b.onclick=async()=>{ const action=b.getAttribute("data-a"); const idx=library.findIndex((x)=>x.id===id); if(idx<0) return; if(action==="delete"){ library.splice(idx,1); await saveConfigLibrary(library); await refreshLibrary(); setStatus("Config removed from library."); return; } if(action==="rename"){ const next=(prompt("Rename config:", library[idx].name||"")||"").trim(); if(!next) return; library[idx].name=next; await saveConfigLibrary(library); await refreshLibrary(); setStatus("Config renamed."); return; } if(action==="update"){ library[idx].payload=buildConfigPayload(); library[idx].savedAt=new Date().toISOString(); await saveConfigLibrary(library); await refreshLibrary(); setStatus(`Updated config: ${library[idx].name||"Unnamed Config"}.`); return; } if(action==="load"){ try{ await applyConfigObject(library[idx].payload||{}); setStatus(`Loaded config: ${library[idx].name||"Unnamed Config"}.`); closeModal(); }catch(err){ setStatus(`Failed to load config: ${err}`, true); } } }; }); }); };
-      const renderList=()=>{
-        const filtered=filterList(library);
-        const el=byId("m_cfg_list");
-        el.innerHTML=filtered.map(row).join("")||`<div class="empty">${library.length?"No matching configs.":"No saved configs yet."}</div>`;
-        wireRows();
+      const rowHtml=(cfg)=>{
+        const ch=(cfg.channels||[]).length;
+        const masks=(cfg.masks||[]).length;
+        const meta=`${ch} channel${ch===1?"":"s"} · ${masks} mask${masks===1?"":"s"} · ${formatConfigUpdatedAt(cfg.updated_at||cfg.savedAt)}`;
+        return `
+          <div class="selectRow dbManagerRow" data-id="${escAttr(cfg.id)}" title="${escAttr(cfg.name||"Configuration")}">
+            <div class="itemPrimary">${escapeHtml(cfg.name||"Configuration")}</div>
+            <div class="dbRowUpdated">${escapeHtml(meta)}</div>
+          </div>
+        `;
       };
-      openModal("Configuration Manager",`<div class="cfgManagerToolbar"><input id="m_cfg_search" class="searchInput" type="text" placeholder="Search configs..." /><button id="m_cfg_menu_btn" type="button" class="iconBtn cfgMenuBtn">&#8943;</button></div><div style="padding:0 10px 10px;"><div id="m_cfg_list" class="modalList"></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`,async()=>true, WF_CFG);
-      const refreshLibrary=async()=>{
-        library=await loadConfigLibrary();
-        renderList();
-      };
-      const createNewConfig=async()=>{
-        const name=(prompt("Config name:", `Config ${new Date().toLocaleString()}`)||"").trim();
-        if(!name) return;
-        library.unshift({ id:crypto.randomUUID(), name, savedAt:new Date().toISOString(), payload:buildConfigPayload() });
-        await saveConfigLibrary(library);
-        await refreshLibrary();
-        setStatus(`Saved config: ${name}.`);
-      };
-      const importConfig=async()=>{
-        const obj=await pickConfigJsonFile();
-        if(!obj) return;
-        const defaultName=obj.name||obj.app?.name||"Imported Config";
-        const name=(prompt("Library name for imported config:", defaultName)||"").trim()||defaultName;
-        library.unshift({ id:crypto.randomUUID(), name, savedAt:new Date().toISOString(), payload:obj });
-        await saveConfigLibrary(library);
+      const persistLibrary=async()=>{
         try{
-          await applyConfigObject(obj);
-          setStatus(`Imported and loaded config: ${name}.`);
-          closeModal();
+          library=await saveConfigLibrary(library);
+          return true;
         }catch(err){
-          await refreshLibrary();
-          setStatus(`Imported to library but failed to load: ${err}`, true);
+          setStatus(`Failed to save configurations: ${err}`, true);
+          return false;
         }
       };
-      const exportConfig=async()=>{
-        const payload=buildConfigPayload();
-        const result=await saveJsonToFile("nova_config.json", payload);
-        if (result.ok && result.viaPicker) setStatus("Config exported.");
-        if (result.ok && !result.viaPicker) setStatus("Config downloaded (save dialog unavailable in this environment).");
-        if (!result.ok && result.cancelled) setStatus("Config export cancelled.");
+      const refreshFromServer=async(preferred=null)=>{
+        library=await loadConfigLibrary();
+        library=(library||[]).map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
+        if(preferred && preferred.id && !library.some((r)=>String(r.id)===String(preferred.id))){
+          library.unshift({ ...preferred, id:String(preferred.id) });
+        }
+        renderList();
       };
-      byId("m_cfg_menu_btn").onclick=(ev)=>{
-        ev.stopPropagation();
-        const rect=ev.currentTarget.getBoundingClientRect();
-        const z=Math.max(200, appWindowZ+15);
-        setTimeout(()=>{
-          showContextMenu(rect.right-180, rect.bottom+2, [
-            { label:"Create new config", action:()=>createNewConfig() },
-            { label:"Import config...", action:()=>importConfig() },
-            { label:"Export config...", action:()=>exportConfig() },
-          ], { zIndex:z });
-        },0);
+      const deleteConfig=async(id)=>{
+        const idx=library.findIndex((x)=>String(x.id)===String(id));
+        if(idx<0) return;
+        const removed=library[idx];
+        library.splice(idx,1);
+        const ok=await persistLibrary();
+        if(ok){
+          setStatus(`Deleted configuration '${removed?.name||id}'.`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
       };
-      renderList();
+      const applyConfig=async(id)=>{
+        const cfg=configById(id);
+        if(!cfg) return;
+        try{
+          await applyConfigObject(cfg);
+          setStatus(`Loaded configuration: ${cfg.name||"Unnamed"}.`);
+          closeModal();
+        }catch(err){
+          setStatus(`Failed to load configuration: ${err}`, true);
+        }
+      };
+      const updateFromCurrent=async(id)=>{
+        const idx=library.findIndex((x)=>String(x.id)===String(id));
+        if(idx<0) return;
+        library[idx]={
+          ...library[idx],
+          ...buildConfigPayload(),
+          updated_at:new Date().toISOString(),
+        };
+        const ok=await persistLibrary();
+        if(ok){
+          setStatus(`Updated configuration '${library[idx].name}'.`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
+      };
+      const importConfigs=async()=>{
+        const obj=await pickConfigJsonFile();
+        if(!obj) return;
+        const rows=Array.isArray(obj.configs) ? obj.configs
+          : (Array.isArray(obj) ? obj : [obj]);
+        const imported=rows.filter((r)=>r && typeof r==="object").map((r)=>({
+          ...r,
+          id:crypto.randomUUID(),
+          updated_at:new Date().toISOString(),
+        }));
+        if(!imported.length){
+          setStatus("No valid configurations found in import file.", true);
+          return;
+        }
+        library=[...imported, ...library];
+        const ok=await persistLibrary();
+        if(ok){
+          setStatus(`Imported ${imported.length} configuration(s).`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
+      };
+      const exportConfigs=async()=>{
+        const result=await saveJsonToFile("nova_config_library.json", { configs:library });
+        if(result.ok&&result.viaPicker) setStatus("Configuration library exported.");
+        if(result.ok&&!result.viaPicker) setStatus("Configuration library downloaded (save dialog unavailable in this environment).");
+        if(!result.ok&&result.cancelled) setStatus("Configuration export cancelled.");
+      };
+      const renderList=()=>{
+        const el=byId("m_cfg_list");
+        if(!el) return;
+        const filtered=filterList(library);
+        el.innerHTML=filtered.length
+          ? filtered.map((r)=>rowHtml(r)).join("")
+          : `<div class="empty">${library.length?"No matching configurations.":"No configurations yet. Use + to create one."}</div>`;
+        el.querySelectorAll(".selectRow[data-id]").forEach((row)=>{
+          const id=row.getAttribute("data-id");
+          row.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const cfg=configById(id);
+            if(!cfg) return;
+            const z=Math.max(200, appWindowZ+15);
+            showContextMenu(ev.clientX, ev.clientY, [
+              { label:"Load", action:()=>{ void applyConfig(id); } },
+              { label:"Update from current", action:()=>{ void updateFromCurrent(id); } },
+              { label:"Edit", action:()=>openConfigForm({ mode:"edit", config:cfg, onSaved:(saved)=>{ void refreshFromServer(saved); } }) },
+              { label:"Delete", action:()=>{ void deleteConfig(id); } },
+              { sep:true },
+              { label:"Import configurations...", action:()=>{ void importConfigs(); } },
+              { label:"Export configurations...", action:()=>{ void exportConfigs(); } },
+            ], { zIndex:z });
+          };
+          row.ondblclick=()=>{ void applyConfig(id); };
+        });
+      };
+
+      openModal(
+        "Configurations > Manager",
+        `<div class="maskSearchPad dbManagerToolbar">
+            <input id="m_cfg_search" class="searchInput" type="text" placeholder="Search..." />
+            <button id="m_cfg_add_btn" type="button" class="addBtn" aria-label="Create configuration">+</button>
+         </div>
+         <div class="maskListPad">
+           <div id="m_cfg_list" class="modalList"></div>
+         </div>
+         <div class="modalActions" style="display:none" aria-hidden="true"></div>`,
+        async()=>true,
+        { ...WF_CFG, closable:true, titleHtml:configsWindowTitleHtml("Manager") }
+      );
+
       byId("m_cfg_search").oninput=()=>renderList();
+      byId("m_cfg_add_btn").onclick=(ev)=>{
+        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+        openConfigForm({ mode:"create", onSaved:(saved)=>{ void refreshFromServer(saved); } });
+      };
+      const listHost=byId("m_cfg_list");
+      if(listHost){
+        listHost.oncontextmenu=(ev)=>{
+          if(ev.target.closest && ev.target.closest(".selectRow[data-id]")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const z=Math.max(200, appWindowZ+15);
+          showContextMenu(ev.clientX, ev.clientY, [
+            { label:"Import configurations...", action:()=>{ void importConfigs(); } },
+            { label:"Export configurations...", action:()=>{ void exportConfigs(); } },
+          ], { zIndex:z });
+        };
+      }
+      renderList();
     }
+
+    /* ── Range Definition library ───────────────────────────────── */
+    let rangeDefinitionLibrary=[];
+    async function loadRangeDefinitionLibrary(){
+      try{
+        const data=await getJson("/api/range-definition-library");
+        rangeDefinitionLibrary=Array.isArray(data?.definitions)?data.definitions:[];
+      }catch{
+        rangeDefinitionLibrary=rangeDefinitionLibrary||[];
+      }
+      return rangeDefinitionLibrary;
+    }
+    async function saveRangeDefinitionLibrary(list){
+      const res=await postJson("/api/range-definition-library",{definitions:list||[]});
+      if(res && res.ok===false) throw new Error(res.error||"Failed to save range definitions");
+      return loadRangeDefinitionLibrary();
+    }
+    function blankRangeDefCondition(side="start"){
+      return {
+        channels:[],
+        formula:"A",
+        op:">",
+        value:side==="start" ? 10 : 5,
+        value_b:null,
+        occurrence:side==="start" ? "first" : "last",
+        edge:side==="start" ? "rising" : "falling",
+        expression:"",
+      };
+    }
+    function blankRangeDefNode(parentId=null){
+      return {
+        id:crypto.randomUUID(),
+        name:"",
+        parent_id:parentId,
+        start:blankRangeDefCondition("start"),
+        end:blankRangeDefCondition("end"),
+        color:"#3b82f6",
+        label:"",
+      };
+    }
+    function normalizeRangeDefCondition(raw, side="start"){
+      const c=(raw && typeof raw==="object") ? raw : {};
+      const channels=[];
+      const seen=new Set();
+      (Array.isArray(c.channels)?c.channels:[]).forEach((item)=>{
+        const key=String(item||"").trim();
+        if(!key || seen.has(key)) return;
+        // Ignore formula-letter ghosts left by older saves that only kept "A > 10".
+        if(/^[A-Z]$/i.test(key) && !findAliasByKey(key) && !findCalculatedByKey(key)) return;
+        seen.add(key);
+        channels.push(key);
+      });
+      let formula=String(c.formula||"").trim();
+      let op=String(c.op||">").trim()||">";
+      let value=c.value!=null ? c.value : c.valueA;
+      let value_b=c.value_b!=null ? c.value_b : c.valueB;
+      const expression=String(c.expression||"").trim();
+      if(!channels.length && expression){
+        const m=expression.match(/^([A-Za-z_][\w.\-]*)\s*(>=|<=|!=|=|>|<|between|outside)\s*(.+)$/i);
+        if(m){
+          const token=m[1];
+          const isFormulaLetter=/^[A-Z]$/i.test(token);
+          op=m[2];
+          const rest=String(m[3]||"").trim();
+          if(!isFormulaLetter){
+            channels.push(token);
+            formula=formula||"A";
+          }else{
+            formula=formula||token.toUpperCase();
+          }
+          if(op==="between" || op==="outside"){
+            const parts=rest.split(/\.\.|to|,/i).map((s)=>s.trim()).filter(Boolean);
+            if(value==null || value==="") value=parts[0];
+            if(value_b==null || value_b==="") value_b=parts[1];
+          }else if(value==null || value===""){
+            value=rest;
+          }
+        }
+      }
+      if(!formula && channels.length) formula="A";
+      return {
+        channels,
+        formula:formula||"A",
+        op,
+        value:value==null || value==="" ? "" : value,
+        value_b:value_b==null || value_b==="" ? "" : value_b,
+        occurrence:String(c.occurrence||(side==="start"?"first":"last")).toLowerCase()||"first",
+        edge:String(c.edge||(side==="start"?"rising":"falling")).toLowerCase()||"none",
+        expression,
+      };
+    }
+    function rangeDefExpressionLeft(cond){
+      const channels=Array.isArray(cond?.channels)?cond.channels:[];
+      const formula=String(cond?.formula||"").trim();
+      if(channels.length===1 && (!formula || formula.toUpperCase()==="A")) return channels[0];
+      return formula||(channels.length?"A":"");
+    }
+    function buildRangeDefExpression(cond){
+      const channels=Array.isArray(cond?.channels)?cond.channels:[];
+      const left=rangeDefExpressionLeft(cond);
+      const op=String(cond?.op||">").trim()||">";
+      const value=cond?.value;
+      const value_b=cond?.value_b;
+      if(channels.length && value!=="" && value!=null && Number.isFinite(Number(value))){
+        if((op==="between"||op==="outside") && value_b!=="" && value_b!=null && Number.isFinite(Number(value_b))){
+          return `${left} ${op} ${value}..${value_b}`;
+        }
+        return `${left} ${op} ${value}`;
+      }
+      return String(cond?.expression||"").trim();
+    }
+    function serializeRangeDefCondition(cond){
+      const channels=(Array.isArray(cond?.channels)?cond.channels:[]).map((c)=>String(c||"").trim()).filter(Boolean);
+      const formula=String(cond?.formula||"").trim()||(channels.length?"A":"");
+      const op=String(cond?.op||">").trim()||">";
+      const occurrence=String(cond?.occurrence||"first").toLowerCase()||"first";
+      const edge=String(cond?.edge||"none").toLowerCase()||"none";
+      const valueRaw=cond?.value;
+      const valueBRaw=cond?.value_b;
+      const value=(valueRaw===""||valueRaw==null)?null:Number(valueRaw);
+      const value_b=(valueBRaw===""||valueBRaw==null)?null:Number(valueBRaw);
+      const expression=buildRangeDefExpression({
+        channels, formula, op, value:valueRaw, value_b:valueBRaw, expression:cond?.expression,
+      });
+      const out={ channels, formula, op, occurrence, edge, expression };
+      if(Number.isFinite(value)) out.value=value;
+      if(Number.isFinite(value_b)) out.value_b=value_b;
+      return out;
+    }
+    function rangeDefConditionComplete(cond){
+      const s=serializeRangeDefCondition(cond);
+      if(s.channels.length){
+        if(!Number.isFinite(s.value)) return false;
+        if((s.op==="between"||s.op==="outside") && !Number.isFinite(s.value_b)) return false;
+        return true;
+      }
+      return Boolean(s.expression);
+    }
+    function rangeDefNodeSummary(cond){
+      const s=serializeRangeDefCondition(cond);
+      if(s.expression) return s.expression;
+      if((s.channels||[]).length) return s.channels.join(", ");
+      return "—";
+    }
+    function orderedRangeDefTree(nodes){
+      const list=Array.isArray(nodes)?nodes:[];
+      const byId=new Map(list.map((n)=>[String(n.id), n]));
+      const children=new Map();
+      list.forEach((n)=>{
+        const p=n.parent_id && byId.has(String(n.parent_id)) ? String(n.parent_id) : "";
+        if(!children.has(p)) children.set(p, []);
+        children.get(p).push(n);
+      });
+      const out=[];
+      const seen=new Set();
+      const walk=(parentKey, depth)=>{
+        (children.get(parentKey)||[]).forEach((n)=>{
+          const id=String(n.id);
+          if(seen.has(id)) return;
+          seen.add(id);
+          out.push({ node:n, depth });
+          walk(id, depth+1);
+        });
+      };
+      walk("", 0);
+      list.forEach((n)=>{
+        const id=String(n.id);
+        if(!seen.has(id)) out.push({ node:n, depth:0 });
+      });
+      return out;
+    }
+    function rangeDefDescendantIds(nodes, rootId){
+      const kids=new Map();
+      (nodes||[]).forEach((n)=>{
+        const p=n.parent_id!=null ? String(n.parent_id) : "";
+        if(!kids.has(p)) kids.set(p, []);
+        kids.get(p).push(String(n.id));
+      });
+      const out=new Set();
+      const walk=(id)=>{
+        (kids.get(String(id))||[]).forEach((cid)=>{
+          if(out.has(cid)) return;
+          out.add(cid);
+          walk(cid);
+        });
+      };
+      walk(rootId);
+      return out;
+    }
+    function openRangeDefinitionNodeForm({ mode="create", node=null, nodes=[], titleParts=[], onSaved=null }={}){
+      const isEdit=mode==="edit" && node;
+      const leaf=isEdit ? "Edit Range" : "Add Range";
+      const draft=structuredClone(node || blankRangeDefNode(nodes.length ? nodes[0].id : null));
+      draft.id=String(draft.id||crypto.randomUUID());
+      draft.start=normalizeRangeDefCondition(draft.start, "start");
+      draft.end=normalizeRangeDefCondition(draft.end, "end");
+      draft.color=draft.color||"#3b82f6";
+      const blocked=rangeDefDescendantIds(nodes, draft.id);
+      blocked.add(String(draft.id));
+      const parentChoices=nodes.filter((n)=>!blocked.has(String(n.id)));
+      const occOpts=(sel)=>["first","last","all"].map((o)=>`<option value="${o}" ${sel===o?"selected":""}>${o}</option>`).join("");
+      const edgeOpts=(sel)=>["rising","falling","either","none"].map((o)=>`<option value="${o}" ${sel===o?"selected":""}>${o}</option>`).join("");
+      const condBlockHtml=(side, label)=>{
+        const cond=draft[side]||blankRangeDefCondition(side);
+        const two=maskOpNeedsTwoValues(cond.op||">");
+        const channels=Array.isArray(cond.channels)?cond.channels:[];
+        const chList=channels.length
+          ? channels.map((name,ci)=>{
+              const alias=findAliasByKey(name);
+              const meta=alias ? ` <span class="itemMeta">alias (${aliasMemberNames(alias).length})</span>` : "";
+              return `
+              <div class="selectRow" data-ch="${escAttr(name)}">
+                <div class="itemPrimary">${escapeHtml(name)}${meta}</div>
+                <span class="selectRowVar">${ci<26 ? String.fromCharCode(65+ci) : String(ci+1)}</span>
+                <button type="button" class="aliasMemberRemove" data-a="rm-ch" data-side="${side}" data-ch="${escAttr(name)}" aria-label="Remove">&#10005;</button>
+              </div>`;
+            }).join("")
+          : `<div class="empty">No channels selected.</div>`;
+        return `
+          <div class="aliasMembersBlock rangeDefCondBlock">
+            <div class="aliasMembersHeader">
+              <label>${label}</label>
+              <button type="button" class="addBtn" data-a="add-ch" data-side="${side}" title="Add channel" aria-label="Add channel">+</button>
+            </div>
+            <div class="aliasMemberList" id="m_rdef_node_ch_${side}">${chList}</div>
+            <div class="calcFormulaPad" style="margin-top:6px;">
+              <div class="formField">
+                <label>Formula</label>
+                <input data-k="${side}.formula" type="text" value="${escAttr(cond.formula||"A")}" placeholder="A" spellcheck="false" />
+              </div>
+            </div>
+            <div class="maskConditionPad">
+              <div class="formFieldRow">
+                <div class="formField">
+                  <label>Condition</label>
+                  <div class="selectLock"><select data-k="${side}.op" class="formSelectStable">${maskConditionOptionsHtml(cond.op||">")}</select></div>
+                </div>
+                <div class="formField">
+                  <label data-role="${side}-a-label">${two?"Min":"Value"}</label>
+                  <input data-k="${side}.value" type="number" step="any" value="${escAttr(cond.value??"")}" placeholder="e.g. 10" />
+                </div>
+                <div class="formField" data-role="${side}-b-wrap" style="display:${two?"":"none"};">
+                  <label>Max</label>
+                  <input data-k="${side}.value_b" type="number" step="any" value="${escAttr(cond.value_b??"")}" placeholder="e.g. 100" />
+                </div>
+                <div class="formField">
+                  <label>Occurrence</label>
+                  <div class="selectLock"><select data-k="${side}.occurrence" class="formSelectStable">${occOpts(cond.occurrence||"first")}</select></div>
+                </div>
+                <div class="formField">
+                  <label>Edge</label>
+                  <div class="selectLock"><select data-k="${side}.edge" class="formSelectStable">${edgeOpts(cond.edge||"none")}</select></div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+      };
+      const colorVal=draft.color||"#3b82f6";
+      openModal(`Ranges > Definitions > ${leaf}`,`
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <div class="rangeNameWithColor">
+              <input id="m_rdef_node_name" class="formNameInput" type="text" value="${escAttr(draft.name||"")}" spellcheck="false" placeholder="Range name" />
+              <button type="button" class="rangeColorMarkerBtn" id="m_rdef_node_color_btn" title="Color" aria-label="Color">
+                <span class="rangeColorMarker" style="border-color:${escAttr(colorVal)}"><span class="rangeColorMarkerDot" style="background:${escAttr(colorVal)}"></span></span>
+              </button>
+              <input id="m_rdef_node_color" class="rangeColorInputHidden" type="color" value="${escAttr(colorVal)}" tabindex="-1" aria-hidden="true" />
+            </div>
+          </div>
+          <div class="formField">
+            <label>Parent</label>
+            <div class="selectLock"><select id="m_rdef_node_parent" class="formSelectStable">
+              <option value="">(root)</option>
+              ${parentChoices.map((n)=>`<option value="${escAttr(n.id)}" ${String(draft.parent_id||"")===String(n.id)?"selected":""}>${escapeHtml(n.name||"(unnamed)")}</option>`).join("")}
+            </select></div>
+          </div>
+          ${condBlockHtml("start", "Start")}
+          ${condBlockHtml("end", "End")}
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_RANGE_DEF_FORM, titleHtml:rangeDefsWindowTitleHtml(...titleParts, leaf) },async()=>{
+        const name=(byId("m_rdef_node_name")?.value||"").trim();
+        if(!name){ setStatus("Range name is required.", true); return false; }
+        draft.name=name;
+        draft.color=(byId("m_rdef_node_color")?.value||draft.color||"#3b82f6").trim()||"#3b82f6";
+        draft.parent_id=(byId("m_rdef_node_parent")?.value||"").trim()||null;
+        if(!rangeDefConditionComplete(draft.start) || !rangeDefConditionComplete(draft.end)){
+          setStatus("Start and end need channels (or expression) and values.", true);
+          return false;
+        }
+        const start=serializeRangeDefCondition(draft.start);
+        const end=serializeRangeDefCondition(draft.end);
+        if(start.channels.length){
+          const compiled=compileFormula(start.formula||"A", start.channels.length);
+          if(!compiled.ok){ setStatus(`Start formula: ${compiled.error}`, true); return false; }
+          start.formula=compiled.expr;
+          start.expression=buildRangeDefExpression(start);
+        }
+        if(end.channels.length){
+          const compiled=compileFormula(end.formula||"A", end.channels.length);
+          if(!compiled.ok){ setStatus(`End formula: ${compiled.error}`, true); return false; }
+          end.formula=compiled.expr;
+          end.expression=buildRangeDefExpression(end);
+        }
+        const body={
+          id:String(draft.id||crypto.randomUUID()),
+          name,
+          parent_id:draft.parent_id,
+          start:normalizeRangeDefCondition(start, "start"),
+          end:normalizeRangeDefCondition(end, "end"),
+          color:draft.color,
+          label:String(draft.label||"").trim()||undefined,
+        };
+        if(typeof onSaved==="function") onSaved(body);
+        return true;
+      });
+      const colorInput=byId("m_rdef_node_color");
+      const colorBtn=byId("m_rdef_node_color_btn");
+      if(colorInput && colorBtn){
+        const syncColorMarker=()=>{
+          const c=(colorInput.value||"#3b82f6").trim()||"#3b82f6";
+          const marker=colorBtn.querySelector(".rangeColorMarker");
+          const dot=colorBtn.querySelector(".rangeColorMarkerDot");
+          if(marker) marker.style.borderColor=c;
+          if(dot) dot.style.background=c;
+          draft.color=c;
+        };
+        colorBtn.onclick=(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          colorInput.click();
+        };
+        colorInput.oninput=()=>syncColorMarker();
+        colorInput.onchange=()=>syncColorMarker();
+      }
+      const setCondField=(path, value)=>{
+        const [side, key]=path.split(".");
+        draft[side]=draft[side]||blankRangeDefCondition(side);
+        if(key==="value" || key==="value_b"){
+          draft[side][key]=value==="" ? "" : value;
+          return;
+        }
+        draft[side][key]=value;
+      };
+      const refreshCondChannels=(side)=>{
+        const list=byId(`m_rdef_node_ch_${side}`);
+        if(!list) return;
+        const channels=Array.isArray(draft[side]?.channels)?draft[side].channels:[];
+        list.innerHTML=channels.length
+          ? channels.map((name,ci)=>{
+              const alias=findAliasByKey(name);
+              const meta=alias ? ` <span class="itemMeta">alias (${aliasMemberNames(alias).length})</span>` : "";
+              return `
+              <div class="selectRow" data-ch="${escAttr(name)}">
+                <div class="itemPrimary">${escapeHtml(name)}${meta}</div>
+                <span class="selectRowVar">${ci<26 ? String.fromCharCode(65+ci) : String(ci+1)}</span>
+                <button type="button" class="aliasMemberRemove" data-a="rm-ch" data-side="${side}" data-ch="${escAttr(name)}" aria-label="Remove">&#10005;</button>
+              </div>`;
+            }).join("")
+          : `<div class="empty">No channels selected.</div>`;
+        list.querySelectorAll("button[data-a='rm-ch']").forEach((btn)=>{
+          btn.onclick=(ev)=>{
+            if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+            const ch=btn.getAttribute("data-ch");
+            const s=btn.getAttribute("data-side");
+            if(!ch || !s) return;
+            draft[s]=draft[s]||blankRangeDefCondition(s);
+            draft[s].channels=(draft[s].channels||[]).filter((x)=>x!==ch);
+            refreshCondChannels(s);
+          };
+        });
+      };
+      const modalBody=colorBtn?.closest(".appWindowBody") || document;
+      modalBody.querySelectorAll("[data-k]").forEach((inp)=>{
+        const sync=()=>{
+          const k=inp.getAttribute("data-k");
+          if(!k || !k.includes(".")) return;
+          setCondField(k, inp.value);
+          if(k.endsWith(".op")){
+            const side=k.split(".")[0];
+            const two=maskOpNeedsTwoValues(inp.value);
+            const wrap=modalBody.querySelector(`[data-role="${side}-b-wrap"]`);
+            const aLabel=modalBody.querySelector(`[data-role="${side}-a-label"]`);
+            if(wrap) wrap.style.display=two?"":"none";
+            if(aLabel) aLabel.textContent=two?"Min":"Value";
+          }
+        };
+        inp.oninput=sync;
+        inp.onchange=sync;
+      });
+      modalBody.querySelectorAll("button[data-a='add-ch']").forEach((btn)=>{
+        btn.onclick=(ev)=>{
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          const side=btn.getAttribute("data-side");
+          if(!side) return;
+          draft[side]=draft[side]||blankRangeDefCondition(side);
+          const chosen=new Set(draft[side].channels||[]);
+          showAddAliasMembersModal(chosen, ()=>{
+            draft[side].channels=[...chosen];
+            if(!draft[side].formula) draft[side].formula="A";
+            refreshCondChannels(side);
+          }, { leaf:"Range Definition", titleHtml:rangeDefsWindowTitleHtml(...titleParts, leaf, "Add"), allowAliases:true });
+        };
+      });
+      refreshCondChannels("start");
+      refreshCondChannels("end");
+    }
+    function openRangeDefinitionForm({ mode="create", definition=null, onSaved=null }={}){
+      const isEdit=mode==="edit" && definition;
+      const leaf=isEdit ? "Edit" : "Create";
+      const titleParts=[leaf];
+      let nodes=Array.isArray(isEdit ? definition.nodes : null)
+        ? structuredClone(definition.nodes).map((n)=>({
+          ...n,
+          id:String(n.id||crypto.randomUUID()),
+          start:normalizeRangeDefCondition(n.start, "start"),
+          end:normalizeRangeDefCondition(n.end, "end"),
+        }))
+        : [];
+      let selectedNodeId=nodes[0]?.id ? String(nodes[0].id) : "";
+      openModal(`Ranges > Definitions > ${leaf}`,`
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="m_rdef_name" class="formNameInput" type="text" value="${escAttr(isEdit ? (definition.name||"") : "")}" spellcheck="false" placeholder="Hotfire range tree" />
+          </div>
+          <div class="formField">
+            <label>Description</label>
+            <input id="m_rdef_desc" type="text" value="${escAttr(isEdit ? (definition.description||"") : "")}" spellcheck="false" placeholder="Optional" />
+          </div>
+          <div class="formField">
+            <div class="aliasMembersHeader" style="margin:0;">
+              <label>Range tree</label>
+              <button type="button" class="addBtn" id="m_rdef_add_node" title="Add range" aria-label="Add range">+</button>
+            </div>
+            <div id="m_rdef_nodes" class="rangeDefTreeList" style="margin-top:6px;"></div>
+            <div class="itemMeta" style="margin-top:4px;">Add ranges to the tree, then double-click to edit start/end conditions.</div>
+          </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_ALIAS_FORM, titleHtml:rangeDefsWindowTitleHtml(...titleParts) },async()=>{
+        const name=(byId("m_rdef_name")?.value||"").trim();
+        const description=(byId("m_rdef_desc")?.value||"").trim();
+        if(!name){ setStatus("Name is required.", true); return false; }
+        const cleanedNodes=[];
+        for(const n of nodes){
+          const nodeName=String(n.name||"").trim();
+          if(!nodeName) continue;
+          if(!rangeDefConditionComplete(n.start) || !rangeDefConditionComplete(n.end)){
+            setStatus(`Range '${nodeName}' needs complete start and end conditions.`, true);
+            return false;
+          }
+          const start=serializeRangeDefCondition(n.start);
+          const end=serializeRangeDefCondition(n.end);
+          if(start.channels.length){
+            const compiled=compileFormula(start.formula||"A", start.channels.length);
+            if(!compiled.ok){ setStatus(`Start formula on '${nodeName}': ${compiled.error}`, true); return false; }
+            start.formula=compiled.expr;
+            start.expression=buildRangeDefExpression(start);
+          }
+          if(end.channels.length){
+            const compiled=compileFormula(end.formula||"A", end.channels.length);
+            if(!compiled.ok){ setStatus(`End formula on '${nodeName}': ${compiled.error}`, true); return false; }
+            end.formula=compiled.expr;
+            end.expression=buildRangeDefExpression(end);
+          }
+          cleanedNodes.push({
+            id:String(n.id||crypto.randomUUID()),
+            name:nodeName,
+            parent_id:n.parent_id ? String(n.parent_id) : null,
+            start,
+            end,
+            color:String(n.color||"").trim()||undefined,
+            label:String(n.label||"").trim()||undefined,
+          });
+        }
+        if(!cleanedNodes.length){ setStatus("Add at least one range to the tree.", true); return false; }
+        try{
+          let library=await loadRangeDefinitionLibrary();
+          const body={
+            id:isEdit ? definition.id : crypto.randomUUID(),
+            name,
+            description:description||null,
+            updated_at:new Date().toISOString(),
+            nodes:cleanedNodes,
+          };
+          if(isEdit){
+            const idx=library.findIndex((r)=>String(r.id)===String(definition.id));
+            if(idx<0){ setStatus("Range definition not found.", true); return false; }
+            library[idx]=body;
+          }else{
+            library.unshift(body);
+          }
+          await saveRangeDefinitionLibrary(library);
+          const loaded=rangeDefinitionLibrary.find((r)=>String(r.id)===String(body.id));
+          if(loaded){
+            let stripped=false;
+            (body.nodes||[]).forEach((want)=>{
+              const got=(loaded.nodes||[]).find((n)=>String(n.id)===String(want.id));
+              if((want.start?.channels||[]).length && !((got?.start?.channels)||[]).length) stripped=true;
+              if((want.end?.channels||[]).length && !((got?.end?.channels)||[]).length) stripped=true;
+            });
+            if(stripped){
+              const i=rangeDefinitionLibrary.findIndex((r)=>String(r.id)===String(body.id));
+              if(i>=0) rangeDefinitionLibrary[i]=structuredClone(body);
+              setStatus(`Saved '${name}'. Backend dropped channel lists — restart the NOVA backend, then re-save this definition.`, true);
+              if(typeof onSaved==="function") onSaved();
+              return true;
+            }
+          }
+          setStatus(isEdit ? `Updated range definition '${name}'.` : `Created range definition '${name}'.`);
+          if(typeof onSaved==="function") onSaved();
+          return true;
+        }catch(err){
+          setStatus(`Failed to save range definition: ${err}`, true);
+          return false;
+        }
+      });
+      const listEl=byId("m_rdef_nodes");
+      const upsertNode=(body)=>{
+        const idx=nodes.findIndex((n)=>String(n.id)===String(body.id));
+        if(idx>=0) nodes[idx]=body;
+        else nodes.push(body);
+        selectedNodeId=String(body.id);
+        renderTree();
+      };
+      const editNode=(node)=>{
+        openRangeDefinitionNodeForm({
+          mode:"edit",
+          node,
+          nodes,
+          titleParts,
+          onSaved:upsertNode,
+        });
+      };
+      const renderTree=()=>{
+        if(!listEl) return;
+        const ordered=orderedRangeDefTree(nodes);
+        if(!ordered.length){
+          listEl.innerHTML=`<div class="empty">No ranges yet. Use + to add one.</div>`;
+          return;
+        }
+        listEl.innerHTML=ordered.map(({ node:n, depth })=>{
+          const color=n.color||"#3b82f6";
+          const pad=Math.min(48, depth*14);
+          const active=String(selectedNodeId)===String(n.id) ? " active" : "";
+          const meta=`${escapeHtml(rangeDefNodeSummary(n.start))} → ${escapeHtml(rangeDefNodeSummary(n.end))}`;
+          return `<div class="itemRow${active}" data-node-id="${escAttr(n.id)}" style="padding-left:${10+pad}px">
+            <div class="itemPrimary">
+              <span class="rangeListMarker" style="border-color:${escAttr(color)}"><span class="rangeListMarkerDot" style="background:${escAttr(color)}"></span></span>
+              <span>${escapeHtml(n.name||"(unnamed)")}</span>
+            </div>
+            <div class="itemMeta">${meta}</div>
+          </div>`;
+        }).join("");
+        listEl.querySelectorAll(".itemRow[data-node-id]").forEach((row)=>{
+          const id=row.getAttribute("data-node-id");
+          row.onclick=()=>{
+            selectedNodeId=id;
+            renderTree();
+          };
+          row.ondblclick=()=>{
+            const node=nodes.find((n)=>String(n.id)===String(id));
+            if(node) editNode(node);
+          };
+          row.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            selectedNodeId=id;
+            renderTree();
+            const node=nodes.find((n)=>String(n.id)===String(id));
+            if(!node) return;
+            const z=Math.max(200, appWindowZ+15);
+            showContextMenu(ev.clientX, ev.clientY, [
+              { label:"Edit", action:()=>editNode(node) },
+              { label:"Delete", action:()=>{
+                nodes=nodes.filter((n)=>String(n.id)!==String(id));
+                nodes.forEach((n)=>{ if(String(n.parent_id)===String(id)) n.parent_id=null; });
+                if(String(selectedNodeId)===String(id)) selectedNodeId=nodes[0]?.id ? String(nodes[0].id) : "";
+                renderTree();
+              } },
+            ], { zIndex:z });
+          };
+        });
+      };
+      byId("m_rdef_add_node").onclick=(ev)=>{
+        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+        const parent=selectedNodeId && nodes.some((n)=>String(n.id)===String(selectedNodeId))
+          ? selectedNodeId
+          : (nodes[0]?.id || null);
+        openRangeDefinitionNodeForm({
+          mode:"create",
+          node:blankRangeDefNode(parent),
+          nodes,
+          titleParts,
+          onSaved:upsertNode,
+        });
+      };
+      renderTree();
+    }
+    function collectRangeDefChannels(definition){
+      const names=[];
+      const seen=new Set();
+      (definition?.nodes||[]).forEach((n)=>{
+        ["start","end"].forEach((side)=>{
+          const cond=normalizeRangeDefCondition(n[side], side);
+          cond.channels.forEach((ch)=>{
+            if(seen.has(ch)) return;
+            seen.add(ch);
+            names.push(ch);
+          });
+        });
+      });
+      return names;
+    }
+    function selectedRangeCapableSources(){
+      // Sources panel selection only (folder selection expands to files). Never plot/latestRows.
+      return rangeCapableSources(effectiveSelectedSourceIds());
+    }
+    async function sourceChannelNameSet(src){
+      const db=dbForRangeCapableSource(src);
+      if(!db) return new Set();
+      try{
+        if(isFileSource(src)) await ensureFileSourceIndexed(src);
+        const rows=await fetchChannelsForDb(db.id);
+        const names=new Set();
+        rows.forEach((r)=>{
+          const key=channelKeyFromId(r.id) || r.primary;
+          if(key) names.add(key);
+        });
+        return names;
+      }catch{
+        return new Set();
+      }
+    }
+    async function missingRangeDefChannelsForSource(definition, src){
+      const required=collectRangeDefChannels(definition);
+      if(!required.length) return required;
+      const available=await sourceChannelNameSet(src);
+      // Aliases resolve to physical members present on this source.
+      return required.filter((ch)=>resolveCalcDepRawNames(ch, available).length===0);
+    }
+    function resolveRangeDefFetchChannels(definition, available){
+      const names=[];
+      const seen=new Set();
+      collectRangeDefChannels(definition).forEach((ch)=>{
+        resolveCalcDepRawNames(ch, available).forEach((raw)=>{
+          if(!raw || seen.has(raw)) return;
+          seen.add(raw);
+          names.push(raw);
+        });
+      });
+      return names;
+    }
+    function dbForRangeCapableSource(src){
+      if(!src) return null;
+      if(isFileSource(src)) return ensureFileSourceCatalog(src);
+      let db=state.databases.find((d)=>d.sourceId===src.id);
+      if(db) return db;
+      if(src.parent_source_id){
+        db=state.databases.find((d)=>d.sourceId===src.parent_source_id);
+        if(db) return db;
+      }
+      return null;
+    }
+    function testIdsForRangeSource(src, db){
+      if(!db) return [];
+      if(src?.test_id!=null) return [String(src.test_id)];
+      const fromAdded=[...addedTestIds]
+        .filter((k)=>k.startsWith(`${db.id}|`))
+        .map((k)=>k.split("|")[1])
+        .filter(Boolean);
+      if(fromAdded.length) return fromAdded;
+      return ["1"];
+    }
+    function buildRangeDefFormulaSeries(rows, channels, formula){
+      const compiled=compileFormula(formula||"A", channels.length);
+      if(!compiled.ok) throw new Error(compiled.error);
+      const available=new Set((rows||[]).map((r)=>r.channel_name).filter(Boolean));
+      const resolved=channels.map((ch)=>resolveCalcDepForEval(ch, available));
+      if(resolved.some((ch)=>!ch)) return [];
+      const byTime=new Map();
+      resolved.forEach((ch, idx)=>{
+        rows.filter((r)=>r.channel_name===ch).forEach((r)=>{
+          const t=String(r.time);
+          const ts=Number.isFinite(r.__ts)?r.__ts:parseRowTimeMs(r);
+          if(!byTime.has(t)) byTime.set(t,{ vals:Array(resolved.length).fill(NaN), ts });
+          byTime.get(t).vals[idx]=Number(r.value);
+        });
+      });
+      const sorted=[...byTime.entries()].sort((a,b)=>(a[1].ts||0)-(b[1].ts||0));
+      const series=[];
+      let prevMs=null;
+      const ctx={ dt_s:0, __bpStates:{} };
+      sorted.forEach(([,slot])=>{
+        if(slot.vals.some((v)=>!Number.isFinite(v))) return;
+        const currMs=slot.ts;
+        ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000);
+        prevMs=currMs;
+        let outVal=null;
+        try{ outVal=compiled.evalFn(slot.vals, ctx); }catch{ outVal=null; }
+        if(!Number.isFinite(outVal) || !Number.isFinite(currMs)) return;
+        series.push({ t:currMs, y:Number(outVal) });
+      });
+      return series;
+    }
+    function findRangeDefEventTimes(series, cond){
+      if(!series.length) return [];
+      const op=String(cond.op||">");
+      const a=Number(cond.value);
+      const b=cond.value_b==null||cond.value_b==="" ? NaN : Number(cond.value_b);
+      if(!Number.isFinite(a)) return [];
+      if(maskOpNeedsTwoValues(op) && !Number.isFinite(b)) return [];
+      const edge=String(cond.edge||"none").toLowerCase();
+      const occurrence=String(cond.occurrence||"first").toLowerCase();
+      const bools=series.map((p)=>evalMaskValue(p.y, op, a, b));
+      const hits=[];
+      for(let i=0;i<series.length;i+=1){
+        const cur=bools[i];
+        const prev=i>0 ? bools[i-1] : false;
+        let hit=false;
+        if(edge==="rising") hit=!prev && cur;
+        else if(edge==="falling") hit=prev && !cur;
+        else if(edge==="either") hit=(!prev && cur) || (prev && !cur);
+        else hit=occurrence==="all" ? (cur && !prev) : cur;
+        if(hit) hits.push(series[i].t);
+      }
+      if(!hits.length) return [];
+      if(occurrence==="first") return [hits[0]];
+      if(occurrence==="last") return [hits[hits.length-1]];
+      return hits;
+    }
+    function pairRangeDefTimes(starts, ends){
+      const pairs=[];
+      const used=new Set();
+      for(const s of starts){
+        let best=null;
+        let bestIdx=-1;
+        for(let i=0;i<ends.length;i+=1){
+          if(used.has(i)) continue;
+          const e=ends[i];
+          if(!(e>s)) continue;
+          if(best===null || e<best){
+            best=e;
+            bestIdx=i;
+          }
+        }
+        if(bestIdx>=0){
+          used.add(bestIdx);
+          pairs.push({ start:s, end:best });
+        }
+      }
+      return pairs;
+    }
+    function topoRangeDefNodes(nodes){
+      const byId=new Map(nodes.map((n)=>[String(n.id), n]));
+      const visiting=new Set();
+      const visited=new Set();
+      const ordered=[];
+      const walk=(id)=>{
+        if(visited.has(id) || !byId.has(id)) return;
+        if(visiting.has(id)) throw new Error("Cycle in range definition tree");
+        visiting.add(id);
+        const n=byId.get(id);
+        const parent=n.parent_id!=null ? String(n.parent_id) : null;
+        if(parent) walk(parent);
+        visiting.delete(id);
+        visited.add(id);
+        ordered.push(n);
+      };
+      nodes.forEach((n)=>walk(String(n.id)));
+      return ordered;
+    }
+    async function evaluateRangeDefinitionOnSource(definition, src){
+      const channels=collectRangeDefChannels(definition);
+      if(!channels.length) throw new Error(`Definition '${definition.name}' has no selectable channels`);
+      const available=await sourceChannelNameSet(src);
+      const missing=channels.filter((ch)=>resolveCalcDepRawNames(ch, available).length===0);
+      if(missing.length){
+        return { created:[], skipped:true, reason:`missing ${missing.join(", ")}` };
+      }
+      const fetchChannels=resolveRangeDefFetchChannels(definition, available);
+      if(!fetchChannels.length){
+        return { created:[], skipped:true, reason:"missing required channels" };
+      }
+      const db=dbForRangeCapableSource(src);
+      if(!db) throw new Error(`No catalog entry for source '${src.name||src.id}'`);
+      if(isFileSource(src)) await ensureFileSourceIndexed(src);
+      if(!v3ClientReady()) throw new Error("v3 client failed to load. Refresh the page.");
+      const tests=testIdsForRangeSource(src, db);
+      const plotEl=byId("plot");
+      const resolutionPx=Math.max(4000, plotResolutionPx(Math.max(320, Number(plotEl?.clientWidth||window.innerWidth||1400))));
+      const { rows }=await queryV3ForDb(db.id, src, db, fetchChannels, tests, { mode:"detail", resolutionPx });
+      rows.forEach((r)=>{ if(!Number.isFinite(r.__ts)) r.__ts=parseRowTimeMs(r); });
+      const present=new Set(rows.map((r)=>r.channel_name).filter(Boolean));
+      const missingInData=channels.filter((ch)=>resolveCalcDepRawNames(ch, present).length===0);
+      if(missingInData.length){
+        return { created:[], skipped:true, reason:`missing ${missingInData.join(", ")}` };
+      }
+      const ordered=topoRangeDefNodes(definition.nodes||[]);
+      const createdByNode=new Map();
+      const created=[];
+      const defaultParent=(()=>{
+        const sr=findSourceRangeForSource(src);
+        return sr ? Number(sr.range_id) : null;
+      })();
+      for(const node of ordered){
+        const startCond=normalizeRangeDefCondition(node.start, "start");
+        const endCond=normalizeRangeDefCondition(node.end, "end");
+        if(!startCond.channels.length || !endCond.channels.length){
+          throw new Error(`Node '${node.name}' needs channels on start and end`);
+        }
+        const startSeries=buildRangeDefFormulaSeries(rows, startCond.channels, startCond.formula||"A");
+        const endSeries=buildRangeDefFormulaSeries(rows, endCond.channels, endCond.formula||"A");
+        const starts=findRangeDefEventTimes(startSeries, startCond);
+        const ends=findRangeDefEventTimes(endSeries, endCond);
+        const pairs=pairRangeDefTimes(starts, ends);
+        if(!pairs.length){
+          throw new Error(`No matches for '${node.name}' on '${src.name||src.id}'`);
+        }
+        const parentNodeId=node.parent_id!=null ? String(node.parent_id) : null;
+        const parentCreated=parentNodeId ? (createdByNode.get(parentNodeId)||[]) : [];
+        const nodeCreated=[];
+        for(let i=0;i<pairs.length;i+=1){
+          const pair=pairs[i];
+          let parent_range_id=defaultParent;
+          if(parentCreated.length===1) parent_range_id=parentCreated[0].range_id;
+          else if(parentCreated.length>1) parent_range_id=parentCreated[Math.min(i, parentCreated.length-1)].range_id;
+          const name=pairs.length>1 ? `${node.name} ${i+1}` : node.name;
+          const ref=rangeSourceRef(src);
+          const r=await fetch("/api/ranges", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body:JSON.stringify({
+              ...ref,
+              name,
+              label:node.label||null,
+              color:node.color||null,
+              start_time:new Date(pair.start).toISOString(),
+              end_time:new Date(pair.end).toISOString(),
+              parent_range_id,
+              source:"user",
+            }),
+          });
+          if(!r.ok){
+            let msg=`Create range failed (${r.status})`;
+            try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
+            throw new Error(msg);
+          }
+          const item=await r.json();
+          nodeCreated.push(item);
+          created.push(item);
+        }
+        createdByNode.set(String(node.id), nodeCreated);
+      }
+      return { created, skipped:false };
+    }
+    async function applyRangeDefinition(definition, targets=null){
+      const sources=Array.isArray(targets) && targets.length
+        ? targets
+        : selectedRangeCapableSources();
+      if(!sources.length){
+        setStatus("Select one or more ingested sources first.", true);
+        return 0;
+      }
+      if(!definition?.nodes?.length){
+        setStatus("Range definition has no nodes.", true);
+        return 0;
+      }
+      let created=0;
+      const errors=[];
+      const skipped=[];
+      for(const src of sources){
+        try{
+          const result=await evaluateRangeDefinitionOnSource(definition, src);
+          if(result?.skipped){
+            skipped.push(`${src.name||src.id}${result.reason?` (${result.reason})`:""}`);
+            continue;
+          }
+          const items=result?.created || [];
+          created+=items.length;
+          collapsedRangeSourceIds.delete(String(src.id));
+          const sr=findSourceRangeForSource(src);
+          if(sr) collapsedRangeIds.delete(Number(sr.range_id));
+        }catch(err){
+          errors.push(`${src.name||src.id}: ${err?.message||err}`);
+        }
+      }
+      await refreshCatalogRanges();
+      if(created){
+        const extra=[
+          skipped.length ? `Skipped ${skipped.length} source(s) missing channels.` : "",
+          errors.length ? `Some sources failed: ${errors[0]}` : "",
+        ].filter(Boolean).join(" ");
+        setStatus(`Created ${created} range(s) from '${definition.name}'.${extra?` ${extra}`:""}`);
+      }else if(skipped.length && !errors.length){
+        setStatus(`Skipped all ${skipped.length} source(s) — missing required channels.`, true);
+      }else{
+        setStatus(errors[0] || "No ranges created.", true);
+      }
+      return created;
+    }
+    async function openRangeDefinitionManagerModal(){
+      await loadRangeDefinitionLibrary();
+      let library=structuredClone(rangeDefinitionLibrary||[]);
+      library=library.map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
+      const byIdRow=(id)=>library.find((x)=>String(x.id)===String(id))||null;
+      const filterList=(rows)=>{
+        const q=(byId("m_rdef_search")?.value||"").trim().toLowerCase();
+        if(!q) return rows;
+        return rows.filter((r)=>{
+          const blob=`${r.name||""} ${r.description||""} ${(r.nodes||[]).map((n)=>n.name).join(" ")}`.toLowerCase();
+          return blob.includes(q);
+        });
+      };
+      const rowHtml=(def)=>{
+        const n=(def.nodes||[]).length;
+        const meta=`${n} node${n===1?"":"s"} · ${formatConfigUpdatedAt(def.updated_at)}`;
+        return `
+          <div class="selectRow dbManagerRow" data-id="${escAttr(def.id)}" title="${escAttr(def.name||"Range definition")}">
+            <div class="itemPrimary">${escapeHtml(def.name||"Range definition")}</div>
+            <div class="dbRowUpdated">${escapeHtml(meta)}</div>
+          </div>
+        `;
+      };
+      const persistLibrary=async()=>{
+        try{
+          library=await saveRangeDefinitionLibrary(library);
+          return true;
+        }catch(err){
+          setStatus(`Failed to save range definitions: ${err}`, true);
+          return false;
+        }
+      };
+      const refreshFromServer=async()=>{
+        await loadRangeDefinitionLibrary();
+        library=structuredClone(rangeDefinitionLibrary||[]);
+        library=library.map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
+        renderList();
+      };
+      const deleteDef=async(id)=>{
+        const idx=library.findIndex((x)=>String(x.id)===String(id));
+        if(idx<0) return;
+        const removed=library[idx];
+        library.splice(idx,1);
+        const ok=await persistLibrary();
+        if(ok){
+          setStatus(`Deleted range definition '${removed?.name||id}'.`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
+      };
+      const importDefs=async()=>{
+        const obj=await pickConfigJsonFile();
+        if(!obj) return;
+        const rows=Array.isArray(obj.definitions) ? obj.definitions
+          : (Array.isArray(obj) ? obj : [obj]);
+        const imported=rows.filter((r)=>r && typeof r==="object").map((r)=>({
+          ...r,
+          id:crypto.randomUUID(),
+          updated_at:new Date().toISOString(),
+        }));
+        if(!imported.length){
+          setStatus("No valid range definitions found in import file.", true);
+          return;
+        }
+        library=[...imported, ...library];
+        const ok=await persistLibrary();
+        if(ok){
+          setStatus(`Imported ${imported.length} range definition(s).`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
+      };
+      const exportDefs=async()=>{
+        const result=await saveJsonToFile("nova_range_definition_library.json", { definitions:library });
+        if(result.ok&&result.viaPicker) setStatus("Range definition library exported.");
+        if(result.ok&&!result.viaPicker) setStatus("Range definition library downloaded.");
+        if(!result.ok&&result.cancelled) setStatus("Export cancelled.");
+      };
+      const renderList=()=>{
+        const el=byId("m_rdef_list");
+        if(!el) return;
+        const filtered=filterList(library);
+        el.innerHTML=filtered.length
+          ? filtered.map((r)=>rowHtml(r)).join("")
+          : `<div class="empty">${library.length?"No matching definitions.":"No range definitions yet. Use + to create one."}</div>`;
+        el.querySelectorAll(".selectRow[data-id]").forEach((row)=>{
+          const id=row.getAttribute("data-id");
+          row.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const def=byIdRow(id);
+            if(!def) return;
+            const z=Math.max(200, appWindowZ+15);
+            showContextMenu(ev.clientX, ev.clientY, [
+              { label:"Apply to selected sources", action:()=>{ void applyRangeDefinition(def); } },
+              { label:"Edit", action:()=>openRangeDefinitionForm({ mode:"edit", definition:def, onSaved:()=>{ void refreshFromServer(); } }) },
+              { label:"Delete", action:()=>{ void deleteDef(id); } },
+              { sep:true },
+              { label:"Import definitions...", action:()=>{ void importDefs(); } },
+              { label:"Export definitions...", action:()=>{ void exportDefs(); } },
+            ], { zIndex:z });
+          };
+          row.ondblclick=()=>{
+            const def=byIdRow(id);
+            if(def) openRangeDefinitionForm({ mode:"edit", definition:def, onSaved:()=>{ void refreshFromServer(); } });
+          };
+        });
+      };
+      openModal(
+        "Ranges > Definitions",
+        `<div class="maskSearchPad dbManagerToolbar">
+            <input id="m_rdef_search" class="searchInput" type="text" placeholder="Search..." />
+            <button id="m_rdef_add_btn" type="button" class="addBtn" aria-label="Create range definition">+</button>
+         </div>
+         <div class="maskListPad">
+           <div id="m_rdef_list" class="modalList"></div>
+         </div>
+         <div class="modalActions" style="display:none" aria-hidden="true"></div>`,
+        async()=>true,
+        { ...WF_CFG, closable:true, titleHtml:rangeDefsWindowTitleHtml() }
+      );
+      byId("m_rdef_search").oninput=()=>renderList();
+      byId("m_rdef_add_btn").onclick=(ev)=>{
+        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+        openRangeDefinitionForm({ mode:"create", onSaved:()=>{ void refreshFromServer(); } });
+      };
+      const listHost=byId("m_rdef_list");
+      if(listHost){
+        listHost.oncontextmenu=(ev)=>{
+          if(ev.target.closest && ev.target.closest(".selectRow[data-id]")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const z=Math.max(200, appWindowZ+15);
+          showContextMenu(ev.clientX, ev.clientY, [
+            { label:"Import definitions...", action:()=>{ void importDefs(); } },
+            { label:"Export definitions...", action:()=>{ void exportDefs(); } },
+          ], { zIndex:z });
+        };
+      }
+      renderList();
+    }
+
     function savePlots(){
       // Keep tab persistence lightweight; row payloads can be very large.
       localStorage.setItem(PLOTS_KEY, JSON.stringify({
@@ -10671,6 +12082,7 @@
         focusedItem=null;
         renderAll();
         saveStateDeferred();
+        if(kind==="mask" && selectedSourceIds.size) void loadTimeseries();
       };
 
       items.forEach((it,idx)=>{
@@ -10691,6 +12103,7 @@
           }
           renderAll();
           saveStateDeferred();
+          if(kind==="mask" && selectedSourceIds.size) void loadTimeseries();
         };
         row.oncontextmenu=(ev)=>{
           ev.preventDefault();
@@ -10786,65 +12199,114 @@
       // Channel keys are cross-source names; selection empty ⇒ all added keys.
       return effectiveIds({ selected:selectedChannelIds, all:[...addedChannelIds] });
     }
+    function effectiveSelectedMaskIds(){
+      // Selection empty ⇒ all masks (same pattern as channels).
+      return effectiveIds({
+        selected:selectedMaskIds,
+        all:(state.masks||[]).map((m)=>m.id).filter(Boolean),
+      });
+    }
 
-    function buildXAxis(){ /* time-series views only; x axis is always time */ }
-    function buildUnitAxes(traces, plotWidthPx){
-      const m=new Map(),layout={};
-      const axisSpacingPx = plotWidthPx < 1200 ? 64 : 54;
-      let i=0;
-      traces.forEach((t)=>{
-        const u=t._unit||"unitless";
-        if(!m.has(u)){
-          i+=1;
-          m.set(u, i===1 ? "y" : `y${i}`);
-          const key=i===1 ? "yaxis" : `yaxis${i}`;
-          if(i===1){
-            layout[key]={
-              title:u,
-              side:"right",
-              anchor:"x",
-              automargin:false,
-              autorange:true,
-              titlefont:{size:Number(appearance.axisTitleSize||11)},
-              tickfont:{size:Number(appearance.axisTickSize||10)},
-              showticklabels:true,
-              ticks:"outside",
-              ticklen:4,
-              showline:true,
-              zeroline:false
-            };
-          } else {
-            const axisOffset=i-1;
-            layout[key]={
-              title:u,
-              overlaying:"y",
-              side:"right",
-              anchor:"free",
-              position:1,
-              // Keep spacing readable even in windowed mode.
-              shift:axisOffset*axisSpacingPx,
-              automargin:false,
-              autorange:true,
-              titlefont:{size:Number(appearance.axisTitleSize||11)},
-              tickfont:{size:Number(appearance.axisTickSize||10)},
-              showticklabels:true,
-              ticks:"outside",
-              ticklen:4,
-              showline:true,
-              zeroline:false
-            };
-          }
+    function normalizePlotUnit(u){
+      const cleaned=String(u??"").trim();
+      return cleaned || "unitless";
+    }
+    function traceHasFinitePoints(t){
+      const ys=t?.y;
+      if(!ys?.length) return false;
+      for(let i=0;i<ys.length;i+=1){
+        if(Number.isFinite(Number(ys[i]))) return true;
+      }
+      return false;
+    }
+    function yRangeFromTracesForAxis(traces, yref){
+      let lo=Infinity;
+      let hi=-Infinity;
+      (traces||[]).forEach((t)=>{
+        if(String(t.yaxis||"y")!==String(yref||"y")) return;
+        const ys=t.y||[];
+        for(let i=0;i<ys.length;i+=1){
+          const v=Number(ys[i]);
+          if(!Number.isFinite(v)) continue;
+          if(v<lo) lo=v;
+          if(v>hi) hi=v;
         }
       });
-      traces.forEach((t)=>{ t.yaxis=m.get(t._unit||"unitless"); });
+      if(!Number.isFinite(lo) || !Number.isFinite(hi)) return null;
+      if(lo===hi){
+        const pad=Math.max(Math.abs(lo)*0.05, 1e-9);
+        return [lo-pad, hi+pad];
+      }
+      const pad=(hi-lo)*0.05;
+      return [lo-pad, hi+pad];
+    }
+    function buildXAxis(){ /* time-series views only; x axis is always time */ }
+    function buildUnitAxes(traces, plotWidthPx, { resetRanges=false }={}){
+      const m=new Map(),layout={};
+      const axisSpacingPx = plotWidthPx < 1200 ? 64 : 54;
+      // Prefer real units for the primary axis so a blank/unitless series does not
+      // steal the main axis (and inflate autorange) when mixed with valued channels.
+      const units=[];
+      const seen=new Set();
+      (traces||[]).forEach((t)=>{
+        if(!traceHasFinitePoints(t)) return;
+        const u=normalizePlotUnit(t._unit);
+        t._unit=u;
+        if(seen.has(u)) return;
+        seen.add(u);
+        units.push(u);
+      });
+      units.sort((a,b)=>{
+        const au=a==="unitless"?1:0;
+        const bu=b==="unitless"?1:0;
+        if(au!==bu) return au-bu;
+        return a.localeCompare(b);
+      });
+      units.forEach((u, idx)=>{
+        const i=idx+1;
+        m.set(u, i===1 ? "y" : `y${i}`);
+      });
+      (traces||[]).forEach((t)=>{
+        if(!traceHasFinitePoints(t)) return;
+        t.yaxis=m.get(normalizePlotUnit(t._unit)) || "y";
+      });
+      units.forEach((u, idx)=>{
+        const i=idx+1;
+        const key=i===1 ? "yaxis" : `yaxis${i}`;
+        const yref=i===1 ? "y" : `y${i}`;
+        const dataRange=resetRanges ? yRangeFromTracesForAxis(traces, yref) : null;
+        const base={
+          title:{ text:u },
+          side:"right",
+          automargin:false,
+          autorange:!dataRange,
+          ...(dataRange ? { range:dataRange } : {}),
+          titlefont:{size:Number(appearance.axisTitleSize||11)},
+          tickfont:{size:Number(appearance.axisTickSize||10)},
+          showticklabels:true,
+          ticks:"outside",
+          ticklen:4,
+          showline:true,
+          zeroline:false,
+        };
+        if(i===1){
+          layout[key]={ ...base, anchor:"x" };
+        }else{
+          layout[key]={
+            ...base,
+            overlaying:"y",
+            anchor:"free",
+            position:1,
+            shift:(i-1)*axisSpacingPx,
+          };
+        }
+      });
       return layout;
     }
     function effectiveSampleHz(chId){
       const overrides=state.freqOverrides||{};
       const localHz=Number(overrides[chId]||overrides[channelKeyFromId(chId)]||0);
-      const globalHz=Number(maxSampleHzGlobal||0);
-      if(localHz>0 && globalHz>0) return Math.min(localHz, globalHz);
-      return localHz>0?localHz:(globalHz>0?globalHz:0);
+      return localHz>0?localHz:0;
     }
     function applyFreq(points,chId){
       const hz=effectiveSampleHz(chId);
@@ -10853,16 +12315,14 @@
       const bins=new Map();
       points.forEach((p)=>{
         const ts=p.__ts,k=Math.floor(ts/bucket)*bucket;
-        if(!bins.has(k)) bins.set(k,{sum:0,n:0,s:p,maxRt:Number.NEGATIVE_INFINITY});
+        if(!bins.has(k)) bins.set(k,{sum:0,n:0,s:p});
         const b=bins.get(k);
         b.sum+=1*Number(p.value); b.n+=1;
-        const prt=Number(p.__rt);
-        if(Number.isFinite(prt)) b.maxRt=Math.max(b.maxRt, prt);
       });
       const out=[];
       bins.forEach((v,k)=>{
         const base=v.s;
-        const row={
+        out.push({
           test_run_id:base.test_run_id,
           test_run_code:base.test_run_code,
           channel_name:base.channel_name,
@@ -10871,14 +12331,11 @@
           __ts:k,
           time:new Date(k).toISOString(),
           value:v.sum/v.n,
-        };
-        if(Number.isFinite(v.maxRt)) row.__rt=v.maxRt;
-        out.push(row);
+        });
       });
       out.sort((a,b)=>a.__ts-b.__ts);
       return out;
     }
-    function stopRealtime(){ if(realtimeTimer){ cancelAnimationFrame(realtimeTimer); realtimeTimer=null; } realtimeLockedXRange=null; realtimeLockedYRanges=null; }
     function snapshotPlotAxisLocks(gd){
       const out={ xRange:null, yRanges:{} };
       const plotGd=plotlyGraphDiv(gd);
@@ -10943,7 +12400,7 @@
     }
     function mergeAxisLocksIntoLayout(layoutBase, locks){
       if(!locks) return;
-      if(locks.xRange&&locks.xRange.length===2&&!realtimeLockedXRange){
+      if(locks.xRange&&locks.xRange.length===2){
         layoutBase.xaxis={...layoutBase.xaxis, range:[...locks.xRange], autorange:false};
       }
       if(locks.yRanges){
@@ -10953,453 +12410,14 @@
         });
       }
     }
-    function buildRealtimeRelayoutPatch(){
-      const patch={};
-      if(realtimeLockedXRange&&realtimeLockedXRange.length===2){
-        patch["xaxis.autorange"]=false;
-        patch["xaxis.range[0]"]=realtimeLockedXRange[0];
-        patch["xaxis.range[1]"]=realtimeLockedXRange[1];
-      }
-      if(realtimeLockedYRanges){
-        Object.keys(realtimeLockedYRanges).forEach((axisKey)=>{
-          const r=realtimeLockedYRanges[axisKey];
-          if(!Array.isArray(r)||r.length!==2) return;
-          patch[`${axisKey}.autorange`]=false;
-          patch[`${axisKey}.range[0]`]=r[0];
-          patch[`${axisKey}.range[1]`]=r[1];
-        });
-      }
-      return patch;
-    }
-    function buildRealtimeRows(){
-      const { t0FirstSample, t0Meta }=buildTimeRefMaps(latestRows);
-      return latestRows.map((r)=>{
-        const ts=r.__ts;
-        const mode=effectiveTimeRefForDbId(r.__dbId, latestRows);
-        let rt=ts/1000;
-        if(mode==="first_index"){
-          const base=t0FirstSample.get(`${r.__dbId}|${r.test_run_id}`);
-          rt=Number.isFinite(base)?(ts-base)/1000:ts/1000;
-        } else if(mode==="t0_relative"){
-          const k=`${r.__dbId}|${r.test_run_id}`;
-          const base=t0Meta.get(k);
-          const fallback=t0FirstSample.get(k);
-          const b=Number.isFinite(base)?base:fallback;
-          rt=Number.isFinite(b)?(ts-b)/1000:ts/1000;
-        }
-        return {...r,__ms:ts,__rt:rt};
-      }).filter((r)=>Number.isFinite(r.__rt)).sort((a,b)=>a.__rt-b.__rt);
-    }
-    function realtimeFrameRows(){
-      if(realtimeCurrentMs===null) return latestRows||[];
-      let lo=0, hi=realtimeRows.length;
-      while(lo<hi){
-        const mid=(lo+hi)>>1;
-        if(realtimeRows[mid].__rt<=realtimeCurrentMs) lo=mid+1;
-        else hi=mid;
-      }
-      realtimeFrameIndex=lo;
-      const frameRows=realtimeRows.slice(0, lo);
-      if(frameRows.length<=12000) return frameRows;
-      const stride=Math.max(1, Math.ceil(frameRows.length/12000));
-      const sampled=[];
-      for(let i=0;i<frameRows.length;i+=stride) sampled.push(frameRows[i]);
-      if(sampled[sampled.length-1]!==frameRows[frameRows.length-1]) sampled.push(frameRows[frameRows.length-1]);
-      return sampled;
-    }
-    function updateRealtimeStatus(){ const s=byId("realtimeStatus"); if(!s) return; if(realtimeCurrentMs===null){ s.textContent="Idle"; return; } const useDate=plotUsesDateAxis(latestRows); const point=useDate?new Date(realtimeCurrentMs*1000).toISOString():`${realtimeCurrentMs.toFixed(3)}s`; s.textContent=`Forward @ ${point}`; }
-    function precomputeRealtimeTraces(){
-      realtimePrecomputed=null;
-      if(!realtimeRows.length) return;
-
-      const grouped=new Map();
-      realtimeRows.forEach((r)=>{
-        const key=traceLegendName(r);
-        if(!grouped.has(key)) grouped.set(key,[]);
-        grouped.get(key).push(r);
-      });
-
-      const { t0FirstSample, t0Meta }=buildTimeRefMaps(realtimeRows);
-
-      const result=[];
-      let traceIdx=0;
-      grouped.forEach((pts)=>{
-        const chId=`${pts[0].__dbId}|${pts[0].channel_name}`;
-        const t0Mode=effectiveTimeRefForDbId(pts[0].__dbId, realtimeRows);
-        const down=applyFreq(pts,chId).sort((a,b)=>a.__ts-b.__ts);
-        const n=down.length;
-        const xFull=new Float64Array(n);
-        const yFull=new Float64Array(n);
-        const rtFull=new Float64Array(n);
-        down.forEach((p,i)=>{
-          yFull[i]=p.value;
-          rtFull[i]=p.__rt;
-          if(t0Mode==="absolute"){
-            xFull[i]=parseRowTimeMs(p);
-          } else {
-            const k=`${p.__dbId}|${p.test_run_id}`;
-            const base=t0Mode==="t0_relative"?t0Meta.get(k):t0FirstSample.get(k);
-            xFull[i]=Number.isFinite(base)?(p.__ts-base)/1000:p.__ts/1000;
-          }
-        });
-        result.push({xFull,yFull,rtFull,xIsNumeric:true,traceIdx});
-        traceIdx++;
-      });
-      realtimePrecomputed=result;
-    }
-    function startRealtime(direction, replay=false, opts={}){
-      if(!latestRows.length){ setStatus("Load data first for real-time traces.", true); return; }
-      const gd=byId("plot");
-      const snapStart=snapshotPlotAxisLocks(gd);
-      const locked=snapStart.xRange;
-      const lockedY=snapStart.yRanges;
-      realtimeDirection = 1;
-      if(!realtimeRows.length){
-        realtimeRows=buildRealtimeRows();
-        if(!realtimeRows.length){ setStatus("No valid timestamps for real-time traces.", true); return; }
-        realtimeMinMs=realtimeRows[0].__rt;
-        realtimeMaxMs=realtimeRows[realtimeRows.length-1].__rt;
-        realtimeCurrentMs=realtimeMinMs;
-        precomputeRealtimeTraces();
-      }
-      if(replay || realtimeCurrentMs===null) realtimeCurrentMs=realtimeMinMs;
-      realtimeStartDataMs=realtimeCurrentMs;
-      realtimeStartWallMs=performance.now();
-      realtimeLastDrawMs=0;
-      stopRealtime();
-      realtimeLockedXRange=locked;
-      realtimeLockedYRanges=lockedY;
-      realtimeLoopEnabled=Boolean(opts.forceNoLoop ? false : byId("realtimeLoopBtn")?.classList.contains("active"));
-      const totalRows=realtimeRows.length;
-      realtimeFrameStepMs = totalRows > 120000 ? 80 : (totalRows > 50000 ? 50 : (totalRows > 15000 ? 33 : 16));
-      const tick=(now)=>{
-        const elapsed=(now-realtimeStartWallMs)/1000;
-        let nextMs=realtimeStartDataMs + elapsed;
-        let hitEnd=false;
-        if(nextMs>=realtimeMaxMs){
-          if(realtimeLoopEnabled){
-            const span=Math.max(1e-9, realtimeMaxMs-realtimeMinMs);
-            nextMs=realtimeMinMs + ((nextMs-realtimeMinMs) % span);
-          } else {
-            nextMs=realtimeMaxMs;
-            hitEnd=true;
-          }
-        }
-        realtimeCurrentMs=nextMs;
-        if((now-realtimeLastDrawMs)>=realtimeFrameStepMs || hitEnd){
-          if(realtimePrecomputed&&realtimePrecomputed.length){
-            const xUpdates=[], yUpdates=[], indices=[];
-            realtimePrecomputed.forEach((t)=>{
-              const lo=bsearch(t.rtFull,realtimeCurrentMs);
-              xUpdates.push(t.xIsNumeric ? Array.from(t.xFull.subarray(0,lo)) : t.xFull.slice(0,lo));
-              yUpdates.push(Array.from(t.yFull.subarray(0,lo)));
-              indices.push(t.traceIdx);
-            });
-            try{
-              const gdPlot=plotlyGraphDiv();
-              Plotly.restyle(gdPlot,{x:xUpdates,y:yUpdates},indices);
-              const needY=!realtimeLockedYRanges||Object.keys(realtimeLockedYRanges).length===0;
-              if(!realtimeLockedXRange||needY){
-                const snap=snapshotPlotAxisLocks(gdPlot);
-                if(!realtimeLockedXRange&&snap.xRange) realtimeLockedXRange=snap.xRange;
-                if(needY&&snap.yRanges&&Object.keys(snap.yRanges).length){
-                  realtimeLockedYRanges=realtimeLockedYRanges||{};
-                  Object.assign(realtimeLockedYRanges,snap.yRanges);
-                }
-              }
-              const patch=buildRealtimeRelayoutPatch();
-              if(Object.keys(patch).length) Plotly.relayout(gdPlot,patch);
-            }catch(e){ setStatus(`Plot render warning: ${e}`,true); }
-            if(previewVisible){ renderRows(realtimeFrameRows()); }
-          } else {
-            const frameRows=realtimeFrameRows();
-            if(previewVisible){ renderRows(frameRows); }
-            try{ plotRows(frameRows, { preserveUi:true, dataOnly:true }); }catch(e){ setStatus(`Plot render warning: ${e}`, true); }
-            try{ if(typeof opts.onDraw==="function") opts.onDraw(frameRows); }catch{}
-          }
-          updateRealtimeStatus();
-          realtimeLastDrawMs=now;
-        }
-        if(hitEnd){
-          try{ if(typeof opts.onComplete==="function") opts.onComplete(); }catch{}
-          stopRealtime();
-          return;
-        }
-        realtimeTimer=requestAnimationFrame(tick);
-      };
-      const runLoop=()=>{
-        realtimeTimer=requestAnimationFrame(tick);
-        updateRealtimeStatus();
-      };
-      if(realtimePrecomputed?.length&&lastChartTraces?.length&&window.Plotly){
-        suppressZoomRelayout+=1;
-        plotlyDraw(byId("plot"), lastChartTraces, lastChartLayout||{}, {}).then(()=>{
-          setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); },200);
-          runLoop();
-        }).catch((e)=>{
-          setStatus(`Realtime plot bootstrap failed: ${formatPlotError(e)}`,true);
-          runLoop();
-        });
-        return;
-      }
-      runLoop();
-    }
-    async function saveBlobToFile(defaultName, blob, mimeType, extension, description){
-      const normalizedDefaultName = new RegExp(`\\.${extension}$`, "i").test(defaultName) ? defaultName : `${defaultName}.${extension}`;
-      if (window.showSaveFilePicker) {
-        try {
-          let handle = await window.showSaveFilePicker({
-            suggestedName: normalizedDefaultName,
-            excludeAcceptAllOption: true,
-            types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [mimeType]: [`.${extension}`] } }],
-          });
-          if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) {
-            handle = await window.showSaveFilePicker({
-              suggestedName: `${handle.name || "nova_export"}.${extension}`,
-              excludeAcceptAllOption: true,
-              types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [mimeType]: [`.${extension}`] } }],
-            });
-            if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) return { ok: false, cancelled: true };
-          }
-          const writable = await handle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-          return { ok: true, viaPicker: true };
-        } catch (err) {
-          if (err && err.name === "AbortError") return { ok: false, cancelled: true };
-          setStatus(`Save dialog failed, using download fallback: ${err}`, true);
-        }
-      }
-      try {
-        const a=document.createElement("a");
-        a.href=URL.createObjectURL(blob);
-        a.download=normalizedDefaultName;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        return { ok: true, viaPicker: false };
-      } catch (err) {
-        setStatus(`Export failed: ${err}`, true);
-        return { ok: false, cancelled: false };
-      }
-    }
-    async function pickSaveFileTarget(defaultName, mimeType, extension, description){
-      const normalizedDefaultName = new RegExp(`\\.${extension}$`, "i").test(defaultName) ? defaultName : `${defaultName}.${extension}`;
-      if (!window.showSaveFilePicker) return { ok:true, viaPicker:false, defaultName: normalizedDefaultName };
-      try {
-        let handle = await window.showSaveFilePicker({
-          suggestedName: normalizedDefaultName,
-          excludeAcceptAllOption: true,
-          types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [mimeType]: [`.${extension}`] } }],
-        });
-        if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) {
-          handle = await window.showSaveFilePicker({
-            suggestedName: `${handle.name || "nova_export"}.${extension}`,
-            excludeAcceptAllOption: true,
-            types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [mimeType]: [`.${extension}`] } }],
-          });
-          if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) return { ok:false, cancelled:true };
-        }
-        return { ok:true, viaPicker:true, handle, defaultName: normalizedDefaultName };
-      } catch (err) {
-        if (err && err.name === "AbortError") return { ok:false, cancelled:true };
-        setStatus(`Save dialog failed, falling back to download: ${err}`, true);
-        return { ok:true, viaPicker:false, defaultName: normalizedDefaultName };
-      }
-    }
-    async function exportRealtimeAnimation(exportCfg={}){
-      if(realtimeExporting){ setStatus("Animation export already running.", true); return; }
-      if(!latestRows.length){ setStatus("Load data first for animation export.", true); return; }
-      if(typeof MediaRecorder==="undefined"){ setStatus("MediaRecorder is not available in this environment.", true); return; }
-      const fileType=(exportCfg.fileType||"webm").toLowerCase();
-      const fps=Math.max(1, Math.min(120, Number(exportCfg.framerate||30)));
-      const transparentBg=Boolean(exportCfg.transparentBg);
-      const axisVisible=exportCfg.axisVisible!==undefined ? Boolean(exportCfg.axisVisible) : true;
-      const gridVisible=exportCfg.gridVisible!==undefined ? Boolean(exportCfg.gridVisible) : true;
-      const plotEl=byId("plot");
-      const width=Math.max(320, Number(plotEl?.clientWidth||0));
-      const height=Math.max(220, Number(plotEl?.clientHeight||0));
-      const dpr=Math.max(1.5, Math.min(3, Number(window.devicePixelRatio||1)*1.5));
-      const captureCanvas=document.createElement("canvas");
-      captureCanvas.width=Math.round(width*dpr);
-      captureCanvas.height=Math.round(height*dpr);
-      const ctx=captureCanvas.getContext("2d",{alpha:true});
-      if(!ctx){ setStatus("Unable to create export canvas.", true); return; }
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      ctx.imageSmoothingEnabled=true;
-      ctx.imageSmoothingQuality="high";
-      const stream=captureCanvas.captureStream(fps);
-      const mimeCandidates=fileType==="mp4"
-        ? ["video/mp4;codecs=h264","video/mp4"]
-        : (transparentBg
-          ? ["video/webm;codecs=vp9","video/webm"]
-          : ["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"]);
-      const mimeType=mimeCandidates.find((m)=>MediaRecorder.isTypeSupported?.(m)) || "video/webm";
-      if(fileType==="mp4" && !/^video\/mp4/i.test(mimeType)){
-        setStatus("MP4 export is not supported in this runtime. Use WebM instead.", true);
-        return;
-      }
-      const ext=/^video\/mp4/i.test(mimeType) ? "mp4" : "webm";
-      const saveMime=/^video\/mp4/i.test(mimeType) ? "video/mp4" : "video/webm";
-      const saveDesc=/^video\/mp4/i.test(mimeType) ? "MP4 video" : "WebM video";
-      const p=getActivePlot();
-      const defaultName=`nova_${(p?.name||"view").replaceAll(" ","_")}_animation.${ext}`;
-      const saveTarget=await pickSaveFileTarget(defaultName, saveMime, ext, saveDesc);
-      if(!saveTarget.ok){
-        if(saveTarget.cancelled) setStatus("Animation export cancelled.");
-        return;
-      }
-      const chunks=[];
-      let recorder;
-      const pxCount=Math.max(1, captureCanvas.width*captureCanvas.height);
-      const bitrate=Math.max(14_000_000, Math.min(50_000_000, Math.round(pxCount*fps*0.28)));
-      try {
-        recorder=new MediaRecorder(stream,{mimeType, videoBitsPerSecond: bitrate});
-      } catch (err) {
-        setStatus(`Unable to start recorder: ${err}`, true);
-        return;
-      }
-      let svgOverlayImg=null;
-      let svgOverlayReady=false;
-      let svgOverlayLoading=false;
-      const inlineSvgComputedStyles=(srcRoot, cloneRoot)=>{
-        const props=["fill","fill-opacity","stroke","stroke-opacity","stroke-width","opacity","font-family","font-size","font-weight","shape-rendering","text-rendering","dominant-baseline"];
-        const srcNodes=[srcRoot,...srcRoot.querySelectorAll("*")];
-        const cloneNodes=[cloneRoot,...cloneRoot.querySelectorAll("*")];
-        const n=Math.min(srcNodes.length, cloneNodes.length);
-        for(let i=0;i<n;i+=1){
-          const srcNode=srcNodes[i], dstNode=cloneNodes[i];
-          if(!(srcNode instanceof Element) || !(dstNode instanceof Element)) continue;
-          const cs=getComputedStyle(srcNode);
-          const style=props.map((p)=>`${p}:${cs.getPropertyValue(p)};`).join("");
-          const prev=dstNode.getAttribute("style")||"";
-          dstNode.setAttribute("style", `${prev}${style}`);
-        }
-      };
-      const refreshSvgOverlay=async()=>{
-        if(svgOverlayLoading) return;
-        svgOverlayLoading=true;
-        try{
-          const svg=plotEl.querySelector("svg.main-svg");
-          if(!svg){ svgOverlayReady=false; return; }
-          const svgClone=svg.cloneNode(true);
-          inlineSvgComputedStyles(svg, svgClone);
-          const xml=new XMLSerializer().serializeToString(svgClone);
-          const url=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(xml)}`;
-          const img=new Image();
-          const loaded=new Promise((resolve,reject)=>{ img.onload=()=>resolve(); img.onerror=(e)=>reject(e); });
-          img.src=url;
-          await loaded;
-          svgOverlayImg=img;
-          svgOverlayReady=true;
-        }catch{
-          svgOverlayReady=false;
-        }finally{
-          svgOverlayLoading=false;
-        }
-      };
-      const drawFrame=()=>{
-        const glCanvas=plotEl.querySelector(".gl-container canvas");
-        ctx.clearRect(0,0,width,height);
-        if(!transparentBg){
-          ctx.fillStyle=chromeViewBg();
-          ctx.fillRect(0,0,width,height);
-        }
-        // Draw layout first (axes/grid/labels), then traces so data stays visible.
-        if(svgOverlayReady && svgOverlayImg) ctx.drawImage(svgOverlayImg,0,0,width,height);
-        if(glCanvas) ctx.drawImage(glCanvas,0,0,width,height);
-      };
-      const donePromise=new Promise((resolve,reject)=>{
-        recorder.ondataavailable=(e)=>{ if(e.data && e.data.size>0) chunks.push(e.data); };
-        recorder.onerror=(e)=>reject(e?.error || new Error("Recorder error"));
-        recorder.onstop=()=>resolve();
-      });
-      const loopBtn=byId("realtimeLoopBtn");
-      const prevLoop=Boolean(loopBtn?.classList.contains("active"));
-      if(loopBtn) loopBtn.classList.remove("active");
-      realtimeExportRenderOptions={ transparentBg, axisVisible, gridVisible };
-      realtimeExporting=true;
-      setStatus("Recording animation export...");
-      await refreshSvgOverlay();
-      recorder.start(250);
-      startRealtime(1, true, {
-        forceNoLoop:true,
-        onDraw:()=>{ drawFrame(); if(!svgOverlayLoading) refreshSvgOverlay(); },
-        onComplete:()=>{
-          Promise.resolve(refreshSvgOverlay()).finally(()=>{
-            drawFrame();
-            if(recorder.state!=="inactive") recorder.stop();
-          });
-        }
-      });
-      try {
-        await donePromise;
-        const blob=new Blob(chunks,{type:mimeType});
-        let result;
-        if(saveTarget.viaPicker && saveTarget.handle){
-          const writable = await saveTarget.handle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-          result = { ok:true, viaPicker:true };
-        } else {
-          result=await saveBlobToFile(saveTarget.defaultName||defaultName, blob, saveMime, ext, saveDesc);
-        }
-        if (result.ok && result.viaPicker) setStatus(`Animation exported to ${ext.toUpperCase()}.`);
-        if (result.ok && !result.viaPicker) setStatus("Animation downloaded.");
-        if (!result.ok && result.cancelled) setStatus("Animation export cancelled.");
-      } catch (err) {
-        setStatus(`Animation export failed: ${err}`, true);
-      } finally {
-        if(loopBtn) loopBtn.classList.toggle("active", prevLoop);
-        realtimeExportRenderOptions=null;
-        try{ plotRows(realtimeCurrentMs===null ? (latestRows||[]) : realtimeFrameRows()); }catch{}
-        realtimeExporting=false;
-      }
-    }
-    function openRealtimeExportModal(){
-      openModal("Export Animation", `<div class="modalGrid">
-        <div>
-          <label for="m_export_filetype">File Type</label>
-          <select id="m_export_filetype">
-            <option value="webm">WebM</option>
-            <option value="mp4">MP4</option>
-          </select>
-        </div>
-        <div>
-          <label for="m_export_fps">Framerate (fps)</label>
-          <input id="m_export_fps" type="number" min="1" max="120" step="1" value="30" />
-        </div>
-      </div>
-      <div style="padding:0 10px 8px;">
-        <label style="display:flex;align-items:center;gap:8px;margin:4px 0;"><input id="m_export_transparent" type="checkbox" style="width:auto;" />Transparent background</label>
-        <label style="display:flex;align-items:center;gap:8px;margin:4px 0;"><input id="m_export_axis" type="checkbox" style="width:auto;" checked />Show axes</label>
-        <label style="display:flex;align-items:center;gap:8px;margin:4px 0;"><input id="m_export_grid" type="checkbox" style="width:auto;" checked />Show grid</label>
-      </div>
-      <div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Export</button></div>`, async()=>{
-        const fileType=(byId("m_export_filetype").value||"webm").toLowerCase();
-        const framerate=Number(byId("m_export_fps").value||30);
-        if(!Number.isFinite(framerate) || framerate<=0){ setStatus("Framerate must be a positive number.", true); return false; }
-        const cfg={
-          fileType,
-          framerate,
-          transparentBg:Boolean(byId("m_export_transparent").checked),
-          axisVisible:Boolean(byId("m_export_axis").checked),
-          gridVisible:Boolean(byId("m_export_grid").checked),
-        };
-        exportRealtimeAnimation(cfg);
-        return true;
-      });
-    }
-    function openMaxFreqModal(){ openModal("Set Max Sample Frequency",`<div class="modalGrid" style="grid-template-columns:1fr;"><div><label>Maximum frequency in Hz (blank = no global cap)</label><input id="m_max_hz" type="number" step="any" value="${maxSampleHzGlobal??""}" placeholder="e.g. 100" /></div></div><div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveCloseBtn" type="button">Apply</button></div>`,async()=>{ const raw=(byId("m_max_hz").value||"").trim(); if(!raw){ maxSampleHzGlobal=null; if(latestRows.length) plotRows(latestRows); setStatus("Global max sample frequency cleared."); return true; } const hz=Number(raw); if(!Number.isFinite(hz)||hz<=0){ setStatus("Max sample frequency must be a positive number.", true); return false; } maxSampleHzGlobal=hz; if(latestRows.length) plotRows(latestRows); setStatus(`Global max sample frequency set to ${hz} Hz.`); return true; }); }
-    function initRealtimePanel(){ const panel=byId("realtimePanel"), header=byId("realtimePanelHeader"); let dragging=false, dx=0, dy=0; header.onmousedown=(e)=>{ dragging=true; dx=e.clientX-panel.offsetLeft; dy=e.clientY-panel.offsetTop; e.preventDefault(); }; window.addEventListener("mousemove",(e)=>{ if(!dragging) return; panel.style.left=`${Math.max(0,e.clientX-dx)}px`; panel.style.top=`${Math.max(0,e.clientY-dy)}px`; panel.style.right="auto"; }); window.addEventListener("mouseup",()=>{ dragging=false; }); byId("realtimeCloseBtn").onclick=()=>{ panel.style.display="none"; }; byId("realtimePlayBtn").onclick=()=>startRealtime(1); byId("realtimePauseBtn").onclick=()=>{ stopRealtime(); updateRealtimeStatus(); }; byId("realtimeForwardBtn").onclick=()=>{ startRealtime(1); }; byId("realtimeReplayBtn").onclick=()=>{ startRealtime(1, true); }; byId("realtimeLoopBtn").onclick=()=>{ const b=byId("realtimeLoopBtn"); b.classList.toggle("active"); }; byId("realtimeExportBtn").onclick=()=>{ openRealtimeExportModal(); }; }
     async function plotRows(rows, plotOpts={}){
       const drawGen=++plotDrawGeneration;
       let phase="init";
       lastPlotFailPhase="";
       try{
-      const useRealtimeFull=Boolean(realtimeTimer && realtimeCurrentMs!==null && Array.isArray(realtimeRows)&&realtimeRows.length);
       const resetView=plotOpts.resetView===true;
       if(resetView) plotSessionRevision+=1;
-      const preserveUi=plotOpts.preserveUi!==false && !useRealtimeFull && !resetView;
+      const preserveUi=plotOpts.preserveUi!==false && !resetView;
       const gdExisting=byId("plot");
       const axisLocksFromOpts=plotOpts.axisLocks||null;
       const uiLocks=resetView ? null : (axisLocksFromOpts||(preserveUi ? snapshotPlotAxisLocks(gdExisting) : null));
@@ -11408,8 +12426,7 @@
         || (plotOpts.dataOnly!==false && preserveUi && hasLiveChart && !resetView);
       const applyAxisLocks=plotOpts.applyAxisLocks===true
         || (plotOpts.applyAxisLocks!==false && Boolean(axisLocksFromOpts) && !dataOnly);
-      const plotSourceRows=useRealtimeFull?realtimeRows:rows;
-      const rtMaskMs=useRealtimeFull?realtimeCurrentMs:null;
+      const plotSourceRows=rows;
       const useDateAxis=plotUsesDateAxis(plotSourceRows);
       phase="group";
       const grouped=new Map();
@@ -11432,22 +12449,25 @@
       grouped.forEach((pts,name)=>{
         const chId=`${pts[0].__dbId}|${pts[0].channel_name}`;
         const timeRef=effectiveTimeRefForDbId(pts[0].__dbId, plotSourceRows);
-        const built=buildDecimatedTimeTrace(pts, name, { timeRef, t0FirstSample, t0Meta, rtMaskMs, pointCap, lineW, chId });
+        const built=buildDecimatedTimeTrace(pts, name, { timeRef, t0FirstSample, t0Meta, pointCap, lineW, chId });
         plotOriginalPoints+=built.original;
         shownPts+=built.shown;
         if(built.decimated) plotDecimated=true;
         traces.push(built.trace);
       });
       applySavedStylesToBuiltTraces(traces);
-      const resetXRange=useDateAxis && !uiLocks && !realtimeLockedXRange ? traceTimeExtentMs(traces) : null;
-      const yLayout=buildUnitAxes(traces, plotWidth), unitCount=Object.keys(yLayout).length;
-      if(realtimeLockedYRanges){ Object.keys(realtimeLockedYRanges).forEach((k)=>{ if(yLayout[k]){ yLayout[k].range=realtimeLockedYRanges[k]; yLayout[k].autorange=false; } }); }
+      const plottableTraces=traces.filter(traceHasFinitePoints);
+      const resetXRange=useDateAxis && !uiLocks ? traceTimeExtentMs(plottableTraces) : null;
+      const yLayout=buildUnitAxes(plottableTraces, plotWidth, { resetRanges:resetView });
+      const unitCount=Object.keys(yLayout).length;
+      // Drop empty traces so they cannot create phantom axes or inflate autorange.
+      traces.length=0;
+      plottableTraces.forEach((t)=>traces.push(t));
       const extraRight=Math.max(0,unitCount-1);
       const axisSpacingPx = plotWidth < 1200 ? 64 : 54;
-      const exportOpts=realtimeExportRenderOptions||{};
-      const axisVisible=exportOpts.axisVisible!==undefined ? Boolean(exportOpts.axisVisible) : (appearance.showAxis!==false);
-      const gridVisible=exportOpts.gridVisible!==undefined ? Boolean(exportOpts.gridVisible) : (appearance.showGrid!==false);
-      const bgTransparent=Boolean(exportOpts.transparentBg);
+      const axisVisible=appearance.showAxis!==false;
+      const gridVisible=appearance.showGrid!==false;
+      const bgTransparent=false;
       const viewBg=chromeViewBg();
       const ink=plotInk();
       Object.keys(yLayout).forEach((k)=>{
@@ -11468,7 +12488,7 @@
         font:{color:ink.font},
         colorway: parseColorway(),
         showlegend: appearance.showLegend!==false,
-        xaxis:{title:"",automargin:true,type:useDateAxis?"date":"linear",tickfont:{size:Number(appearance.axisTickSize||10),color:ink.tick},titlefont:{size:Number(appearance.axisTitleSize||11),color:ink.title},visible:axisVisible,showgrid:gridVisible,gridcolor:ink.grid,zerolinecolor:ink.zero,...(resetXRange?{range:resetXRange,autorange:false}:(resetView?{autorange:true}:(realtimeLockedXRange?{range:realtimeLockedXRange,autorange:false}:{})))},
+        xaxis:{title:"",automargin:true,type:useDateAxis?"date":"linear",tickfont:{size:Number(appearance.axisTickSize||10),color:ink.tick},titlefont:{size:Number(appearance.axisTitleSize||11),color:ink.title},visible:axisVisible,showgrid:gridVisible,gridcolor:ink.grid,zerolinecolor:ink.zero,...(resetXRange?{range:resetXRange,autorange:false}:(resetView?{autorange:true}:{}))},
         margin:{l:12,r:Math.max(70,56+extraRight*(axisSpacingPx+6)),t:12,b:48},
         legend:{...legendLayoutForActivePlot(), bgcolor:ink.legendBg, bordercolor:ink.legendBorder, borderwidth:1, font:{color:ink.legendFont} },
         ...yLayout,
@@ -11489,27 +12509,20 @@
       phase="chart";
       suppressZoomRelayout+=1;
       try{
-        await plotlyReactDraw(traces, layoutOut, { unitCount, drawGen, dataOnly, applyAxisLocks, useDateAxis });
+        await plotlyReactDraw(traces, layoutOut, {
+          unitCount,
+          drawGen,
+          dataOnly,
+          applyAxisLocks,
+          useDateAxis,
+          forceFullRebuild: resetView,
+        });
       }finally{
         setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 200);
       }
       if(drawGen !== plotDrawGeneration) return;
       if(rows===overviewRows && zoomState==="overview" && !resetView){
         cacheOverviewPlot(traces, layoutBase);
-      }
-      if(useRealtimeFull){
-        const gdR=plotlyGraphDiv();
-        const needY=!realtimeLockedYRanges||Object.keys(realtimeLockedYRanges).length===0;
-        if(!realtimeLockedXRange||needY){
-          const snap=snapshotPlotAxisLocks(gdR);
-          if(!realtimeLockedXRange&&snap.xRange) realtimeLockedXRange=snap.xRange;
-          if(needY&&snap.yRanges&&Object.keys(snap.yRanges).length){
-            realtimeLockedYRanges=realtimeLockedYRanges||{};
-            Object.assign(realtimeLockedYRanges,snap.yRanges);
-          }
-          const patch=buildRealtimeRelayoutPatch();
-          if(Object.keys(patch).length) try{ Plotly.relayout(gdR,patch); }catch{}
-        }
       }
       }catch(err){
         lastPlotFailPhase=phase;
@@ -11884,10 +12897,6 @@
       (state.sources||[]).forEach((src)=>{
         if(src?.t0_utc) src.timeRef="t0_relative";
       });
-      realtimeLockedXRange=null;
-      realtimeLockedYRanges=null;
-      realtimeRows=[];
-      realtimePrecomputed=null;
       if(latestRows.length) await plotRows(latestRows, { preserveUi:false, resetView:true });
       renderAll();
       saveState();
@@ -13061,14 +14070,6 @@
             </div>
           </div>
           <div class="rangeFormStatusTags">
-            <div class="formField rangeStatusField">
-              <label>Status</label>
-              <input id="m_range_status" list="m_range_status_list" value="${escAttr(edit?.status||"completed")}" placeholder="completed / failed / in_progress / success" spellcheck="false" />
-              <datalist id="m_range_status_list">
-                <option value="completed"></option><option value="failed"></option>
-                <option value="in_progress"></option><option value="success"></option>
-              </datalist>
-            </div>
             <div class="formField rangeTagsField">
               <label>Tags</label>
               <div id="m_db_tag_row" class="dbTagChipRow dbTagChipRowEdit">
@@ -13114,7 +14115,6 @@
         </div>
       `,{ ...WF_ALIAS_FORM, titleHtml:rangesWindowTitleHtml(leaf) }, async()=>{
         const name=(byId("m_range_name").value||"").trim()||"Range";
-        const status=(byId("m_range_status").value||"").trim()||null;
         const startRaw=(byId("m_range_start").value||"").trim();
         const endRaw=(byId("m_range_end").value||"").trim();
         const color=(byId("m_range_color").value||"").trim()||null;
@@ -13139,7 +14139,7 @@
           const ref=rangeSourceRef(targets[0]);
           const body={
             ...ref,
-            name, status, color, tags, parent_range_id, parameters,
+            name, color, tags, parent_range_id, parameters,
           };
           if(!editingSourceRange){
             body.start_time=start;
@@ -13182,7 +14182,7 @@
             headers:{ "Content-Type":"application/json" },
             body:JSON.stringify({
               ...ref,
-              name, status, start_time:start, end_time:end, color, tags,
+              name, start_time:start, end_time:end, color, tags,
               parent_range_id: parentId,
               parameters,
               source:"user",
@@ -14878,7 +15878,8 @@
       return { a:Number(mask.valueA), b:Number(mask.valueB) };
     }
     function applyMasks(rows){
-      const activeMasks=(state.masks||[]).filter((m)=>selectedMaskIds.has(m.id));
+      const activeIds=new Set(effectiveSelectedMaskIds());
+      const activeMasks=(state.masks||[]).filter((m)=>activeIds.has(m.id));
       if(!activeMasks.length) return rows;
       const { t0FirstSample:t0ByTest, t0Meta:t0MetaByTest }=buildTimeRefMaps(rows);
       const groups=new Map();
@@ -14955,8 +15956,19 @@
         }
       });
       const kept=[];
+      const rangeMaskMaps=new Map();
+      activeMasks.forEach((m)=>{
+        if(m.kind==="range") rangeMaskMaps.set(m.id, buildRangeMaskIntervalsBySource(m.rangeName));
+      });
       groups.forEach((g)=>{
         const passAll=activeMasks.every((m)=>{
+          if(m.kind==="range"){
+            const intervals=rangeMaskIntervalsForSample(rangeMaskMaps.get(m.id), g.sample);
+            if(!intervals || !intervals.length) return Boolean(m.includeMissingSources);
+            const ts=g.sample.__ts;
+            if(!Number.isFinite(ts)) return false;
+            return intervals.some((iv)=>ts>=iv.lo && ts<=iv.hi);
+          }
           if(m.kind==="rolling" || m.kind==="formula"){
             const key=`${g.sample.__dbId}|${g.sample.test_run_id}|${String(g.sample.time)}`;
             const v=derivedMaskVals.get(m.id)?.get(key);
@@ -14986,6 +15998,63 @@
       });
       return kept;
     }
+    function rangeUtcBoundsMs(r){
+      if(!r) return null;
+      // Prefer explicit ms only when present (Number(null)===0 would corrupt bounds).
+      let a=r.start_ms==null||r.start_ms==="" ? NaN : Number(r.start_ms);
+      let b=r.end_ms==null||r.end_ms==="" ? NaN : Number(r.end_ms);
+      if(!Number.isFinite(a)) a=Date.parse(String(r.start_time||""));
+      if(!Number.isFinite(b)) b=Date.parse(String(r.end_time||""));
+      if(!Number.isFinite(a) || !Number.isFinite(b) || a===b) return null;
+      return { lo:Math.min(a,b), hi:Math.max(a,b) };
+    }
+    function uniqueRangeNames(ranges=catalogRanges){
+      const names=new Set();
+      (ranges||[]).forEach((r)=>{
+        if(isSourceRange(r)) return;
+        const n=String(r.name||"").trim();
+        if(n) names.add(n);
+      });
+      return [...names].sort((a,b)=>a.localeCompare(b, undefined, { sensitivity:"base" }));
+    }
+    function buildRangeMaskIntervalsBySource(rangeName, ranges=catalogRanges){
+      const name=String(rangeName||"").trim();
+      const byKey=new Map();
+      if(!name) return byKey;
+      const add=(key, bounds)=>{
+        if(!key || !bounds) return;
+        const k=String(key);
+        if(!byKey.has(k)) byKey.set(k, []);
+        byKey.get(k).push(bounds);
+      };
+      (ranges||[]).forEach((r)=>{
+        if(isSourceRange(r)) return;
+        if(String(r.name||"").trim()!==name) return;
+        const bounds=rangeUtcBoundsMs(r);
+        if(!bounds) return;
+        const sid=resolveRangeSourceId(r);
+        add(sid, bounds);
+        const src=sid ? state.sources.find((s)=>String(s.id)===String(sid)) : null;
+        const dbId=dbIdForRangeSource(src);
+        if(dbId) add(`db:${dbId}`, bounds);
+        if(r.artifact_id) add(`artifact:${r.artifact_id}`, bounds);
+        if(src?.artifact_id) add(`artifact:${src.artifact_id}`, bounds);
+      });
+      return byKey;
+    }
+    function rangeMaskIntervalsForSample(byKey, sample){
+      if(!byKey || !sample) return null;
+      const { src }=resolveDbSource(sample.__dbId);
+      const keys=[];
+      if(src?.id) keys.push(String(src.id));
+      if(sample.__dbId) keys.push(`db:${sample.__dbId}`);
+      if(src?.artifact_id) keys.push(`artifact:${src.artifact_id}`);
+      for(const key of keys){
+        const iv=byKey.get(key);
+        if(iv && iv.length) return iv;
+      }
+      return null;
+    }
     function maskDepNames(mask){
       return [...new Set((mask?.channels||[]).map((id)=>channelKeyFromId(id)).filter((n)=>n && n!=="__time__"))];
     }
@@ -14995,6 +16064,10 @@
     }
     function maskDisplayName(m){
       if(m?.name) return String(m.name);
+      if(m?.kind==="range"){
+        const rn=String(m.rangeName||"").trim()||"?";
+        return m.includeMissingSources ? `range(${rn}, include missing)` : `range(${rn})`;
+      }
       if(m?.kind==="rolling"){
         const ch=(m.sourceChannel||"").includes("|") ? m.sourceChannel.split("|").slice(1).join("|") : (m.sourceChannel||"?");
         return `rolling(${ch}, ${m.rollingOp}, w=${m.window}) ${maskConditionSummary(m)}`;
@@ -15019,7 +16092,7 @@
       return ["=",">","<","!=","between","outside"].map((op)=>`<option value="${escAttr(op)}" ${selected===op?"selected":""}>${escAttr(op)}</option>`).join("");
     }
     function masksWindowTitleHtml(...leaves){
-      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.2 2.5h11.6c.4 0 .6.45.35.75L9.5 8.2v4.05c0 .2-.1.38-.28.48l-2.2 1.2c-.35.2-.77-.06-.77-.48V8.2L1.85 3.25c-.25-.3-.05-.75.35-.75z"/></svg></span>`;
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.5 3.25h13v1.5h-13v-1.5zm2.75 4h7.5v1.5h-7.5v-1.5zM6 11.25h4v1.5H6v-1.5z"/></svg></span>`;
       const sep=`<span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span>`;
       const parts=[`<span>Masks</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${leaf}</span>`));
       return `${icon}${parts.join("")}`;
@@ -15089,10 +16162,14 @@
           </div>
         </div>`;
     }
+    function isRangeMask(mask){
+      return !!mask && String(mask.kind||"")==="range";
+    }
     function isIndexMask(mask){
+      // Legacy time-index masks (kept for evaluation of older saved state).
       if(!mask) return false;
       if(mask.kind==="index") return true;
-      if(mask.kind==="formula" || mask.kind==="rolling") return false;
+      if(mask.kind==="formula" || mask.kind==="rolling" || mask.kind==="range") return false;
       const chs=mask.channels||[];
       return chs.length===1 && chs[0]==="__time__";
     }
@@ -15108,6 +16185,7 @@
       const valueBCurrent=isEdit ? String(mask?.valueB ?? "") : "";
       const twoVals=maskOpNeedsTwoValues(opCurrent);
       openModal(`Masks > ${leaf}`,`
+        <div class="channelEditorForm">
         <div class="formStack">
           <div class="formField">
             <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
@@ -15128,6 +16206,7 @@
           </div>
         </div>
         ${maskConditionFieldsHtml({ opCurrent, valueA:valueACurrent, valueB:valueBCurrent, twoVals })}
+        </div>
         <div class="modalActions modalActionsIconOnly">
           <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
         </div>`,{ ...WF_ALIAS_FORM, titleHtml:masksWindowTitleHtml(leaf) },async()=>{
@@ -15183,18 +16262,25 @@
       bindAliasEditorManualResize(listEl);
       requestAnimationFrame(()=>fitAliasEditorWindow(listEl));
     }
-    function openIndexMaskEditorModal({ mode, mask=null }){
+    async function openRangeMaskEditorModal({ mode, mask=null }){
       const isEdit=mode==="edit";
-      const leaf="Index Mask";
-      const defaultName=isEdit ? (mask?.name || "index_mask") : "index_mask";
-      const indexCurrent=isEdit && Array.isArray(mask?.channels) && mask.channels[0] ? mask.channels[0] : "__time__";
-      const opCurrent=isEdit ? String(mask?.op || "=") : "=";
-      const valueACurrent=isEdit ? String(mask?.valueA ?? "") : "";
-      const valueBCurrent=isEdit ? String(mask?.valueB ?? "") : "";
-      const twoVals=maskOpNeedsTwoValues(opCurrent);
-      const indexOptions=[
-        { id:"__time__", label:"Time" },
-      ].map((o)=>`<option value="${escAttr(o.id)}" ${indexCurrent===o.id?"selected":""}>${escAttr(o.label)}</option>`).join("");
+      const leaf="Range Mask";
+      try{ await refreshCatalogRanges(); }catch{ /* status already set */ }
+      const names=uniqueRangeNames();
+      const defaultName=isEdit ? (mask?.name || "range_mask") : "range_mask";
+      const rangeCurrent=isEdit ? String(mask?.rangeName || "") : (names[0] || "");
+      const includeMissing=isEdit ? Boolean(mask?.includeMissingSources) : false;
+      if(!names.length && !rangeCurrent){
+        setStatus("No named ranges available. Create a range first.", true);
+        return;
+      }
+      const rangeOptions=(rangeCurrent && !names.includes(rangeCurrent) ? [rangeCurrent, ...names] : names)
+        .map((n)=>`<option value="${escAttr(n)}" ${n===rangeCurrent?"selected":""}>${escAttr(n)}</option>`)
+        .join("");
+      const propRow=(label, controlHtml)=>`<div class="rangeMetaRow">
+            <div class="rangeMetaCell">${escapeHtml(label)}</div>
+            ${controlHtml}
+          </div>`;
       openModal(`Masks > ${leaf}`,`
         <div class="formStack">
           <div class="formField">
@@ -15202,34 +16288,27 @@
             <input id="m_mask_name" class="formNameInput" type="text" value="${escAttr(defaultName)}" spellcheck="false" />
           </div>
           <div class="formField">
-            <label>Index<span class="reqMark" aria-hidden="true">*</span></label>
-            <div class="selectLock"><select id="m_mask_index" class="formSelectStable">${indexOptions}</select></div>
+            <label>Range<span class="reqMark" aria-hidden="true">*</span></label>
+            <div class="selectLock"><select id="m_mask_range" class="formSelectStable">${rangeOptions}</select></div>
+          </div>
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader">
+              <label>Properties</label>
+            </div>
+            <div class="rangeMetaDivider"></div>
+            <div class="rangeMetaTable" id="m_mask_props">
+              ${propRow("Include Sources without Range", overlayBoolSelectHtml("m_mask_include_missing", includeMissing))}
+            </div>
           </div>
         </div>
-        ${maskConditionFieldsHtml({ opCurrent, valueA:valueACurrent, valueB:valueBCurrent, twoVals })}
         <div class="modalActions modalActionsIconOnly">
           <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
-        </div>`,{ ...WF_ALIAS_FORM, titleHtml:masksWindowTitleHtml(leaf) },async()=>{
+        </div>`,{ ...WF_SOURCE_FORM, titleHtml:masksWindowTitleHtml(leaf) },async()=>{
         const rawName=(byId("m_mask_name").value||"").trim();
         if(!rawName){ setStatus("Mask name is required.", true); return false; }
-        const indexId=(byId("m_mask_index").value||"").trim();
-        if(!indexId){ setStatus("Select an index.", true); return false; }
-        const op=byId("m_mask_op").value;
-        const rawA=(byId("m_mask_a").value||"").trim();
-        const rawB=(byId("m_mask_b").value||"").trim();
-        const needsB=maskOpNeedsTwoValues(op);
-        const isTimeMask=indexId==="__time__";
-        const absolute=isTimeMask && plotUsesDateAxis(latestRows);
-        const parsedA=absolute ? parseUtcInput(rawA) : Number(rawA);
-        const parsedB=absolute ? parseUtcInput(rawB) : Number(rawB);
-        if(!Number.isFinite(parsedA)){
-          setStatus(absolute ? (needsB?"Start must be a valid UTC time.":"Time must be a valid UTC time.") : (needsB?"Min is required.":"Value is required."), true);
-          return false;
-        }
-        if(needsB && !Number.isFinite(parsedB)){
-          setStatus(absolute ? "End must be a valid UTC time." : "Max is required for this condition.", true);
-          return false;
-        }
+        const rangeName=(byId("m_mask_range").value||"").trim();
+        if(!rangeName){ setStatus("Select a range name.", true); return false; }
+        const includeMissingSources=readOverlayBool("m_mask_include_missing", false);
         if(isEdit){
           const oldName=mask.name||"";
           const name=nextMaskName(rawName, oldName);
@@ -15238,28 +16317,31 @@
           delete mask.rollingOp;
           delete mask.window;
           delete mask.formula;
-          mask.kind="index";
+          delete mask.channels;
+          delete mask.op;
+          delete mask.valueA;
+          delete mask.valueB;
+          mask.kind="range";
           mask.name=name;
-          mask.channels=[indexId];
-          mask.op=op;
-          mask.valueA=rawA;
-          mask.valueB=needsB?rawB:null;
+          mask.rangeName=rangeName;
+          mask.includeMissingSources=includeMissingSources;
           renderAll();
           saveState();
-          setStatus(`Updated index mask '${name}'.`);
+          setStatus(`Updated range mask '${name}'.`);
+          if(selectedSourceIds.size) void loadTimeseries();
           return true;
         }
         const name=nextMaskName(rawName);
-        const next={ id:crypto.randomUUID(), kind:"index", name, channels:[indexId], op, valueA:rawA, valueB:needsB?rawB:null };
+        const next={ id:crypto.randomUUID(), kind:"range", name, rangeName, includeMissingSources };
         state.masks=state.masks||[];
         state.masks.push(next);
         selectedMaskIds.add(next.id);
         renderAll();
         saveState();
-        setStatus(`Added index mask '${name}'.`);
+        setStatus(`Added range mask '${name}'.`);
+        if(selectedSourceIds.size) void loadTimeseries();
         return true;
       });
-      bindMaskConditionRow(opCurrent, { timeMode:true });
     }
     async function editMask(maskId){
       const mask=(state.masks||[]).find((m)=>m.id===maskId);
@@ -15274,8 +16356,11 @@
         cond.onchange=()=>{ wrap.style.display=maskOpNeedsTwoValues(cond.value)?"block":"none"; };
         return;
       }
-      if(isIndexMask(mask)){
-        openIndexMaskEditorModal({ mode:"edit", mask });
+      if(isRangeMask(mask) || isIndexMask(mask)){
+        if(isIndexMask(mask) && !isRangeMask(mask)){
+          setStatus("Index masks were replaced by range masks. Pick a range name to convert this mask.", true);
+        }
+        openRangeMaskEditorModal({ mode:"edit", mask });
         return;
       }
       openMaskEditorModal({ mode:"edit", mask });
@@ -15338,10 +16423,6 @@
         if(ref==="t0_relative" || ref==="absolute"){
           plotTimeMode=ref==="t0_relative" ? "t0_relative" : "absolute";
         }
-        realtimeLockedXRange=null;
-        realtimeLockedYRanges=null;
-        realtimeRows=[];
-        realtimePrecomputed=null;
         if(latestRows.length) await plotRows(latestRows, { preserveUi:false, resetView:true });
         renderAll();
         saveState();
@@ -15495,14 +16576,14 @@
       hideMenus();
       openMaskEditorModal({ mode:"create" });
     }
-    function showAddIndexMaskMenu(ev){
+    function showAddRangeMaskMenu(ev){
       if (ev) {
         ev.preventDefault();
         ev.stopPropagation();
         if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
       }
       hideMenus();
-      openIndexMaskEditorModal({ mode:"create" });
+      openRangeMaskEditorModal({ mode:"create" });
     }
     function nextCalcName(base, excludeName){
       const stem=(base||"calc_channel").trim()||"calc_channel";
@@ -15693,12 +16774,16 @@
         fitAliasEditorWindow(listEl);
         return;
       }
-      listEl.innerHTML=names.map((name,idx)=>`
+      listEl.innerHTML=names.map((name,idx)=>{
+        const alias=findAliasByKey(name);
+        const meta=alias ? `alias (${aliasMemberNames(alias).length})` : "";
+        return `
         <div class="selectRow" data-id="${escAttr(name)}">
-          <div class="itemPrimary">${escAttr(name)}</div>
+          <div class="itemPrimary">${escAttr(name)}${meta?` <span class="itemMeta">${escAttr(meta)}</span>`:""}</div>
           <span class="selectRowVar">${idx<26 ? String.fromCharCode(65+idx) : String(idx+1)}</span>
           <button type="button" class="aliasMemberRemove" data-id="${escAttr(name)}" aria-label="Remove">&#10005;</button>
-        </div>`).join("");
+        </div>`;
+      }).join("");
       listEl.querySelectorAll(".aliasMemberRemove").forEach((btn)=>{
         btn.onclick=(ev)=>{
           ev.preventDefault();
@@ -15722,6 +16807,7 @@
       const freqCurrent=freqOverride!=="" && freqOverride!=null ? String(freqOverride) : "";
       const formulaCurrent=isEdit ? String(calc?.formula||"") : "";
       openModal(`Channels > ${leaf}`,`
+        <div class="channelEditorForm">
         <div class="formStack">
           <div class="formField">
             <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
@@ -15741,6 +16827,7 @@
             <label>Formula</label>
             <input id="m_formula_expr" type="text" value="${escAttr(formulaCurrent)}" placeholder="A + B" spellcheck="false" />
           </div>
+        </div>
         </div>
         <div class="modalActions modalActionsIconOnly">
           <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
@@ -15802,7 +16889,7 @@
       const refresh=()=>renderCalcMemberList(listEl, chosen);
       refresh();
       const addBtn=byId("m_calc_add_ch");
-      if(addBtn) addBtn.onclick=()=>showAddAliasMembersModal(chosen, refresh, { leaf });
+      if(addBtn) addBtn.onclick=()=>showAddAliasMembersModal(chosen, refresh, { leaf, allowAliases:true });
       bindAliasEditorManualResize(listEl);
       requestAnimationFrame(()=>fitAliasEditorWindow(listEl));
     }
@@ -15827,19 +16914,23 @@
       while(existing.has(name)){ n+=1; name=`${stem}_${n}`; }
       return name;
     }
-    async function aliasMemberCatalogRows(){
-      const byName=new Map();
-      const loaded=await ensureCalcSourceChannelsLoaded();
-      (loaded||[]).forEach((c)=>{
-        const name=String(c.channel_name||"").trim();
-        if(!name||byName.has(name)) return;
-        byName.set(name,{ id:name, primary:name, meta:`unit ${c.unit||"unitless"}` });
-      });
-      addedChannelIds.forEach((key)=>{
-        if(!key || isCalculatedChannelKey(key) || isAliasChannelKey(key) || byName.has(key)) return;
-        byName.set(key,{ id:key, primary:key, meta:"" });
-      });
-      return [...byName.values()].sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
+    function resolveCalcDepRawNames(depName, availableSet){
+      const name=channelKeyFromId(depName);
+      if(!name) return [];
+      const alias=findAliasByKey(name);
+      if(alias){
+        return aliasMemberNames(alias).filter((m)=>!availableSet?.size || availableSet.has(m));
+      }
+      if(availableSet?.size && !availableSet.has(name)) return [];
+      return [name];
+    }
+    function resolveCalcDepForEval(depName, availableSet){
+      const raws=resolveCalcDepRawNames(depName, availableSet);
+      return raws[0] || null;
+    }
+    function calcDepsResolvable(deps, availableSet){
+      if(!deps?.length) return false;
+      return deps.every((n)=>Boolean(resolveCalcDepForEval(n, availableSet)));
     }
     function addChannelsToAlias(aliasName, memberNames){
       const alias=findAliasByKey(aliasName);
@@ -15962,7 +17053,7 @@
       });
       fitAliasEditorWindow(listEl);
     }
-    async function showAddAliasMembersModal(chosen, onChanged, { leaf="Edit Alias", titleHtml=null }={}){
+    async function showAddAliasMembersModal(chosen, onChanged, { leaf="Edit Alias", titleHtml=null, allowAliases=false }={}){
       if(!selectedSourceIds.size || !effectiveSelectedSourceIds().length){
         setStatus("Select at least one source first.", true);
         return;
@@ -15975,8 +17066,19 @@
 
       let activeSourceId=defaultChannelPickerSourceId(sourceOptions);
       const rowCache=new Map();
-      const selected=new Set([...chosen].map((id)=>channelKeyFromId(id)).filter((n)=>n && !isCalculatedChannelKey(n) && !isAliasChannelKey(n)));
-      selected.forEach((id)=>rowCache.set(id, { id, primary:id, meta:"" }));
+      const selected=new Set([...chosen].map((id)=>channelKeyFromId(id)).filter((n)=>{
+        if(!n || isCalculatedChannelKey(n)) return false;
+        if(!allowAliases && isAliasChannelKey(n)) return false;
+        return true;
+      }));
+      selected.forEach((id)=>{
+        if(isAliasChannelKey(id)){
+          const alias=findAliasByKey(id);
+          rowCache.set(id, { id, primary:id, meta:`alias (${aliasMemberNames(alias).length})` });
+        }else{
+          rowCache.set(id, { id, primary:id, meta:"" });
+        }
+      });
       let allRows=[];
       const availActive=new Set();
       const selActive=new Set();
@@ -16012,7 +17114,8 @@
           const isSelected = selected.has(r.id);
           el.className="selectRow"+(activeSet.has(r.id)?" active":"")+(kind==="avail" && isSelected ? " disabled" : "");
           const suffix=(kind==="avail" && isSelected)?" · selected":"";
-          el.innerHTML=`<div class="itemPrimary">${r.primary}${suffix}</div>`;
+          const meta=r.meta ? ` <span class="itemMeta">${escapeHtml(r.meta)}</span>` : "";
+          el.innerHTML=`<div class="itemPrimary">${escapeHtml(r.primary)}${suffix}${meta}</div>`;
           el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
           el.onclick=(ev)=>{
             if(ev&&ev.preventDefault) ev.preventDefault();
@@ -16039,6 +17142,18 @@
         if(btnL) btnL.disabled = selActive.size===0;
       };
 
+      const appendAliasesToAvailable=(byName)=>{
+        if(!allowAliases) return;
+        addedChannelIds.forEach((key)=>{
+          const name=channelKeyFromId(key);
+          if(!name || !isAliasChannelKey(name) || byName.has(name)) return;
+          const alias=findAliasByKey(name);
+          const entry={ id:name, primary:name, meta:`alias (${aliasMemberNames(alias).length})` };
+          byName.set(name, entry);
+          rowCache.set(name, entry);
+        });
+      };
+
       const loadActiveSourceChannels=async()=>{
         const opt=sourceOptions.find((o)=>o.sourceId===activeSourceId);
         if(!opt){ allRows=[]; renderAllTransfer(); return; }
@@ -16059,9 +17174,12 @@
             byName.set(name, entry);
             rowCache.set(name, entry);
           });
+          appendAliasesToAvailable(byName);
           allRows=[...byName.values()].sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
         }catch(err){
-          allRows=[];
+          const byName=new Map();
+          appendAliasesToAvailable(byName);
+          allRows=[...byName.values()].sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
           setStatus(`Failed to load channels: ${err}`, true);
         }
         availActive.clear();
@@ -16069,7 +17187,7 @@
         renderAllTransfer();
       };
 
-      const sourceSelectHtml=`<div class="formField" id="aam_source_wrap" style="margin-bottom:8px;"><label>Source</label><div class="selectLock"><select id="aam_source_sel" class="formSelectStable">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div></div>`;
+      const sourceSelectHtml=`<div class="formField" id="aam_source_wrap" style="margin-bottom:8px;flex:0 0 auto;"><label>Source</label><div class="selectLock"><select id="aam_source_sel" class="formSelectStable">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div></div>`;
 
       openModal(`Channels > ${leaf} > Add`,`
         <div class="modalBodyPad">
@@ -16087,7 +17205,11 @@
           <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Apply">${modalCheckIconHtml()}</button>
         </div>
       `,{ ...WF_CHANNELS, closable:true, titleHtml: titleHtml || channelsWindowTitleHtml(leaf, "Add") },async()=>{
-        const next=[...selected].map((id)=>channelKeyFromId(id)).filter((n)=>n && !isCalculatedChannelKey(n) && !isAliasChannelKey(n));
+        const next=[...selected].map((id)=>channelKeyFromId(id)).filter((n)=>{
+          if(!n || isCalculatedChannelKey(n)) return false;
+          if(!allowAliases && isAliasChannelKey(n)) return false;
+          return true;
+        });
         chosen.clear();
         next.forEach((n)=>chosen.add(n));
         if(typeof onChanged==="function") onChanged();
@@ -16104,9 +17226,17 @@
       }
       byId("aam_to_sel").onclick=()=>{
         [...availActive].forEach((id)=>{
-          if(isCalculatedChannelKey(id) || isAliasChannelKey(id)) return;
+          if(isCalculatedChannelKey(id)) return;
+          if(!allowAliases && isAliasChannelKey(id)) return;
           selected.add(id);
-          if(!rowCache.has(id)) rowCache.set(id, { id, primary:id, meta:"" });
+          if(!rowCache.has(id)){
+            if(isAliasChannelKey(id)){
+              const alias=findAliasByKey(id);
+              rowCache.set(id, { id, primary:id, meta:`alias (${aliasMemberNames(alias).length})` });
+            }else{
+              rowCache.set(id, { id, primary:id, meta:"" });
+            }
+          }
         });
         availActive.clear();
         renderAllTransfer();
@@ -16131,6 +17261,7 @@
       const freqCurrent=freqOverride!=="" && freqOverride!=null ? String(freqOverride) : "";
       const leaf=isEdit ? "Edit Alias" : "Create Alias";
       openModal(`Channels > ${leaf}`,`
+        <div class="channelEditorForm">
         <div class="formStack">
           <div class="formField">
             <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
@@ -16144,6 +17275,7 @@
             <button type="button" class="addBtn" id="m_alias_add_ch" title="Add channel" aria-label="Add channel">+</button>
           </div>
           <div id="m_alias_members" class="aliasMemberList"></div>
+        </div>
         </div>
         <div class="modalActions modalActionsIconOnly">
           <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
@@ -16453,13 +17585,14 @@
       selectedCalcs.forEach((calc)=>{
         const deps=calcDepNames(calc);
         if(calc.kind==="rolling"){
-          if(deps[0] && (!available.size || available.has(deps[0]))) names.add(deps[0]);
+          resolveCalcDepRawNames(deps[0], available).forEach((n)=>names.add(n));
           return;
         }
         if(calc.kind==="formula"){
-          if(deps.length<1) return;
-          if(available.size && !deps.every((n)=>available.has(n))) return;
-          deps.forEach((n)=>names.add(n));
+          if(!calcDepsResolvable(deps, available)) return;
+          deps.forEach((dep)=>{
+            resolveCalcDepRawNames(dep, available).forEach((n)=>names.add(n));
+          });
         }
       });
       return [...names];
@@ -16515,9 +17648,15 @@
         for(const dbId of dbIds){
           const calcLegend=legendSourceForCalc(calc, dbId);
           if(calc.kind==="rolling"){
-            const srcName=depNames[0];
+            const srcName=resolveCalcDepForEval(depNames[0], null) || depNames[0];
             if(!srcName) continue;
-            const srcRows=baseRows.filter((r)=>r.__dbId===dbId && r.channel_name===srcName);
+            // Prefer a member that actually has rows in this db when dep is an alias.
+            const alias=findAliasByKey(depNames[0]);
+            const resolvedSrc=alias
+              ? (aliasMemberNames(alias).find((m)=>baseRows.some((r)=>r.__dbId===dbId && r.channel_name===m)) || null)
+              : srcName;
+            if(!resolvedSrc) continue;
+            const srcRows=baseRows.filter((r)=>r.__dbId===dbId && r.channel_name===resolvedSrc);
             if(!srcRows.length) continue;
             const byTest=new Map();
             srcRows.forEach((r)=>{
@@ -16541,15 +17680,21 @@
           }
           if(calc.kind==="formula"){
             if(depNames.length<1) continue;
-            const hasAll=depNames.every((name)=>baseRows.some((r)=>r.__dbId===dbId && r.channel_name===name));
-            if(!hasAll) continue;
-            const compiled=compileFormula(calc.formula||"", depNames.length);
+            const resolvedDeps=depNames.map((dep)=>{
+              const alias=findAliasByKey(dep);
+              if(alias){
+                return aliasMemberNames(alias).find((m)=>baseRows.some((r)=>r.__dbId===dbId && r.channel_name===m)) || null;
+              }
+              return baseRows.some((r)=>r.__dbId===dbId && r.channel_name===dep) ? dep : null;
+            });
+            if(resolvedDeps.some((n)=>!n)) continue;
+            const compiled=compileFormula(calc.formula||"", resolvedDeps.length);
             if(!compiled.ok) continue;
             const byTime=new Map();
-            depNames.forEach((depName, idx)=>{
+            resolvedDeps.forEach((depName, idx)=>{
               baseRows.filter((r)=>r.__dbId===dbId && r.channel_name===depName).forEach((r)=>{
                 const t=String(r.time);
-                if(!byTime.has(t)) byTime.set(t,{ vals:Array(depNames.length).fill(NaN), sample:r, ts:r.__ts??Date.parse(r.time) });
+                if(!byTime.has(t)) byTime.set(t,{ vals:Array(resolvedDeps.length).fill(NaN), sample:r, ts:r.__ts??Date.parse(r.time) });
                 const slot=byTime.get(t);
                 slot.vals[idx]=Number(r.value);
                 if((r.__ts??Date.parse(r.time))<slot.ts) slot.sample=r;
@@ -16681,6 +17826,13 @@
       // Empty channel selection means "all added channels", already resolved into channelIdsAll.
       const selectedNonCalc=rowsAll.filter((r)=>rawRowMatchesSelectedKeys(r, channelIdsAll, selectedCalcs));
       stampAliasDisplayNames(selectedNonCalc, channelIdsAll);
+      // Range masks need fresh catalogRanges; renderAll refreshes async and can race Load.
+      if(effectiveSelectedMaskIds().some((id)=>{
+        const m=(state.masks||[]).find((x)=>x.id===id);
+        return m && m.kind==="range";
+      })){
+        try{ await refreshCatalogRanges(); }catch{ /* status already set */ }
+      }
       let finalRows=applyMasks(concatRows(selectedNonCalc, calcRows));
       applyRowUnitsInPlace(finalRows);
       finalRows.forEach(r => { if(!Number.isFinite(r.__ts)) r.__ts = parseRowTimeMs(r); });
@@ -16693,10 +17845,6 @@
       finalRows.forEach(r=>{ if(r.__ts<_minMs)_minMs=r.__ts; if(r.__ts>_maxMs)_maxMs=r.__ts; });
       overviewEpochStartMs=_minMs===Infinity?null:_minMs;
       overviewEpochEndMs=_maxMs===-Infinity?null:_maxMs;
-      realtimeRows=[];
-      realtimePrecomputed=null;
-      stopRealtime();
-      realtimeCurrentMs=null;
       renderRows(finalRows);
       setStatus("Rendering plot...");
       await nextPaint();
@@ -16743,56 +17891,13 @@
       byId("help_github").onclick=()=>window.open("https://github.com/tysocks/NOVA","_blank");
       byId("help_sourceHelp").onclick=()=>setStatus("Sources: + adds a folder/files. Databases from File → Databases appear automatically. Expand a database to browse tests. Missing time index channels show in red — right-click → Edit. Selecting sources does not load data until Plot.");
       byId("help_versionCheck").onclick=()=>{ hideAll(); openVersionCheckModal(); };
-      byId("view_togglePreview").onclick=()=>{ setPreviewVisible(!previewVisible); saveState(); };
       byId("edit_showMetadata").onclick=()=>showMetadataModal();
-      byId("edit_setMaxFreq").onclick=()=>openMaxFreqModal();
-      byId("edit_realtimeTraces").onclick=()=>{ const p=byId("realtimePanel"); p.style.display="block"; };
       byId("view_viewAppearance").onclick=()=>openViewAppearanceModal();
       byId("view_preferences").onclick=()=>openPreferencesModal();
-      async function saveTextToFile(defaultName, text, mimeType, extension, description, pickerMimeType){
-        const normalizedDefaultName = new RegExp(`\\.${extension}$`, "i").test(defaultName) ? defaultName : `${defaultName}.${extension}`;
-        const acceptMime = pickerMimeType || mimeType;
-        if (window.showSaveFilePicker) {
-          try {
-            let handle = await window.showSaveFilePicker({
-              suggestedName: normalizedDefaultName,
-              excludeAcceptAllOption: true,
-              types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [acceptMime]: [`.${extension}`] } }],
-            });
-            if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) {
-              handle = await window.showSaveFilePicker({
-                suggestedName: `${handle.name || "export"}.${extension}`,
-                excludeAcceptAllOption: true,
-                types: [{ description: description || `${extension.toUpperCase()} files`, accept: { [acceptMime]: [`.${extension}`] } }],
-              });
-              if (!new RegExp(`\\.${extension}$`, "i").test(handle.name || "")) return { ok: false, cancelled: true };
-            }
-            const writable = await handle.createWritable();
-            await writable.write(text);
-            await writable.close();
-            return { ok: true, viaPicker: true };
-          } catch (err) {
-            if (err && err.name === "AbortError") return { ok: false, cancelled: true };
-            setStatus(`Save dialog failed, using download fallback: ${err}`, true);
-          }
-        }
-        try {
-          const blob=new Blob([text],{type:mimeType});
-          const a=document.createElement("a");
-          a.href=URL.createObjectURL(blob);
-          a.download=normalizedDefaultName;
-          a.click();
-          URL.revokeObjectURL(a.href);
-          return { ok: true, viaPicker: false };
-        } catch (err) {
-          setStatus(`Export failed: ${err}`, true);
-          return { ok: false, cancelled: false };
-        }
-      }
-      byId("file_exportPlot").onclick=async()=>{ const p=getActivePlot(); const rows=latestRows||[]; const esc=(v)=>{ const s=String(v??""); return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s; }; const headers=["test_run_id","test_run_code","channel_name","unit","time","value","db_id"]; const csv=[headers.join(",")].concat(rows.map((r)=>[esc(r.test_run_id),esc(r.test_run_code),esc(r.channel_name),esc(r.unit||""),esc(r.time),esc(r.value),esc(r.__dbId)].join(","))).join("\n"); const result=await saveTextToFile(`nova_${(p?.name||"view").replaceAll(" ","_")}.csv`, csv, "text/csv;charset=utf-8", "csv", "CSV files", "text/csv"); if (result.ok && result.viaPicker) setStatus(`Exported ${rows.length} rows to CSV.`); if (result.ok && !result.viaPicker) setStatus(`CSV downloaded (${rows.length} rows).`); if (!result.ok && result.cancelled) setStatus("CSV export cancelled."); };
       byId("file_configManager").onclick=()=>openConfigManagerModal();
       byId("file_databaseManager").onclick=()=>openDatabaseManagerModal();
       byId("file_unitManager").onclick=()=>openUnitManagerModal();
+      byId("file_rangeDefinitionManager").onclick=()=>openRangeDefinitionManagerModal();
     }
 
     const APPEAR_KEY="nova.appearance.notion-v1";
@@ -17053,7 +18158,6 @@
     }
 
     async function handlePlotZoomRelayoutEnd(){
-      if(realtimeTimer) return;
       if(plotProgrammaticUpdate) return;
       if(!zoomDetailRefetchEnabled()) return;
       if(!overviewRows.length||!overviewEpochStartMs||overviewEpochEndMs===overviewEpochStartMs) return;
@@ -17114,12 +18218,6 @@
           return;
         }
         if(plotProgrammaticUpdate||suppressZoomRelayout>0) return;
-        if(realtimeTimer){
-          const snap=snapshotPlotAxisLocks(gd);
-          realtimeLockedXRange=snap.xRange;
-          realtimeLockedYRanges=snap.yRanges;
-          return;
-        }
         if(!isPlotRangeRelayoutEvent(ev)) return;
         if(!zoomDetailRefetchEnabled()) return;
         if(!overviewRows.length||!overviewEpochStartMs||overviewEpochEndMs===overviewEpochStartMs) return;
@@ -17207,12 +18305,17 @@
       const channelKeys=effectiveSelectedChannelIds();
       const selNonCalc=rowsAll.filter((r)=>rawRowMatchesSelectedKeys(r, channelKeys, selectedCalcs));
       stampAliasDisplayNames(selNonCalc, channelKeys);
+      if(effectiveSelectedMaskIds().some((id)=>{
+        const m=(state.masks||[]).find((x)=>x.id===id);
+        return m && m.kind==="range";
+      })){
+        try{ await refreshCatalogRanges(); }catch{ /* status already set */ }
+      }
       const finalRows=applyMasks(concatRows(selNonCalc, calcRows));
       finalRows.forEach(r=>{ if(!Number.isFinite(r.__ts)) r.__ts=parseRowTimeMs(r); });
       if(fetchGen!==zoomDetailFetchGen) return;
       zoomState="detail";
       latestRows=finalRows;
-      realtimeRows=[]; realtimePrecomputed=null;
       const gd=byId("plot");
       await plotRows(finalRows, { preserveUi:true, dataOnly:true, axisLocks: snapshotPlotAxisLocks(gd) });
       setStatus(`Detail: ${finalRows.length} rows in window.`);
@@ -17355,7 +18458,6 @@
       if(addedChannelIds.size){
         try{ await refreshCatalogsForSelections({ onlyWithAddedChannels:true }); }catch{}
       }
-      initRealtimePanel();
       bindToolbarRail();
       renderAll();
       renderPlotTabs();
@@ -17400,13 +18502,17 @@
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     });
     byId("addMaskBtn").onclick=showAddMasksMenu;
-    byId("addIndexMaskBtn")?.addEventListener("mousedown", (e) => {
+    byId("addRangeMaskBtn")?.addEventListener("mousedown", (e) => {
       e.preventDefault();
       e.stopPropagation();
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     });
-    if(byId("addIndexMaskBtn")) byId("addIndexMaskBtn").onclick=showAddIndexMaskMenu;
+    if(byId("addRangeMaskBtn")) byId("addRangeMaskBtn").onclick=showAddRangeMaskMenu;
     byId("addRangeBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); void openCreateRangeModal(); });
+    byId("rangeDefinitionBtn")?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      void openRangeDefinitionManagerModal();
+    });
     byId("addObjectBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Plot objects are coming soon."); });
     byId("addIngestionBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Ingestion rules are coming soon."); });
     byId("loadBtn").onclick=loadTimeseries;

@@ -17,6 +17,7 @@ backend/.nova_source_defaults.json
 backend/.nova_config_library.json
 backend/.nova_database_library.json
 backend/.nova_unit_library.json
+backend/.nova_range_definition_library.json
 backend/.nova_sources_workspace.json
 backend/.nova_sessions/
 
