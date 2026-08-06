@@ -6,12 +6,12 @@
   <title>NOVA</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <style>
     :root {
       color-scheme:dark;
-      --nova-base-font-size:12px;
+      --nova-base-font-size:14px;
       /* Notion dark */
       --nova-ui-bg:#202020;
       --nova-sidebar-bg:#202020;
@@ -451,16 +451,17 @@
     .iconBtn{ width:24px; height:24px; min-width:24px; border-radius:4px; border:none; background:transparent; color:var(--nova-text-dim); padding:0; font-size:0.85rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
     .iconBtn:hover{ color:var(--nova-text); background:var(--nova-hover); }
     /* Plot workspace / multiplot */
-    .plotWorkspace{ flex:1 1 auto; min-height:0; min-width:0; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+    .plotWorkspace{ flex:1 1 auto; min-height:0; min-width:0; display:flex; flex-direction:column; overflow:hidden; position:relative; box-sizing:border-box; }
+    .plotWorkspace > .plotPane{ margin:5px; }
     .plotSplit{ display:flex; flex:1 1 auto; min-height:0; min-width:0; overflow:hidden; }
     .plotSplit.row{ flex-direction:row; }
     .plotSplit.col{ flex-direction:column; }
-    .plotSplitChild{ flex:1 1 0; min-width:0; min-height:0; display:flex; overflow:hidden; }
+    .plotSplitChild{ flex:1 1 0; min-width:0; min-height:0; display:flex; overflow:hidden; padding:5px; box-sizing:border-box; }
     .plotSplitter{ flex:0 0 4px; background:var(--nova-divider); position:relative; z-index:3; }
     .plotSplitter.row{ cursor:col-resize; }
     .plotSplitter.col{ cursor:row-resize; }
     .plotSplitter:hover, .plotSplitter.dragging{ background:var(--nova-line); }
-    .plotPane{ flex:1 1 auto; min-height:0; min-width:0; display:flex; flex-direction:column; overflow:hidden; position:relative; border:1px solid transparent; }
+    .plotPane{ flex:1 1 auto; min-height:0; min-width:0; display:flex; flex-direction:column; overflow:hidden; position:relative; border:1px solid transparent; border-radius:10px; background:var(--nova-view-bg); }
     .plotPane > .plotTabs{ flex:0 0 auto; z-index:2; position:relative; min-height:26px; }
     .plotPane.tabs-hidden > .plotTabs{ display:none; }
     .plotPane.focused{ border-color:rgba(255,255,255,0.14); }
@@ -699,6 +700,7 @@
       row-gap:var(--legend-row-gap, 10px);
       width:100%;
       box-sizing:border-box;
+      overflow:hidden;
     }
     .plotLegendList li{
       display:inline-flex;
@@ -742,6 +744,10 @@
       width:100%;
       height:100%;
       box-sizing:border-box;
+      overflow:hidden;
+    }
+    .plotStub.plotLegendView{
+      overflow:hidden;
     }
     .plotLegendSwatch{ width:14px; height:3px; border-radius:1px; flex:0 0 auto; }
     .plotDropLayer{ display:none; position:absolute; inset:0; z-index:20; pointer-events:none; }
@@ -1376,7 +1382,10 @@
     .summaryEditorWrap select,
     .summaryEditorWrap .objPropControl,
     #optionsProps select,
-    #optionsProps .objPropControl{
+    #optionsProps .objPropControl,
+    #optionsProps button.channelPickField,
+    #m_obj_props button.channelPickField,
+    .rangeMetaRow button.channelPickField{
       -webkit-appearance:none !important;
       appearance:none !important;
       width:100%;
@@ -1398,12 +1407,53 @@
       outline:none !important;
       cursor:pointer;
       color:var(--nova-text);
+      font:inherit;
+      font-weight:400;
+      text-align:left;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      line-height:1.2;
+      letter-spacing:normal;
+      text-transform:none;
+      display:block;
     }
+    #m_obj_props .channelPickFieldWrap{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      width:100%;
+      min-width:0;
+    }
+    #m_obj_props .channelPickFieldWrap .channelPickField{
+      flex:1;
+      width:auto;
+    }
+    #optionsProps input.objPropControl,
     #m_obj_props input.objPropControl,
     #m_ov_def input.objPropControl,
-    #m_mask_props input.objPropControl,
-    #optionsProps input.objPropControl{
+    #m_mask_props input.objPropControl{
       cursor:text;
+    }
+    .channelPickField--empty{ color:rgba(255,255,255,0.45); }
+    html.light-mode .channelPickField--empty{ color:rgba(55,53,47,0.45); }
+    .formField > .channelPickField.formSelectStable{
+      -webkit-appearance:none;
+      appearance:none;
+      background-color:var(--nova-input-bg);
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%23888888' d='M4.2 6.2L8 10l3.8-3.8-.9-.9L8 8.2 5.1 5.3l-.9.9z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:right 10px center;
+      background-size:12px 12px;
+      padding:6px 30px 6px 10px;
+      border:1px solid var(--nova-divider);
+      border-radius:4px;
+      line-height:1.2;
+      min-height:34px;
+      height:34px;
+      max-height:34px;
+      box-sizing:border-box;
+      cursor:pointer;
     }
     /* Properties table uses novaSelect chrome — strip border + chevron there */
     #m_obj_props .novaSelect,
@@ -2301,6 +2351,50 @@
     .appWindow.modalSourceForm .appWindowContent{ overflow:hidden; }
     .appWindowResize{ position:absolute; right:0; bottom:0; width:14px; height:14px; cursor:nwse-resize; z-index:2; background:linear-gradient(135deg, transparent 50%, var(--nova-text-dim) 50%); opacity:0.45; }
     .appWindowResize:hover{ opacity:0.85; }
+    /* Preferences — VS Code-style settings shell */
+    .appWindow.modalPreferences{ width:820px !important; height:560px !important; min-height:420px; }
+    .appWindow.modalPreferences .appWindowBody{ display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+    .appWindow.modalPreferences .appWindowContent{ overflow:hidden; }
+    .prefsShell{ display:flex; flex:1 1 auto; min-height:0; height:100%; }
+    .prefsNav{ width:196px; flex:0 0 196px; border-right:1px solid var(--nova-divider); padding:8px 0; overflow-y:auto; background:var(--nova-sidebar-bg); }
+    .prefsNavItem{ display:block; width:100%; border:none; background:transparent; text-align:left; padding:7px 14px; font-size:0.8125rem; color:var(--nova-text-dim); cursor:pointer; border-radius:0; }
+    .prefsNavItem:hover{ background:var(--nova-hover); color:var(--nova-text); }
+    .prefsNavItem.active{ background:var(--nova-active); color:var(--nova-text); font-weight:500; }
+    .prefsPanels{ flex:1 1 auto; min-width:0; min-height:0; overflow-y:auto; padding:18px 22px 12px; }
+    .prefsPanel{ display:none; }
+    .prefsPanel.active{ display:block; }
+    .prefsPanelTitle{ margin:0 0 4px; font-size:1.05rem; font-weight:600; color:var(--nova-text); letter-spacing:-0.01em; }
+    .prefsPanelDesc{ margin:0 0 18px; font-size:0.78rem; color:var(--nova-text-dim); line-height:1.45; }
+    .prefsGroup{ margin-bottom:22px; }
+    .prefsGroupTitle{ margin:0 0 10px; font-size:0.68rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--nova-text-dim); }
+    .prefsRow{ display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding:11px 0; border-bottom:1px solid var(--nova-divider); }
+    .prefsRow:last-child{ border-bottom:none; }
+    .prefsRowCopy{ flex:1 1 auto; min-width:0; }
+    .prefsRowLabel{ font-size:0.875rem; color:var(--nova-text); font-weight:500; }
+    .prefsRowHint{ margin-top:3px; font-size:0.75rem; color:var(--nova-text-dim); line-height:1.4; }
+    .prefsRowControl{ flex:0 0 auto; min-width:140px; display:flex; justify-content:flex-end; align-items:center; }
+    .prefsRowControl select,.prefsRowControl input[type="number"]{ width:100%; max-width:180px; }
+    .prefsThemeCards{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+    .prefsThemeCard{ border:1px solid var(--nova-divider); border-radius:8px; padding:10px; cursor:pointer; background:var(--nova-hover); transition:border-color 120ms, background 120ms; }
+    .prefsThemeCard:hover{ border-color:var(--nova-accent); }
+    .prefsThemeCard.active{ border-color:var(--nova-accent); background:var(--nova-active); }
+    .prefsThemePreview{ height:52px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(127,127,127,0.18); overflow:hidden; display:flex; }
+    .prefsThemePreview.dark{ background:#191919; }
+    .prefsThemePreview.light{ background:#ffffff; }
+    .prefsThemePreviewBar{ width:28%; height:100%; border-right:1px solid rgba(127,127,127,0.16); }
+    .prefsThemePreview.dark .prefsThemePreviewBar{ background:#202020; }
+    .prefsThemePreview.light .prefsThemePreviewBar{ background:#f7f6f3; }
+    .prefsThemeName{ font-size:0.8125rem; font-weight:500; color:var(--nova-text); }
+    .prefsShortcutTable{ width:100%; border-collapse:collapse; font-size:0.8125rem; }
+    .prefsShortcutTable th{ text-align:left; padding:7px 8px; font-weight:500; color:var(--nova-text-dim); border-bottom:1px solid var(--nova-divider); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.04em; }
+    .prefsShortcutTable td{ padding:9px 8px; border-bottom:1px solid var(--nova-divider); vertical-align:middle; }
+    .prefsShortcutTable tr:last-child td{ border-bottom:none; }
+    .prefsKeyBadge{ display:inline-flex; align-items:center; justify-content:center; min-width:96px; padding:4px 10px; border-radius:5px; border:1px solid var(--nova-divider); background:var(--nova-hover); font-size:0.75rem; color:var(--nova-text); cursor:pointer; font-family:var(--nova-font-family, inherit); white-space:nowrap; }
+    .prefsKeyBadge:hover{ border-color:var(--nova-accent); }
+    .prefsKeyBadge.recording{ outline:2px solid var(--nova-accent); color:var(--nova-text-dim); }
+    .prefsKeyBadge.empty{ color:var(--nova-text-dim); font-style:italic; }
+    .prefsFooter{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--nova-divider); flex:0 0 auto; }
+    .prefsFooter .modalActions{ margin:0; padding:0; border:none; flex:0 0 auto; }
   </style>
 </head>
 <body>
@@ -2312,17 +2406,13 @@
         <div class="menuAction" id="file_unitManager">Unit Manager</div>
         <div class="menuAction" id="file_rangeDefinitionManager">Range Definitions</div>
         <div class="menuAction" id="file_limitManager">Limits Manager</div>
+        <div class="menuSep"></div>
+        <div class="menuAction" id="file_preferences">Preferences…</div>
       </div>
     </div>
     <div class="menuItem" data-menu="edit">Edit
       <div class="menuDropdown" id="menu_edit">
         <div class="menuAction" id="edit_showMetadata">Show Metadata</div>
-      </div>
-    </div>
-      <div class="menuItem" data-menu="view">View
-      <div class="menuDropdown" id="menu_view">
-        <div class="menuAction" id="view_preferences">Preferences</div>
-          <div class="menuAction" id="view_viewAppearance">View Appearance</div>
       </div>
     </div>
     <div class="menuItem" data-menu="help">Help
@@ -2742,6 +2832,7 @@
     let channelUnitMap = new Map();
     let state = { sources: [], databases: [], masks: [], calculatedChannels: [], channelAliases: [], channelLabels: {}, freqOverrides: {}, unitOverrides: {}, collapsed: {}, activeToolbar: "sources", sourceTreeExpanded: [] };
     let activeToolbar = "sources";
+    let toolbarToggleGuard = 0;
     let sourceTreeExpanded = new Set();
     const dbBrowseCache = new Map();
     const lastClickedByKind = {};
@@ -2930,17 +3021,22 @@
     function plotResolutionPx(plotWidthPx){
       return Math.max(400, Math.min(2400, Math.floor(plotPointCap(plotWidthPx)/2)));
     }
-    function decimateXY(x, y, maxPts){
+    function decimateXY(x, y, maxPts, z=null){
       const n=Math.min(x.length, y.length);
-      if(n<=maxPts) return { x, y, decimated:false, original:n };
+      const hasZ=Array.isArray(z) && z.length===n;
+      if(n<=maxPts){
+        return { x, y, z:hasZ?z:null, decimated:false, original:n };
+      }
       const stride=Math.ceil(n/maxPts);
       const xOut=[];
       const yOut=[];
+      const zOut=hasZ?[]:null;
       for(let i=0;i<n;i+=stride){
         xOut.push(x[i]);
         yOut.push(y[i]);
+        if(hasZ) zOut.push(z[i]);
       }
-      return { x:xOut, y:yOut, decimated:true, original:n };
+      return { x:xOut, y:yOut, z:zOut, decimated:true, original:n };
     }
     function appendRows(target, rows){
       for(let i=0;i<rows.length;i+=1) target.push(rows[i]);
@@ -3885,6 +3981,8 @@
       }
 
       async function applySelectedRangeXLimits(r){
+        const plot=(typeof getActivePlot==="function") ? getActivePlot() : null;
+        if(!viewUsesTimeRangeAxis(plot)) return false;
         const gd = graphDiv();
         if(!gd || !r) return false;
         const bounds = (typeof rangePlotXBounds === "function") ? rangePlotXBounds(r) : null;
@@ -3895,11 +3993,64 @@
         return true;
       }
 
+      function activePlotSpectralConfig(){
+        const plot = (typeof getActivePlot === "function") ? getActivePlot() : null;
+        if(!plot || (typeof normalizeViewType === "function" && normalizeViewType(plot.viewType)!=="spectral")) return null;
+        return (typeof normalizeSpectralConfig === "function") ? normalizeSpectralConfig(plot.spectral) : (plot.spectral || null);
+      }
+
+      async function resetSpectralViewLimits(){
+        const plot = (typeof getActivePlot === "function") ? getActivePlot() : null;
+        if(!plot) return;
+        try{
+          if(typeof plotSpectralRows === "function"){
+            await plotSpectralRows(plot, { preserveUi:false });
+            PlotRenderer.refreshAxisHitZones(plotEl);
+            return;
+          }
+        }catch(err){
+          console.warn("[NOVA] spectral reset via replot failed", err);
+        }
+        const gd = graphDiv();
+        if(!gd) return;
+        const cfg = activePlotSpectralConfig();
+        const showSpec = cfg && (cfg.output==="spectrogram" || cfg.output==="both");
+        const patch = {};
+        if(showSpec){
+          const series = (plot.spectralResult?.series||[]).find((s)=>!s.error && s.spectrogram?.times?.length);
+          const times = (series?.spectrogram?.times||[]).map(Number).filter((v)=>Number.isFinite(v));
+          if(times.length){
+            patch["xaxis.autorange"] = false;
+            patch["xaxis.range"] = [Math.min(...times), Math.max(...times)];
+          }else{
+            patch["xaxis.autorange"] = true;
+          }
+        }else{
+          patch["xaxis.autorange"] = true;
+        }
+        if(gd.layout?.xaxis2) patch["xaxis2.autorange"] = true;
+        plotYAxisKeys(gd).forEach((k)=>{ patch[`${k}.autorange`] = true; });
+        await applyRelayout(patch);
+        PlotRenderer.refreshAxisHitZones(plotEl);
+      }
+
       async function handleDoubleClickAction(){
         const now = performance.now();
         if(now - lastDoubleActionAt < 400) return;
         lastDoubleActionAt = now;
         lastTap = null;
+        const spectralCfg = activePlotSpectralConfig();
+        if(spectralCfg){
+          await resetSpectralViewLimits();
+          setStatus("Plot view reset.");
+          return;
+        }
+        const plot=(typeof getActivePlot==="function") ? getActivePlot() : null;
+        if(!viewUsesTimeRangeAxis(plot)){
+          await resetViewLimits();
+          setStatus("Plot view reset.");
+          return;
+        }
         const selected = (typeof getSelectedRange === "function") ? getSelectedRange() : null;
         if(!selected){
           await resetViewLimits();
@@ -6574,6 +6725,31 @@
       if(alias) return aliasMemberNames(alias);
       return [name];
     }
+    function finiteMarkerColorRange(values){
+      const finite=(values||[]).filter((v)=>Number.isFinite(Number(v)));
+      if(!finite.length) return null;
+      let lo=finite[0];
+      let hi=finite[0];
+      finite.forEach((v)=>{ if(v<lo) lo=v; if(v>hi) hi=v; });
+      return lo===hi ? [lo, lo+1] : [lo, hi];
+    }
+    function markerColorMapFromValues(values, { title="", size=6, symbol="circle" }={}){
+      const color=(values||[]).map((v)=>Number.isFinite(Number(v)) ? Number(v) : null);
+      const range=finiteMarkerColorRange(color);
+      if(!range) return null;
+      return {
+        size:Math.max(1, Number(size)||6),
+        symbol:String(symbol||"circle"),
+        color,
+        colorscale:"Viridis",
+        showscale:true,
+        cmin:range[0],
+        cmax:range[1],
+        autocolorscale:false,
+        colorbar:{ title:String(title||"") },
+        line:{ width:0 },
+      };
+    }
     function slotValueForChannelKey(vals, key){
       for(const name of rawNamesForChannelKey(key)){
         const v=Number(vals[name]);
@@ -6623,6 +6799,7 @@
         if(!byTest.has(tk)) byTest.set(tk, []);
         byTest.get(tk).push(slot);
       });
+      const styleMap=getPlotTraceStyles(plot);
       const traces=[];
       let original=0;
       let shown=0;
@@ -6634,18 +6811,30 @@
           list.sort((a,b)=>a.__ts-b.__ts);
           const xs=[];
           const ys=[];
+          const cs=[];
           let sample=null;
           let yRawName=channelKeyFromId(yKey);
-          let xRawName=channelKeyFromId(xKey);
+          let colorMapKey=null;
           list.forEach((slot)=>{
             const xv=slotValueForChannelKey(slot.vals, xKey);
             const yv=slotValueForChannelKey(slot.vals, yKey);
             if(!xv || !yv) return;
             original+=1;
-            xRawName=xv.name;
             yRawName=yv.name;
             const xChId=`${slot.__dbId}|${xv.name}`;
             const yChId=`${slot.__dbId}|${yv.name}`;
+            if(colorMapKey===null){
+              const legendRowProbe={
+                __dbId:slot.__dbId,
+                test_run_id:slot.test_run_id,
+                test_run_code:slot.test_run_code,
+                channel_name:yv.name,
+                __displayChannel:channelDisplayName(yKey),
+              };
+              const legendNameProbe=traceLegendName(legendRowProbe);
+              const savedStyle=styleMap[legendNameProbe] || styleMap[yChId] || styleMap[String(yKey)] || null;
+              colorMapKey=savedStyle?.colorMapChannelId ? channelKeyFromId(savedStyle.colorMapChannelId) : "";
+            }
             const xRawUnit=getChannelSourceUnit(xChId, slot.units[xv.name]);
             const yRawUnit=getChannelSourceUnit(yChId, slot.units[yv.name]);
             const xDisp=convertValueToPreferred(xv.value, xRawUnit);
@@ -6654,12 +6843,20 @@
             if(!xUnit) xUnit=normalizePlotUnit(channelUnitMap.get(xChId)||resolveChannelUnit(xChId, xRawUnit));
             xs.push(xDisp);
             ys.push(yDisp);
+            if(colorMapKey){
+              const cv=slotValueForChannelKey(slot.vals, colorMapKey);
+              if(cv){
+                const cChId=`${slot.__dbId}|${cv.name}`;
+                const cRawUnit=getChannelSourceUnit(cChId, slot.units[cv.name]);
+                const cDisp=convertValueToPreferred(cv.value, cRawUnit);
+                cs.push(Number.isFinite(cDisp) ? cDisp : null);
+              }else{
+                cs.push(null);
+              }
+            }
             sample=slot;
           });
           if(!xs.length || !sample) return;
-          const capped=decimateXY(xs, ys, pointCap);
-          if(capped.decimated) decimated=true;
-          shown+=capped.x.length;
           const yChId=`${sample.__dbId}|${yRawName}`;
           const legendRow={
             __dbId:sample.__dbId,
@@ -6669,19 +6866,41 @@
             __displayChannel:channelDisplayName(yKey),
           };
           const legendName=traceLegendName(legendRow);
-          traces.push({
+          const useColorMap=colorMapKey && cs.length===xs.length && cs.some((v)=>Number.isFinite(v));
+          const capped=decimateXY(xs, ys, pointCap, useColorMap ? cs : null);
+          if(capped.decimated) decimated=true;
+          shown+=capped.x.length;
+          const traceObj={
             type:"scattergl",
-            mode:"lines",
+            mode:"markers",
             connectgaps:false,
             line:{ width:lineW },
+            marker:{ size:6, symbol:"circle" },
             name:legendName,
             x:capped.x,
             y:capped.y,
             _unit:normalizePlotUnit(channelUnitMap.get(yChId)||resolveChannelUnit(yChId, null)),
             _novaSourceKey:legendName,
             _novaChannelKey:yChId,
-            meta:{ novaChannelKey:yChId, novaParametricX:xKey, novaParametricY:yKey },
-          });
+            _novaStyle:{ plotStyle:"markers", markerSize:6, markerEvery:25 },
+            meta:{ novaPlotStyle:"markers", novaChannelKey:yChId, novaParametricX:xKey, novaParametricY:yKey },
+          };
+          if(useColorMap && capped.z){
+            const colorMarker=markerColorMapFromValues(capped.z, {
+              title:channelDisplayName(colorMapKey),
+              size:6,
+              symbol:"circle",
+            });
+            if(colorMarker){
+              traceObj.type="scatter";
+              traceObj.marker=colorMarker;
+              traceObj._novaColorMapKey=colorMapKey;
+              traceObj._novaColorMapValues=colorMarker.color;
+              traceObj._novaStyle.colorMapChannelId=colorMapKey;
+              traceObj.meta.novaColorMapChannelId=colorMapKey;
+            }
+          }
+          traces.push(traceObj);
         });
       });
       return { traces, original, shown, decimated, xLabel, xUnit, needsConfig:false };
@@ -8511,7 +8730,7 @@
     const WF_ALIAS_FORM={ floating:true, size:"modalAliasForm", closable:true };
     const WF_RANGE_DEF_FORM={ floating:true, size:"modalRangeDef", closable:true };
     const dialogCloseStack=[];
-    const APP_WINDOW_SIZES={ modalScale:[420,520], modalSourceForm:[598,300], modalAliasForm:[598,320], modalRangeDef:[640,720], modalChannels:[960,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], default:[520,560] };
+    const APP_WINDOW_SIZES={ modalScale:[420,520], modalSourceForm:[598,300], modalAliasForm:[598,320], modalRangeDef:[640,720], modalChannels:[960,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], modalPreferences:[820,560], default:[520,560] };
     function removeAppWindowEntry(dialogId){
       const idx=appWindowStack.findIndex((e)=>e.dialogId===dialogId);
       if(idx>=0) appWindowStack.splice(idx,1);
@@ -10677,6 +10896,9 @@
     function isPlotlyViewType(v){
       const t=normalizeViewType(v);
       return t==="time" || t==="parametric" || t==="spectral";
+    }
+    function viewUsesTimeRangeAxis(plot){
+      return normalizeViewType(plot?.viewType)==="time";
     }
     function isStubViewType(v){
       const t=normalizeViewType(v);
@@ -13463,36 +13685,72 @@
       if(!key) return "Select channel…";
       return channelDisplayName?.(key) || key;
     }
-    function parametricIndexSelectHtml(id, attrs=""){
-      const label=parametricIndexDisplay(id);
-      const val=channelKeyFromId(id)||String(id||"").trim();
-      // Looks like a normal select; click opens single-pick Channels > Add (not a native dropdown).
-      return `<select ${attrs} data-param-index-pick aria-haspopup="dialog">
-        <option value="${escAttr(val)}" selected>${escapeHtml(label)}</option>
-      </select>`;
+    function getChannelPickFieldValue(el){
+      return String(el?.dataset?.value||"").trim();
     }
-    function bindParametricIndexPick(el, getCurrentId, onPicked){
+    function setChannelPickFieldValue(el, channelId, { allowEmpty=false }={}){
       if(!el) return;
+      const val=channelKeyFromId(channelId)||String(channelId||"").trim();
+      el.dataset.value=val;
+      const label=allowEmpty && !val ? "None" : parametricIndexDisplay(val);
+      el.textContent=label;
+      el.classList.toggle("channelPickField--empty", Boolean(allowEmpty && !val));
+    }
+    function channelPickFieldHtml(channelId="", attrs="", { allowEmpty=false, extraClass="" }={}){
+      const val=channelKeyFromId(channelId)||String(channelId||"").trim();
+      const label=allowEmpty && !val ? "None" : parametricIndexDisplay(val);
+      const emptyCls=allowEmpty && !val ? " channelPickField--empty" : "";
+      const allowAttr=allowEmpty ? ` data-allow-empty="1"` : "";
+      const cls=`channelPickField objPropControl${emptyCls}${extraClass?` ${extraClass}`:""}`;
+      return `<button type="button" ${attrs} class="${cls}" data-channel-pick${allowAttr} data-value="${escAttr(val)}" aria-haspopup="dialog">${escapeHtml(label)}</button>`;
+    }
+    function parametricIndexSelectHtml(id, attrs=""){
+      return channelPickFieldHtml(id, attrs);
+    }
+    function traceColorMapPickHtml(channelId="", attrs=""){
+      return channelPickFieldHtml(channelId, attrs, { allowEmpty:true });
+    }
+    function bindChannelPickField(el, getCurrentId, onPicked){
+      if(!el) return;
+      const allowEmpty=el.dataset.allowEmpty==="1";
       let opening=false;
-      const open=async (ev)=>{
+      const open=async(ev)=>{
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
         if(opening) return;
         opening=true;
-        try{ el.blur?.(); }catch{}
         try{
-          const picked=await showPickSingleChannelModal({ currentId:getCurrentId?.()||"" });
-          if(picked) onPicked?.(picked);
+          const current=getCurrentId?.() ?? getChannelPickFieldValue(el);
+          const picked=await showPickSingleChannelModal({ currentId:current||"" });
+          if(picked){
+            setChannelPickFieldValue(el, picked, { allowEmpty });
+            onPicked?.(picked);
+          }
         }finally{
           opening=false;
         }
       };
-      // mousedown prevents the native select dropdown from opening.
-      el.addEventListener("mousedown", open);
+      el.addEventListener("click", open);
       el.addEventListener("keydown",(ev)=>{
         if(ev.key==="Enter" || ev.key===" " || ev.key==="ArrowDown" || ev.key==="ArrowUp"){
           open(ev);
         }
       });
+    }
+    function bindParametricIndexPick(el, getCurrentId, onPicked){
+      bindChannelPickField(el, getCurrentId, onPicked);
+    }
+    function parametricTraceStyleColorMapKeys(plot){
+      const keys=new Set();
+      if(!plot || normalizeViewType(plot.viewType)!=="parametric") return keys;
+      const map=plot.traceStyles;
+      if(!map || typeof map!=="object" || Array.isArray(map)) return keys;
+      Object.values(map).forEach((entry)=>{
+        const raw=entry?.colorMapChannelId;
+        if(!raw) return;
+        const key=channelKeyFromId(raw)||String(raw).trim();
+        if(key) keys.add(key);
+      });
+      return keys;
     }
     function channelIdsForActiveLoad(){
       const ids=new Set(effectiveSelectedChannelIds());
@@ -13500,6 +13758,7 @@
       if(normalizeViewType(plot?.viewType)==="parametric"){
         const x=channelKeyFromId(plot?.parametric?.xChannelId||"") || String(plot?.parametric?.xChannelId||"").trim();
         if(x) ids.add(x);
+        parametricTraceStyleColorMapKeys(plot).forEach((k)=>ids.add(k));
       }
       return [...ids];
     }
@@ -13743,7 +14002,7 @@
           host.innerHTML=`<div class="plotStub" data-plot-id="${escAttr(plot.id)}">
             <div class="stubField" style="max-width:360px;margin:24px auto;">
               <label>Index channel</label>
-              ${parametricIndexSelectHtml("", `data-param-index class="formSelectStable"`)}
+              ${channelPickFieldHtml("", `data-param-index id="stub_param_index"`, { extraClass:"formSelectStable" })}
             </div>
           </div>`;
           const commitIndex=(value)=>{
@@ -13978,7 +14237,9 @@
       const pane=document.createElement("div");
       pane.className="plotPane"+(leaf.tabs.includes(activePlotId)?" focused":"");
       pane.dataset.leafId=leaf.leafId;
-      pane.addEventListener("mousedown",()=>{
+      pane.addEventListener("click",(e)=>{
+        if(e.target.closest(".plotTab, .plotAdd, .plotSplitter, .plotDropLayer, .plotDropZone")) return;
+        if(!e.target.closest(".plotHost")) return;
         if(leaf.activeTabId && leaf.activeTabId!==activePlotId) switchPlot(leaf.activeTabId);
       });
 
@@ -14444,6 +14705,38 @@
       }
       return selectedSourceIds.has(it.id);
     }
+    function patchExplorerListSelection(listId, items, set, kind){
+      const root=byId(listId);
+      if(!root || !items.length) return false;
+      const rows=[...root.querySelectorAll(":scope > .item")];
+      if(rows.length!==items.length) return false;
+      for(let i=0;i<items.length;i+=1){
+        if(rows[i].getAttribute("data-id")!==items[i].id) return false;
+      }
+      rows.forEach((row, idx)=>{
+        const it=items[idx];
+        row.classList.toggle("active", set.has(it.id));
+        row.classList.toggle("focused", Boolean(focusedItem && focusedItem.kind===kind && focusedItem.id===it.id));
+      });
+      return true;
+    }
+    function patchSourcesTreeSelection(){
+      const root=byId("sourcesList");
+      if(!root) return false;
+      const items=sourcesListItems();
+      const rows=[...root.querySelectorAll(":scope > .treeRow")];
+      if(!items.length || rows.length!==items.length) return false;
+      for(let i=0;i<items.length;i+=1){
+        const rowId=items[i].id || items[i].treeKey || "";
+        if(rows[i].getAttribute("data-id")!==rowId) return false;
+      }
+      rows.forEach((row, idx)=>{
+        const it=items[idx];
+        row.classList.toggle("active", isSourceTreeRowActive(it));
+        row.classList.toggle("focused", Boolean(focusedItem && focusedItem.kind==="source" && focusedItem.id===it.id));
+      });
+      return true;
+    }
     function renderSourcesTree(){
       const root=byId("sourcesList");
       if(!root) return;
@@ -14466,6 +14759,7 @@
         const active=isSourceTreeRowActive(it);
         const probeClass=it.probeClass||"";
         row.className="item treeRow"+(active?" active":"")+(focusedItem&&focusedItem.kind==="source"&&focusedItem.id===it.id?" focused":"")+(it.loading?" tree-loading":"")+(it.error?" tree-error":"")+(probeClass?" "+probeClass:"");
+        row.setAttribute("data-id", it.id || it.treeKey || "");
         row.style.setProperty("--depth", String(it.depth||0));
         const twistClass=it.expandable ? "treeTwist" : "treeTwist hidden";
         const iconClass=it.icon && it.icon!=="none" ? `treeIcon icon-${it.icon}` : "treeIcon";
@@ -14503,9 +14797,21 @@
           }
           focusedItem={kind:"source",id:it.id};
           applySourceTreeSelection(items, idx, ev);
-          // Selection only — catalogs load on Plot / Add Channels
           rebuildChannelsDataLocal();
-          renderAll();
+          if(!patchSourcesTreeSelection()){
+            renderSourcesTree();
+          }
+          renderSidebarExplorerLists({
+            sources:false,
+            databases:true,
+            tests:true,
+            channels:true,
+            masks:true,
+            ranges:true,
+            objects:false,
+            options:false,
+          });
+          persistFocusedViewSelections();
           saveStateDeferred();
         };
         row.oncontextmenu=(ev)=>{
@@ -14631,6 +14937,7 @@
       items.forEach((it,idx)=>{
         const row=document.createElement("div");
         row.className="item"+(set.has(it.id)?" active":"")+(focusedItem&&focusedItem.kind===kind&&focusedItem.id===it.id?" focused":"");
+        row.setAttribute("data-id", it.id);
         const badge=kind==="channel" ? channelKindBadgeHtml(it) : "";
         row.innerHTML=`<div class="itemPrimary">${it.primary}</div>${badge}${it.meta?`<div class="itemMeta">${it.meta}</div>`:""}`;
         row.onmousedown=(ev)=>{
@@ -14641,10 +14948,23 @@
           if(ev.stopPropagation) ev.stopPropagation();
           focusedItem={kind,id:it.id};
           applyExplorerSelection({ items, set, kind, clickIndex: idx, ev });
+          if(!patchExplorerListSelection(target, items, set, kind)){
+            renderList(target, items, set, kind, empty);
+          }
+          persistFocusedViewSelections();
           if(kind==="database"){
             await refreshCatalogsForSelections();
+            renderSidebarExplorerLists({
+              sources:false,
+              databases:false,
+              tests:true,
+              channels:true,
+              masks:false,
+              ranges:false,
+              objects:false,
+              options:false,
+            });
           }
-          renderAll();
           saveStateDeferred();
           if(kind==="mask" && selectedSourceIds.size) void loadTimeseries();
         };
@@ -16253,9 +16573,32 @@
         persistSummaryRows();
         renderSummaryPlot(host, plot);
       });
-      // Row drag reorder.
+      // Row drag reorder + context delete.
       let dragRowId="";
       host.querySelectorAll(".summaryEditorRow").forEach((tr)=>{
+        tr.addEventListener("contextmenu",(ev)=>{
+          if(ev.target?.closest?.("input,textarea")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const rid=tr.getAttribute("data-summary-row-id")||"";
+          if(!rid) return;
+          showContextMenu(ev.clientX, ev.clientY, [
+            {
+              label:"Delete row",
+              action:()=>{
+                const rows=plot.summary.rows||[];
+                const idx=rows.findIndex((r)=>String(r.id)===String(rid));
+                if(idx<0) return;
+                rows.splice(idx,1);
+                if(Array.isArray(plot.summaryResult?.rows)){
+                  plot.summaryResult.rows=plot.summaryResult.rows.filter((r)=>String(r.id)!==String(rid));
+                }
+                persistSummaryRows();
+                renderSummaryPlot(host, plot);
+              },
+            },
+          ], { zIndex:Math.max(200, appWindowZ+15) });
+        });
         tr.addEventListener("dragstart",(ev)=>{
           if(ev.target?.closest?.("input,select,button,textarea")){ ev.preventDefault(); return; }
           dragRowId=tr.getAttribute("data-summary-row-id")||"";
@@ -16898,6 +17241,7 @@
       return isFileSource(src) ? "file" : "file";
     }
     function tryZoomToSelectedRange(){
+      if(!viewUsesTimeRangeAxis(getActivePlot())) return false;
       const r=getSelectedRange();
       if(!r) return false;
       const gd=plotlyGraphDiv();
@@ -18412,7 +18756,8 @@
     const eyeOpenSvg=`<svg viewBox="0 0 16 16"><path fill="currentColor" d="M8 4C4.7 4 2 8 2 8s2.7 4 6 4 6-4 6-4-2.7-4-6-4zm0 6.5A2.5 2.5 0 1 1 10.5 8 2.5 2.5 0 0 1 8 10.5z"/><circle fill="currentColor" cx="8" cy="8" r="1.2"/></svg>`;
     const eyeClosedSvg=`<svg viewBox="0 0 16 16"><path fill="currentColor" d="M2.7 3.3l1-1L13.3 12l-1 1.1-2.4-2.4A5.8 5.8 0 0 1 8 11c-3.3 0-6-3-6-3a10.2 10.2 0 0 1 2.8-2.7L2.7 3.3zM8 5c.4 0 .7.05 1 .15L7.15 7A1.5 1.5 0 0 1 7 6.5 2.5 2.5 0 0 1 8 5zm6 3s-2.7 3-6 3c-.3 0-.6 0-.9-.07l1.4-1.4A2.5 2.5 0 0 0 10.5 8l.1-.4 2.2 2.2A10 10 0 0 0 14 8z"/></svg>`;
     let collapsedObjCategories=new Set();
-    let collapsedOptionsSections=new Set();
+    let expandedOptionsSections=new Set();
+    let optionsPanelPlotId=null;
     let hiddenTraceNames=new Set();
     let selectedObjectKeys=new Set();
     let lastClickedObjectIndex=-1;
@@ -18652,7 +18997,7 @@
       const markerSize=Array.isArray(markerSizeRaw)
         ? (Number(trace?._novaStyle?.markerSize)||6)
         : (Number(markerSizeRaw)||6);
-      return {
+      const state={
         name:String(trace?.name||`trace ${idx}`),
         color,
         width:Number(trace?.line?.width??1.5)||1.5,
@@ -18666,7 +19011,14 @@
         showlegend:trace?.showlegend!==false,
         sourceKey:String(trace?._novaSourceKey || trace?.meta?.novaSourceKey || trace?.name || `trace ${idx}`),
         channelKey:String(trace?._novaChannelKey || trace?.meta?.novaChannelKey || ""),
+        colorMapChannelId:String(trace?._novaStyle?.colorMapChannelId || trace?.meta?.novaColorMapChannelId || ""),
       };
+      const styleMap=getPlotTraceStyles();
+      const saved=styleMap[state.sourceKey] || (state.channelKey ? styleMap[state.channelKey] : null);
+      if(saved?.colorMapChannelId && !state.colorMapChannelId){
+        state.colorMapChannelId=String(saved.colorMapChannelId);
+      }
+      return state;
     }
     function applyTraceStyleToTraceObject(trace, style){
       if(!trace || !style) return trace;
@@ -18678,18 +19030,44 @@
       const markerSize=Math.max(1, Number(style.markerSize??6)||6);
       const markerEvery=Math.max(1, Math.round(Number(style.markerEvery??25)||25));
       const showlegend=style.showlegend!==false;
+      const colorMapChannelId=String(style.colorMapChannelId||"").trim();
       if(style.name) trace.name=String(style.name);
       trace.mode=plotlyModeForPlotStyle(plotStyle);
       trace.showlegend=showlegend;
       trace.line=Object.assign({}, trace.line||{}, { color, width, dash });
       const n=Math.min(trace.x?.length||0, trace.y?.length||0);
-      trace.marker=markerStyleForPlot(color, {
-        plotStyle,
-        markerSymbol,
-        markerSize,
-        markerEvery,
-        pointCount:n,
-      });
+      const hasColorMap=colorMapChannelId && Array.isArray(trace._novaColorMapValues) && trace._novaColorMapValues.length===n;
+      if(hasColorMap){
+        const colorMarker=markerColorMapFromValues(trace._novaColorMapValues, {
+          title:channelDisplayName(colorMapChannelId),
+          size:Math.max(1, Number(style.markerSize??6)||6),
+          symbol:String(style.markerSymbol||trace.marker?.symbol||"circle"),
+        });
+        if(colorMarker){
+          trace.type="scatter";
+          trace.marker=colorMarker;
+        }
+      }else if(colorMapChannelId && Array.isArray(trace.marker?.color)){
+        // Style saved with color map but values arrive on next reload — keep array coloring.
+        const colorMarker=markerColorMapFromValues(trace.marker.color, {
+          title:channelDisplayName(colorMapChannelId),
+          size:Math.max(1, Number(style.markerSize??6)||6),
+          symbol:String(style.markerSymbol||trace.marker?.symbol||"circle"),
+        });
+        if(colorMarker){
+          trace.type="scatter";
+          trace.marker=colorMarker;
+          trace._novaColorMapValues=colorMarker.color;
+        }
+      }else if(!colorMapChannelId){
+        trace.marker=markerStyleForPlot(color, {
+          plotStyle,
+          markerSymbol,
+          markerSize,
+          markerEvery,
+          pointCount:n,
+        });
+      }
       trace._novaSourceKey=String(style.sourceKey||trace._novaSourceKey||trace.name||"");
       if(style.channelKey || trace._novaChannelKey){
         trace._novaChannelKey=String(style.channelKey||trace._novaChannelKey||"");
@@ -18698,12 +19076,14 @@
         plotStyle,
         markerEvery,
         markerSize,
+        ...(colorMapChannelId ? { colorMapChannelId } : {}),
       };
       trace.meta=Object.assign({}, (trace.meta && typeof trace.meta==="object" && !Array.isArray(trace.meta)) ? trace.meta : {}, {
         novaPlotStyle:plotStyle,
         novaMarkerEvery:markerEvery,
         novaSourceKey:trace._novaSourceKey,
         ...(trace._novaChannelKey ? { novaChannelKey:trace._novaChannelKey } : {}),
+        ...(colorMapChannelId ? { novaColorMapChannelId:colorMapChannelId } : {}),
       });
       return trace;
     }
@@ -18728,6 +19108,7 @@
         markerSize:style.markerSize,
         markerEvery:Math.max(1, Number(style.markerEvery)||25),
         showlegend:style.showlegend!==false,
+        ...(style.colorMapChannelId ? { colorMapChannelId:String(style.colorMapChannelId) } : {}),
       };
       map[String(style.sourceKey)]=entry;
       // Also index by stable channel key so renames / legend-label drift still match.
@@ -18788,6 +19169,10 @@
         return;
       }
       if(ph) ph.style.display="none";
+      if(optionsPanelPlotId!==plot.id){
+        expandedOptionsSections.clear();
+        optionsPanelPlotId=plot.id;
+      }
       const opts=getPlotOptions(plot);
       if(!plot.parametric) plot.parametric={ xChannelId:"" };
       plot.spectral=normalizeSpectralConfig(plot.spectral);
@@ -18811,7 +19196,7 @@
       const selectOpts=(items, selected)=>items.map(([v,lab])=>`<option value="${escAttr(v)}" ${String(selected)===String(v)?"selected":""}>${escapeHtml(lab)}</option>`).join("");
       const sectionHtml=(key, title, bodyHtml)=>{
         if(!bodyHtml) return "";
-        const collapsed=collapsedOptionsSections.has(key);
+        const collapsed=!expandedOptionsSections.has(key);
         return `<div class="optSection" data-opt-section="${escAttr(key)}">
           <div class="optSectionHeader" data-opt-section-toggle="${escAttr(key)}">
             <span class="treeTwist">${treeTwistSvg(!collapsed)}</span>
@@ -19006,8 +19391,8 @@
           ev.preventDefault();
           const key=el.getAttribute("data-opt-section-toggle");
           if(!key) return;
-          if(collapsedOptionsSections.has(key)) collapsedOptionsSections.delete(key);
-          else collapsedOptionsSections.add(key);
+          if(expandedOptionsSections.has(key)) expandedOptionsSections.delete(key);
+          else expandedOptionsSections.add(key);
           try{ renderOptionsList(); }catch{}
         });
       });
@@ -19032,6 +19417,78 @@
         el.addEventListener("change", applySpectralFields);
         if(el.tagName==="INPUT") el.addEventListener("change", applySpectralFields);
       });
+    }
+    function visiblePlotIds(){
+      const ids=new Set();
+      layoutLeaves(plotLayout).forEach((leaf)=>{
+        if(leaf?.activeTabId) ids.add(leaf.activeTabId);
+      });
+      return [...ids];
+    }
+    async function loadPlotById(plotId){
+      const p=plots.find((x)=>x.id===plotId);
+      if(!p) return false;
+      activePlotId=plotId;
+      restoreSelections(p.selections);
+      applyPlotMasksToState(p);
+      latestRows=p.latestRows||[];
+      metadataRows=p.metadataRows||[];
+      const vt=normalizeViewType(p.viewType);
+      if(vt==="legend") return false;
+      if(vt==="spectral") await loadSpectralAnalysis();
+      else if(vt==="summary") await loadSummaryAnalysis();
+      else await loadTimeseries();
+      persistActivePlotLocalState();
+      return true;
+    }
+    async function loadAllVisibleViews(){
+      if(loadInProgress){ setStatus("Load already in progress...", true); return; }
+      persistActivePlotLocalState();
+      const originalActive=activePlotId;
+      const sharedSources=[...selectedSourceIds];
+      const sharedDbs=[...selectedDatabaseIds];
+      const sharedTests=[...selectedTestIds];
+      const sharedAddedTests=[...addedTestIds];
+      const plotIds=visiblePlotIds().filter((pid)=>{
+        const p=plots.find((x)=>x.id===pid);
+        return p && normalizeViewType(p.viewType)!=="legend";
+      });
+      if(!plotIds.length){
+        setStatus("No visible views to plot.", true);
+        return;
+      }
+      let loaded=0;
+      for(const pid of plotIds){
+        try{
+          if(await loadPlotById(pid)) loaded+=1;
+        }catch(err){
+          console.warn("[NOVA] load visible view", pid, err);
+        }
+      }
+      const restore=plots.find((x)=>x.id===originalActive);
+      activePlotId=originalActive;
+      if(restore){
+        latestRows=restore.latestRows||[];
+        metadataRows=restore.metadataRows||[];
+        restoreSelections(restore.selections);
+        applyPlotMasksToState(restore);
+      }
+      selectedSourceIds=new Set(sharedSources);
+      selectedDatabaseIds=new Set(sharedDbs);
+      selectedTestIds=new Set(sharedTests);
+      addedTestIds=new Set(sharedAddedTests);
+      if(restore){
+        selectedChannelIds=migrateChannelKeySet((restore.selections?.selectedChannelIds)||[]);
+        addedChannelIds=migrateChannelKeySet((restore.selections?.addedChannelIds)||[]);
+        selectedMaskIds=new Set(Array.isArray(restore.selections?.selectedMaskIds)?restore.selections.selectedMaskIds:[]);
+        selectedRangeKeys=new Set(Array.isArray(restore.selections?.selectedRangeKeys)?restore.selections.selectedRangeKeys:[]);
+      }
+      await refreshVisiblePlotHosts({ all:true });
+      renderAll();
+      savePlots();
+      setStatus(loaded
+        ? `Plotted ${loaded} visible view${loaded===1?"":"s"}.`
+        : "Nothing plotted — check selections on visible views.", loaded ? false : true);
     }
     async function loadActiveView(){
       const plot=getActivePlot();
@@ -19262,6 +19719,7 @@
       const st=extractTraceStyleState(trace, idx);
       const colorVal=colorToHexInput(st.color, "#3b82f6");
       const traceUnit=String(trace?._unit || "unitless").trim() || "unitless";
+      const isParametric=normalizeViewType(getActivePlot()?.viewType)==="parametric";
       const markerOpts=OBJ_MARKER_SYMBOLS.map(([val,label])=>`<option value="${val}" ${st.markerSymbol===val?"selected":""}>${label}</option>`).join("");
       const propRow=(label, controlHtml)=>`<div class="rangeMetaRow">
             <div class="rangeMetaCell">${escapeHtml(label)}</div>
@@ -19308,6 +19766,10 @@
               ${propRow("Line Size", `<input id="m_obj_lw" class="objPropControl" type="number" step="0.5" min="0" max="10" value="${st.width}" />`)}
               ${propRow("Marker Size", `<input id="m_obj_ms" class="objPropControl" type="number" step="0.5" min="1" max="40" value="${st.markerSize}" />`)}
               ${propRow("Marker Spacing", `<input id="m_obj_every" class="objPropControl" type="number" step="1" min="1" max="10000" value="${st.markerEvery}" />`)}
+              ${isParametric ? propRow("Color Map", `<div class="channelPickFieldWrap">
+                ${traceColorMapPickHtml(st.colorMapChannelId, `id="m_obj_color_map" class="objPropControl"`)}
+                <button type="button" id="m_obj_color_map_clear" class="iconBtn" title="Clear color map">×</button>
+              </div>`) : ""}
               ${propRow("Show in Legend", `<select id="m_obj_legend" class="objPropControl">
                 <option value="true" ${st.showlegend?"selected":""}>True</option>
                 <option value="false" ${st.showlegend?"":"selected"}>False</option>
@@ -19330,6 +19792,7 @@
         const showlegend=String(byId("m_obj_legend")?.value||"true")!=="false";
         const sourceKey=String(trace._novaSourceKey || st.sourceKey || st.name);
         const channelKey=String(trace._novaChannelKey || st.channelKey || "");
+        const colorMapChannelId=getChannelPickFieldValue(byId("m_obj_color_map"));
         const styleState={
           name,
           color,
@@ -19342,7 +19805,15 @@
           showlegend,
           sourceKey,
           channelKey,
+          colorMapChannelId,
         };
+        if(isParametric && (colorMapChannelId || st.colorMapChannelId)){
+          saveTraceStyleToActivePlot(styleState);
+          renderObjectsList();
+          try{ refreshLegendViews(); }catch{}
+          void loadTimeseries();
+          return true;
+        }
         const n=Math.min(gd.data?.[idx]?.x?.length||0, gd.data?.[idx]?.y?.length||0);
         const marker=markerStyleForPlot(color, {
           plotStyle,
@@ -19416,6 +19887,21 @@
         el.addEventListener("input", ()=>syncIcon());
         el.addEventListener("change", ()=>syncIcon());
       });
+      const colorMapEl=byId("m_obj_color_map");
+      const colorMapClear=byId("m_obj_color_map_clear");
+      if(colorMapEl){
+        bindChannelPickField(
+          colorMapEl,
+          ()=>getChannelPickFieldValue(colorMapEl),
+        );
+      }
+      if(colorMapClear && colorMapEl){
+        colorMapClear.onclick=(ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+          setChannelPickFieldValue(colorMapEl, "", { allowEmpty:true });
+        };
+      }
       syncIcon();
     }
     function openOverlayStyleModal(o){
@@ -20005,82 +20491,104 @@
       syncIcon();
     }
 
-    function renderAll() {
+    function renderSidebarExplorerLists(opts={}){
+      const o={
+        sources:true,
+        databases:true,
+        tests:true,
+        channels:true,
+        masks:true,
+        ranges:true,
+        objects:true,
+        options:true,
+        chrome:true,
+        ...opts,
+      };
       const dup = {};
       testsData.forEach((t) => {
         dup[`${t.__dbId}|${t.run_code}`] = (dup[`${t.__dbId}|${t.run_code}`] || 0) + 1;
       });
 
-      renderSourcesTree();
-      void refreshCatalogRanges();
+      if(o.sources) renderSourcesTree();
+      if(o.ranges) void refreshCatalogRanges();
 
       const activeSourceIdSet=new Set(effectiveSelectedSourceIds());
       const activeDbIdSet=new Set(effectiveSelectedDatabaseIds());
-      renderList(
-        "databasesList",
-        state.databases
-          .filter((d) => activeSourceIdSet.has(d.sourceId))
-          .map((d) => ({ id: d.id, primary: d.name, meta: d.sourceType })),
-        selectedDatabaseIds,
-        "database",
-        "No databases available."
-      );
-
-      renderList(
-        "testsList",
-        testsData
-          .filter((t) => addedTestIds.has(`${t.__dbId}|${t.test_run_id}`) && activeDbIdSet.has(t.__dbId))
-          .map((t) => ({
-            id: `${t.__dbId}|${t.test_run_id}`,
-            primary: dup[`${t.__dbId}|${t.run_code}`] > 1 ? `${t.run_code} (#${t.test_run_id})` : t.run_code,
-            meta: `${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`
+      if(o.databases){
+        renderList(
+          "databasesList",
+          state.databases
+            .filter((d) => activeSourceIdSet.has(d.sourceId))
+            .map((d) => ({ id: d.id, primary: d.name, meta: d.sourceType })),
+          selectedDatabaseIds,
+          "database",
+          "No databases available."
+        );
+      }
+      if(o.tests){
+        renderList(
+          "testsList",
+          testsData
+            .filter((t) => addedTestIds.has(`${t.__dbId}|${t.test_run_id}`) && activeDbIdSet.has(t.__dbId))
+            .map((t) => ({
+              id: `${t.__dbId}|${t.test_run_id}`,
+              primary: dup[`${t.__dbId}|${t.run_code}`] > 1 ? `${t.run_code} (#${t.test_run_id})` : t.run_code,
+              meta: `${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`
+            })),
+          selectedTestIds,
+          "test",
+          "No tests added."
+        );
+      }
+      if(o.channels){
+        renderList(
+          "channelsList",
+          [...addedChannelIds]
+            .filter((name)=>!isAliasedChannelMember(name))
+            .slice()
+            .sort((a,b)=>String(channelDisplayName(a)).localeCompare(String(channelDisplayName(b))))
+            .map((name)=>{
+              const calc=findCalculatedByKey(name);
+              const alias=findAliasByKey(name);
+              return {
+                id: name,
+                primary: channelDisplayName(name),
+                isCalculated: Boolean(calc),
+                isAlias: Boolean(alias),
+                calcKind: calc?.kind || null,
+              };
+            }),
+          selectedChannelIds,
+          "channel",
+          "No channels added."
+        );
+      }
+      if(o.masks){
+        renderList(
+          "masksList",
+          (state.masks||[]).map((m)=>({
+            id:m.id,
+            primary: maskDisplayName(m),
           })),
-        selectedTestIds,
-        "test",
-        "No tests added."
-      );
+          selectedMaskIds,
+          "mask",
+          "No masks added."
+        );
+      }
 
-      renderList(
-        "channelsList",
-        [...addedChannelIds]
-          .filter((name)=>!isAliasedChannelMember(name))
-          .slice()
-          .sort((a,b)=>String(channelDisplayName(a)).localeCompare(String(channelDisplayName(b))))
-          .map((name)=>{
-            const calc=findCalculatedByKey(name);
-            const alias=findAliasByKey(name);
-            return {
-              id: name,
-              primary: channelDisplayName(name),
-              isCalculated: Boolean(calc),
-              isAlias: Boolean(alias),
-              calcKind: calc?.kind || null,
-            };
-          }),
-        selectedChannelIds,
-        "channel",
-        "No channels added."
-      );
-      renderList(
-        "masksList",
-        (state.masks||[]).map((m)=>({
-          id:m.id,
-          primary: maskDisplayName(m),
-        })),
-        selectedMaskIds,
-        "mask",
-        "No masks added."
-      );
+      if(o.objects) renderObjectsList();
+      if(o.options) renderOptionsList();
+      if(o.chrome){
+        buildXAxis();
+        setPreviewVisible(previewVisible);
+        applyToolbarUI();
+        requestAnimationFrame(()=>updateSidebarListHeights());
+        try{ updatePlotChrome(); }catch{}
+      }
+    }
 
-      renderObjectsList();
-      renderOptionsList();
-      buildXAxis();
-      setPreviewVisible(previewVisible);
-      applyToolbarUI();
-      requestAnimationFrame(()=>updateSidebarListHeights());
-      // Sidebar/list paints must not rebuild the plot mosaic (that destroyed charts and
-      // could reintroduce duplicate tab chrome). Tab active state is enough here.
-      try{ updatePlotChrome(); }catch{}
+    function renderAll() {
+      renderSidebarExplorerLists();
     }
     function deleteFocused(){
       if(!focusedItem) return;
@@ -21519,14 +22027,24 @@
       });
       fitAliasEditorWindow(listEl);
     }
-    async function showAddAliasMembersModal(chosen, onChanged, { leaf="Edit Alias", titleHtml=null, allowAliases=false }={}){
+    async function showAddAliasMembersModal(chosen, onChanged, {
+      leaf="Edit Alias",
+      titleHtml=null,
+      modalTitle=null,
+      allowAliases=false,
+      singlePick=false,
+      onPick=null,
+      onDismiss=null,
+    }={}){
       if(!selectedSourceIds.size || !effectiveSelectedSourceIds().length){
         setStatus("Select at least one source first.", true);
+        onDismiss?.();
         return;
       }
       const sourceOptions=channelPickerSourceOptions();
       if(!sourceOptions.length){
         setStatus("Select at least one source first.", true);
+        onDismiss?.();
         return;
       }
 
@@ -21590,6 +22108,26 @@
             applyTransferSelection({ listRows, activeSet, idx, ev, kind });
             renderAllTransfer();
           };
+          if(singlePick && kind==="avail"){
+            el.ondblclick=(ev)=>{
+              if(ev?.preventDefault) ev.preventDefault();
+              if(isCalculatedChannelKey(r.id)) return;
+              if(!allowAliases && isAliasChannelKey(r.id)) return;
+              selected.clear();
+              selected.add(r.id);
+              if(!rowCache.has(r.id)){
+                if(isAliasChannelKey(r.id)){
+                  const alias=findAliasByKey(r.id);
+                  rowCache.set(r.id, { id:r.id, primary:r.id, meta:`alias (${aliasMemberNames(alias).length})` });
+                }else{
+                  rowCache.set(r.id, { id:r.id, primary:r.id, meta:r.meta||"" });
+                }
+              }
+              availActive.clear();
+              renderAllTransfer();
+              byId("modalSaveCloseBtn")?.click();
+            };
+          }
           root.appendChild(el);
         });
       };
@@ -21605,7 +22143,7 @@
         const btnR = byId("aam_to_sel");
         const btnL = byId("aam_to_avail");
         if(btnR) btnR.disabled = availActive.size===0;
-        if(btnL) btnL.disabled = selActive.size===0;
+        if(btnL) btnL.disabled = singlePick ? selected.size===0 : selActive.size===0;
       };
 
       const appendAliasesToAvailable=(byName)=>{
@@ -21656,7 +22194,7 @@
 
       const sourceSelectHtml=`<div class="formField" id="aam_source_wrap" style="margin-bottom:8px;flex:0 0 auto;"><label>Source</label><div class="selectLock"><select id="aam_source_sel" class="formSelectStable">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div></div>`;
 
-      openModal(`Channels > ${leaf} > Add`,`
+      const entry=openModal(modalTitle || `Channels > ${leaf} > Add`,`
         <div class="modalBodyPad">
           ${sourceSelectHtml}
           <div class="channelTransferGrid">
@@ -21677,12 +22215,31 @@
           if(!allowAliases && isAliasChannelKey(n)) return false;
           return true;
         });
+        if(singlePick){
+          const id=next[0]||"";
+          if(!id){
+            setStatus("Select one channel.", true);
+            return false;
+          }
+          onPick?.(id);
+          return true;
+        }
         chosen.clear();
         next.forEach((n)=>chosen.add(n));
         if(typeof onChanged==="function") onChanged();
         setStatus(`Updated channel selection (${next.length}).`);
         return true;
       });
+
+      if(entry?.close && onDismiss){
+        const prevClose=entry.close;
+        entry.close=()=>{
+          prevClose();
+          onDismiss();
+        };
+        const stackEntry=dialogCloseStack.find((e)=>e.close===prevClose);
+        if(stackEntry) stackEntry.close=entry.close;
+      }
 
       const srcSel=byId("aam_source_sel");
       if(srcSel){
@@ -21692,16 +22249,19 @@
         };
       }
       byId("aam_to_sel").onclick=()=>{
-        [...availActive].forEach((id)=>{
+        const moveIds=singlePick ? [[...availActive][0]].filter(Boolean) : [...availActive];
+        if(singlePick) selected.clear();
+        moveIds.forEach((id)=>{
           if(isCalculatedChannelKey(id)) return;
           if(!allowAliases && isAliasChannelKey(id)) return;
           selected.add(id);
           if(!rowCache.has(id)){
+            const cached=allRows.find((r)=>r.id===id);
             if(isAliasChannelKey(id)){
               const alias=findAliasByKey(id);
               rowCache.set(id, { id, primary:id, meta:`alias (${aliasMemberNames(alias).length})` });
             }else{
-              rowCache.set(id, { id, primary:id, meta:"" });
+              rowCache.set(id, { id, primary:id, meta:cached?.meta||"" });
             }
           }
         });
@@ -21709,8 +22269,12 @@
         renderAllTransfer();
       };
       byId("aam_to_avail").onclick=()=>{
-        [...selActive].forEach((id)=>selected.delete(id));
-        selActive.clear();
+        if(singlePick){
+          selected.clear();
+        }else{
+          [...selActive].forEach((id)=>selected.delete(id));
+          selActive.clear();
+        }
         renderAllTransfer();
       };
       await loadActiveSourceChannels();
@@ -21842,118 +22406,9 @@
     async function showAddDatabaseModal(){ const srcs=activeSources(); if(!srcs.length){ setStatus("Select at least one source first.",true); return; } const rows=[]; for(const src of srcs){ if(src.type==="postgres"){ try{ const dbs=await getJson(`/api/databases?${sourceConnQuery(src)}`); dbs.forEach((d)=>rows.push({id:`${src.id}|${d.name}`,primary:d.name,meta:src.name,sourceId:src.id,sourceType:src.type,name:d.name})); }catch(err){ setStatus(`Database discovery failed for source '${src.name}': ${err}`, true); } } else rows.push({id:`${src.id}|${src.file_path||src.name}`,primary:src.name,meta:`${src.type} source`,sourceId:src.id,sourceType:src.type,name:src.name}); } if(!rows.length){ setStatus("No databases were discovered for the selected source(s).", true); } const chosen=new Set(); openModal("Add Databases",`${searchableRowsHtml("dbm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ const newlyAddedIds=[]; [...chosen].forEach((id)=>{ const r=rows.find((x)=>x.id===id); if(!r) return; const existing=state.databases.find((d)=>d.sourceId===r.sourceId&&d.name===r.name); if(existing){ newlyAddedIds.push(existing.id); return; } const entry={id:crypto.randomUUID(),sourceId:r.sourceId,sourceType:r.sourceType,name:r.name}; state.databases.push(entry); newlyAddedIds.push(entry.id); }); [...selectedDatabaseIds].forEach((id)=>{ if(!state.databases.some((d)=>d.id===id)) selectedDatabaseIds.delete(id); }); // Explicitly select every added database after apply/close.
       newlyAddedIds.forEach((id)=>selectedDatabaseIds.add(id)); await refreshCatalogsForSelections(); renderAll(); saveState(); return true; }); bindSearchableModal("dbm",chosen); }
     async function showAddTestsModal(){ if(!selectedDatabaseIds.size){ setStatus("Select at least one database first.",true); return; } await refreshCatalogsForSelections(); const dup={}; testsData.forEach((t)=>dup[`${t.__dbId}|${t.run_code}`]=(dup[`${t.__dbId}|${t.run_code}`]||0)+1); const rows=testsData.map((t)=>({id:`${t.__dbId}|${t.test_run_id}`,primary:dup[`${t.__dbId}|${t.run_code}`]>1?`${t.run_code} (#${t.test_run_id})`:t.run_code,meta:`${toIso(t.start_time)} -> ${toIso(t.end_time)} | t0: ${toIso(t.t0_utc)}`})); const chosen=new Set(addedTestIds); openModal("Select Tests",`${searchableRowsHtml("tm",rows,chosen)}<div class="modalActions"><button id="modalCancelBtn" type="button">Cancel</button><button id="modalSaveBtn" type="button">Apply</button><button id="modalSaveCloseBtn" type="button">Apply & Close</button></div>`,WF,async()=>{ addedTestIds=new Set(chosen); selectedTestIds=new Set(chosen); renderAll(); saveState(); return true; }); bindSearchableModal("tm",chosen); }
-    async function showPickSingleChannelModal({ currentId="" }={}){
-      if(!selectedSourceIds.size || !effectiveSelectedSourceIds().length){
-        setStatus("Select at least one source first.", true);
-        return null;
-      }
-      const sourceOptions=channelPickerSourceOptions();
-      if(!sourceOptions.length){
-        setStatus("Select at least one source first.", true);
-        return null;
-      }
-
-      let activeSourceId=defaultChannelPickerSourceId(sourceOptions);
-      const rowCache=new Map();
-      let allRows=[];
+    async function showPickSingleChannelModal({ currentId="", allowAliases=true }={}){
       const initial=channelKeyFromId(currentId)||String(currentId||"").trim();
-      const selected=new Set(initial ? [initial] : []);
-      if(initial) rowCache.set(initial, { id:initial, primary:initial, meta:"" });
-      const availActive=new Set();
-      let availAnchor=-1;
-
-      const applySingleAvailSelection=({ listRows, idx })=>{
-        const ids=listRows.map((r)=>r.id);
-        const id=ids[idx];
-        if(!id) return;
-        availActive.clear();
-        availActive.add(id);
-        availAnchor=idx;
-      };
-
-      const renderTransferList=(containerId, listRows, activeSet, kind)=>{
-        const root=byId(containerId);
-        if(!root) return;
-        root.innerHTML="";
-        listRows.forEach((r)=>{
-          const el=document.createElement("div");
-          const isSelected=selected.has(r.id);
-          el.className="selectRow"+(activeSet.has(r.id)?" active":"")+(kind==="avail" && isSelected ? " disabled" : "");
-          const suffix=(kind==="avail" && isSelected)?" · selected":"";
-          el.innerHTML=`<div class="itemPrimary">${escapeHtml(r.primary)}${suffix}</div>`;
-          el.onmousedown=(ev)=>{ if(ev?.preventDefault) ev.preventDefault(); };
-          el.onclick=(ev)=>{
-            if(ev?.preventDefault) ev.preventDefault();
-            if(ev?.stopPropagation) ev.stopPropagation();
-            const idx=listRows.findIndex((x)=>x.id===r.id);
-            if(kind==="avail"){
-              applySingleAvailSelection({ listRows, idx });
-            }else{
-              activeSet.clear();
-              activeSet.add(r.id);
-            }
-            renderAllTransfer();
-          };
-          el.ondblclick=(ev)=>{
-            if(kind!=="avail") return;
-            if(ev?.preventDefault) ev.preventDefault();
-            selected.clear();
-            selected.add(r.id);
-            availActive.clear();
-            renderAllTransfer();
-            byId("modalSaveCloseBtn")?.click();
-          };
-          root.appendChild(el);
-        });
-      };
-
-      const selectedRows=()=>[...selected]
-        .map((id)=>rowCache.get(id)||{id, primary:id, meta:""})
-        .filter(Boolean)
-        .sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
-
-      const selActive=new Set();
-      const renderAllTransfer=()=>{
-        renderTransferList("pcm_avail", allRows, availActive, "avail");
-        renderTransferList("pcm_sel", selectedRows(), selActive, "sel");
-        const btnR=byId("pcm_to_sel");
-        const btnL=byId("pcm_to_avail");
-        if(btnR) btnR.disabled=availActive.size===0;
-        if(btnL) btnL.disabled=selected.size===0;
-      };
-
-      const loadActiveSourceChannels=async()=>{
-        const opt=sourceOptions.find((o)=>o.sourceId===activeSourceId);
-        if(!opt){ allRows=[]; renderAllTransfer(); return; }
-        const src=state.sources.find((s)=>s.id===opt.sourceId);
-        try{
-          if(isFileSource(src)) await ensureFileSourceIndexed(src);
-          const db=isFileSource(src)
-            ? (state.databases.find((d)=>d.sourceId===src.id) || ensureFileSourceCatalog(src))
-            : null;
-          const dbId=db?.id || opt.dbId;
-          opt.dbId=dbId;
-          const rows=await fetchChannelsForDb(dbId);
-          const byName=new Map();
-          rows.forEach((r)=>{
-            const name=channelKeyFromId(r.id) || r.primary;
-            if(!name || byName.has(name)) return;
-            const entry={ id:name, primary:name, meta:r.meta||"" };
-            byName.set(name, entry);
-            rowCache.set(name, entry);
-          });
-          allRows=[...byName.values()].sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
-        }catch(err){
-          allRows=[];
-          setStatus(`Failed to load channels: ${err}`, true);
-        }
-        availActive.clear();
-        availAnchor=-1;
-        renderAllTransfer();
-      };
-
-      const sourceSelectHtml=`<div class="formField" id="pcm_source_wrap" style="margin-bottom:8px;flex:0 0 auto;"><label>Source</label><div class="selectLock"><select id="pcm_source_sel" class="formSelectStable">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div></div>`;
-
+      const chosen=new Set(initial ? [initial] : []);
       return new Promise((resolve)=>{
         let settled=false;
         const settle=(value)=>{
@@ -21961,64 +22416,14 @@
           settled=true;
           resolve(value);
         };
-
-        const entry=openModal("Channels > Add",`
-          <div class="modalBodyPad">
-            ${sourceSelectHtml}
-            <div class="channelTransferGrid">
-              <div class="scalePickerCol"><label>Available</label><div class="modalList" id="pcm_avail"></div></div>
-              <div class="channelTransferBtns">
-                <button id="pcm_to_sel" type="button">→</button>
-                <button id="pcm_to_avail" type="button">←</button>
-              </div>
-              <div class="scalePickerCol"><label>Selected</label><div class="modalList" id="pcm_sel"></div></div>
-            </div>
-          </div>
-          <div class="modalActions modalActionsIconOnly">
-            <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Apply">${modalCheckIconHtml()}</button>
-          </div>
-        `, async()=>{
-          const id=[...selected][0]||"";
-          if(!id){
-            setStatus("Select one channel.", true);
-            return false;
-          }
-          settle(id);
-          return true;
-        }, { ...WF_CHANNELS, closable:true, titleHtml:channelsWindowTitleHtml("Add") });
-
-        if(entry?.close){
-          const prevClose=entry.close;
-          entry.close=()=>{
-            prevClose();
-            settle(null);
-          };
-          const stackEntry=dialogCloseStack.find((e)=>e.close===prevClose);
-          if(stackEntry) stackEntry.close=entry.close;
-        }
-
-        const srcSel=byId("pcm_source_sel");
-        if(srcSel){
-          srcSel.onchange=async()=>{
-            activeSourceId=srcSel.value;
-            await loadActiveSourceChannels();
-          };
-        }
-        byId("pcm_to_sel").onclick=()=>{
-          const id=[...availActive][0];
-          if(!id) return;
-          selected.clear();
-          selected.add(id);
-          availActive.clear();
-          renderAllTransfer();
-        };
-        byId("pcm_to_avail").onclick=()=>{
-          selected.clear();
-          selActive.clear();
-          renderAllTransfer();
-        };
-
-        void loadActiveSourceChannels();
+        void showAddAliasMembersModal(chosen, null, {
+          modalTitle:"Channels > Add",
+          titleHtml:channelsWindowTitleHtml("Add"),
+          allowAliases,
+          singlePick:true,
+          onPick:(id)=>settle(channelKeyFromId(id)||id),
+          onDismiss:()=>settle(null),
+        });
       });
     }
     async function showAddChannelsModal(){
@@ -22580,8 +22985,7 @@
       byId("help_sourceHelp").onclick=()=>setStatus("Sources: + adds a folder/files. Databases from File → Databases appear automatically. Expand a database to browse tests. Missing time index channels show in red — right-click → Edit. Selecting sources does not load data until Plot.");
       byId("help_versionCheck").onclick=()=>{ hideAll(); openVersionCheckModal(); };
       byId("edit_showMetadata").onclick=()=>showMetadataModal();
-      byId("view_viewAppearance").onclick=()=>openViewAppearanceModal();
-      byId("view_preferences").onclick=()=>openPreferencesModal();
+      byId("file_preferences").onclick=()=>{ hideAll(); openPreferencesModal(); };
       byId("file_configManager").onclick=()=>openConfigManagerModal();
       byId("file_databaseManager").onclick=()=>openDatabaseManagerModal();
       byId("file_unitManager").onclick=()=>openUnitManagerModal();
@@ -22590,29 +22994,137 @@
     }
 
     const APPEAR_KEY="nova.appearance.notion-v1";
-    const PREFS_KEY="nova.preferences.notion-v1";
+    const PREFS_KEY="nova.preferences.notion-v2";
+    const PREFS_KEY_LEGACY="nova.preferences.notion-v1";
     const FONT_OPTIONS=[
       { id:"inter", label:"Inter", stack:'"Inter",system-ui,-apple-system,"Segoe UI",sans-serif' },
+      { id:"dmsans", label:"DM Sans", stack:'"DM Sans","Inter",system-ui,-apple-system,"Segoe UI",sans-serif' },
       { id:"misans", label:"MiSans / System", stack:'"MiSans","Segoe UI","Microsoft YaHei UI",Arial,sans-serif' },
       { id:"segoe", label:"Segoe UI", stack:'"Segoe UI","Microsoft YaHei UI",Arial,sans-serif' },
       { id:"arial", label:"Arial", stack:'Arial,Helvetica,sans-serif' },
+      { id:"mono", label:"Monospace", stack:'Consolas,"Courier New",ui-monospace,monospace' },
       { id:"consolas", label:"Consolas", stack:'Consolas,"Courier New",monospace' },
     ];
-    const DEFAULT_PREFS={ fontFamily:"inter", fontSize:12, colorMode:"dark", useServerCalc:true, zoomDetailRefetch:true };
+    const DEFAULT_PREFS={ fontFamily:"inter", fontSize:14, colorMode:"dark", useServerCalc:true, zoomDetailRefetch:true, shortcuts:null };
+    const SHORTCUT_ACTIONS=[
+      { id:"plot", label:"Plot", hint:"Load/plot the active view" },
+      { id:"plotAllVisible", label:"Plot All Visible Views", hint:"Plot every visible multiplot tile" },
+      { id:"delete", label:"Delete", hint:"Delete focused sidebar item or selected plot objects" },
+      { id:"preferences", label:"Open Preferences", hint:"Open settings" },
+    ];
+    const DEFAULT_SHORTCUTS={
+      plot:"f5",
+      plotAllVisible:"shift+f5",
+      delete:"delete",
+      preferences:"ctrl+,",
+    };
     let preferences={ ...DEFAULT_PREFS };
+    let prefsShortcutRecording=null;
+    function normalizeShortcutKey(key){
+      const raw=String(key||"").trim().toLowerCase();
+      if(!raw) return "";
+      if(raw===" ") return "space";
+      if(raw==="escape") return "esc";
+      if(raw==="arrowup") return "up";
+      if(raw==="arrowdown") return "down";
+      if(raw==="arrowleft") return "left";
+      if(raw==="arrowright") return "right";
+      return raw;
+    }
+    function normalizeShortcutCombo(combo){
+      const parts=String(combo||"").toLowerCase().split("+").map((s)=>s.trim()).filter(Boolean);
+      const mods=new Set();
+      let key="";
+      parts.forEach((p)=>{
+        if(p==="control"||p==="ctrl") mods.add("ctrl");
+        else if(p==="meta"||p==="cmd"||p==="command"||p==="win") mods.add("meta");
+        else if(p==="alt"||p==="option") mods.add("alt");
+        else if(p==="shift") mods.add("shift");
+        else key=normalizeShortcutKey(p);
+      });
+      return { mods:[...mods].sort(), key };
+    }
+    function shortcutComboFromEvent(e){
+      if(!e || !e.key) return null;
+      const key=normalizeShortcutKey(e.key);
+      if(!key || ["control","shift","alt","meta"].includes(key)) return null;
+      const mods=[];
+      if(e.ctrlKey) mods.push("ctrl");
+      if(e.metaKey) mods.push("meta");
+      if(e.altKey) mods.push("alt");
+      if(e.shiftKey) mods.push("shift");
+      return [...mods.sort(), key].join("+");
+    }
+    function effectiveShortcuts(){
+      const out={ ...DEFAULT_SHORTCUTS, ...(preferences.shortcuts||{}) };
+      SHORTCUT_ACTIONS.forEach((a)=>{
+        if(!out[a.id]) out[a.id]=DEFAULT_SHORTCUTS[a.id]||"";
+      });
+      return out;
+    }
+    function formatShortcutDisplay(combo){
+      const parsed=normalizeShortcutCombo(combo);
+      if(!parsed.key) return "—";
+      const labels=[];
+      parsed.mods.forEach((m)=>{
+        if(m==="ctrl") labels.push("Ctrl");
+        else if(m==="meta") labels.push("Win");
+        else if(m==="alt") labels.push("Alt");
+        else if(m==="shift") labels.push("Shift");
+      });
+      let keyLabel=parsed.key;
+      if(keyLabel.length===1) keyLabel=keyLabel.toUpperCase();
+      else keyLabel=keyLabel.replace(/^./,(c)=>c.toUpperCase());
+      labels.push(keyLabel);
+      return labels.join("+");
+    }
+    function shortcutMatchesEvent(e, combo){
+      if(!combo) return false;
+      const parsed=normalizeShortcutCombo(combo);
+      if(!parsed.key) return false;
+      const key=normalizeShortcutKey(e.key);
+      if(key!==parsed.key) return false;
+      const wantCtrl=parsed.mods.includes("ctrl");
+      const wantMeta=parsed.mods.includes("meta");
+      const wantAlt=parsed.mods.includes("alt");
+      const wantShift=parsed.mods.includes("shift");
+      return Boolean(e.ctrlKey)===wantCtrl
+        && Boolean(e.metaKey)===wantMeta
+        && Boolean(e.altKey)===wantAlt
+        && Boolean(e.shiftKey)===wantShift;
+    }
+    function shortcutActionForEvent(e){
+      if(prefsShortcutRecording) return null;
+      const ae=document.activeElement;
+      const tag=(ae && ae.tagName) ? ae.tagName.toLowerCase() : "";
+      if(tag==="input" || tag==="textarea" || tag==="select" || ae?.isContentEditable) return null;
+      const combos=effectiveShortcuts();
+      for(const action of SHORTCUT_ACTIONS){
+        if(shortcutMatchesEvent(e, combos[action.id])) return action.id;
+      }
+      return null;
+    }
     function persistPreferences(){ localStorage.setItem(PREFS_KEY, JSON.stringify(preferences)); }
     function loadPreferences(){
       try{
-        const p=JSON.parse(localStorage.getItem(PREFS_KEY)||"{}");
+        let raw=localStorage.getItem(PREFS_KEY);
+        let fromLegacy=false;
+        if(!raw){
+          raw=localStorage.getItem(PREFS_KEY_LEGACY);
+          fromLegacy=Boolean(raw);
+        }
+        const p=JSON.parse(raw||"{}");
         preferences={ ...DEFAULT_PREFS, ...p };
+        if(fromLegacy && Number(preferences.fontSize)===12) preferences.fontSize=14;
       }catch{}
       preferences.fontSize=Math.max(10, Math.min(24, Number(preferences.fontSize)||DEFAULT_PREFS.fontSize));
-      if(preferences.fontSize===14) preferences.fontSize=12;
       if(!FONT_OPTIONS.some((f)=>f.id===preferences.fontFamily)) preferences.fontFamily=DEFAULT_PREFS.fontFamily;
       if(preferences.colorMode!=="light") preferences.colorMode="dark";
       if(preferences.useServerCalc===undefined) preferences.useServerCalc=true;
       if(preferences.zoomDetailRefetch===undefined) preferences.zoomDetailRefetch=true;
+      if(preferences.shortcuts && typeof preferences.shortcuts!=="object") preferences.shortcuts=null;
       applyPreferences();
+      if(!localStorage.getItem(PREFS_KEY)) persistPreferences();
     }
     function applyPreferences(){
       document.documentElement.style.setProperty("--nova-base-font-size", `${preferences.fontSize}px`);
@@ -22622,39 +23134,238 @@
       document.documentElement.style.setProperty("--nova-font-family", font.stack);
       applyAppearance({ skipPlot:false });
     }
+    function readPreferencesDraft(root){
+      const fontEl=root.querySelector("#m_pref_font");
+      const sizeEl=root.querySelector("#m_pref_size");
+      const serverCalcEl=root.querySelector("#m_pref_server_calc");
+      const zoomRefetchEl=root.querySelector("#m_pref_zoom_refetch");
+      if(fontEl) preferences.fontFamily=fontEl.value||DEFAULT_PREFS.fontFamily;
+      if(sizeEl) preferences.fontSize=Math.max(10, Math.min(24, Number(sizeEl.value||DEFAULT_PREFS.fontSize)));
+      if(serverCalcEl) preferences.useServerCalc=Boolean(serverCalcEl.checked);
+      if(zoomRefetchEl) preferences.zoomDetailRefetch=Boolean(zoomRefetchEl.checked);
+      const modeBtn=root.querySelector(".prefsThemeCard.active");
+      if(modeBtn){
+        preferences.colorMode=modeBtn.getAttribute("data-theme")==="light" ? "light" : "dark";
+      }
+      const draftShortcuts={ ...(preferences.shortcuts||{}) };
+      root.querySelectorAll("[data-shortcut-id]").forEach((el)=>{
+        const id=el.getAttribute("data-shortcut-id");
+        const combo=el.getAttribute("data-shortcut-combo")||"";
+        if(!id) return;
+        if(combo) draftShortcuts[id]=combo;
+        else delete draftShortcuts[id];
+      });
+      preferences.shortcuts=Object.keys(draftShortcuts).length ? draftShortcuts : null;
+    }
+    function prefsThemeCardsHtml(){
+      const modes=[
+        { id:"dark", label:"Dark", previewClass:"dark" },
+        { id:"light", label:"Light", previewClass:"light" },
+      ];
+      return modes.map((m)=>`
+        <button type="button" class="prefsThemeCard${preferences.colorMode===m.id?" active":""}" data-theme="${m.id}">
+          <div class="prefsThemePreview ${m.previewClass}"><div class="prefsThemePreviewBar"></div></div>
+          <div class="prefsThemeName">${m.label}</div>
+        </button>
+      `).join("");
+    }
+    function prefsShortcutsRowsHtml(){
+      const combos=effectiveShortcuts();
+      return SHORTCUT_ACTIONS.map((action)=>{
+        const combo=combos[action.id]||"";
+        return `<tr>
+          <td><div class="prefsRowLabel">${escapeHtml(action.label)}</div><div class="prefsRowHint">${escapeHtml(action.hint)}</div></td>
+          <td style="text-align:right;">
+            <button type="button" class="prefsKeyBadge${combo?"":" empty"}" data-shortcut-id="${escAttr(action.id)}" data-shortcut-combo="${escAttr(combo)}">${combo?escapeHtml(formatShortcutDisplay(combo)):"Unassigned"}</button>
+          </td>
+        </tr>`;
+      }).join("");
+    }
+    function wirePreferencesWindow(root, entry){
+      if(!root) return;
+      const panels=root.querySelectorAll("[data-prefs-panel]");
+      const navItems=root.querySelectorAll("[data-prefs-tab]");
+      const activateTab=(tabId)=>{
+        navItems.forEach((btn)=>{
+          btn.classList.toggle("active", btn.getAttribute("data-prefs-tab")===tabId);
+        });
+        panels.forEach((panel)=>{
+          panel.classList.toggle("active", panel.getAttribute("data-prefs-panel")===tabId);
+        });
+      };
+      navItems.forEach((btn)=>{
+        btn.onclick=()=>activateTab(btn.getAttribute("data-prefs-tab"));
+      });
+      root.querySelectorAll(".prefsThemeCard").forEach((card)=>{
+        card.onclick=()=>{
+          root.querySelectorAll(".prefsThemeCard").forEach((c)=>c.classList.remove("active"));
+          card.classList.add("active");
+          readPreferencesDraft(root);
+          applyPreferences();
+        };
+      });
+      ["m_pref_font","m_pref_size","m_pref_server_calc","m_pref_zoom_refetch"].forEach((id)=>{
+        const el=root.querySelector(`#${id}`);
+        if(!el) return;
+        const live=()=>{ readPreferencesDraft(root); applyPreferences(); };
+        el.addEventListener("change", live);
+        if(el.tagName==="INPUT") el.addEventListener("input", live);
+      });
+      const onShortcutCapture=(ev)=>{
+        if(!prefsShortcutRecording || !root.isConnected) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        if(typeof ev.stopImmediatePropagation==="function") ev.stopImmediatePropagation();
+        if(ev.key==="Escape"){
+          const id=prefsShortcutRecording.getAttribute("data-shortcut-id");
+          const combo=effectiveShortcuts()[id]||"";
+          prefsShortcutRecording.classList.remove("recording");
+          prefsShortcutRecording.textContent=combo?formatShortcutDisplay(combo):"Unassigned";
+          prefsShortcutRecording.classList.toggle("empty", !combo);
+          prefsShortcutRecording=null;
+          window.removeEventListener("keydown", onShortcutCapture, true);
+          return;
+        }
+        const combo=shortcutComboFromEvent(ev);
+        if(!combo) return;
+        prefsShortcutRecording.setAttribute("data-shortcut-combo", combo);
+        prefsShortcutRecording.textContent=formatShortcutDisplay(combo);
+        prefsShortcutRecording.classList.remove("recording","empty");
+        prefsShortcutRecording=null;
+        window.removeEventListener("keydown", onShortcutCapture, true);
+      };
+      entry._prefsShortcutCapture=onShortcutCapture;
+      root.querySelectorAll("[data-shortcut-id]").forEach((badge)=>{
+        badge.onclick=()=>{
+          prefsShortcutRecording=badge;
+          root.querySelectorAll(".prefsKeyBadge").forEach((b)=>b.classList.remove("recording"));
+          badge.classList.add("recording");
+          badge.textContent="Press keys…";
+          window.addEventListener("keydown", onShortcutCapture, true);
+        };
+      });
+      root.querySelector("#m_pref_reset_shortcuts")?.addEventListener("click", ()=>{
+        preferences.shortcuts=null;
+        const tbody=root.querySelector("#m_pref_shortcuts tbody");
+        if(tbody) tbody.innerHTML=prefsShortcutsRowsHtml();
+        root.querySelectorAll("[data-shortcut-id]").forEach((badge)=>{
+          badge.onclick=()=>{
+            prefsShortcutRecording=badge;
+            root.querySelectorAll(".prefsKeyBadge").forEach((b)=>b.classList.remove("recording"));
+            badge.classList.add("recording");
+            badge.textContent="Press keys…";
+            window.addEventListener("keydown", onShortcutCapture, true);
+          };
+        });
+      });
+    }
     function openPreferencesModal(){
       const fontOpts=FONT_OPTIONS.map((f)=>`<option value="${f.id}" ${preferences.fontFamily===f.id?"selected":""}>${f.label}</option>`).join("");
-      openModal("Preferences",`
-        <div class="modalGrid" style="grid-template-columns:1fr;">
-          <div><label>Font</label><select id="m_pref_font">${fontOpts}</select></div>
-          <div><label>Font Size (px)</label><input id="m_pref_size" type="number" min="10" max="24" step="1" value="${preferences.fontSize}" /></div>
-          <div><label>Color Mode</label><select id="m_pref_mode"><option value="dark" ${preferences.colorMode==="dark"?"selected":""}>Dark</option><option value="light" ${preferences.colorMode==="light"?"selected":""}>Light</option></select></div>
-          <div><label style="text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);display:flex;gap:8px;align-items:center;"><input id="m_pref_server_calc" type="checkbox" style="width:auto;margin:0;" ${preferences.useServerCalc!==false?"checked":""}/> Compute calculated channels on server</label></div>
-          <div><label style="text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);display:flex;gap:8px;align-items:center;"><input id="m_pref_zoom_refetch" type="checkbox" style="width:auto;margin:0;" ${preferences.zoomDetailRefetch!==false?"checked":""}/> Zoom-in detail refetch</label></div>
+      const bodyHtml=`
+        <div class="prefsShell">
+          <nav class="prefsNav" aria-label="Settings categories">
+            <button type="button" class="prefsNavItem active" data-prefs-tab="theme">Theme</button>
+            <button type="button" class="prefsNavItem" data-prefs-tab="font">Font &amp; Text</button>
+            <button type="button" class="prefsNavItem" data-prefs-tab="shortcuts">Keyboard Shortcuts</button>
+            <button type="button" class="prefsNavItem" data-prefs-tab="features">Features</button>
+          </nav>
+          <div class="prefsPanels">
+            <section class="prefsPanel active" data-prefs-panel="theme">
+              <h3 class="prefsPanelTitle">Theme</h3>
+              <p class="prefsPanelDesc">Choose the color theme used across the NOVA interface.</p>
+              <div class="prefsGroup">
+                <div class="prefsGroupTitle">Color Mode</div>
+                <div class="prefsThemeCards">${prefsThemeCardsHtml()}</div>
+              </div>
+            </section>
+            <section class="prefsPanel" data-prefs-panel="font">
+              <h3 class="prefsPanelTitle">Font &amp; Text</h3>
+              <p class="prefsPanelDesc">Control UI typography for menus, sidebars, and dialogs.</p>
+              <div class="prefsGroup">
+                <div class="prefsGroupTitle">Typography</div>
+                <div class="prefsRow">
+                  <div class="prefsRowCopy">
+                    <div class="prefsRowLabel">Font Family</div>
+                    <div class="prefsRowHint">Primary UI font stack.</div>
+                  </div>
+                  <div class="prefsRowControl"><select id="m_pref_font">${fontOpts}</select></div>
+                </div>
+                <div class="prefsRow">
+                  <div class="prefsRowCopy">
+                    <div class="prefsRowLabel">Font Size</div>
+                    <div class="prefsRowHint">Base UI size in pixels (10–24).</div>
+                  </div>
+                  <div class="prefsRowControl"><input id="m_pref_size" type="number" min="10" max="24" step="1" value="${preferences.fontSize}" /></div>
+                </div>
+              </div>
+            </section>
+            <section class="prefsPanel" data-prefs-panel="shortcuts">
+              <h3 class="prefsPanelTitle">Keyboard Shortcuts</h3>
+              <p class="prefsPanelDesc">Click a keybinding to record a new shortcut. Press Esc while recording to cancel.</p>
+              <div class="prefsGroup">
+                <table id="m_pref_shortcuts" class="prefsShortcutTable">
+                  <thead><tr><th>Command</th><th style="text-align:right;">Keybinding</th></tr></thead>
+                  <tbody>${prefsShortcutsRowsHtml()}</tbody>
+                </table>
+                <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+                  <button id="m_pref_reset_shortcuts" type="button">Reset Shortcuts</button>
+                </div>
+              </div>
+            </section>
+            <section class="prefsPanel" data-prefs-panel="features">
+              <h3 class="prefsPanelTitle">Features</h3>
+              <p class="prefsPanelDesc">Application behavior options.</p>
+              <div class="prefsGroup">
+                <div class="prefsGroupTitle">Data &amp; Plotting</div>
+                <div class="prefsRow">
+                  <div class="prefsRowCopy">
+                    <div class="prefsRowLabel">Server-side calculated channels</div>
+                    <div class="prefsRowHint">Compute calculated channels on the server when loading data.</div>
+                  </div>
+                  <div class="prefsRowControl"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_pref_server_calc" type="checkbox" style="width:auto;margin:0;" ${preferences.useServerCalc!==false?"checked":""}/></label></div>
+                </div>
+                <div class="prefsRow">
+                  <div class="prefsRowCopy">
+                    <div class="prefsRowLabel">Zoom detail refetch</div>
+                    <div class="prefsRowHint">Fetch higher-resolution data when zooming into a time-series plot.</div>
+                  </div>
+                  <div class="prefsRowControl"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_pref_zoom_refetch" type="checkbox" style="width:auto;margin:0;" ${preferences.zoomDetailRefetch!==false?"checked":""}/></label></div>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
-        <div class="modalActions">
-          <button id="m_pref_reset" type="button">Reset Defaults</button>
-          <button id="modalCancelBtn" type="button">Cancel</button>
-          <button id="modalSaveCloseBtn" type="button">Apply & Close</button>
+        <div class="prefsFooter">
+          <button id="m_pref_reset" type="button">Reset All Defaults</button>
         </div>
-      `, async()=>{
-        preferences.fontFamily=byId("m_pref_font").value||DEFAULT_PREFS.fontFamily;
-        preferences.fontSize=Math.max(10, Math.min(24, Number(byId("m_pref_size").value||DEFAULT_PREFS.fontSize)));
-        preferences.colorMode=byId("m_pref_mode").value==="light" ? "light" : "dark";
-        preferences.useServerCalc=Boolean(byId("m_pref_server_calc")?.checked);
-        preferences.zoomDetailRefetch=Boolean(byId("m_pref_zoom_refetch")?.checked);
+      `;
+      const savePreferencesDraft=(root)=>{
+        readPreferencesDraft(root);
         persistPreferences();
         applyPreferences();
-        setStatus("Preferences updated.");
-        return true;
-      });
-      byId("m_pref_reset").onclick=()=>{
+      };
+      const entry=openAppWindow("Preferences", bodyHtml, async()=>true, { floating:true, size:"modalPreferences", closable:true, compact:true });
+      wirePreferencesWindow(entry.root, entry);
+      const oldClose=entry.close;
+      entry.root.querySelector("#m_pref_reset")?.addEventListener("click", ()=>{
         preferences={ ...DEFAULT_PREFS };
         persistPreferences();
         applyPreferences();
-        closeModal();
+        if(entry._prefsShortcutCapture){
+          window.removeEventListener("keydown", entry._prefsShortcutCapture, true);
+        }
+        prefsShortcutRecording=null;
+        oldClose();
         openPreferencesModal();
         setStatus("Preferences reset to defaults.");
+      });
+      entry.close=()=>{
+        if(entry._prefsShortcutCapture){
+          window.removeEventListener("keydown", entry._prefsShortcutCapture, true);
+        }
+        prefsShortcutRecording=null;
+        savePreferencesDraft(entry.root);
+        oldClose();
       };
     }
     const DEFAULT_APPEARANCE={ uiBg:"#202020", viewBg:"#191919", accent:"#6f6f6f", plotTheme:"default", plotColors:"#2383e2,#eb5757,#0f7b6c,#d9730d,#9065b0,#e16259,#2eafb6,#cb912f,#337ea9,#9f6b53", plotTitle:"", showLegend:true, legendX:0.01, legendY:0.99, legendXanchor:"left", legendYanchor:"top", showAxis:true, showGrid:true, axisTitleSize:11, axisTickSize:10, lineWidth:1.6 };
@@ -22732,7 +23443,7 @@
     function chromeAccent(){ return isLightMode() ? "#787774" : (appearance?.accent || "#6f6f6f"); }
     function plotInk(){
       return isLightMode()
-        ? { font:"rgba(55,53,47,0.75)", tick:"rgba(55,53,47,0.45)", title:"rgba(55,53,47,0.55)", grid:"rgba(55,53,47,0.08)", zero:"rgba(55,53,47,0.14)", legendBg:"rgba(255,255,255,0.88)", legendBorder:"rgba(55,53,47,0.1)", legendFont:"rgba(55,53,47,0.85)" }
+        ? { font:"rgba(55,53,47,0.85)", tick:"#000000", title:"#000000", grid:"rgba(55,53,47,0.08)", zero:"rgba(55,53,47,0.14)", legendBg:"rgba(255,255,255,0.88)", legendBorder:"rgba(55,53,47,0.1)", legendFont:"rgba(55,53,47,0.85)" }
         : { font:"rgba(255,255,255,0.65)", tick:"rgba(255,255,255,0.45)", title:"rgba(255,255,255,0.55)", grid:"rgba(255,255,255,0.06)", zero:"rgba(255,255,255,0.12)", legendBg:"rgba(32,32,32,0.78)", legendBorder:"rgba(255,255,255,0.08)", legendFont:"rgba(255,255,255,0.8)" };
     }
     function applyAppearance(opts={}){
@@ -22755,95 +23466,6 @@
       const fromTheme = appearance.plotTheme && appearance.plotTheme!=="custom" ? (PLOT_THEMES[appearance.plotTheme]||"") : "";
       const src = fromTheme || appearance.plotColors || PLOT_THEMES.default;
       return String(src).split(",").map((s)=>s.trim()).filter(Boolean);
-    }
-    function openViewAppearanceModal(){
-      openModal("View Appearance",`
-        <div class="modalGrid">
-          <div style="grid-column:1 / -1;">
-            <label>Plot Theme</label>
-            <select id="m_view_theme">
-              <option value="default" ${appearance.plotTheme==="default"?"selected":""}>Default</option>
-              <option value="thermal" ${appearance.plotTheme==="thermal"?"selected":""}>Thermal</option>
-              <option value="viridis" ${appearance.plotTheme==="viridis"?"selected":""}>Viridis</option>
-              <option value="plasma" ${appearance.plotTheme==="plasma"?"selected":""}>Plasma</option>
-              <option value="cividis" ${appearance.plotTheme==="cividis"?"selected":""}>Cividis</option>
-              <option value="turbo" ${appearance.plotTheme==="turbo"?"selected":""}>Turbo</option>
-              <option value="magma" ${appearance.plotTheme==="magma"?"selected":""}>Magma</option>
-              <option value="inferno" ${appearance.plotTheme==="inferno"?"selected":""}>Inferno</option>
-              <option value="rainbow" ${appearance.plotTheme==="rainbow"?"selected":""}>Rainbow</option>
-              <option value="pastel_high_contrast" ${appearance.plotTheme==="pastel_high_contrast"?"selected":""}>Pastel High Contrast</option>
-              <option value="custom" ${appearance.plotTheme==="custom"?"selected":""}>Custom</option>
-            </select>
-          </div>
-          <div id="m_view_plot_wrap" style="grid-column:1 / -1;display:${appearance.plotTheme==="custom"?"block":"none"};">
-            <label>Custom Plot Colors (comma-separated)</label>
-            <input id="m_view_plot" type="text" value="${appearance.plotColors}" placeholder="#1f77b4,#ff7f0e,..." />
-          </div>
-          <div style="grid-column:1 / -1;">
-            <label>Plot Title</label>
-            <input id="m_view_title" type="text" value="${appearance.plotTitle||""}" placeholder="Optional title" />
-          </div>
-          <div><label>Legend X (0-1)</label><input id="m_view_legend_x" type="number" step="0.01" min="0" max="1" value="${appearance.legendX}" /></div>
-          <div><label>Legend Y (0-1)</label><input id="m_view_legend_y" type="number" step="0.01" min="0" max="1" value="${appearance.legendY}" /></div>
-          <div><label>Axis Title Size</label><input id="m_view_axis_title_size" type="number" step="1" min="6" max="30" value="${appearance.axisTitleSize}" /></div>
-          <div><label>Tick Font Size</label><input id="m_view_tick_size" type="number" step="1" min="6" max="30" value="${appearance.axisTickSize}" /></div>
-          <div><label>Trace Line Width</label><input id="m_view_line_width" type="number" step="0.1" min="0.2" max="8" value="${appearance.lineWidth}" /></div>
-          <div style="display:flex;align-items:flex-end;"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_view_show_legend" type="checkbox" style="width:auto;" ${appearance.showLegend!==false?"checked":""} />Show legend</label></div>
-          <div style="display:flex;align-items:flex-end;"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_view_show_axis" type="checkbox" style="width:auto;" ${appearance.showAxis!==false?"checked":""} />Show axes</label></div>
-          <div style="display:flex;align-items:flex-end;"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_view_show_grid" type="checkbox" style="width:auto;" ${appearance.showGrid!==false?"checked":""} />Show grid</label></div>
-        </div>
-        <div class="modalActions">
-          <button id="m_reset_legend_pos" type="button">Reset Legend Position</button>
-          <button id="m_app_reset_view" type="button">Reset View Defaults</button>
-          <button id="modalCancelBtn" type="button">Cancel</button>
-          <button id="modalSaveCloseBtn" type="button">Apply & Close</button>
-        </div>
-      `, async()=>{
-        const theme=(byId("m_view_theme").value||"default").trim();
-        appearance.plotTheme=theme;
-        if(theme==="custom") appearance.plotColors=(byId("m_view_plot").value||"").trim()||appearance.plotColors;
-        else appearance.plotColors=PLOT_THEMES[theme]||PLOT_THEMES.default;
-        appearance.plotTitle=(byId("m_view_title").value||"").trim();
-        const norm=normalizeLegendLayout(
-          Number(byId("m_view_legend_x").value||DEFAULT_APPEARANCE.legendX),
-          Number(byId("m_view_legend_y").value||DEFAULT_APPEARANCE.legendY),
-          appearance.legendXanchor,
-          appearance.legendYanchor,
-        );
-        syncLegendToActivePlot(norm);
-        appearance.axisTitleSize=Math.max(6, Math.min(30, Number(byId("m_view_axis_title_size").value||DEFAULT_APPEARANCE.axisTitleSize)));
-        appearance.axisTickSize=Math.max(6, Math.min(30, Number(byId("m_view_tick_size").value||DEFAULT_APPEARANCE.axisTickSize)));
-        appearance.lineWidth=Math.max(0.2, Math.min(8, Number(byId("m_view_line_width").value||DEFAULT_APPEARANCE.lineWidth)));
-        appearance.showLegend=Boolean(byId("m_view_show_legend").checked);
-        appearance.showAxis=Boolean(byId("m_view_show_axis").checked);
-        appearance.showGrid=Boolean(byId("m_view_show_grid").checked);
-        persistAppearance();
-        applyAppearance();
-        return true;
-      });
-      const themeSel=byId("m_view_theme"), plotWrap=byId("m_view_plot_wrap");
-      themeSel.onchange=()=>{ plotWrap.style.display=themeSel.value==="custom"?"block":"none"; };
-      byId("m_reset_legend_pos").onclick=()=>resetLegendPosition({ replot:true });
-      byId("m_app_reset_view").onclick=()=>{
-        appearance.plotTheme=DEFAULT_APPEARANCE.plotTheme;
-        appearance.plotColors=DEFAULT_APPEARANCE.plotColors;
-        appearance.plotTitle=DEFAULT_APPEARANCE.plotTitle;
-        appearance.showLegend=DEFAULT_APPEARANCE.showLegend;
-        appearance.legendX=DEFAULT_APPEARANCE.legendX;
-        appearance.legendY=DEFAULT_APPEARANCE.legendY;
-        appearance.legendXanchor=DEFAULT_APPEARANCE.legendXanchor;
-        appearance.legendYanchor=DEFAULT_APPEARANCE.legendYanchor;
-        syncLegendToActivePlot(defaultLegendLayout());
-        appearance.showAxis=DEFAULT_APPEARANCE.showAxis;
-        appearance.showGrid=DEFAULT_APPEARANCE.showGrid;
-        appearance.axisTitleSize=DEFAULT_APPEARANCE.axisTitleSize;
-        appearance.axisTickSize=DEFAULT_APPEARANCE.axisTickSize;
-        appearance.lineWidth=DEFAULT_APPEARANCE.lineWidth;
-        persistAppearance();
-        applyAppearance();
-        closeModal();
-        setStatus("View appearance reset to defaults.");
-      };
     }
 
     async function handlePlotZoomRelayoutEnd(){
@@ -23109,11 +23731,20 @@
     }
     function toggleToolbar(id){
       if(!TOOLBAR_IDS.includes(id)) return;
+      const now=typeof performance!=="undefined"?performance.now():Date.now();
+      if(now-toolbarToggleGuard<320) return;
+      toolbarToggleGuard=now;
       setActiveToolbar(activeToolbar===id ? null : id);
     }
     function bindToolbarRail(){
       document.querySelectorAll(".railBtn[data-toolbar]").forEach((btn)=>{
-        btn.onclick=()=>{
+        btn.addEventListener("mousedown",(e)=>{
+          e.preventDefault();
+          e.stopPropagation();
+          if(typeof e.stopImmediatePropagation==="function") e.stopImmediatePropagation();
+        });
+        btn.onclick=(e)=>{
+          if(e){ e.preventDefault(); e.stopPropagation(); }
           const id=btn.getAttribute("data-toolbar");
           toggleToolbar(id);
         };
@@ -23215,19 +23846,40 @@
     });
     byId("addObjectBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Plot objects are coming soon."); });
     byId("addIngestionBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Ingestion rules are coming soon."); });
-    byId("loadBtn").onclick=loadActiveView;
+    byId("loadBtn").addEventListener("mousedown",(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      if(typeof e.stopImmediatePropagation==="function") e.stopImmediatePropagation();
+    });
+    byId("loadBtn").onclick=(e)=>{
+      if(e?.shiftKey) return loadAllVisibleViews();
+      return loadActiveView();
+    };
     document.addEventListener("keydown",(e)=>{
-      if(e.key!=="Delete") return;
-      const ae=document.activeElement;
-      const tag=(ae && ae.tagName) ? ae.tagName.toLowerCase() : "";
-      if(tag==="input" || tag==="textarea" || tag==="select" || ae?.isContentEditable) return;
-      if(selectedObjectKeys.size){
+      const action=shortcutActionForEvent(e);
+      if(action==="preferences"){
         e.preventDefault();
-        void deleteSelectedObjects();
+        openPreferencesModal();
         return;
       }
-      e.preventDefault();
-      deleteFocused();
+      if(action==="plot"){
+        e.preventDefault();
+        void loadActiveView();
+        return;
+      }
+      if(action==="plotAllVisible"){
+        e.preventDefault();
+        void loadAllVisibleViews();
+        return;
+      }
+      if(action==="delete"){
+        e.preventDefault();
+        if(selectedObjectKeys.size){
+          void deleteSelectedObjects();
+          return;
+        }
+        deleteFocused();
+      }
     });
     byId("deleteObjectsBtn")?.addEventListener("click", (e)=>{
       e.preventDefault();
