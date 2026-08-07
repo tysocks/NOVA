@@ -809,8 +809,16 @@
     .nova-overlay-preview circle{
       vector-effect:non-scaling-stroke;
     }
-    /* Hide Plotly's "Double-click to zoom back out" notifier */
-    .plotly-notifier{ display:none !important; }
+    /* Rounded parametric colorbars (Plotly has no native radius). */
+    .js-plotly-plot .colorbar image,
+    .js-plotly-plot .colorbar canvas{
+      clip-path: inset(0 round 7px);
+      border-radius: 7px;
+    }
+    .js-plotly-plot .colorbar rect.cbg{
+      rx: 7px;
+      ry: 7px;
+    }
     .menuAction.menuChecked{ color:var(--nova-accent); }
     .menuAction.menuChecked::before{ content:"✓ "; }
     /* Button overrides */
@@ -1599,6 +1607,13 @@
     .itemRow.rangeDropAfter{
       box-shadow:inset 0 -2px 0 0 var(--nova-line);
     }
+    .item.rangeDropBefore{
+      box-shadow:inset 0 2px 0 0 var(--nova-line);
+    }
+    .item.rangeDropAfter{
+      box-shadow:inset 0 -2px 0 0 var(--nova-line);
+    }
+    .item.dragging{ opacity:0.55; }
     .item.rangeDropRoot{
       outline:1px dashed var(--nova-line);
       background:var(--nova-hover);
@@ -2446,6 +2461,9 @@
         <button type="button" class="railBtn" data-toolbar="options" title="Options" aria-label="Options">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.5 2.2h3l.35 1.4a4.7 4.7 0 0 1 1.05.6l1.35-.55 1.5 2.6-1.1.95c.08.35.12.7.12 1.05s-.04.7-.12 1.05l1.1.95-1.5 2.6-1.35-.55a4.7 4.7 0 0 1-1.05.6L9.5 13.8h-3l-.35-1.4a4.7 4.7 0 0 1-1.05-.6l-1.35.55-1.5-2.6 1.1-.95A4.8 4.8 0 0 1 3.25 8c0-.35.04-.7.12-1.05l-1.1-.95 1.5-2.6 1.35.55c.32-.25.67-.46 1.05-.6L6.5 2.2zM8 6.25A1.75 1.75 0 1 0 8 9.75 1.75 1.75 0 0 0 8 6.25z"/></svg>
         </button>
+        <button type="button" class="railBtn" data-toolbar="pages" title="Pages" aria-label="Pages">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3 1.5h7.2L13.5 4.8V14.5H3V1.5zm1.2 1.2v10.6h8.1V5.5H9.2V2.7H4.2zm5 0v2.1h2.1L9.2 2.7z"/><path fill="currentColor" d="M5.2 7.2h5.6v1.1H5.2V7.2zm0 2.2h5.6v1.1H5.2V9.4zm0 2.2h3.8v1.1H5.2v-1.1z"/></svg>
+        </button>
         <button type="button" class="railBtn" data-toolbar="ingestion" title="Ingestion" aria-label="Ingestion">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg>
         </button>
@@ -2518,6 +2536,15 @@
           </div>
           <div id="optionsList" class="list"></div>
           <div class="toolbarPlaceholder" id="optionsPlaceholder">Select a plot to edit its properties.</div>
+        </section>
+        <section class="toolbarSection" data-section="pages" id="section_pages">
+          <div class="toolbarSectionHeader">
+            <h3>Pages</h3>
+            <div class="headerBtns">
+              <button id="addPageBtn" class="addBtn" type="button" title="Add page" aria-label="Add page">+</button>
+            </div>
+          </div>
+          <div id="pagesList" class="list"></div>
         </section>
         <section class="toolbarSection" data-section="ingestion" id="section_ingestion">
           <div class="toolbarSectionHeader">
@@ -3176,6 +3203,16 @@
           if(t.marker.symbol!=null) m.symbol=t.marker.symbol;
           if(t.marker.size!=null) m.size=t.marker.size;
           if(t.marker.opacity!=null) m.opacity=t.marker.opacity;
+          // Keep continuous colormap fields — dropping these forced Plotly's
+          // default scale and made Color Map Theme changes appear ignored.
+          if(t.marker.colorscale!=null) m.colorscale=t.marker.colorscale;
+          if(t.marker.showscale!=null) m.showscale=t.marker.showscale;
+          if(t.marker.cmin!=null) m.cmin=t.marker.cmin;
+          if(t.marker.cmax!=null) m.cmax=t.marker.cmax;
+          if(t.marker.cmid!=null) m.cmid=t.marker.cmid;
+          if(t.marker.autocolorscale!=null) m.autocolorscale=t.marker.autocolorscale;
+          if(t.marker.reversescale!=null) m.reversescale=t.marker.reversescale;
+          if(t.marker.colorbar && typeof t.marker.colorbar==="object") m.colorbar=t.marker.colorbar;
           if(t.marker.line && typeof t.marker.line==="object"){
             m.line={
               ...(t.marker.line.width!=null ? { width:t.marker.line.width } : {}),
@@ -3191,6 +3228,8 @@
         if(t._unit) o._unit=normalizePlotUnit(t._unit);
         if(t._novaSourceKey) o._novaSourceKey=String(t._novaSourceKey);
         if(t._novaChannelKey) o._novaChannelKey=String(t._novaChannelKey);
+        if(t._novaColorMapKey) o._novaColorMapKey=String(t._novaColorMapKey);
+        if(Array.isArray(t._novaColorMapValues)) o._novaColorMapValues=t._novaColorMapValues;
         if(t._novaSpectralLegendProxy) o._novaSpectralLegendProxy=true;
         if(t._novaStyle && typeof t._novaStyle==="object") o._novaStyle=t._novaStyle;
         if(t.meta && typeof t.meta==="object" && !Array.isArray(t.meta)) o.meta=t.meta;
@@ -3291,6 +3330,9 @@
           String(t.name||""),
           String(t.yaxis||""),
           String(t._unit||""),
+          // Include colormap chrome so theme / colorbar changes aren't skipped by data-only draws.
+          Array.isArray(t?.marker?.colorscale) ? "custom-scale" : String(t?.marker?.colorscale||""),
+          t?.marker?.showscale===true ? "1" : "0",
         ].join("|")).join("\n");
       }
 
@@ -3452,6 +3494,8 @@
           editable:true,
           edits:{
             legendPosition:true,
+            colorbarPosition:true,
+            colorbarTitleText:false,
             axisTitleText:false,
             titleText:false,
             annotationPosition:false,
@@ -6733,20 +6777,204 @@
       finite.forEach((v)=>{ if(v<lo) lo=v; if(v>hi) hi=v; });
       return lo===hi ? [lo, lo+1] : [lo, hi];
     }
-    function markerColorMapFromValues(values, { title="", size=6, symbol="circle" }={}){
+    const COLOR_MAP_SCALES=[
+      ["Viridis","Viridis"],
+      ["Plasma","Plasma"],
+      ["Inferno","Inferno"],
+      ["Magma","Magma"],
+      ["Cividis","Cividis"],
+      ["Turbo","Turbo"],
+      ["Hot","Hot"],
+      ["Jet","Jet"],
+      ["Blues","Blues"],
+      ["Greens","Greens"],
+      ["YlOrRd","Yellow-Orange-Red"],
+      ["RdBu","Red-Blue"],
+      ["Portland","Portland"],
+      ["Blackbody","Blackbody"],
+      ["Electric","Electric"],
+    ];
+    function resolveColorMapScale(raw){
+      if(Array.isArray(raw)) return "Viridis";
+      const id=String(raw||"Viridis").trim();
+      return COLOR_MAP_SCALES.some(([v])=>v===id) ? id : "Viridis";
+    }
+    function formatColorBarTick(v){
+      const n=Number(v);
+      if(!Number.isFinite(n)) return "";
+      const a=Math.abs(n);
+      if(a!==0 && (a>=1e4 || a<1e-3)) return n.toExponential(2).replace(/\.?0+e/,"e");
+      if(Number.isInteger(n)) return String(n);
+      const rounded=Math.round(n*1e6)/1e6;
+      return String(rounded);
+    }
+    function colorBarTickVals(cmin, cmax, count=7){
+      const lo=Number(cmin);
+      const hi=Number(cmax);
+      if(!Number.isFinite(lo) || !Number.isFinite(hi)) return undefined;
+      if(lo===hi) return [lo];
+      const n=Math.max(2, Math.round(Number(count)||7));
+      const vals=[];
+      for(let i=0;i<n;i+=1){
+        vals.push(lo + (hi-lo)*(i/(n-1)));
+      }
+      return vals;
+    }
+    function colorBarChromeOpts(extra={}){
+      let tickSize=10;
+      try{
+        const plot=getDrawingPlot?.() || getActivePlot?.();
+        if(typeof resolvePlotDrawOptions==="function" && plot){
+          tickSize=tickSizeSafe(resolvePlotDrawOptions(plot));
+        }
+      }catch{}
+      let ink=null;
+      try{ ink=typeof plotInk==="function" ? plotInk() : null; }catch{}
+      return { ink, tickSize, ...extra };
+    }
+    function parametricColorBarLayout(title, existing=null, opts={}){
+      // Horizontal bar INSIDE the top of the plot (paper 0–1). Values outside that
+      // range break Plotly's resize loop. Title sits above the gradient so channel
+      // name length does not shrink the color strip (side:"right" did).
+      const prev=(existing && typeof existing==="object") ? existing : null;
+      const ink=opts.ink||null;
+      const tickColor=ink?.tick || ink?.font || "#cbd5e1";
+      const tickFs=Math.max(9, Number(opts.tickSize)||10);
+      const titleFs=Math.max(13, tickFs+4);
+      const cmin=Number(opts.cmin);
+      const cmax=Number(opts.cmax);
+      const hasRange=Number.isFinite(cmin) && Number.isFinite(cmax);
+      const tickvals=hasRange ? colorBarTickVals(cmin, cmax, 7) : undefined;
+      const ticktext=tickvals ? tickvals.map(formatColorBarTick) : undefined;
+      const clamp01=(v, lo, hi, fallback)=>{
+        const n=Number(v);
+        if(!Number.isFinite(n)) return fallback;
+        return Math.min(hi, Math.max(lo, n));
+      };
+      return {
+        orientation:"h",
+        thickness:16,
+        thicknessmode:"pixels",
+        // Fixed fraction of the plot width — independent of title text length.
+        len:0.55,
+        lenmode:"fraction",
+        x:clamp01(prev?.x, 0.12, 0.88, 0.5),
+        y:clamp01(prev?.y, 0.15, 0.98, 0.98),
+        xanchor:prev?.xanchor || "center",
+        yanchor:prev?.yanchor || "top",
+        xref:"paper",
+        yref:"paper",
+        title:{
+          text:String(title||""),
+          side:"top",
+          font:{ size:titleFs, color:tickColor },
+        },
+        tickmode:tickvals ? "array" : "auto",
+        ...(tickvals ? { tickvals, ticktext } : {}),
+        nticks:7,
+        showticklabels:true,
+        ticks:"outside",
+        ticklen:3,
+        tickwidth:1,
+        tickcolor:tickColor,
+        tickfont:{ size:tickFs, color:tickColor },
+        outlinewidth:0,
+        borderwidth:0,
+        bgcolor:"rgba(0,0,0,0)",
+        xpad:0,
+        ypad:0,
+      };
+    }
+    function liveMarkerColorBarForSource(sourceKey){
+      const key=String(sourceKey||"").trim();
+      if(!key) return null;
+      try{
+        const gd=plotlyGraphDiv();
+        const live=(gd?.data||[]).find((t)=>String(t?._novaSourceKey||t?.name||"").trim()===key);
+        const bar=live?.marker?.colorbar;
+        return (bar && typeof bar==="object") ? bar : null;
+      }catch{
+        return null;
+      }
+    }
+    function traceHasColorBar(t){
+      if(!t) return false;
+      // Parametric marker colorbars only — spectrogram heatmaps keep their legend proxies.
+      if(t.marker?.showscale===true) return true;
+      const mapId=t._novaStyle?.colorMapChannelId || t.meta?.novaColorMapChannelId;
+      return Boolean(mapId);
+    }
+    function tracesHaveColorBar(traces){
+      return (traces||[]).some((t)=>traceHasColorBar(t));
+    }
+    function plotSuppressesLegendForColorBar(plot, gd){
+      if(tracesHaveColorBar(gd?.data)) return true;
+      const styles=plot?.traceStyles;
+      if(!styles || typeof styles!=="object") return false;
+      return Object.values(styles).some((s)=>Boolean(s?.colorMapChannelId));
+    }
+    function suppressLegendForColorBarTraces(traces){
+      if(!tracesHaveColorBar(traces)) return traces;
+      (traces||[]).forEach((t)=>{ if(t) t.showlegend=false; });
+      return traces;
+    }
+    function parametricColorMapAllowed(plot=getActivePlot()){
+      // Multi-trace / multi-Y colormaps are messy — only a single Y channel is allowed.
+      if(!plot || normalizeViewType(plot.viewType)!=="parametric") return false;
+      return parametricYChannelKeys(plot).length===1;
+    }
+    function stripColorMapFromTrace(t){
+      if(!t) return t;
+      delete t._novaColorMapKey;
+      delete t._novaColorMapValues;
+      if(t._novaStyle && typeof t._novaStyle==="object"){
+        delete t._novaStyle.colorMapChannelId;
+        delete t._novaStyle.colorMapScale;
+      }
+      if(t.meta && typeof t.meta==="object" && !Array.isArray(t.meta)){
+        delete t.meta.novaColorMapChannelId;
+        delete t.meta.novaColorMapScale;
+      }
+      if(t.marker && typeof t.marker==="object" && t.marker.showscale){
+        const size=Math.max(1, Number(t.marker.size)||6);
+        const symbol=String(t.marker.symbol||"circle");
+        const lineColor=t.line?.color;
+        t.marker={
+          size,
+          symbol,
+          ...(lineColor!=null ? { color:lineColor } : {}),
+          line:{ width:0 },
+        };
+      }
+      return t;
+    }
+    function enforceSingleTraceColorMap(traces){
+      const list=traces||[];
+      if(list.length<=1) return list;
+      list.forEach(stripColorMapFromTrace);
+      return list;
+    }
+    function markerColorMapFromValues(values, { title="", size=6, symbol="circle", colorscale="Viridis", colorbar=null, ink=null, tickSize=null }={}){
       const color=(values||[]).map((v)=>Number.isFinite(Number(v)) ? Number(v) : null);
       const range=finiteMarkerColorRange(color);
       if(!range) return null;
+      const scale=resolveColorMapScale(colorscale);
+      const chrome=colorBarChromeOpts({
+        ...(ink ? { ink } : {}),
+        ...(tickSize!=null ? { tickSize } : {}),
+        cmin:range[0],
+        cmax:range[1],
+      });
       return {
         size:Math.max(1, Number(size)||6),
         symbol:String(symbol||"circle"),
         color,
-        colorscale:"Viridis",
+        colorscale:scale,
         showscale:true,
         cmin:range[0],
         cmax:range[1],
         autocolorscale:false,
-        colorbar:{ title:String(title||"") },
+        colorbar:parametricColorBarLayout(title, colorbar, chrome),
         line:{ width:0 },
       };
     }
@@ -6806,6 +7034,7 @@
       let decimated=false;
       let xLabel=channelDisplayName(xKey);
       let xUnit=null;
+      const colorMapAllowed=yKeys.length===1;
       yKeys.forEach((yKey)=>{
         byTest.forEach((list)=>{
           list.sort((a,b)=>a.__ts-b.__ts);
@@ -6815,6 +7044,7 @@
           let sample=null;
           let yRawName=channelKeyFromId(yKey);
           let colorMapKey=null;
+          let colorMapScale="Viridis";
           list.forEach((slot)=>{
             const xv=slotValueForChannelKey(slot.vals, xKey);
             const yv=slotValueForChannelKey(slot.vals, yKey);
@@ -6833,7 +7063,10 @@
               };
               const legendNameProbe=traceLegendName(legendRowProbe);
               const savedStyle=styleMap[legendNameProbe] || styleMap[yChId] || styleMap[String(yKey)] || null;
-              colorMapKey=savedStyle?.colorMapChannelId ? channelKeyFromId(savedStyle.colorMapChannelId) : "";
+              colorMapKey=(colorMapAllowed && savedStyle?.colorMapChannelId)
+                ? channelKeyFromId(savedStyle.colorMapChannelId)
+                : "";
+              colorMapScale=resolveColorMapScale(savedStyle?.colorMapScale);
             }
             const xRawUnit=getChannelSourceUnit(xChId, slot.units[xv.name]);
             const yRawUnit=getChannelSourceUnit(yChId, slot.units[yv.name]);
@@ -6890,19 +7123,26 @@
               title:channelDisplayName(colorMapKey),
               size:6,
               symbol:"circle",
+              colorscale:colorMapScale,
+              colorbar:liveMarkerColorBarForSource(legendName),
             });
             if(colorMarker){
               traceObj.type="scatter";
               traceObj.marker=colorMarker;
+              traceObj.showlegend=false;
               traceObj._novaColorMapKey=colorMapKey;
               traceObj._novaColorMapValues=colorMarker.color;
               traceObj._novaStyle.colorMapChannelId=colorMapKey;
+              traceObj._novaStyle.colorMapScale=colorMapScale;
               traceObj.meta.novaColorMapChannelId=colorMapKey;
+              traceObj.meta.novaColorMapScale=colorMapScale;
             }
           }
           traces.push(traceObj);
         });
       });
+      // Colormap is single-trace only — drop it if multiple series landed on the plot.
+      enforceSingleTraceColorMap(traces);
       return { traces, original, shown, decimated, xLabel, xUnit, needsConfig:false };
     }
     function decimateParallelArrays(x, y, maxPts){
@@ -8719,7 +8959,7 @@
         src.timeRef=DEFAULT_TIME_REF;
       });
     }
-    function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); const toolbar = Object.prototype.hasOwnProperty.call(s, "activeToolbar") ? s.activeToolbar : "sources"; state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:migrateCalculatedChannels(s.calculatedChannels || []), channelAliases:migrateChannelAliases(s.channelAliases || []), channelLabels:(s.channelLabels && typeof s.channelLabels==="object" && !Array.isArray(s.channelLabels))?s.channelLabels:{}, freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {}, activeToolbar: toolbar, sourceTreeExpanded: Array.isArray(s.sourceTreeExpanded)?s.sourceTreeExpanded:[] }; migrateLegacyTimeRef(state.sources, s.t0Mode); plotTimeMode=DEFAULT_TIME_REF; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = migrateChannelKeySet(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = migrateChannelKeySet(s.addedChannelIds || []); previewVisible = Boolean(s.previewVisible); activeToolbar = state.activeToolbar ?? null; if(activeToolbar && !["sources","channels","masks","ranges","objects","ingestion"].includes(activeToolbar)) activeToolbar="sources"; sourceTreeExpanded = new Set(state.sourceTreeExpanded || s.sourceTreeExpanded || []); } catch {} }
+    function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); const toolbar = Object.prototype.hasOwnProperty.call(s, "activeToolbar") ? s.activeToolbar : "sources"; state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:migrateCalculatedChannels(s.calculatedChannels || []), channelAliases:migrateChannelAliases(s.channelAliases || []), channelLabels:(s.channelLabels && typeof s.channelLabels==="object" && !Array.isArray(s.channelLabels))?s.channelLabels:{}, freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {}, activeToolbar: toolbar, sourceTreeExpanded: Array.isArray(s.sourceTreeExpanded)?s.sourceTreeExpanded:[] }; migrateLegacyTimeRef(state.sources, s.t0Mode); plotTimeMode=DEFAULT_TIME_REF; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = migrateChannelKeySet(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = migrateChannelKeySet(s.addedChannelIds || []); previewVisible = Boolean(s.previewVisible); activeToolbar = state.activeToolbar ?? null; if(activeToolbar && !["sources","channels","masks","ranges","objects","options","pages","ingestion"].includes(activeToolbar)) activeToolbar="sources"; sourceTreeExpanded = new Set(state.sourceTreeExpanded || s.sourceTreeExpanded || []); } catch {} }
     const MODAL_SIZE_CLASSES=["modalScale","modalSourceForm","modalAliasForm","modalRangeDef","modalChannels","modalDbSource","modalNarrow","modalMask","modalCompact"];
     const WF={ floating:true };
     const WF_CHANNELS={ floating:true, size:"modalChannels", compact:true };
@@ -8934,6 +9174,7 @@
       btn.onclick=(ev)=>{
         ev.preventDefault();
         ev.stopPropagation();
+        if(sel.disabled) return;
         if(wrap.classList.contains("open")) closeNovaSelect(wrap);
         else openNovaSelect(wrap);
       };
@@ -10826,6 +11067,9 @@
     let activePlotId = null;
     let plotLayout = null;
     let plotTabDrag = null;
+    let pages = [];
+    let activePageId = null;
+    let pageListDrag = null;
     const LEGEND_FONT_SIZE = 9.6;
     const LEGEND_SNAP_THRESHOLD = 0.055;
     const LEGEND_CORNERS = [
@@ -11028,11 +11272,11 @@
       }
       return ax;
     }
-    function newPlotInstance(){
+    function blankPlotInstance(name="View 1"){
       const base=defaultLegendLayout();
       return {
         id:crypto.randomUUID(),
-        name:`View ${plots.length+1}`,
+        name:String(name||"View 1"),
         viewType:"time",
         selections:null,
         latestRows:[],
@@ -11049,6 +11293,142 @@
         spectral:defaultSpectralConfig(),
         summary:defaultSummaryConfig(),
       };
+    }
+    function newPlotInstance(){
+      return blankPlotInstance(`View ${plots.length+1}`);
+    }
+    function hydratePlotsFromPersisted(rawPlots, legacyMasks=[]){
+      return (rawPlots||[]).map((p, idx)=>{
+        const base=defaultLegendLayout();
+        const masks=Array.isArray(p.masks)
+          ? structuredClone(p.masks)
+          : (idx===0 ? structuredClone(legacyMasks) : []);
+        return {
+          id:p.id||crypto.randomUUID(),
+          name:p.name||`View ${idx+1}`,
+          viewType:normalizeViewType(p.viewType),
+          selections:p.selections||null,
+          latestRows:[],
+          metadataRows:[],
+          masks,
+          legendX:Number.isFinite(p.legendX)?p.legendX:base.x,
+          legendY:Number.isFinite(p.legendY)?p.legendY:base.y,
+          legendXanchor:p.legendXanchor||base.xanchor,
+          legendYanchor:p.legendYanchor||base.yanchor,
+          analysis:{ overlays:JSON.parse(JSON.stringify(p.analysis?.overlays || [])) },
+          traceStyles:(p.traceStyles && typeof p.traceStyles==="object" && !Array.isArray(p.traceStyles))
+            ? JSON.parse(JSON.stringify(p.traceStyles))
+            : {},
+          options:normalizePlotOptions(p.options),
+          parametric:(p.parametric && typeof p.parametric==="object")
+            ? { xChannelId:String(p.parametric.xChannelId||"") }
+            : { xChannelId:"" },
+          spectral:normalizeSpectralConfig(p.spectral),
+          summary:normalizeSummaryConfig(p.summary),
+        };
+      });
+    }
+    function newPageInstance(name){
+      const plot=blankPlotInstance("View 1");
+      const layout=makeLeaf([plot.id], plot.id);
+      return {
+        id:crypto.randomUUID(),
+        name:String(name||`Page ${(pages.length||0)+1}`),
+        plotLayout:structuredClone(layout),
+        plots:[toPersistedPlot(plot)],
+        activePlotId:plot.id,
+        _livePlots:[plot],
+        _liveLayout:layout,
+        _liveActivePlotId:plot.id,
+      };
+    }
+    function getActivePage(){
+      return pages.find((p)=>p.id===activePageId) || pages[0] || null;
+    }
+    function persistActivePageToPages(){
+      const page=getActivePage();
+      if(!page) return;
+      const active=getActivePlot();
+      if(active){
+        active.selections=snapshotSelections();
+        active.masks=structuredClone(state.masks||[]);
+        active.latestRows=latestRows;
+        active.metadataRows=metadataRows;
+      }
+      // Keep live plot objects (with series data) in memory across page switches.
+      page._livePlots=plots;
+      page._liveLayout=plotLayout;
+      page._liveActivePlotId=activePlotId;
+      // Durable snapshot for localStorage (no series payloads).
+      page.plots=plots.map(toPersistedPlot);
+      page.plotLayout=structuredClone(plotLayout);
+      page.activePlotId=activePlotId;
+    }
+    function destroyAllPlotHosts(){
+      (plots||[]).forEach((p)=>{
+        try{ destroyChartHost(getPlotDiv(p.id)); }catch{}
+      });
+    }
+    function clearPageSessionPlotCache(){
+      try{ overviewTraceCache=null; }catch{}
+      try{ overviewLodActive=false; }catch{}
+      try{ zoomState="overview"; }catch{}
+      try{ lastDetailRefetchKey=""; }catch{}
+      try{ cancelZoomDetailFetch(); }catch{}
+    }
+    function hydrateGlobalsFromPage(page, { preserveSharedSelections=true }={}){
+      if(!page) return;
+      const sharedSources=preserveSharedSelections ? [...selectedSourceIds] : null;
+      const sharedDbs=preserveSharedSelections ? [...selectedDatabaseIds] : null;
+      const sharedTests=preserveSharedSelections ? [...selectedTestIds] : null;
+      const sharedAddedTests=preserveSharedSelections ? [...addedTestIds] : null;
+      destroyAllPlotHosts();
+      clearPageSessionPlotCache();
+      activePageId=page.id;
+      const hasLive=Array.isArray(page._livePlots) && page._livePlots.length>0;
+      if(hasLive){
+        plots=page._livePlots;
+        activePlotId=page._liveActivePlotId || page.activePlotId || plots[0].id;
+        if(!plots.some((p)=>p.id===activePlotId)) activePlotId=plots[0].id;
+        plotLayout=page._liveLayout
+          || migratePlotLayout(page.plotLayout, plots.map((p)=>p.id), activePlotId)
+          || makeLeaf(plots.map((p)=>p.id), activePlotId);
+      }else{
+        plots=hydratePlotsFromPersisted(page.plots||[]);
+        if(!plots.length){
+          const blank=blankPlotInstance("View 1");
+          plots=[blank];
+          page.plots=[toPersistedPlot(blank)];
+          page.plotLayout=makeLeaf([blank.id], blank.id);
+          page.activePlotId=blank.id;
+        }
+        activePlotId=page.activePlotId || plots[0].id;
+        if(!plots.some((p)=>p.id===activePlotId)) activePlotId=plots[0].id;
+        plotLayout=migratePlotLayout(page.plotLayout, plots.map((p)=>p.id), activePlotId);
+        if(!plotLayout) plotLayout=makeLeaf(plots.map((p)=>p.id), activePlotId);
+        page._livePlots=plots;
+        page._liveLayout=plotLayout;
+        page._liveActivePlotId=activePlotId;
+      }
+      repairPlotLayout();
+      page._livePlots=plots;
+      page._liveLayout=plotLayout;
+      page._liveActivePlotId=activePlotId;
+      const next=getActivePlot();
+      latestRows=next?.latestRows||[];
+      metadataRows=next?.metadataRows||[];
+      restoreSelections(next?.selections);
+      applyPlotMasksToState(next);
+      if(preserveSharedSelections){
+        selectedSourceIds=new Set(sharedSources||[]);
+        selectedDatabaseIds=new Set(sharedDbs||[]);
+        selectedTestIds=new Set(sharedTests||[]);
+        addedTestIds=new Set(sharedAddedTests||[]);
+        selectedChannelIds=migrateChannelKeySet((next?.selections?.selectedChannelIds)||[]);
+        addedChannelIds=migrateChannelKeySet((next?.selections?.addedChannelIds)||[]);
+        selectedMaskIds=new Set(Array.isArray(next?.selections?.selectedMaskIds)?next.selections.selectedMaskIds:[]);
+        selectedRangeKeys=new Set(Array.isArray(next?.selections?.selectedRangeKeys)?next.selections.selectedRangeKeys:[]);
+      }
     }
     function defaultSpectralConfig(){
       return {
@@ -13478,63 +13858,78 @@
     }
 
     function savePlots(){
-      const active=getActivePlot();
-      if(active){
-        active.selections=snapshotSelections();
-        active.masks=structuredClone(state.masks||[]);
+      persistActivePageToPages();
+      if(!pages.length){
+        const page=newPageInstance("Page 1");
+        pages=[page];
+        activePageId=page.id;
+        persistActivePageToPages();
       }
       localStorage.setItem(PLOTS_KEY, JSON.stringify({
-        activePlotId,
-        plotLayout,
-        plots: plots.map(toPersistedPlot),
+        version:2,
+        activePageId,
+        pages: pages.map((page)=>({
+          id:page.id,
+          name:page.name,
+          activePlotId:page.activePlotId,
+          plotLayout:page.plotLayout,
+          plots:Array.isArray(page.plots) ? page.plots : [],
+        })),
       }));
     }
     function loadPlots(){
       try{
         const s=JSON.parse(localStorage.getItem(PLOTS_KEY)||"{}");
         const legacyMasks=Array.isArray(state?.masks) ? structuredClone(state.masks) : [];
-        plots=(s.plots||[]).map((p, idx)=>{
-          const base=defaultLegendLayout();
-          const masks=Array.isArray(p.masks)
-            ? structuredClone(p.masks)
-            : (idx===0 ? structuredClone(legacyMasks) : []);
-          return {
-            id:p.id||crypto.randomUUID(),
-            name:p.name||`View ${idx+1}`,
-            viewType:normalizeViewType(p.viewType),
-            selections:p.selections||null,
-            latestRows:[],
-            metadataRows:[],
-            masks,
-            legendX:Number.isFinite(p.legendX)?p.legendX:base.x,
-            legendY:Number.isFinite(p.legendY)?p.legendY:base.y,
-            legendXanchor:p.legendXanchor||base.xanchor,
-            legendYanchor:p.legendYanchor||base.yanchor,
-            analysis:{ overlays:JSON.parse(JSON.stringify(p.analysis?.overlays || [])) },
-            traceStyles:(p.traceStyles && typeof p.traceStyles==="object" && !Array.isArray(p.traceStyles))
-              ? JSON.parse(JSON.stringify(p.traceStyles))
-              : {},
-            options:normalizePlotOptions(p.options),
-            parametric:(p.parametric && typeof p.parametric==="object")
-              ? { xChannelId:String(p.parametric.xChannelId||"") }
-              : { xChannelId:"" },
-            spectral:normalizeSpectralConfig(p.spectral),
-            summary:normalizeSummaryConfig(p.summary),
-          };
-        });
-        activePlotId = s.activePlotId || (plots[0]?.id || null);
-        plotLayout = migratePlotLayout(s.plotLayout, plots.map((p)=>p.id), activePlotId);
+        if(Array.isArray(s.pages) && s.pages.length){
+          pages=s.pages.map((page, idx)=>{
+            const hydrated=hydratePlotsFromPersisted(page.plots||[], idx===0 ? legacyMasks : []);
+            const plotIds=hydrated.map((p)=>p.id);
+            let layout=migratePlotLayout(page.plotLayout, plotIds, page.activePlotId || plotIds[0]);
+            if(!hydrated.length){
+              const blank=blankPlotInstance("View 1");
+              hydrated.push(blank);
+              layout=makeLeaf([blank.id], blank.id);
+            }
+            if(!layout) layout=makeLeaf(hydrated.map((p)=>p.id), page.activePlotId || hydrated[0].id);
+            return {
+              id:page.id||crypto.randomUUID(),
+              name:page.name||`Page ${idx+1}`,
+              plots:hydrated.map(toPersistedPlot),
+              plotLayout:layout,
+              activePlotId:page.activePlotId || hydrated[0].id,
+            };
+          });
+          activePageId=s.activePageId || pages[0].id;
+          if(!pages.some((p)=>p.id===activePageId)) activePageId=pages[0].id;
+        }else{
+          // Legacy single-layout payload → wrap as Page 1.
+          const hydrated=hydratePlotsFromPersisted(s.plots||[], legacyMasks);
+          if(!hydrated.length) hydrated.push(blankPlotInstance("View 1"));
+          const layout=migratePlotLayout(s.plotLayout, hydrated.map((p)=>p.id), s.activePlotId || hydrated[0].id)
+            || makeLeaf(hydrated.map((p)=>p.id), s.activePlotId || hydrated[0].id);
+          pages=[{
+            id:crypto.randomUUID(),
+            name:"Page 1",
+            plots:hydrated.map(toPersistedPlot),
+            plotLayout:layout,
+            activePlotId:s.activePlotId || hydrated[0].id,
+          }];
+          activePageId=pages[0].id;
+        }
       }catch{
+        pages=[];
+        activePageId=null;
         plots=[];
         activePlotId=null;
         plotLayout=null;
       }
-      if(!plots.length){
-        plots=[newPlotInstance()];
-        activePlotId=plots[0].id;
+      if(!pages.length){
+        const page=newPageInstance("Page 1");
+        pages=[page];
+        activePageId=page.id;
       }
-      if(!plotLayout) plotLayout=makeLeaf(plots.map((p)=>p.id), activePlotId);
-      repairPlotLayout();
+      hydrateGlobalsFromPage(getActivePage(), { preserveSharedSelections:false });
       applyPlotMasksToState(getActivePlot());
       const active=getActivePlot();
       if(active?.selections){
@@ -13551,6 +13946,154 @@
       document.querySelectorAll(`.plotTab[data-plot-id="${p.id}"]`).forEach((btn)=>{ btn.textContent=next; });
       try{ updatePlotChrome(); }catch{}
       setStatus(`Renamed to: ${next}`);
+    }
+    function switchPage(id){
+      if(!id || id===activePageId) return;
+      const page=pages.find((p)=>p.id===id);
+      if(!page) return;
+      persistActivePlotLocalState();
+      persistActivePageToPages();
+      hydrateGlobalsFromPage(page, { preserveSharedSelections:true });
+      rebuildChannelsDataLocal();
+      savePlots();
+      refreshCatalogsForSelections().then(()=>{
+        void rebuildPlotMosaicAndCharts();
+        renderAll();
+        setStatus(`Page: ${page.name}`);
+      });
+    }
+    function addPage(){
+      persistActivePlotLocalState();
+      persistActivePageToPages();
+      const page=newPageInstance(`Page ${pages.length+1}`);
+      pages.push(page);
+      hydrateGlobalsFromPage(page, { preserveSharedSelections:true });
+      rebuildChannelsDataLocal();
+      savePlots();
+      void rebuildPlotMosaicAndCharts();
+      renderAll();
+      setActiveToolbar("pages");
+      setStatus(`Created ${page.name}`);
+    }
+    function renamePage(id){
+      const page=pages.find((p)=>p.id===id);
+      if(!page) return;
+      const next=(prompt("Rename page:", page.name)||"").trim();
+      if(!next || next===page.name) return;
+      page.name=next;
+      savePlots();
+      renderPagesList();
+      setStatus(`Renamed to: ${next}`);
+    }
+    function deletePage(id){
+      if(pages.length<=1){ setStatus("Cannot delete the last page.", true); return; }
+      const idx=pages.findIndex((p)=>p.id===id);
+      if(idx<0) return;
+      const page=pages[idx];
+      if(!confirm(`Delete page "${page.name}"? All views on this page will be removed.`)) return;
+      const deletingActive=page.id===activePageId;
+      if(deletingActive){
+        persistActivePlotLocalState();
+        persistActivePageToPages();
+      }
+      pages.splice(idx, 1);
+      if(deletingActive){
+        const next=pages[Math.max(0, idx-1)] || pages[0];
+        hydrateGlobalsFromPage(next, { preserveSharedSelections:true });
+        rebuildChannelsDataLocal();
+        savePlots();
+        refreshCatalogsForSelections().then(()=>{
+          void rebuildPlotMosaicAndCharts();
+          renderAll();
+          setStatus(`Deleted page. Active: ${next.name}`);
+        });
+      }else{
+        savePlots();
+        renderPagesList();
+        setStatus(`Deleted page: ${page.name}`);
+      }
+    }
+    function reorderPage(fromId, beforeId){
+      const fromIdx=pages.findIndex((p)=>p.id===fromId);
+      if(fromIdx<0) return;
+      const [moved]=pages.splice(fromIdx, 1);
+      let toIdx=beforeId ? pages.findIndex((p)=>p.id===beforeId) : -1;
+      if(toIdx<0) toIdx=pages.length;
+      pages.splice(toIdx, 0, moved);
+      savePlots();
+      renderPagesList();
+    }
+    function renderPagesList(){
+      const root=byId("pagesList");
+      if(!root) return;
+      root.innerHTML="";
+      if(!pages.length){
+        root.innerHTML=`<div class="empty">No pages yet.</div>`;
+        return;
+      }
+      pages.forEach((page)=>{
+        const row=document.createElement("div");
+        const active=page.id===activePageId;
+        row.className="item"+(active?" active":"")+(focusedItem&&focusedItem.kind==="page"&&focusedItem.id===page.id?" focused":"");
+        row.setAttribute("data-id", page.id);
+        row.draggable=true;
+        row.innerHTML=`<div class="itemPrimary">${escapeHtml(page.name||"Page")}</div>`;
+        row.onclick=(ev)=>{
+          if(ev.stopPropagation) ev.stopPropagation();
+          focusedItem={ kind:"page", id:page.id };
+          if(page.id!==activePageId) switchPage(page.id);
+          else renderPagesList();
+        };
+        row.ondblclick=(ev)=>{
+          if(ev.stopPropagation) ev.stopPropagation();
+          renamePage(page.id);
+        };
+        row.oncontextmenu=(ev)=>{
+          ev.preventDefault();
+          if(ev.stopPropagation) ev.stopPropagation();
+          focusedItem={ kind:"page", id:page.id };
+          renderPagesList();
+          const menu=[
+            { label:"Rename", action:()=>renamePage(page.id) },
+            { label:"Delete", action:()=>deletePage(page.id) },
+          ];
+          showContextMenu(ev.clientX, ev.clientY, menu);
+        };
+        row.addEventListener("dragstart",(ev)=>{
+          pageListDrag={ id:page.id };
+          try{ ev.dataTransfer.setData("text/nova-page-id", page.id); }catch{}
+          try{ ev.dataTransfer.setData("text/plain", page.id); }catch{}
+          if(ev.dataTransfer) ev.dataTransfer.effectAllowed="move";
+          row.classList.add("dragging");
+        });
+        row.addEventListener("dragend",()=>{
+          pageListDrag=null;
+          row.classList.remove("dragging");
+          root.querySelectorAll(".item").forEach((el)=>el.classList.remove("rangeDropBefore","rangeDropAfter"));
+        });
+        row.addEventListener("dragover",(ev)=>{
+          const dragId=pageListDrag?.id || ev.dataTransfer?.getData?.("text/nova-page-id") || ev.dataTransfer?.getData?.("text/plain");
+          if(!dragId || dragId===page.id) return;
+          ev.preventDefault();
+          const rect=row.getBoundingClientRect();
+          const before=(ev.clientY-rect.top)<rect.height/2;
+          row.classList.toggle("rangeDropBefore", before);
+          row.classList.toggle("rangeDropAfter", !before);
+        });
+        row.addEventListener("dragleave",()=>{
+          row.classList.remove("rangeDropBefore","rangeDropAfter");
+        });
+        row.addEventListener("drop",(ev)=>{
+          ev.preventDefault();
+          const dragId=pageListDrag?.id || ev.dataTransfer?.getData?.("text/nova-page-id") || ev.dataTransfer?.getData?.("text/plain");
+          row.classList.remove("rangeDropBefore","rangeDropAfter");
+          if(!dragId || dragId===page.id) return;
+          const rect=row.getBoundingClientRect();
+          const before=(ev.clientY-rect.top)<rect.height/2;
+          reorderPage(dragId, before ? page.id : pages[pages.findIndex((p)=>p.id===page.id)+1]?.id);
+        });
+        root.appendChild(row);
+      });
     }
     function setPlotViewType(id, viewType){
       const p=plots.find((x)=>x.id===id); if(!p) return;
@@ -13758,13 +14301,22 @@
       if(normalizeViewType(plot?.viewType)==="parametric"){
         const x=channelKeyFromId(plot?.parametric?.xChannelId||"") || String(plot?.parametric?.xChannelId||"").trim();
         if(x) ids.add(x);
-        parametricTraceStyleColorMapKeys(plot).forEach((k)=>ids.add(k));
+        if(parametricColorMapAllowed(plot)){
+          parametricTraceStyleColorMapKeys(plot).forEach((k)=>ids.add(k));
+        }
       }
       return [...ids];
     }
+    function selectedChannelIdsForPlot(plot){
+      // Inactive tiles must use their own stored channel selection — never the focused view's.
+      if(!plot || plot.id===activePlotId) return effectiveSelectedChannelIds();
+      const selected=migrateChannelKeySet(plot.selections?.selectedChannelIds||[]);
+      const added=migrateChannelKeySet(plot.selections?.addedChannelIds||[]);
+      return effectiveIds({ selected, all:[...added] });
+    }
     function parametricYChannelKeys(plot){
       const xKey=channelKeyFromId(plot?.parametric?.xChannelId||"");
-      return effectiveSelectedChannelIds().filter((id)=>{
+      return selectedChannelIdsForPlot(plot).filter((id)=>{
         const key=channelKeyFromId(id);
         if(!key) return false;
         if(xKey && key===xKey) return false;
@@ -13895,11 +14447,14 @@
         if(getPlotOptions(p).showLegend!==false) return;
         const host=document.getElementById(`plot-${pid}`);
         const gd=plotlyGraphDiv(host);
-        const liveTraces=(gd?.data||[]).filter((t)=>
+        // Colormap colorbars replace the trace legend — omit those traces from plotviews too.
+        const skipTraceLegend=plotSuppressesLegendForColorBar(p, gd);
+        const liveTraces=skipTraceLegend ? [] : (gd?.data||[]).filter((t)=>
           t?.name
           && !t._novaOverlayLegend
           && t.visible!==false
           && t.showlegend!==false
+          && !traceHasColorBar(t)
         );
         if(liveTraces.length){
           liveTraces.forEach((t, i)=>{
@@ -13919,7 +14474,7 @@
               sourceKey:key,
             });
           });
-        }else if(vt==="spectral" && p.spectralResult?.series?.length){
+        }else if(!skipTraceLegend && vt==="spectral" && p.spectralResult?.series?.length){
           const colorway=parseColorway();
           let idx=0;
           p.spectralResult.series.forEach((s)=>{
@@ -13943,7 +14498,7 @@
             });
             idx+=1;
           });
-        }else{
+        }else if(!skipTraceLegend){
           // Fallback when the tile has not drawn yet: styled keys from rows + traceStyles.
           const rows=(pid===activePlotId)?latestRows:(p.latestRows||[]);
           const styles=getPlotTraceStyles(p);
@@ -13957,6 +14512,7 @@
             if(seen.has(name)) return;
             const saved=styles[name] || styles[`${r.__dbId}|${r.channel_name}`] || null;
             if(saved && saved.showlegend===false) return;
+            if(saved?.colorMapChannelId) return;
             seen.add(name);
             entries.push({
               name: saved?.name || name,
@@ -15016,7 +15572,7 @@
       });
     }
 
-    const SIDEBAR_LIST_SCROLL_CAPS={ sourcesList:999, channelsList:999, masksList:999, rangesList:999, optionsList:999, ingestionList:999 };
+    const SIDEBAR_LIST_SCROLL_CAPS={ sourcesList:999, channelsList:999, masksList:999, rangesList:999, optionsList:999, pagesList:999, ingestionList:999 };
     function applySidebarListHeight(listId, maxVisible){
       const el=byId(listId);
       if(!el) return;
@@ -15372,6 +15928,9 @@
           return;
         }
         if(built.needsY){
+          // Never destroy an already-rendered parametric tile when redrawing from
+          // another focused view (channel selection is page/view-scoped).
+          if(preserveUi && hasLiveChart) return;
           destroyChartHost(host);
           host.replaceChildren();
           setStatus("Add and select Y channels in Channels (index is excluded), then Plot.", true);
@@ -15383,6 +15942,7 @@
         traces.length=0;
         plottableTraces.forEach((t)=>traces.push(t));
         if(!traces.length){
+          if(preserveUi && hasLiveChart) return;
           destroyChartHost(host);
           host.replaceChildren();
           setStatus("No overlapping X/Y samples after masks. Check channels and range masks.", true);
@@ -15413,6 +15973,8 @@
           ? `${built.xLabel} (${built.xUnit})`
           : (built.xLabel||"");
         const hasTitle=Boolean(drawOpts.plotTitle);
+        const hasColorBar=tracesHaveColorBar(traces);
+        suppressLegendForColorBarTraces(traces);
         const layoutBase={
           uirevision:plotUiRevision(targetPlotId),
           autosize:true,
@@ -15429,7 +15991,8 @@
           plot_bgcolor: viewBg,
           font:{color:ink.font},
           colorway: parseColorway(),
-          showlegend: drawOpts.showLegend!==false,
+          // Colorbar replaces the trace legend on parametric colormap plots.
+          showlegend: !hasColorBar && drawOpts.showLegend!==false,
           xaxis:applyAxisChrome({
             title: axisVisible ? xTitle : "",
             automargin:true,
@@ -15446,7 +16009,8 @@
           margin:{
             l:12,
             r:Math.max(70,56+extraRight*(axisSpacingPx+6)),
-            t: hasTitle ? 44 : 12,
+            // Extra top room only when a plot title shares the header with an in-plot colorbar.
+            t: hasColorBar ? (hasTitle ? 48 : 16) : (hasTitle ? 44 : 12),
             b:48,
           },
           legend:{...legendLayoutForActivePlot(), bgcolor:ink.legendBg, bordercolor:ink.legendBorder, borderwidth:1, font:{color:ink.legendFont} },
@@ -19012,11 +19576,15 @@
         sourceKey:String(trace?._novaSourceKey || trace?.meta?.novaSourceKey || trace?.name || `trace ${idx}`),
         channelKey:String(trace?._novaChannelKey || trace?.meta?.novaChannelKey || ""),
         colorMapChannelId:String(trace?._novaStyle?.colorMapChannelId || trace?.meta?.novaColorMapChannelId || ""),
+        colorMapScale:resolveColorMapScale(trace?._novaStyle?.colorMapScale || trace?.meta?.novaColorMapScale || trace?.marker?.colorscale),
       };
       const styleMap=getPlotTraceStyles();
       const saved=styleMap[state.sourceKey] || (state.channelKey ? styleMap[state.channelKey] : null);
       if(saved?.colorMapChannelId && !state.colorMapChannelId){
         state.colorMapChannelId=String(saved.colorMapChannelId);
+      }
+      if(saved?.colorMapScale){
+        state.colorMapScale=resolveColorMapScale(saved.colorMapScale);
       }
       return state;
     }
@@ -19029,8 +19597,12 @@
       const markerSymbol=String(style.markerSymbol||trace.marker?.symbol||"circle");
       const markerSize=Math.max(1, Number(style.markerSize??6)||6);
       const markerEvery=Math.max(1, Math.round(Number(style.markerEvery??25)||25));
-      const showlegend=style.showlegend!==false;
-      const colorMapChannelId=String(style.colorMapChannelId||"").trim();
+      const colorMapChannelIdRaw=String(style.colorMapChannelId||"").trim();
+      const colorMapAllowed=parametricColorMapAllowed(getDrawingPlot()||getActivePlot());
+      const colorMapChannelId=colorMapAllowed ? colorMapChannelIdRaw : "";
+      const colorMapScale=resolveColorMapScale(style.colorMapScale);
+      // Colorbar replaces the trace legend entry.
+      const showlegend=colorMapChannelId ? false : (style.showlegend!==false);
       if(style.name) trace.name=String(style.name);
       trace.mode=plotlyModeForPlotStyle(plotStyle);
       trace.showlegend=showlegend;
@@ -19042,6 +19614,8 @@
           title:channelDisplayName(colorMapChannelId),
           size:Math.max(1, Number(style.markerSize??6)||6),
           symbol:String(style.markerSymbol||trace.marker?.symbol||"circle"),
+          colorscale:colorMapScale,
+          colorbar:trace.marker?.colorbar,
         });
         if(colorMarker){
           trace.type="scatter";
@@ -19053,6 +19627,8 @@
           title:channelDisplayName(colorMapChannelId),
           size:Math.max(1, Number(style.markerSize??6)||6),
           symbol:String(style.markerSymbol||trace.marker?.symbol||"circle"),
+          colorscale:colorMapScale,
+          colorbar:trace.marker?.colorbar,
         });
         if(colorMarker){
           trace.type="scatter";
@@ -19076,14 +19652,14 @@
         plotStyle,
         markerEvery,
         markerSize,
-        ...(colorMapChannelId ? { colorMapChannelId } : {}),
+        ...(colorMapChannelId ? { colorMapChannelId, colorMapScale } : {}),
       };
       trace.meta=Object.assign({}, (trace.meta && typeof trace.meta==="object" && !Array.isArray(trace.meta)) ? trace.meta : {}, {
         novaPlotStyle:plotStyle,
         novaMarkerEvery:markerEvery,
         novaSourceKey:trace._novaSourceKey,
         ...(trace._novaChannelKey ? { novaChannelKey:trace._novaChannelKey } : {}),
-        ...(colorMapChannelId ? { novaColorMapChannelId:colorMapChannelId } : {}),
+        ...(colorMapChannelId ? { novaColorMapChannelId:colorMapChannelId, novaColorMapScale:colorMapScale } : {}),
       });
       return trace;
     }
@@ -19094,10 +19670,31 @@
       }
       return plot.traceStyles;
     }
+    function applySavedStylesToBuiltTraces(traces){
+      const map=getPlotTraceStyles(getDrawingPlot());
+      const list=traces||[];
+      // Colormap only when a single Y channel is selected AND a single trace is drawn.
+      const allowMap=parametricColorMapAllowed(getDrawingPlot()||getActivePlot()) && list.length===1;
+      list.forEach((t)=>{
+        if(String(t?.type||"")==="heatmap") return;
+        const key=String(t._novaSourceKey || t.name || "");
+        const chKey=String(t._novaChannelKey || t.meta?.novaChannelKey || "");
+        if(!key && !chKey) return;
+        if(key) t._novaSourceKey=key;
+        const saved=map[key] || (chKey ? map[chKey] : null) || (t.name ? map[String(t.name)] : null);
+        if(!saved) return;
+        const style={ ...saved, sourceKey:key || chKey };
+        if(!allowMap) style.colorMapChannelId="";
+        applyTraceStyleToTraceObject(t, style);
+      });
+      if(!allowMap) enforceSingleTraceColorMap(list);
+      return suppressLegendForColorBarTraces(list);
+    }
     function saveTraceStyleToActivePlot(style){
       const plot=getActivePlot();
       if(!plot || !style?.sourceKey) return;
       const map=getPlotTraceStyles(plot);
+      const hasMap=Boolean(style.colorMapChannelId);
       const entry={
         name:String(style.name||""),
         color:style.color,
@@ -19107,26 +19704,16 @@
         markerSymbol:style.markerSymbol,
         markerSize:style.markerSize,
         markerEvery:Math.max(1, Number(style.markerEvery)||25),
-        showlegend:style.showlegend!==false,
-        ...(style.colorMapChannelId ? { colorMapChannelId:String(style.colorMapChannelId) } : {}),
+        showlegend:hasMap ? false : (style.showlegend!==false),
+        ...(hasMap ? {
+          colorMapChannelId:String(style.colorMapChannelId),
+          colorMapScale:resolveColorMapScale(style.colorMapScale),
+        } : {}),
       };
       map[String(style.sourceKey)]=entry;
       // Also index by stable channel key so renames / legend-label drift still match.
       if(style.channelKey) map[String(style.channelKey)]=entry;
       savePlots();
-    }
-    function applySavedStylesToBuiltTraces(traces){
-      const map=getPlotTraceStyles(getDrawingPlot());
-      (traces||[]).forEach((t)=>{
-        if(String(t?.type||"")==="heatmap") return;
-        const key=String(t._novaSourceKey || t.name || "");
-        const chKey=String(t._novaChannelKey || t.meta?.novaChannelKey || "");
-        if(!key && !chKey) return;
-        if(key) t._novaSourceKey=key;
-        const saved=map[key] || (chKey ? map[chKey] : null) || (t.name ? map[String(t.name)] : null);
-        if(saved) applyTraceStyleToTraceObject(t, { ...saved, sourceKey:key || chKey });
-      });
-      return traces;
     }
     async function refreshWinplotMarkerArrays(plotEl=getPlotDiv()){
       const gd=plotlyGraphDiv(plotEl);
@@ -19719,12 +20306,28 @@
       const st=extractTraceStyleState(trace, idx);
       const colorVal=colorToHexInput(st.color, "#3b82f6");
       const traceUnit=String(trace?._unit || "unitless").trim() || "unitless";
-      const isParametric=normalizeViewType(getActivePlot()?.viewType)==="parametric";
+      const activePlot=getActivePlot();
+      const isParametric=normalizeViewType(activePlot?.viewType)==="parametric";
+      const dataTraceCount=(gd?.data||[]).filter((t)=>
+        t && !t._novaSpectralLegendProxy && !t._novaOverlayLegend && String(t.type||"")!=="heatmap"
+      ).length;
+      const colorMapAllowed=isParametric && parametricColorMapAllowed(activePlot) && dataTraceCount<=1;
       const markerOpts=OBJ_MARKER_SYMBOLS.map(([val,label])=>`<option value="${val}" ${st.markerSymbol===val?"selected":""}>${label}</option>`).join("");
       const propRow=(label, controlHtml)=>`<div class="rangeMetaRow">
             <div class="rangeMetaCell">${escapeHtml(label)}</div>
             ${controlHtml}
           </div>`;
+      const colorMapRows=isParametric
+        ? (colorMapAllowed
+          ? `${propRow("Color Map", `<div class="channelPickFieldWrap">
+                ${traceColorMapPickHtml(st.colorMapChannelId, `id="m_obj_color_map" class="objPropControl"`)}
+                <button type="button" id="m_obj_color_map_clear" class="iconBtn" title="Clear color map">×</button>
+              </div>`)}
+              ${propRow("Color Map Theme", `<select id="m_obj_color_map_scale" class="objPropControl" ${st.colorMapChannelId?"":"disabled"}>
+                ${COLOR_MAP_SCALES.map(([val,label])=>`<option value="${val}" ${resolveColorMapScale(st.colorMapScale)===val?"selected":""}>${escapeHtml(label)}</option>`).join("")}
+              </select>`)}`
+          : propRow("Color Map", `<div class="rangeMetaCell muted">Requires exactly one Y channel and one trace on this plot</div>`))
+        : "";
       openModal("Objects > Edit Trace", `
         <div class="formStack">
           <div class="rangeFormHeader">
@@ -19766,10 +20369,7 @@
               ${propRow("Line Size", `<input id="m_obj_lw" class="objPropControl" type="number" step="0.5" min="0" max="10" value="${st.width}" />`)}
               ${propRow("Marker Size", `<input id="m_obj_ms" class="objPropControl" type="number" step="0.5" min="1" max="40" value="${st.markerSize}" />`)}
               ${propRow("Marker Spacing", `<input id="m_obj_every" class="objPropControl" type="number" step="1" min="1" max="10000" value="${st.markerEvery}" />`)}
-              ${isParametric ? propRow("Color Map", `<div class="channelPickFieldWrap">
-                ${traceColorMapPickHtml(st.colorMapChannelId, `id="m_obj_color_map" class="objPropControl"`)}
-                <button type="button" id="m_obj_color_map_clear" class="iconBtn" title="Clear color map">×</button>
-              </div>`) : ""}
+              ${colorMapRows}
               ${propRow("Show in Legend", `<select id="m_obj_legend" class="objPropControl">
                 <option value="true" ${st.showlegend?"selected":""}>True</option>
                 <option value="false" ${st.showlegend?"":"selected"}>False</option>
@@ -19789,10 +20389,22 @@
         const markerSymbol=(byId("m_obj_marker").value||"circle").trim();
         const markerSize=Math.max(1, Number(byId("m_obj_ms").value)||st.markerSize||6);
         const markerEvery=Math.max(1, Math.round(Number(byId("m_obj_every").value)||25));
-        const showlegend=String(byId("m_obj_legend")?.value||"true")!=="false";
         const sourceKey=String(trace._novaSourceKey || st.sourceKey || st.name);
         const channelKey=String(trace._novaChannelKey || st.channelKey || "");
-        const colorMapChannelId=getChannelPickFieldValue(byId("m_obj_color_map"));
+        const colorMapChannelIdRaw=colorMapAllowed
+          ? getChannelPickFieldValue(byId("m_obj_color_map"))
+          : "";
+        const colorMapScale=resolveColorMapScale(byId("m_obj_color_map_scale")?.value||st.colorMapScale);
+        const dataTraceCount=(gd?.data||[]).filter((t)=>
+          t && !t._novaSpectralLegendProxy && !t._novaOverlayLegend && String(t.type||"")!=="heatmap"
+        ).length;
+        // Hard gate: colormap only when a single trace is on the plot.
+        const colorMapChannelId=(colorMapChannelIdRaw && dataTraceCount<=1) ? colorMapChannelIdRaw : "";
+        if(colorMapChannelIdRaw && !colorMapChannelId){
+          setStatus("Color map requires exactly one Y channel / one trace on the plot.", true);
+        }
+        // Colorbar replaces the legend — keep showlegend false while a map is set.
+        const showlegend=colorMapChannelId ? false : (String(byId("m_obj_legend")?.value||"true")!=="false");
         const styleState={
           name,
           color,
@@ -19806,8 +20418,77 @@
           sourceKey,
           channelKey,
           colorMapChannelId,
+          colorMapScale,
         };
-        if(isParametric && (colorMapChannelId || st.colorMapChannelId)){
+        const colorMapChanged=colorMapChannelId!==String(st.colorMapChannelId||"");
+        if(isParametric && colorMapChanged){
+          // Channel added/cleared/changed — need data reload for color values.
+          saveTraceStyleToActivePlot(styleState);
+          renderObjectsList();
+          try{ refreshLegendViews(); }catch{}
+          void loadTimeseries();
+          return true;
+        }
+        // Existing colormap: restyle in place (theme, markers, etc.) and keep colorbar.
+        if(isParametric && colorMapChannelId){
+          const values=Array.isArray(trace._novaColorMapValues)
+            ? trace._novaColorMapValues
+            : (Array.isArray(trace.marker?.color) ? trace.marker.color : null);
+          const colorMarker=values ? markerColorMapFromValues(values, {
+            title:channelDisplayName(colorMapChannelId),
+            size:markerSize,
+            symbol:markerSymbol,
+            colorscale:colorMapScale,
+            // Keep user-dragged colorbar position across theme/style edits.
+            colorbar:trace.marker?.colorbar || gd.data?.[idx]?.marker?.colorbar,
+          }) : null;
+          if(colorMarker){
+            await Plotly.restyle(gd, {
+              name,
+              mode:plotlyModeForPlotStyle(plotStyle),
+              "marker.color":[colorMarker.color],
+              "marker.colorscale":[colorMapScale],
+              "marker.showscale":[true],
+              "marker.autocolorscale":[false],
+              "marker.cmin":[colorMarker.cmin],
+              "marker.cmax":[colorMarker.cmax],
+              "marker.size":[markerSize],
+              "marker.symbol":[markerSymbol],
+              "marker.colorbar":[colorMarker.colorbar],
+              "line.color":color,
+              "line.width":lw,
+              "line.dash":dash,
+              showlegend:false,
+            }, [idx]);
+            try{ await Plotly.relayout(gd, { showlegend:false }); }catch{}
+            const live=gd.data?.[idx];
+            if(live){
+              live.type="scatter";
+              live.marker=colorMarker;
+              live.showlegend=false;
+              live._novaColorMapValues=colorMarker.color;
+              live._novaStyle={ plotStyle, markerEvery, markerSize, colorMapChannelId, colorMapScale };
+              live.meta=Object.assign({}, (live.meta && typeof live.meta==="object" && !Array.isArray(live.meta)) ? live.meta : {}, {
+                novaPlotStyle:plotStyle,
+                novaMarkerEvery:markerEvery,
+                novaSourceKey:sourceKey,
+                novaColorMapChannelId:colorMapChannelId,
+                novaColorMapScale:colorMapScale,
+                ...(channelKey ? { novaChannelKey:channelKey } : {}),
+              });
+            }
+            // Hide sibling traces too — colorbar replaces the plot legend.
+            (gd.data||[]).forEach((t)=>{ if(t) t.showlegend=false; });
+            try{
+              const idxs=(gd.data||[]).map((_,i)=>i);
+              if(idxs.length) await Plotly.restyle(gd, { showlegend:false }, idxs);
+            }catch{}
+            saveTraceStyleToActivePlot(styleState);
+            renderObjectsList();
+            try{ refreshLegendViews(); }catch{}
+            return true;
+          }
+          // Values missing — fall back to reload.
           saveTraceStyleToActivePlot(styleState);
           renderObjectsList();
           try{ refreshLegendViews(); }catch{}
@@ -19889,10 +20570,20 @@
       });
       const colorMapEl=byId("m_obj_color_map");
       const colorMapClear=byId("m_obj_color_map_clear");
+      const colorMapScaleEl=byId("m_obj_color_map_scale");
+      const syncColorMapScaleEnabled=()=>{
+        if(!colorMapScaleEl) return;
+        const hasMap=Boolean(getChannelPickFieldValue(colorMapEl));
+        colorMapScaleEl.disabled=!hasMap;
+        const wrap=colorMapScaleEl.closest?.(".novaSelect");
+        const btn=wrap?.querySelector?.(".novaSelectBtn");
+        if(btn) btn.disabled=!hasMap;
+      };
       if(colorMapEl){
         bindChannelPickField(
           colorMapEl,
           ()=>getChannelPickFieldValue(colorMapEl),
+          ()=>syncColorMapScaleEnabled(),
         );
       }
       if(colorMapClear && colorMapEl){
@@ -19900,8 +20591,10 @@
           ev.preventDefault();
           ev.stopPropagation();
           setChannelPickFieldValue(colorMapEl, "", { allowEmpty:true });
+          syncColorMapScaleEnabled();
         };
       }
+      syncColorMapScaleEnabled();
       syncIcon();
     }
     function openOverlayStyleModal(o){
@@ -20501,6 +21194,7 @@
         ranges:true,
         objects:true,
         options:true,
+        pages:true,
         chrome:true,
         ...opts,
       };
@@ -20578,6 +21272,7 @@
 
       if(o.objects) renderObjectsList();
       if(o.options) renderOptionsList();
+      if(o.pages) renderPagesList();
       if(o.chrome){
         buildXAxis();
         setPreviewVisible(previewVisible);
@@ -20648,7 +21343,7 @@
         clearChannelOverrideKeys(state.freqOverrides, key);
         clearChannelOverrideKeys(state.unitOverrides, id);
         clearChannelOverrideKeys(state.unitOverrides, key);
-      } else if(kind==="mask"){ state.masks=(state.masks||[]).filter((m)=>m.id!==id); selectedMaskIds.delete(id); } focusedItem=null; renderAll(); saveStateDeferred(); }
+      } else if(kind==="mask"){ state.masks=(state.masks||[]).filter((m)=>m.id!==id); selectedMaskIds.delete(id); } else if(kind==="page"){ deletePage(id); focusedItem=null; return; } focusedItem=null; renderAll(); saveStateDeferred(); }
     async function ingestDataFile(sourceType, filePath, { unitsInHeaders=false, timeIndexChannel=null, ingestMode=null, catalogId=null }={}){
       const body={source_type:sourceType,file_path:filePath,units_in_headers:!!unitsInHeaders,time_index_channel:timeIndexChannel||null};
       // File open / plot path is always temporary into the hidden local catalog.
@@ -23460,7 +24155,10 @@
         document.documentElement.style.setProperty("--nova-accent", chromeAccent());
         document.body.style.background = chromeViewBg();
       }
-      if(opts.skipPlot!==true && latestRows.length) plotRows(latestRows);
+      if(opts.skipPlot!==true){
+        // Refresh every visible tile so theme chrome updates without requiring focus.
+        void refreshVisiblePlotHosts({ all:true });
+      }
     }
     function parseColorway(){
       const fromTheme = appearance.plotTheme && appearance.plotTheme!=="custom" ? (PLOT_THEMES[appearance.plotTheme]||"") : "";
@@ -23703,7 +24401,7 @@
       });
     }
 
-    const TOOLBAR_IDS=["sources","channels","masks","ranges","objects","options","ingestion"];
+    const TOOLBAR_IDS=["sources","channels","masks","ranges","objects","options","pages","ingestion"];
     function applyToolbarUI(){
       const sidebar=byId("sidebar");
       const open=Boolean(activeToolbar);
@@ -23840,6 +24538,12 @@
     });
     if(byId("addRangeMaskBtn")) byId("addRangeMaskBtn").onclick=showAddRangeMaskMenu;
     byId("addRangeBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); void openCreateRangeModal(); });
+    byId("addPageBtn")?.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    });
+    byId("addPageBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); addPage(); });
     byId("rangeDefinitionBtn")?.addEventListener("click", (e)=>{
       e.preventDefault();
       void openRangeDefinitionManagerModal();
