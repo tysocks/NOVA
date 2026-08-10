@@ -179,6 +179,8 @@ Rough 1–5 scores for the stated triad:
 
 **Bottom line:** NOVA is already competitive on **manipulate** for channel telemetry and credible on **visualize** for engineering views. It is far behind on **share**. Closing share/export/project-packaging—and finishing ingestion automation—is the highest-leverage path to becoming the default, without trying to become Grafana.
 
+Concrete next-pass scope (Share, Accessibility, Features, Performance): [implementation-refinement-plan.md](./implementation-refinement-plan.md).
+
 ---
 
 ## 7. Code / product anchors
