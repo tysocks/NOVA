@@ -167,17 +167,19 @@ Priority legend: **P0** blocks “default tool” adoption · **P1** expected by
 
 ---
 
-## 6. Scorecard (current vs “default tool”)
+## Scorecard (current vs “default tool”)
 
 Rough 1–5 scores for the stated triad:
 
-| Pillar | NOVA today | Grafana | DIAdem-class | Target for “default” |
-|--------|------------|---------|--------------|----------------------|
-| Visualize | 3.5 | 4.5 | 4.5 | 4.5 |
-| Manipulate | 4.0 | 2.5 | 5.0 | 4.5 |
-| Share | **1.5** | 4.5 | 3.5 | 4.0 |
+| Pillar | NOVA (pre-refinement) | After refinement pass (this branch) | Grafana | Target |
+|--------|----------------------|--------------------------------------|---------|--------|
+| Visualize | 3.5 | ~4.0 (Bar/Histogram/Stat + linked axes) | 4.5 | 4.5 |
+| Manipulate | 4.0 | ~4.2 (range stitch) | 2.5 | 4.5 |
+| Share | **1.5** | ~3.0 (PNG/clipboard/PDF + manager I/O) | 4.5 | 4.0 |
 
-**Bottom line:** NOVA is already competitive on **manipulate** for channel telemetry and credible on **visualize** for engineering views. It is far behind on **share**. Closing share/export/project-packaging—and finishing ingestion automation—is the highest-leverage path to becoming the default, without trying to become Grafana.
+See [implementation-refinement-plan.md](./implementation-refinement-plan.md) for the concrete pass covering Share, Accessibility, Features, and Performance.
+
+**Bottom line:** Share remains the strategic gap vs Grafana’s URL/RBAC model, but first-class export + library I/O + workflow shortcuts close the “hand a colleague the analysis” hole for desktop use. Next leaps are portable project packages and optional authenticated share links.
 
 ---
 

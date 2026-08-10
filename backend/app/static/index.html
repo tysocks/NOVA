@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="/js/nova-share.js"></script>
   <style>
     :root {
       color-scheme:dark;
@@ -1952,8 +1953,14 @@
     }
     .dbTagChip.dbTagChipRemovable:hover > button{
       opacity:1;
-      transition-delay:0.5s;
+      transition-delay:0.05s;
       pointer-events:auto;
+    }
+    .plotHost{
+      contain: layout style;
+    }
+    .menuDropdown, .contextMenu, .contextSubMenu{
+      transition: none !important;
     }
     .dbTagChip button:hover{ color:var(--nova-text); }
     .dbTagAddBtn{
@@ -2407,11 +2414,19 @@
         <div class="menuAction" id="file_rangeDefinitionManager">Range Definitions</div>
         <div class="menuAction" id="file_limitManager">Limits Manager</div>
         <div class="menuSep"></div>
+        <div class="menuAction" id="file_exportPngPage">Export PNG of page…</div>
+        <div class="menuAction" id="file_exportCopyView">Copy view to clipboard</div>
+        <div class="menuAction" id="file_exportPdf">Export PDF of view…</div>
+        <div class="menuAction" id="file_exportPdfPage">Export PDF of page…</div>
+        <div class="menuSep"></div>
         <div class="menuAction" id="file_preferences">Preferences…</div>
       </div>
     </div>
     <div class="menuItem" data-menu="edit">Edit
       <div class="menuDropdown" id="menu_edit">
+        <div class="menuAction" id="edit_copyChannels">Copy channels</div>
+        <div class="menuAction" id="edit_pasteChannels">Paste channels</div>
+        <div class="menuSep"></div>
         <div class="menuAction" id="edit_showMetadata">Show Metadata</div>
       </div>
     </div>
@@ -2933,8 +2948,15 @@
         clearTimeout(timer);
         timer=setTimeout(()=>{
           try{ if(host.data||host.layout||host._fullLayout) Plotly.Plots.resize(host); }catch{}
-          try{ PlotInteractions.refresh(); }catch{}
-        }, 48);
+          try{
+            if(host.dataset.activeHost==="1") PlotInteractions.refresh();
+          }catch{}
+          try{
+            if(host.dataset.activeHost==="1" && typeof PlotAnalysisTools.syncEditHitLayer==="function"){
+              PlotAnalysisTools.syncEditHitLayer();
+            }
+          }catch{}
+        }, 90);
       });
       host._novaResizeObs=ro;
       ro.observe(host);
@@ -3098,6 +3120,7 @@
         showlegend:layout.showlegend,
       };
       if(layout.dragmode) out.dragmode=layout.dragmode;
+      if(layout.barmode) out.barmode=layout.barmode;
       if(layout.title) out.title=typeof layout.title==="object"?{text:String(layout.title.text||"")}:{text:String(layout.title)};
       // Preserve all axis keys (xaxis2 for PSD+Spectrogram, multi-y, etc.).
       Object.keys(layout||{}).forEach((k)=>{
@@ -3152,6 +3175,40 @@
           if(t._novaChannelKey) o._novaChannelKey=String(t._novaChannelKey);
           return o;
         }
+        const type=String(t?.type||"scatter");
+        if(type==="histogram"){
+          const xs=Array.isArray(t.x)?t.x.filter((v)=>Number.isFinite(Number(v))).map(Number):[];
+          if(!xs.length) return null;
+          const stride=xs.length<=cap?1:Math.ceil(xs.length/cap);
+          const x=stride===1?xs:xs.filter((_,i)=>i%stride===0);
+          const o={
+            type:"histogram",
+            name:String(t.name||"").slice(0,120),
+            x,
+            opacity:Number.isFinite(Number(t.opacity))?Number(t.opacity):0.75,
+            showlegend:t.showlegend!==false,
+          };
+          if(t.marker && typeof t.marker==="object") o.marker={ ...t.marker };
+          if(t._novaSourceKey) o._novaSourceKey=String(t._novaSourceKey);
+          if(t._novaChannelKey) o._novaChannelKey=String(t._novaChannelKey);
+          return o;
+        }
+        if(type==="bar"){
+          const n=Math.min(t.x?.length||0, t.y?.length||0);
+          if(!n) return null;
+          const o={
+            type:"bar",
+            name:String(t.name||"").slice(0,120),
+            x:Array.from({length:n},(_,i)=>t.x[i]),
+            y:Array.from({length:n},(_,i)=>Number(t.y[i])).map((v)=>Number.isFinite(v)?v:null),
+            showlegend:t.showlegend!==false,
+          };
+          if(t.marker && typeof t.marker==="object") o.marker={ ...t.marker };
+          if(t.error_y && typeof t.error_y==="object") o.error_y=t.error_y;
+          if(t._novaSourceKey) o._novaSourceKey=String(t._novaSourceKey);
+          if(t._novaChannelKey) o._novaChannelKey=String(t._novaChannelKey);
+          return o;
+        }
         const xy=coercePlotSeries(t.x, t.y, cap);
         const o={
           type:t.type||"scatter",
@@ -3195,7 +3252,12 @@
         if(t._novaStyle && typeof t._novaStyle==="object") o._novaStyle=t._novaStyle;
         if(t.meta && typeof t.meta==="object" && !Array.isArray(t.meta)) o.meta=t.meta;
         return o;
-      }).filter((t)=>t && ((t.type==="heatmap" && Array.isArray(t.z) && t.z.length) || (t.x&&t.x.length>0)));
+      }).filter((t)=>t && (
+        (t.type==="heatmap" && Array.isArray(t.z) && t.z.length)
+        || (t.type==="histogram" && Array.isArray(t.x) && t.x.length)
+        || (t.type==="bar" && Array.isArray(t.x) && t.x.length)
+        || (t.x&&t.x.length>0)
+      ));
     }
     function destroyChartHost(host){
       const el=host||getPlotDiv();
@@ -4095,9 +4157,23 @@
         e.preventDefault();
         e.stopPropagation();
         const factor = e.deltaY < 0 ? 0.85 : 1.18;
+        // Ctrl+wheel → X-only; Shift+wheel → Y-only; plain wheel → both (or axis under cursor).
+        const ctrlOnly = Boolean(e.ctrlKey || e.metaKey) && !e.shiftKey;
+        const shiftOnly = Boolean(e.shiftKey) && !(e.ctrlKey || e.metaKey);
         if(axisKey === "xaxis") zoomXAxis(factor, c.x);
-        else if(axisKey) zoomYAxis(axisKey, factor, c.y);
-        else zoomPlotArea(factor, c.x, c.y);
+        else if(axisKey){
+          if(ctrlOnly) zoomXAxis(factor, c.x);
+          else zoomYAxis(axisKey, factor, c.y);
+        }else if(ctrlOnly){
+          zoomXAxis(factor, c.x);
+        }else if(shiftOnly){
+          const gd = graphDiv();
+          for(const yKey of plotYAxisKeys(gd)){
+            zoomYAxis(yKey, factor, c.y);
+          }
+        }else{
+          zoomPlotArea(factor, c.x, c.y);
+        }
       }
 
       function onMouseDown(e){
@@ -6351,7 +6427,19 @@
           { label:"Define Range", action:()=>armTool("define-range") },
           { label:"Align", submenu:[
             { label:"Align Ranges", action:()=>{ if(typeof alignSelectedRangesOnPlot === "function") void alignSelectedRangesOnPlot(); } },
+            { label:"Stitch Ranges (tip-to-tail)", action:()=>{ if(typeof stitchSelectedRangesOnPlot === "function") void stitchSelectedRangesOnPlot(); } },
             { label:"Toggle Mode", action:()=>{ if(typeof togglePlotTimeMode === "function") void togglePlotTimeMode(); } },
+          ]},
+          { sep:true },
+          { label:"Export", submenu:[
+            { label:"Copy view to clipboard", action:()=>{ if(typeof exportActiveViewToClipboard === "function") void exportActiveViewToClipboard(); } },
+            { label:"PNG of page…", action:()=>{ if(typeof exportPagePng === "function") void exportPagePng(); } },
+            { label:"PDF of view…", action:()=>{ if(typeof exportActiveViewPdf === "function") void exportActiveViewPdf(); } },
+          ]},
+          { label:"Link Axes", submenu:[
+            { label:"Link X with siblings", action:()=>{ if(typeof toggleActivePlotAxisLink === "function") toggleActivePlotAxisLink("x"); } },
+            { label:"Link Y with siblings", action:()=>{ if(typeof toggleActivePlotAxisLink === "function") toggleActivePlotAxisLink("y"); } },
+            { label:"Unlink axes", action:()=>{ if(typeof clearActivePlotAxisLink === "function") clearActivePlotAxisLink(); } },
           ]},
         ]);
       }
@@ -10216,6 +10304,32 @@
         }
       };
 
+      const importDatabases = async () => {
+        const obj = await pickDatabaseJsonFile();
+        if (!obj) return;
+        const imported = normalizeImportedDatabaseLibrary(obj);
+        if (!imported.length) {
+          setStatus("No valid databases found in import file.", true);
+          return;
+        }
+        library = [...imported, ...library];
+        const ok = await persistLibrary();
+        if (ok) {
+          setStatus(`Imported ${imported.length} database(s).`);
+          renderList();
+        } else {
+          await refreshFromServer();
+        }
+      };
+
+      const exportDatabases = async () => {
+        const payload = { databases: library };
+        const result = await saveJsonToFile("nova_database_library.json", payload);
+        if (result.ok && result.viaPicker) setStatus("Database library exported.");
+        if (result.ok && !result.viaPicker) setStatus("Database library downloaded (save dialog unavailable).");
+        if (!result.ok && result.cancelled) setStatus("Database library export cancelled.");
+      };
+
       const renderList = () => {
         const el = byId("m_db_list");
         if (!el) return;
@@ -10249,6 +10363,9 @@
                 label: "Delete",
                 action: () => { void deleteProfile(id); },
               },
+              { sep: true },
+              { label: "Import databases...", action: () => { void importDatabases(); } },
+              { label: "Export databases...", action: () => { void exportDatabases(); } },
             ];
             showContextMenu(ev.clientX, ev.clientY, items, { zIndex: z });
           };
@@ -10318,6 +10435,19 @@
           onSaved: () => { void refreshFromServer(); },
         });
       };
+      const dbListHost = byId("m_db_list");
+      if (dbListHost) {
+        dbListHost.oncontextmenu = (ev) => {
+          if (ev.target.closest && ev.target.closest(".selectRow[data-id]")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const z = Math.max(200, appWindowZ + 15);
+          showContextMenu(ev.clientX, ev.clientY, [
+            { label: "Import databases...", action: () => { void importDatabases(); } },
+            { label: "Export databases...", action: () => { void exportDatabases(); } },
+          ], { zIndex: z });
+        };
+      }
 
       renderList();
     }
@@ -10819,6 +10949,9 @@
       { id:"time", label:"Time Scope" },
       { id:"parametric", label:"Parametric" },
       { id:"spectral", label:"Spectral" },
+      { id:"bar", label:"Bar" },
+      { id:"histogram", label:"Histogram" },
+      { id:"stat", label:"Stat" },
       { id:"summary", label:"Summary" },
       { id:"legend", label:"Legend" },
     ];
@@ -10895,14 +11028,14 @@
     }
     function isPlotlyViewType(v){
       const t=normalizeViewType(v);
-      return t==="time" || t==="parametric" || t==="spectral";
+      return t==="time" || t==="parametric" || t==="spectral" || t==="bar" || t==="histogram";
     }
     function viewUsesTimeRangeAxis(plot){
       return normalizeViewType(plot?.viewType)==="time";
     }
     function isStubViewType(v){
       const t=normalizeViewType(v);
-      return t==="summary" || t==="legend";
+      return t==="summary" || t==="legend" || t==="stat";
     }
     function syncLegendToActivePlot(layout){
       const plot=getActivePlot();
@@ -11048,6 +11181,7 @@
         parametric:{ xChannelId:"" },
         spectral:defaultSpectralConfig(),
         summary:defaultSummaryConfig(),
+        axisLink:{ x:false, y:false, group:"default" },
       };
     }
     function defaultSpectralConfig(){
@@ -11429,6 +11563,7 @@
           : undefined,
         spectral: normalizeSpectralConfig(p.spectral),
         summary: normalizeSummaryConfig(p.summary),
+        axisLink: normalizeAxisLink(p.axisLink),
       };
     }
     function buildConfigPayload(){
@@ -11638,6 +11773,195 @@
         return { ok: false, cancelled: false };
       }
     }
+
+    // --- Share / clipboard / axis-link helpers ---
+    let channelClipboard=null;
+    function activePlotlyGraph(){
+      const host=getPlotDiv();
+      return plotlyGraphDiv(host);
+    }
+    async function exportPagePng(){
+      try{
+        const ws=byId("plotWorkspace");
+        await window.NovaShare.exportWorkspacePng(ws);
+        setStatus("Exported page PNG.");
+      }catch(err){
+        setStatus(`PNG export failed: ${err}`, true);
+      }
+    }
+    async function exportActiveViewToClipboard(){
+      try{
+        const gd=activePlotlyGraph();
+        if(!gd) throw new Error("No active plot view");
+        const result=await window.NovaShare.copyPlotPng(gd);
+        setStatus(result.via==="clipboard" ? "Copied view to clipboard." : "Clipboard unavailable — downloaded PNG instead.");
+      }catch(err){
+        setStatus(`Copy view failed: ${err}`, true);
+      }
+    }
+    async function exportActiveViewPdf(){
+      try{
+        const gd=activePlotlyGraph();
+        if(!gd) throw new Error("No active plot view");
+        await window.NovaShare.exportPlotPdf(gd);
+        setStatus("Exported view PDF.");
+      }catch(err){
+        setStatus(`PDF export failed: ${err}`, true);
+      }
+    }
+    async function exportPagePdf(){
+      try{
+        const ws=byId("plotWorkspace");
+        await window.NovaShare.exportWorkspacePdf(ws);
+        setStatus("Exported page PDF.");
+      }catch(err){
+        setStatus(`PDF export failed: ${err}`, true);
+      }
+    }
+    function normalizeAxisLink(raw){
+      const src=raw && typeof raw==="object" ? raw : {};
+      return {
+        x:Boolean(src.x),
+        y:Boolean(src.y),
+        group:String(src.group||"default"),
+      };
+    }
+    function getPlotAxisLink(plot){
+      return normalizeAxisLink(plot?.axisLink);
+    }
+    function toggleActivePlotAxisLink(axis){
+      const p=getActivePlot();
+      if(!p) return;
+      const link=getPlotAxisLink(p);
+      if(axis==="x") link.x=!link.x;
+      if(axis==="y") link.y=!link.y;
+      p.axisLink=link;
+      savePlots();
+      setStatus(`Axis link ${axis.toUpperCase()}: ${link[axis]?"on":"off"} (group ${link.group}).`);
+    }
+    function clearActivePlotAxisLink(){
+      const p=getActivePlot();
+      if(!p) return;
+      p.axisLink={ x:false, y:false, group:"default" };
+      savePlots();
+      setStatus("Axis links cleared for active view.");
+    }
+    function propagateLinkedAxisRelayout(sourcePlotId, locks){
+      if(!hasAxisLocks(locks)) return;
+      const source=plots.find((p)=>p.id===sourcePlotId);
+      if(!source) return;
+      const link=getPlotAxisLink(source);
+      if(!link.x && !link.y) return;
+      const group=link.group||"default";
+      plots.forEach((p)=>{
+        if(!p || p.id===sourcePlotId) return;
+        const other=getPlotAxisLink(p);
+        if((other.group||"default")!==group) return;
+        if(!((link.x && other.x) || (link.y && other.y))) return;
+        const host=document.getElementById(`plot-${p.id}`);
+        const gd=plotlyGraphDiv(host);
+        if(!gd) return;
+        const patch={};
+        if(link.x && other.x && locks.xRange?.length===2){
+          patch["xaxis.autorange"]=false;
+          patch["xaxis.range[0]"]=locks.xRange[0];
+          patch["xaxis.range[1]"]=locks.xRange[1];
+          p._savedAxisLocks=p._savedAxisLocks||{};
+          p._savedAxisLocks.xRange=locks.xRange.slice();
+        }
+        if(link.y && other.y && locks.yRanges){
+          Object.keys(locks.yRanges).forEach((axisKey)=>{
+            const r=locks.yRanges[axisKey];
+            if(!r||r.length!==2) return;
+            patch[`${axisKey}.autorange`]=false;
+            patch[`${axisKey}.range[0]`]=r[0];
+            patch[`${axisKey}.range[1]`]=r[1];
+          });
+          p._savedAxisLocks=p._savedAxisLocks||{ xRange:null, yRanges:{} };
+          p._savedAxisLocks.yRanges={ ...(p._savedAxisLocks.yRanges||{}), ...locks.yRanges };
+        }
+        if(Object.keys(patch).length){
+          withSuppressedZoomRelayout(()=>{ try{ Plotly.relayout(gd, patch); }catch{} });
+        }
+      });
+    }
+    function copySelectedChannelsToClipboard(){
+      const ids=[...selectedChannelIds];
+      if(!ids.length){
+        // Empty selection = all channels in the list.
+        ids.push(...(state.channels||[]).map((c)=>c.id).filter(Boolean));
+      }
+      if(!ids.length){
+        setStatus("No channels to copy.", true);
+        return;
+      }
+      const calcIds=new Set((state.calculatedChannels||[]).map((c)=>c.id));
+      const aliasKeys=new Set((state.channelAliases||[]).map((a)=>a.name));
+      channelClipboard={
+        channelIds:ids.slice(),
+        calculated:structuredClone((state.calculatedChannels||[]).filter((c)=>ids.includes(c.id)||ids.includes(c.name))),
+        aliases:structuredClone((state.channelAliases||[]).filter((a)=>ids.includes(a.name)||aliasKeys.has(a.name)&&ids.some((id)=>id===a.name))),
+        at:Date.now(),
+      };
+      // Also include aliases whose members were selected.
+      const memberAlias=(state.channelAliases||[]).filter((a)=>{
+        const members=aliasMemberNames(a)||[];
+        return members.some((m)=>ids.includes(m) || ids.some((id)=>(channelKeyFromId(id)||id)===m));
+      });
+      if(memberAlias.length){
+        const byName=new Map((channelClipboard.aliases||[]).map((a)=>[a.name,a]));
+        memberAlias.forEach((a)=>byName.set(a.name, structuredClone(a)));
+        channelClipboard.aliases=[...byName.values()];
+      }
+      setStatus(`Copied ${ids.length} channel(s).`);
+    }
+    function pasteChannelsFromClipboard(){
+      if(!channelClipboard?.channelIds?.length){
+        setStatus("Channel clipboard is empty.", true);
+        return;
+      }
+      const p=getActivePlot();
+      (channelClipboard.calculated||[]).forEach((c)=>{
+        if(!c) return;
+        const exists=(state.calculatedChannels||[]).some((x)=>x.id===c.id || x.name===c.name);
+        if(!exists) state.calculatedChannels.push(structuredClone(c));
+      });
+      (channelClipboard.aliases||[]).forEach((a)=>{
+        if(!a?.name) return;
+        const exists=(state.channelAliases||[]).some((x)=>x.name===a.name);
+        if(!exists) state.channelAliases.push(structuredClone(a));
+      });
+      channelClipboard.channelIds.forEach((id)=>{
+        if(!id) return;
+        addedChannelIds.add(id);
+        selectedChannelIds.add(id);
+      });
+      try{ sanitizeAliasedChannelLists(); }catch{}
+      persistFocusedViewSelections();
+      if(p){
+        p.selections=snapshotSelections();
+        savePlots();
+      }
+      renderAll();
+      saveStateDeferred();
+      setStatus(`Pasted ${channelClipboard.channelIds.length} channel(s) into active view.`);
+    }
+    function resetActivePlotZoom(){
+      const gd=activePlotlyGraph();
+      if(!gd || !window.Plotly){
+        setStatus("No active plot to reset.", true);
+        return;
+      }
+      suppressZoomRelayout+=1;
+      void Plotly.relayout(gd, {
+        "xaxis.autorange":true,
+        "yaxis.autorange":true,
+      }).finally(()=>{
+        setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 60);
+      });
+      setStatus("Reset plot zoom.");
+    }
+
     function pickConfigJsonFile(){
       return new Promise((resolve)=>{
         const picker=byId("filePicker");
@@ -13171,6 +13495,26 @@
         setStatus(`Deleted limit '${removed?.name||id}'.`);
         renderList();
       };
+      const importLimits=async()=>{
+        const obj=await pickConfigJsonFile();
+        if(!obj) return;
+        const imported=normalizeLimitLibrary(obj);
+        if(!imported.length){
+          setStatus("No valid limits found in import file.", true);
+          return;
+        }
+        library=[...imported, ...library];
+        persistLibrary();
+        setStatus(`Imported ${imported.length} limit(s).`);
+        renderList();
+      };
+      const exportLimits=async()=>{
+        const payload={ limits:library };
+        const result=await saveJsonToFile("nova_limit_library.json", payload);
+        if(result.ok&&result.viaPicker) setStatus("Limits library exported.");
+        if(result.ok&&!result.viaPicker) setStatus("Limits library downloaded.");
+        if(!result.ok&&result.cancelled) setStatus("Limits export cancelled.");
+      };
       const renderList=()=>{
         const el=byId("m_lim_list");
         if(!el) return;
@@ -13189,6 +13533,9 @@
             showContextMenu(ev.clientX, ev.clientY, [
               { label:"Edit", action:()=>{ setTimeout(()=>openLimitForm({ mode:"edit", limit:lim, onSaved:()=>{ library=structuredClone(limitLibrary||[]); renderList(); } }), 0); } },
               { label:"Delete", action:()=>deleteLim(id) },
+              { sep:true },
+              { label:"Import limits...", action:()=>{ void importLimits(); } },
+              { label:"Export limits...", action:()=>{ void exportLimits(); } },
             ], { zIndex:z });
           };
           row.ondblclick=()=>{
@@ -13215,6 +13562,19 @@
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
         setTimeout(()=>openLimitForm({ mode:"create", onSaved:()=>{ library=structuredClone(limitLibrary||[]); renderList(); } }), 0);
       };
+      const limListHost=byId("m_lim_list");
+      if(limListHost){
+        limListHost.oncontextmenu=(ev)=>{
+          if(ev.target.closest && ev.target.closest(".selectRow[data-id]")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const z=Math.max(200, appWindowZ+15);
+          showContextMenu(ev.clientX, ev.clientY, [
+            { label:"Import limits...", action:()=>{ void importLimits(); } },
+            { label:"Export limits...", action:()=>{ void exportLimits(); } },
+          ], { zIndex:z });
+        };
+      }
       renderList();
     }
 
@@ -13232,7 +13592,7 @@
       if(!pid) return false;
       const p=plots.find((x)=>x.id===pid);
       const vt=normalizeViewType(p?.viewType);
-      return vt==="legend" || vt==="summary";
+      return vt==="legend" || vt==="summary" || vt==="stat";
     }
     function splitAllowsFreeResize(splitNode){
       if(!splitNode || splitNode.kind!=="split") return false;
@@ -13520,6 +13880,7 @@
               : { xChannelId:"" },
             spectral:normalizeSpectralConfig(p.spectral),
             summary:normalizeSummaryConfig(p.summary),
+            axisLink:normalizeAxisLink(p.axisLink),
           };
         });
         activePlotId = s.activePlotId || (plots[0]?.id || null);
@@ -13586,6 +13947,7 @@
         parametric:structuredClone(p.parametric||{ xChannelId:"" }),
         spectral:structuredClone(normalizeSpectralConfig(p.spectral)),
         summary:structuredClone(normalizeSummaryConfig(p.summary)),
+        axisLink:normalizeAxisLink(p.axisLink),
       };
       plots.push(copy);
       const leaf=findLeafContainingPlot(plotLayout, id) || findFocusedLeaf();
@@ -13891,7 +14253,7 @@
         if(!p) return;
         const vt=normalizeViewType(p.viewType);
         // Legend tiles only mirror chart views that hide their in-plot legend.
-        if(vt!=="time" && vt!=="parametric" && vt!=="spectral") return;
+        if(vt!=="time" && vt!=="parametric" && vt!=="spectral" && vt!=="bar" && vt!=="histogram") return;
         if(getPlotOptions(p).showLegend!==false) return;
         const host=document.getElementById(`plot-${pid}`);
         const gd=plotlyGraphDiv(host);
@@ -14041,6 +14403,10 @@
       }
       if(type==="summary"){
         renderSummaryPlot(host, plot);
+        return;
+      }
+      if(type==="stat"){
+        renderStatPlot(host, plot);
         return;
       }
       if(type==="legend"){
@@ -14265,6 +14631,13 @@
           showContextMenu(e.clientX,e.clientY,[
             {label:"Rename...", action:()=>renamePlot(p.id)},
             {label:"Duplicate", action:()=>duplicatePlot(p.id)},
+            {sep:true},
+            {label:"Copy view to clipboard", action:()=>{ switchPlot(p.id); void exportActiveViewToClipboard(); }},
+            {label:"Export PDF of view…", action:()=>{ switchPlot(p.id); void exportActiveViewPdf(); }},
+            {sep:true},
+            {label:"Link X axis", action:()=>{ switchPlot(p.id); toggleActivePlotAxisLink("x"); }, checked:Boolean(getPlotAxisLink(p).x)},
+            {label:"Link Y axis", action:()=>{ switchPlot(p.id); toggleActivePlotAxisLink("y"); }, checked:Boolean(getPlotAxisLink(p).y)},
+            {sep:true},
             {label:"Close", action:()=>closePlot(p.id)},
           ]);
         };
@@ -14985,6 +15358,8 @@
           if(kind==="channel"){
             const menuItems=[];
             menuItems.push({label:"Edit",action:()=>editChannel(it.id)});
+            menuItems.push({label:"Copy channel(s)",action:()=>copySelectedChannelsToClipboard()});
+            menuItems.push({label:"Paste channel(s)",action:()=>pasteChannelsFromClipboard()});
             if(!it.isCalculated && !it.isAlias){
               menuItems.push({label:"Create Alias",action:()=>showCreateChannelAliasModal(selectedRawChannelSeeds(it.id))});
               const aliases=(state.channelAliases||[]).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
@@ -14998,6 +15373,7 @@
                 });
               }
             }
+            menuItems.push({sep:true});
             menuItems.push({label:"Delete",action:deleteFocused});
             showContextMenu(ev.clientX,ev.clientY,menuItems);
             return;
@@ -15280,7 +15656,7 @@
       plotProgrammaticUpdate=true;
       suppressZoomRelayout+=8;
     }
-    function endPlotProgrammaticUpdate(ms=800){
+    function endPlotProgrammaticUpdate(ms=220){
       setTimeout(()=>{
         suppressZoomRelayout=Math.max(0,suppressZoomRelayout-8);
         plotProgrammaticUpdate=false;
@@ -15289,7 +15665,7 @@
     function withSuppressedZoomRelayout(fn){
       suppressZoomRelayout+=1;
       try{ fn(); }finally{
-        setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 120);
+        setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 60);
       }
     }
     function applyPlotAxisLocks(gd, locks){
@@ -16686,6 +17062,149 @@
       });
     }
 
+    function channelValuesFromRows(rows, channelKey){
+      const key=channelKeyFromId(channelKey)||String(channelKey||"");
+      const out=[];
+      (rows||[]).forEach((r)=>{
+        const name=String(r.channel_name||"");
+        const id=`${r.__dbId}|${name}`;
+        if(key && name!==key && id!==key && (channelKeyFromId(id)||id)!==key) return;
+        const rawUnit=getChannelSourceUnit(id, r.unit);
+        const yvBase=Number(r.value);
+        const yv=Number.isFinite(yvBase)?convertValueToPreferred(yvBase, rawUnit):yvBase;
+        if(Number.isFinite(yv)) out.push(yv);
+      });
+      return out;
+    }
+    function aggregateChannelStats(rows){
+      const grouped=new Map();
+      (rows||[]).forEach((r)=>{
+        const name=legendKeyForRow(r);
+        if(!grouped.has(name)) grouped.set(name, []);
+        const rawUnit=getChannelSourceUnit(`${r.__dbId}|${r.channel_name}`, r.unit);
+        const yvBase=Number(r.value);
+        const yv=Number.isFinite(yvBase)?convertValueToPreferred(yvBase, rawUnit):yvBase;
+        if(Number.isFinite(yv)) grouped.get(name).push(yv);
+      });
+      const stats=[];
+      grouped.forEach((vals, name)=>{
+        if(!vals.length) return;
+        let sum=0, min=vals[0], max=vals[0];
+        vals.forEach((v)=>{ sum+=v; if(v<min) min=v; if(v>max) max=v; });
+        const mean=sum/vals.length;
+        stats.push({ name, count:vals.length, mean, min, max, last:vals[vals.length-1], values:vals });
+      });
+      return stats;
+    }
+    function renderStatPlot(host, plot){
+      if(!host || !plot) return;
+      try{ destroyChartHost(host); }catch{}
+      const rows=(plot.id===activePlotId)?latestRows:(plot.latestRows||[]);
+      const stats=aggregateChannelStats(rows);
+      if(!stats.length){
+        host.innerHTML=`<div class="plotStub"><div class="summaryEmpty">Load channels to show Stat tiles.</div></div>`;
+        return;
+      }
+      const tiles=stats.slice(0, 12).map((s)=>{
+        const primary=Number.isFinite(s.mean)?s.mean:s.last;
+        return `<div class="summaryMetricCard statTile">
+          <div class="itemMeta">${escapeHtml(s.name)}</div>
+          <div style="font-size:1.6rem;font-weight:600;letter-spacing:-0.02em;margin:4px 0;">${escapeHtml(formatStatNumber(primary))}</div>
+          <div class="itemMeta">min ${escapeHtml(formatStatNumber(s.min))} · max ${escapeHtml(formatStatNumber(s.max))} · n ${s.count}</div>
+        </div>`;
+      }).join("");
+      host.innerHTML=`<div class="plotStub" style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-content:start;">${tiles}</div>`;
+    }
+    function formatStatNumber(v){
+      const n=Number(v);
+      if(!Number.isFinite(n)) return "—";
+      const abs=Math.abs(n);
+      if(abs>=1000 || abs===0) return n.toPrecision(4);
+      if(abs>=1) return n.toFixed(3).replace(/\.?0+$/,"");
+      return n.toPrecision(4);
+    }
+    async function plotAggregateChartRows(rows, plotOpts={}, mode="bar"){
+      const targetPlotId=plotOpts.plotId || drawingPlotId || activePlotId;
+      const targetPlot=plots.find((p)=>p.id===targetPlotId) || getActivePlot();
+      const prevDrawing=drawingPlotId;
+      drawingPlotId=targetPlotId;
+      try{
+        const stats=aggregateChannelStats(rows);
+        if(!stats.length){
+          const host=getPlotDiv(targetPlotId);
+          try{ destroyChartHost(host); }catch{}
+          if(host) host.replaceChildren();
+          return;
+        }
+        const colorway=parseColorway();
+        let traces=[];
+        if(mode==="histogram"){
+          traces=stats.map((s, i)=>({
+            type:"histogram",
+            name:s.name,
+            x:s.values,
+            opacity:0.75,
+            marker:{ color:colorway[i % colorway.length] },
+            _novaSourceKey:s.name,
+            _novaChannelKey:s.name,
+          }));
+        }else{
+          traces=[{
+            type:"bar",
+            name:"mean",
+            x:stats.map((s)=>s.name),
+            y:stats.map((s)=>s.mean),
+            marker:{ color:stats.map((_, i)=>colorway[i % colorway.length]) },
+            error_y:{
+              type:"data",
+              array:stats.map((s)=>Math.max(0, s.max-s.mean)),
+              arrayminus:stats.map((s)=>Math.max(0, s.mean-s.min)),
+              visible:true,
+            },
+            _novaSourceKey:"bar:mean",
+          }];
+        }
+        const drawOpts=resolvePlotDrawOptions(targetPlot);
+        const layoutOut={
+          autosize:true,
+          margin:{ l:56, r:24, t: drawOpts.title ? 36 : 20, b: mode==="bar" ? 80 : 48 },
+          paper_bgcolor:chromeViewBg(),
+          plot_bgcolor:chromeViewBg(),
+          font:{ color:plotInk(), size:Number(drawOpts.axisTickSize||10) },
+          showlegend:drawOpts.showLegend!==false && mode==="histogram",
+          barmode: mode==="histogram" ? "overlay" : "group",
+          title: drawOpts.title ? { text:String(drawOpts.title) } : undefined,
+          xaxis:{
+            title: mode==="bar" ? "Channel" : "Value",
+            showgrid:drawOpts.showGrid!==false,
+            zeroline:false,
+            color:plotInk(),
+            tickangle: mode==="bar" ? -30 : 0,
+          },
+          yaxis:{
+            title: mode==="bar" ? "Mean (display units)" : "Count",
+            showgrid:drawOpts.showGrid!==false,
+            zeroline:false,
+            color:plotInk(),
+          },
+          uirevision: plotUiRevision(targetPlotId),
+        };
+        const plotEl=getPlotDiv(targetPlotId);
+        await plotlyReactDraw(traces, layoutOut, {
+          unitCount:1,
+          forceFullRebuild:plotOpts.resetView===true,
+          dataOnly:false,
+        });
+        try{ PlotInteractions.install(plotEl); }catch{}
+        try{ PlotAnalysisTools.install(plotEl); }catch{}
+        if(targetPlot){
+          targetPlot.latestRows=rows;
+        }
+      }finally{
+        drawingPlotId=prevDrawing;
+      }
+    }
+
     async function plotRows(rows, plotOpts={}){
       const targetPlotId=plotOpts.plotId || drawingPlotId || activePlotId;
       const targetPlot=plots.find((p)=>p.id===targetPlotId) || getActivePlot();
@@ -16695,6 +17214,9 @@
       }
       if(vt==="spectral"){
         return plotSpectralRows(targetPlot, plotOpts);
+      }
+      if(vt==="bar" || vt==="histogram"){
+        return plotAggregateChartRows(rows, plotOpts, vt);
       }
       if(targetPlot && isStubViewType(vt)){
         const host=getPlotDiv(targetPlotId);
@@ -17231,6 +17753,69 @@
       renderAll();
       saveState();
       setStatus(`Aligned ${applied} sources to selected range starts (t0 mode).`);
+    }
+    async function stitchSelectedRangesOnPlot(){
+      const selected=getSelectedRanges();
+      if(selected.length<2){
+        setStatus("Select at least two ranges to stitch tip-to-tail.", true);
+        return;
+      }
+      // Preserve selection order; fall back to start time.
+      const ordered=selected.slice().sort((a,b)=>{
+        const ta=Date.parse(String(a.start_time||""))||0;
+        const tb=Date.parse(String(b.start_time||""))||0;
+        return ta-tb;
+      });
+      let cursorSec=0;
+      let applied=0;
+      const usedSources=new Set();
+      for(const range of ordered){
+        const sid=String(range.source_id||resolveRangeSourceId(range)||"");
+        const src=state.sources.find((s)=>String(s.id)===sid);
+        if(!src){
+          setStatus(`Range "${range.name||range.range_id}" has no source.`, true);
+          continue;
+        }
+        if(usedSources.has(sid)){
+          setStatus("Stitch uses one range per source. Deselect extras.", true);
+          return;
+        }
+        const startMs=Date.parse(String(range.start_time||""));
+        const endMs=Date.parse(String(range.end_time||""));
+        if(!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs<=startMs){
+          setStatus(`Range "${range.name||range.range_id}" needs valid From/To times.`, true);
+          return;
+        }
+        const durationSec=(endMs-startMs)/1000;
+        // Map range start → cursorSec on relative axis: t0 = start - cursor.
+        src.t0_utc=new Date(startMs - cursorSec*1000).toISOString();
+        src.timeRef="t0_relative";
+        usedSources.add(sid);
+        cursorSec+=durationSec;
+        applied+=1;
+      }
+      if(applied<2) return;
+      plotTimeMode="t0_relative";
+      (state.sources||[]).forEach((src)=>{
+        if(src?.t0_utc) src.timeRef="t0_relative";
+      });
+      if(latestRows.length) await plotRows(latestRows, { preserveUi:false, resetView:true });
+      // Zoom to the stitched span [0, total].
+      try{
+        const gd=plotlyGraphDiv();
+        if(gd && window.Plotly && cursorSec>0){
+          suppressZoomRelayout+=1;
+          await Plotly.relayout(gd, {
+            "xaxis.autorange":false,
+            "xaxis.range[0]":0,
+            "xaxis.range[1]":cursorSec,
+          });
+          setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-1); }, 60);
+        }
+      }catch{}
+      renderAll();
+      saveState();
+      setStatus(`Stitched ${applied} ranges tip-to-tail (${cursorSec.toFixed(3)} s).`);
     }
     function sourceIconKindForRanges(src){
       if(!src) return "file";
@@ -18204,6 +18789,10 @@
           if(!isSourceRange(item)){
             menu.push({ label:"Delete", action:()=>void deleteUnifiedRange(item) });
           }
+          menu.push({ sep:true });
+          menu.push({ label:"Align Ranges", action:()=>void alignSelectedRangesOnPlot() });
+          menu.push({ label:"Stitch Ranges (tip-to-tail)", action:()=>void stitchSelectedRangesOnPlot() });
+          menu.push({ label:"Zoom to range", action:()=>{ ensureRangeSelected(item); tryZoomToSelectedRange(); } });
           showContextMenu(ev.clientX, ev.clientY, menu);
         };
         if(row.getAttribute("data-source-range")==="1"){
@@ -19182,8 +19771,12 @@
       const isChart=isPlotlyViewType(vt);
       const isParametric=vt==="parametric";
       const isSpectral=vt==="spectral";
+      const isBar=vt==="bar";
+      const isHistogram=vt==="histogram";
+      const isStat=vt==="stat";
       const isSummary=vt==="summary";
       const isLegend=vt==="legend";
+      const link=getPlotAxisLink(plot);
       const viewOpts=VIEW_TYPES.map((t)=>`<option value="${t.id}" ${vt===t.id?"selected":""}>${escapeHtml(t.label)}</option>`).join("");
       const boolSelect=(id, on)=>`<select id="${escAttr(id)}" class="objPropControl" data-opt="${escAttr(id)}">
         <option value="true" ${on?"selected":""}>True</option>
@@ -19210,7 +19803,9 @@
       const viewRows=`
           ${propRow("Name", `<input id="opt_name" class="objPropControl" type="text" value="${escAttr(plot.name||"")}" spellcheck="false" />`)}
           ${propRow("View Type", `<select id="opt_viewType" class="objPropControl">${viewOpts}</select>`)}
-          ${propRow("Show Tabs", boolSelect("opt_showTabs", opts.showTabs!==false))}`;
+          ${propRow("Show Tabs", boolSelect("opt_showTabs", opts.showTabs!==false))}
+          ${propRow("Link X Axis", boolSelect("opt_linkX", link.x))}
+          ${propRow("Link Y Axis", boolSelect("opt_linkY", link.y))}`;
 
       const plotRows=isChart ? `
           ${propRow("Title", `<input id="opt_title" class="objPropControl" type="text" value="${escAttr(opts.title||"")}" placeholder="Optional" spellcheck="false" />`)}
@@ -19249,6 +19844,13 @@
           ${propRow("Row Height", `<input id="opt_summaryRowHeight" class="objPropControl" type="number" step="1" min="24" max="56" value="${opts.summaryRowHeight}" />`)}
         `);
       }
+      const chartHintBody=(isBar || isHistogram || isStat)
+        ? tableWrap(`<div class="itemMeta" style="padding:6px 2px;">${
+            isBar ? "Bar shows per-channel mean with min/max error bars from loaded data."
+            : isHistogram ? "Histogram shows value distributions for selected channels."
+            : "Stat tiles show mean / min / max for selected channels."
+          }</div>`)
+        : "";
 
       const legendRows=isLegend ? `
           ${propRow("Font Size", `<input id="opt_legendFontSize" class="objPropControl" type="number" step="1" min="8" max="36" value="${opts.legendFontSize}" />`)}
@@ -19262,6 +19864,7 @@
         ${sectionHtml("timescope", "Timescope", timescopeRows ? tableWrap(timescopeRows) : "")}
         ${sectionHtml("parametric", "Parametric", parametricRows ? tableWrap(parametricRows) : "")}
         ${sectionHtml("spectral", "Spectral", spectralRows ? tableWrap(spectralRows) : "")}
+        ${sectionHtml("aggregate", isBar?"Bar":(isHistogram?"Histogram":"Stat"), chartHintBody)}
         ${sectionHtml("summary", "Summary", summaryBody)}
         ${sectionHtml("legend", "Legend", legendRows ? tableWrap(legendRows) : "")}
       </div>`;
@@ -19290,6 +19893,11 @@
           if(isSummary){
             const host=document.getElementById(`plot-${plot.id}`);
             if(host) renderSummaryPlot(host, plot);
+            return;
+          }
+          if(isStat){
+            const host=document.getElementById(`plot-${plot.id}`);
+            if(host) renderStatPlot(host, plot);
             return;
           }
           void refreshActivePlotHost({ soft:false, preserveUi:true }).then(()=>{
@@ -19399,6 +20007,16 @@
       byId("opt_name")?.addEventListener("change", applyName);
       byId("opt_name")?.addEventListener("keydown",(ev)=>{ if(ev.key==="Enter"){ ev.preventDefault(); applyName(); } });
       byId("opt_viewType")?.addEventListener("change", applyViewType);
+      byId("opt_linkX")?.addEventListener("change", ()=>{
+        plot.axisLink=normalizeAxisLink({ ...getPlotAxisLink(plot), x:String(byId("opt_linkX").value||"false")!=="false" });
+        savePlots();
+        setStatus(`Link X: ${plot.axisLink.x?"on":"off"}`);
+      });
+      byId("opt_linkY")?.addEventListener("change", ()=>{
+        plot.axisLink=normalizeAxisLink({ ...getPlotAxisLink(plot), y:String(byId("opt_linkY").value||"false")!=="false" });
+        savePlots();
+        setStatus(`Link Y: ${plot.axisLink.y?"on":"off"}`);
+      });
       byId("opt_time_mode")?.addEventListener("change", applyTimeMode);
       bindParametricIndexPick(
         byId("opt_param_index"),
@@ -19437,6 +20055,11 @@
       if(vt==="legend") return false;
       if(vt==="spectral") await loadSpectralAnalysis();
       else if(vt==="summary") await loadSummaryAnalysis();
+      else if(vt==="stat"){
+        await loadTimeseries();
+        const host=document.getElementById(`plot-${p.id}`);
+        if(host) renderStatPlot(host, p);
+      }
       else await loadTimeseries();
       persistActivePlotLocalState();
       return true;
@@ -19496,6 +20119,12 @@
       const vt=normalizeViewType(plot.viewType);
       if(vt==="spectral") return loadSpectralAnalysis();
       if(vt==="summary") return loadSummaryAnalysis();
+      if(vt==="stat"){
+        await loadTimeseries();
+        const host=document.getElementById(`plot-${plot.id}`);
+        if(host) renderStatPlot(host, plot);
+        return;
+      }
       if(vt==="legend"){
         setStatus("Legend views update from sibling plots — nothing to Plot.");
         return;
@@ -22985,12 +23614,18 @@
       byId("help_sourceHelp").onclick=()=>setStatus("Sources: + adds a folder/files. Databases from File → Databases appear automatically. Expand a database to browse tests. Missing time index channels show in red — right-click → Edit. Selecting sources does not load data until Plot.");
       byId("help_versionCheck").onclick=()=>{ hideAll(); openVersionCheckModal(); };
       byId("edit_showMetadata").onclick=()=>showMetadataModal();
+      byId("edit_copyChannels").onclick=()=>{ hideAll(); copySelectedChannelsToClipboard(); };
+      byId("edit_pasteChannels").onclick=()=>{ hideAll(); pasteChannelsFromClipboard(); };
       byId("file_preferences").onclick=()=>{ hideAll(); openPreferencesModal(); };
       byId("file_configManager").onclick=()=>openConfigManagerModal();
       byId("file_databaseManager").onclick=()=>openDatabaseManagerModal();
       byId("file_unitManager").onclick=()=>openUnitManagerModal();
       byId("file_rangeDefinitionManager").onclick=()=>openRangeDefinitionManagerModal();
       byId("file_limitManager").onclick=()=>openLimitManagerModal();
+      byId("file_exportPngPage").onclick=()=>{ hideAll(); void exportPagePng(); };
+      byId("file_exportCopyView").onclick=()=>{ hideAll(); void exportActiveViewToClipboard(); };
+      byId("file_exportPdf").onclick=()=>{ hideAll(); void exportActiveViewPdf(); };
+      byId("file_exportPdfPage").onclick=()=>{ hideAll(); void exportPagePdf(); };
     }
 
     const APPEAR_KEY="nova.appearance.notion-v1";
@@ -23011,12 +23646,30 @@
       { id:"plotAllVisible", label:"Plot All Visible Views", hint:"Plot every visible multiplot tile" },
       { id:"delete", label:"Delete", hint:"Delete focused sidebar item or selected plot objects" },
       { id:"preferences", label:"Open Preferences", hint:"Open settings" },
+      { id:"exportPngPage", label:"Export PNG of page", hint:"Download a PNG of the plot workspace" },
+      { id:"copyView", label:"Copy view to clipboard", hint:"Copy the active plot view as an image" },
+      { id:"exportPdf", label:"Export PDF of view", hint:"Download a PDF of the active plot view" },
+      { id:"copyChannels", label:"Copy channels", hint:"Copy selected channels to the channel clipboard" },
+      { id:"pasteChannels", label:"Paste channels", hint:"Paste channels into the active view" },
+      { id:"resetZoom", label:"Reset plot zoom", hint:"Autorange the active plot axes" },
+      { id:"stitchRanges", label:"Stitch ranges", hint:"Place selected ranges tip-to-tail for comparison" },
+      { id:"linkAxisX", label:"Toggle link X", hint:"Link/unlink X axis with sibling views" },
+      { id:"linkAxisY", label:"Toggle link Y", hint:"Link/unlink Y axis with sibling views" },
     ];
     const DEFAULT_SHORTCUTS={
       plot:"f5",
       plotAllVisible:"shift+f5",
       delete:"delete",
       preferences:"ctrl+,",
+      exportPngPage:"ctrl+shift+p",
+      copyView:"ctrl+shift+c",
+      exportPdf:"ctrl+shift+e",
+      copyChannels:"ctrl+shift+k",
+      pasteChannels:"ctrl+shift+v",
+      resetZoom:"ctrl+0",
+      stitchRanges:"ctrl+shift+s",
+      linkAxisX:"ctrl+shift+x",
+      linkAxisY:"ctrl+shift+y",
     };
     let preferences={ ...DEFAULT_PREFS };
     let prefsShortcutRecording=null;
@@ -23537,6 +24190,7 @@
           if(p){
             const locks=snapshotPlotAxisLocks(plotEl);
             if(hasAxisLocks(locks)) p._savedAxisLocks=locks;
+            try{ propagateLinkedAxisRelayout(pid, locks); }catch{}
           }
         }catch{}
         if(!zoomDetailRefetchEnabled()) return;
@@ -23879,7 +24533,17 @@
           return;
         }
         deleteFocused();
+        return;
       }
+      if(action==="exportPngPage"){ e.preventDefault(); void exportPagePng(); return; }
+      if(action==="copyView"){ e.preventDefault(); void exportActiveViewToClipboard(); return; }
+      if(action==="exportPdf"){ e.preventDefault(); void exportActiveViewPdf(); return; }
+      if(action==="copyChannels"){ e.preventDefault(); copySelectedChannelsToClipboard(); return; }
+      if(action==="pasteChannels"){ e.preventDefault(); pasteChannelsFromClipboard(); return; }
+      if(action==="resetZoom"){ e.preventDefault(); resetActivePlotZoom(); return; }
+      if(action==="stitchRanges"){ e.preventDefault(); void stitchSelectedRangesOnPlot(); return; }
+      if(action==="linkAxisX"){ e.preventDefault(); toggleActivePlotAxisLink("x"); return; }
+      if(action==="linkAxisY"){ e.preventDefault(); toggleActivePlotAxisLink("y"); return; }
     });
     byId("deleteObjectsBtn")?.addEventListener("click", (e)=>{
       e.preventDefault();
