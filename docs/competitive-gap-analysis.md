@@ -75,7 +75,7 @@ Priority legend: **P0** blocks “default tool” adoption · **P1** expected by
 |------------|------|---------|------------------------------|-----|
 | Time-series multi-channel | Strong | Strong | Strong | — |
 | Engineering views (XY parametric, PSD, spectrogram) | Present | Weak / plugins | Strong | Keep investing |
-| Panel variety (stat, gauge, bar, table, heatmap, geo, logs) | Narrow set | Very broad | Analysis-focused panels | **P1** for “anyone” claim; **P2** if niche stays test telemetry |
+| Engineering multi-series views (strips, envelopes, channel heatmaps) | Narrow set | Ops panels (stat/bar/gauge) | Analysis-focused panels | **P1** for test telemetry — not Grafana KPI panels (see refinement plan) |
 | Dashboard variables / templating | No | Core | Scripted layouts | **P1** |
 | Live / streaming refresh | Trimmed / absent | Core | Acquisition-linked tools | **P1** if competing with Grafana live; else defer |
 | Logs / traces / APM | No | Core Grafana stack | Usually no | Out of scope unless pivoting to observability |
