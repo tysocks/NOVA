@@ -73,16 +73,20 @@ Bar / Histogram / Stat are deferred as better suited to BI/ops aggregation apps.
 
    Linked X (and optionally Y) across tiles by default so zoom/pan compares runs side-by-side.
 
-4. **Channel × time heatmap** — **low priority (keep in plan)**  
-   Rows = channels (or runs), columns = time, color = value (or normalized). Useful when line plots collapse under density; ship after Strips / Event overlay / Grid Scope.
+4. **Cursor Scope (readout table)** — **priority 4**  
+   Numeric companion view driven by cursors on a linked time scope (or Strips / Grid / Event overlay). Table of channel values at Cursor A / B with live Δ columns — see detailed description below. Primary job: read many channels at once while scrubbing, not explore waveform shape.
+
+5. **Persistence / density plot** — **low priority (keep in plan)**  
+   2D density of many event-aligned runs in the (time, value) plane — see detailed description below. Ship after the four primary views when campaign-scale overlay density matters.
+
+6. **Channel × time heatmap** — **low priority (keep in plan)**  
+   Rows = channels (or runs), columns = time, color = value (or normalized). Useful when line plots collapse under density; ship after the primary views above.
 
 #### Supporting / later views
 
-5. **Difference / residual scope**  
+7. **Difference / residual scope**  
    Plot `A − B` (or A vs reference run) in time.
 
-6. **Persistence / density plot** — see detailed description below  
-7. **Cursor / readout table** — see detailed description below  
 8. **Cross-correlation / lag view**  
 9. **Coherence / transfer (freq-domain pair)**  
 10. **Phase portrait / Campbell / pass-fail ribbon** (niche)
@@ -103,7 +107,7 @@ Bar / Histogram / Stat are deferred as better suited to BI/ops aggregation apps.
 
 **Relation to Event-aligned overlay:** Overlay is best for modest N with identifiable traces; Persistence is for large N where individual traces are no longer useful.
 
-#### Cursor / readout table (detail)
+#### Cursor Scope (detail)
 
 **Problem:** With many channels (or many Grid Scope tiles), reading values off the plot legend is slow. Engineers often need **numbers at one or more times**, plus deltas between cursors.
 
@@ -123,7 +127,7 @@ Bar / Histogram / Stat are deferred as better suited to BI/ops aggregation apps.
 
 **Why it is a “view”:** It is not another chart type for exploring shape — it is the **numeric readout surface** for large channel sets, like a scope’s measurement bar but multi-channel and shareable with the plot layout.
 
-**Relation to Summary:** Summary is aggregate-over-range (mean/min/max + limits). Cursor table is **instantaneous (or dual-point) readout** while scrubbing.
+**Relation to Summary:** Summary is aggregate-over-range (mean/min/max + limits). Cursor Scope is **instantaneous (or dual-point) readout** while scrubbing.
 
 #### Explicit non-goals for new views
 
@@ -138,7 +142,9 @@ Bar / Histogram / Stat are deferred as better suited to BI/ops aggregation apps.
 | 1 | **Stacked Strips** | Large sets of channels |
 | 2 | **Event-aligned overlay** (+ envelope) | Many ranges from distinct sources on one axes |
 | 3 | **Grid Scope** | Many sources as a growing tile grid |
-| Low | **Channel × time heatmap** | Keep planned; ship after the three above |
+| 4 | **Cursor Scope** | Multi-channel numeric readout at linked cursors |
+| Low | **Persistence / density** | Campaign-scale overlay when individual traces disappear |
+| Low | **Channel × time heatmap** | Dense survey after the primary views |
 
 ---
 
@@ -156,7 +162,7 @@ Bar / Histogram / Stat are deferred as better suited to BI/ops aggregation apps.
 
 1. **Share MVP** — PNG page, clipboard view, PDF view; Database + Limits Import/Export  
 2. **Accessibility** — shortcuts, Ctrl/Shift zoom, channel copy/paste, context menus  
-3. **Features** — linked axes; range stitch; engineering views in order: **Stacked Strips → Event-aligned overlay → Grid Scope** (heatmap later)  
+3. **Features** — linked axes; range stitch; engineering views in order: **Stacked Strips → Event-aligned overlay → Grid Scope → Cursor Scope** (Persistence + heatmap later)  
 4. **Performance** — menu snappiness, resize/overlay thrash, flicker reduction  
 
 ---
@@ -180,6 +186,7 @@ Bar / Histogram / Stat are deferred as better suited to BI/ops aggregation apps.
 5. **Stacked Strips** renders selected channels as shared-X strips.  
 6. **Event-aligned overlay** overlays many selected ranges from distinct sources on a shared event origin (optional envelope).  
 7. **Grid Scope** tiles one cell per selected source with a growing grid (1×1, 1×2, 1×3, 2×2, 2×3 with empties, …).  
-8. Stitch Ranges places ≥2 selected ranges tip-to-tail and replots.  
-9. Linking X (or Y) on two tiles keeps ranges in sync while zooming either.  
-10. Opening menus and resizing tiles feels snappier with less flicker.
+8. **Cursor Scope** shows live channel values (and Δ) at linked cursors.  
+9. Stitch Ranges places ≥2 selected ranges tip-to-tail and replots.  
+10. Linking X (or Y) on two tiles keeps ranges in sync while zooming either.  
+11. Opening menus and resizing tiles feels snappier with less flicker.
