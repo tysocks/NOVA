@@ -102,6 +102,7 @@ def clean_config_row(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": str(row.get("id") or uuid.uuid4()),
         "name": name,
+        "icon": str(row.get("icon") or "").strip(),
         "updated_at": updated,
         "channels": _as_str_list(legacy["channels"]),
         "calculatedChannels": calculated,

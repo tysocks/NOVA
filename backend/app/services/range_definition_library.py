@@ -209,6 +209,7 @@ def clean_range_definition(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": str(row.get("id") or uuid.uuid4()),
         "name": name,
+        "icon": str(row.get("icon") or "").strip(),
         "description": str(row.get("description") or "").strip() or None,
         "updated_at": str(row.get("updated_at") or "").strip() or _now_iso(),
         "nodes": nodes,

@@ -448,9 +448,9 @@ def register_ingested_artifact(
                     next_channel_id + idx,
                     test_id,
                     name,
-                    name,
+                    str(row.get("display_name") or row.get("source_name") or name),
                     row.get("unit"),
-                    None,
+                    float(row["sample_rate_hz"]) if row.get("sample_rate_hz") is not None else None,
                     parquet_uri,
                     int(row.get("point_count") or 0),
                 ],
@@ -574,14 +574,20 @@ def list_catalog_tests(limit: int = 500) -> list[TestRunItem]:
         rows = con.execute(
             """
             SELECT
-              test_id,
-              run_code,
-              CAST(start_time AS VARCHAR),
-              CAST(end_time AS VARCHAR),
-              duration_s,
-              CAST(t0_utc AS VARCHAR)
-            FROM tests
-            ORDER BY COALESCE(start_time, created_at) DESC, test_id DESC
+              t.test_id,
+              t.run_code,
+              CAST(t.start_time AS VARCHAR),
+              CAST(t.end_time AS VARCHAR),
+              t.duration_s,
+              CAST(t.t0_utc AS VARCHAR),
+              (
+                SELECT p.value_text
+                FROM test_parameters p
+                WHERE p.test_id = t.test_id AND p.key = 'ui_icon'
+                LIMIT 1
+              ) AS ui_icon
+            FROM tests t
+            ORDER BY COALESCE(t.start_time, t.created_at) DESC, t.test_id DESC
             LIMIT ?
             """,
             [max(1, min(limit, 10000))],
@@ -594,11 +600,109 @@ def list_catalog_tests(limit: int = 500) -> list[TestRunItem]:
                 end_time=_parse_dt(row[3]),
                 duration_s=row[4],
                 t0_utc=_parse_dt(row[5]),
+                icon=(str(row[6]).strip() if row[6] is not None and str(row[6]).strip() else None),
             )
             for row in rows
         ]
     finally:
         con.close()
+
+
+def update_catalog_test(
+    test_id: int,
+    *,
+    run_code: str | None = None,
+    icon: str | None = None,
+) -> dict[str, Any] | None:
+    """Rename and/or set UI icon for a catalog test. Returns updated row or None."""
+    existing = get_test_by_id(test_id)
+    if not existing:
+        return None
+    con = connect_catalog()
+    try:
+        if run_code is not None:
+            cleaned = str(run_code).strip()
+            if not cleaned:
+                raise ValueError("run_code cannot be empty")
+            con.execute(
+                "UPDATE tests SET run_code = ?, updated_at = ? WHERE test_id = ?",
+                [cleaned, _utc_now(), test_id],
+            )
+            existing["run_code"] = cleaned
+        if icon is not None:
+            cleaned_icon = str(icon).strip()
+            con.execute(
+                "DELETE FROM test_parameters WHERE test_id = ? AND key = ?",
+                [test_id, "ui_icon"],
+            )
+            if cleaned_icon:
+                con.execute(
+                    "INSERT INTO test_parameters (test_id, key, value_text, value_num) VALUES (?, ?, ?, ?)",
+                    [test_id, "ui_icon", cleaned_icon, None],
+                )
+            existing["icon"] = cleaned_icon or None
+        else:
+            row = con.execute(
+                "SELECT value_text FROM test_parameters WHERE test_id = ? AND key = 'ui_icon' LIMIT 1",
+                [test_id],
+            ).fetchone()
+            existing["icon"] = str(row[0]).strip() if row and row[0] is not None and str(row[0]).strip() else None
+        return existing
+    finally:
+        con.close()
+
+
+def delete_catalog_test(test_id: int, *, remove_parquet: bool = True) -> bool:
+    """Delete a test and related catalog rows. Optionally remove channel parquet files."""
+    con = connect_catalog()
+    parquet_uris: list[str] = []
+    try:
+        exists = con.execute("SELECT 1 FROM tests WHERE test_id = ? LIMIT 1", [test_id]).fetchone()
+        if not exists:
+            return False
+        if remove_parquet:
+            parquet_uris = [
+                str(row[0])
+                for row in con.execute(
+                    "SELECT parquet_uri FROM channels WHERE test_id = ? AND parquet_uri IS NOT NULL",
+                    [test_id],
+                ).fetchall()
+                if row and row[0]
+            ]
+        # Cascade-ish cleanup across catalog tables.
+        range_ids = [
+            int(row[0])
+            for row in con.execute("SELECT range_id FROM ranges WHERE test_id = ?", [test_id]).fetchall()
+            if row and row[0] is not None
+        ]
+        for range_id in range_ids:
+            con.execute("DELETE FROM range_parameters WHERE range_id = ?", [range_id])
+        con.execute("DELETE FROM ranges WHERE test_id = ?", [test_id])
+        con.execute("DELETE FROM results WHERE test_id = ?", [test_id])
+        con.execute("DELETE FROM channels WHERE test_id = ?", [test_id])
+        con.execute("DELETE FROM test_parameters WHERE test_id = ?", [test_id])
+        con.execute("DELETE FROM tests WHERE test_id = ?", [test_id])
+    finally:
+        con.close()
+
+    if remove_parquet:
+        import shutil
+
+        for uri in parquet_uris:
+            try:
+                path = Path(str(uri))
+                if path.is_file():
+                    path.unlink(missing_ok=True)
+                    # Remove empty run data dir and run folder when possible.
+                    data_dir = path.parent
+                    run_dir = data_dir.parent if data_dir.name == "data" else data_dir
+                    if data_dir.is_dir() and not any(data_dir.iterdir()):
+                        data_dir.rmdir()
+                    if run_dir.is_dir() and not any(run_dir.iterdir()):
+                        shutil.rmtree(run_dir, ignore_errors=True)
+            except Exception:
+                continue
+    return True
 
 
 def list_catalog_channels(test_id: int) -> list[ChannelItem]:

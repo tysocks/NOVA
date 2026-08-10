@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -33,8 +34,17 @@ from .polars_tabular import (
 
 
 def _times_to_epoch_ms(series: pd.Series) -> pd.Series:
-    ns = series.astype("int64")
-    return (ns // 1_000_000).astype("float64")
+    """Convert datetimes to UTC epoch milliseconds.
+
+    Do not assume datetime64 int storage is nanoseconds — pandas may use us/ms
+    resolution, and ``astype('int64') // 1_000_000`` then yields seconds (or
+    worse), collapsing high-rate TDMS clocks into a few milliseconds of span.
+    """
+    ts = pd.to_datetime(series, utc=True)
+    if isinstance(ts, pd.DatetimeIndex):
+        ts = pd.Series(ts)
+    epoch = pd.Timestamp("1970-01-01", tz="UTC")
+    return ((ts - epoch) / pd.Timedelta(milliseconds=1)).astype("float64")
 
 
 def _unit_from_field_metadata(metadata: dict | None) -> str | None:
@@ -66,6 +76,19 @@ def _read_unit_from_channel_parquet(parquet_path: Path) -> str | None:
     return None
 
 
+def _coerce_utc_timestamps_us(times: pd.Series) -> pd.Series:
+    """Floor times to UTC microseconds while keeping datetime64[ns].
+
+    Float-derived TDMS sample clocks often land on non-exact microsecond
+    boundaries in nanoseconds; Arrow safe-cast to timestamp[us] then fails.
+    """
+    ts = pd.to_datetime(times, utc=True)
+    if isinstance(ts, pd.DatetimeIndex):
+        floored = ts.floor("us")
+        return pd.Series(floored, index=getattr(times, "index", None))
+    return ts.dt.floor("us")
+
+
 def _write_channel_parquet(
     out_path: Path,
     times: pd.Series,
@@ -76,7 +99,7 @@ def _write_channel_parquet(
     import pyarrow as pa
     import pyarrow.parquet as pq
 
-    ts = pd.to_datetime(times, utc=True)
+    ts = _coerce_utc_timestamps_us(times)
     sub = pd.DataFrame(
         {
             "timestamp_utc": ts,
@@ -208,25 +231,34 @@ def _ingest_dataframe(
     run_code: str,
     unit_map: dict[str, str | None] | None = None,
     skip_columns: set[str] | None = None,
+    include_columns: set[str] | None = None,
+    channel_rename: dict[str, str] | None = None,
+    out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    out_dir = data_dir(artifact_id)
+    target = out_dir or data_dir(artifact_id)
+    target.mkdir(parents=True, exist_ok=True)
     channel_rows: list[dict[str, Any]] = []
     tmin_ms: float | None = None
     tmax_ms: float | None = None
     units = unit_map or {}
     excluded = skip_columns or set()
+    include = include_columns
+    rename = channel_rename or {}
     df, t0_utc = _anchor_pandas_relative_time(df)
 
     for col in df.columns:
         if col == "__time__" or col in excluded:
+            continue
+        if include is not None and col not in include:
             continue
         if not pd.api.types.is_numeric_dtype(df[col]):
             continue
         sub = df[["__time__", col]].dropna()
         if sub.empty:
             continue
-        fname = sanitize_channel_filename(col) + ".parquet"
-        out_path = out_dir / fname
+        dest_name = str(rename.get(col, col))
+        fname = sanitize_channel_filename(dest_name) + ".parquet"
+        out_path = target / fname
         n = _write_channel_parquet(out_path, sub["__time__"], sub[col], unit=units.get(col))
         if n == 0:
             continue
@@ -235,10 +267,12 @@ def _ingest_dataframe(
         tmax_ms = float(xs.max()) if tmax_ms is None else max(tmax_ms, float(xs.max()))
         channel_rows.append(
             {
-                "channel_name": col,
+                "channel_name": dest_name,
+                "source_name": col,
                 "unit": units.get(col),
                 "parquet": f"data/{fname}",
                 "point_count": n,
+                "kind": "raw",
             }
         )
 
@@ -250,6 +284,7 @@ def _ingest_dataframe(
         "channels": channel_rows,
         "time_bounds": {"start_ms": tmin_ms, "end_ms": tmax_ms} if tmin_ms is not None else None,
         "t0_utc": t0_utc,
+        "data_dir": str(target.resolve()),
     }
 
 
@@ -260,6 +295,8 @@ def ingest_csv(
     units_in_headers: bool = False,
     time_index_channel: str | None = None,
     out_dir: Path | None = None,
+    include_columns: set[str] | None = None,
+    channel_rename: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     df, unit_map, time_col, t0_utc = normalize_csv_polars(
         file_path,
@@ -274,6 +311,8 @@ def ingest_csv(
         target,
         unit_map=unit_map,
         skip_columns=skip,
+        include_columns=include_columns,
+        channel_rename=channel_rename,
         sanitize_name=sanitize_channel_filename,
     )
     return {
@@ -290,6 +329,9 @@ def ingest_h5(
     artifact_id: str,
     *,
     time_index_channel: str | None = None,
+    include_columns: set[str] | None = None,
+    channel_rename: dict[str, str] | None = None,
+    out_dir: Path | None = None,
 ) -> dict[str, Any]:
     df = _h5_frame(file_path, time_path=time_index_channel)
     unit_map = {row["path"]: row.get("unit") for row in _h5_datasets(file_path)}
@@ -298,6 +340,9 @@ def ingest_h5(
         artifact_id,
         run_code=Path(file_path).stem,
         unit_map=unit_map,
+        include_columns=include_columns,
+        channel_rename=channel_rename,
+        out_dir=out_dir,
     )
 
 
@@ -309,6 +354,8 @@ def ingest_tabular(
     time_index_channel: str | None = None,
     units_in_headers: bool = False,
     out_dir: Path | None = None,
+    include_columns: set[str] | None = None,
+    channel_rename: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     df, unit_map, time_col, t0_utc = normalize_tabular_polars(
         file_path,
@@ -324,6 +371,8 @@ def ingest_tabular(
         target,
         unit_map=unit_map,
         skip_columns=skip,
+        include_columns=include_columns,
+        channel_rename=channel_rename,
         sanitize_name=sanitize_channel_filename,
     )
     return {
@@ -335,20 +384,32 @@ def ingest_tabular(
     }
 
 
-def ingest_tdms(file_path: str, artifact_id: str) -> dict[str, Any]:
+def ingest_tdms(
+    file_path: str,
+    artifact_id: str,
+    *,
+    include_columns: set[str] | None = None,
+    channel_rename: dict[str, str] | None = None,
+    out_dir: Path | None = None,
+) -> dict[str, Any]:
     from nptdms import TdmsFile
 
     tdms = TdmsFile.read(file_path)
     run_code = Path(file_path).stem
-    out_dir = data_dir(artifact_id)
+    target = out_dir or data_dir(artifact_id)
+    target.mkdir(parents=True, exist_ok=True)
     channel_rows: list[dict[str, Any]] = []
     tmin_ms: float | None = None
     tmax_ms: float | None = None
     t0_utc = datetime.now(timezone.utc)
+    include = include_columns
+    rename = channel_rename or {}
 
     for group in tdms.groups():
         for ch in group.channels():
             name = f"{group.name}/{ch.name}"
+            if include is not None and name not in include:
+                continue
             try:
                 values = pd.Series(ch[:])  # type: ignore[index]
                 tt: list = []
@@ -369,36 +430,43 @@ def ingest_tdms(file_path: str, artifact_id: str) -> dict[str, Any]:
                     st = pd.Timestamp(t0_utc)
                 if len(tt) > 0:
                     n = min(len(values), len(tt))
-                    times = pd.to_datetime(
-                        [st + pd.to_timedelta(float(tt[i]), unit="s") for i in range(n)],
-                        utc=True,
+                    offsets = pd.to_timedelta(
+                        pd.Series([float(tt[i]) for i in range(n)], dtype="float64"),
+                        unit="s",
                     )
+                    times = st + offsets
                     values = values.iloc[:n]
                 else:
                     step_s = float(wf_increment) if wf_increment is not None else 0.001
                     n = len(values)
-                    times = pd.to_datetime(
-                        [st + pd.to_timedelta(i * step_s, unit="s") for i in range(n)],
-                        utc=True,
+                    if n == 0:
+                        continue
+                    times = pd.date_range(
+                        start=st,
+                        periods=n,
+                        freq=pd.Timedelta(seconds=step_s),
                     )
                 sub = pd.DataFrame({"__time__": times, "y": pd.to_numeric(values, errors="coerce")}).dropna()
                 if sub.empty:
                     continue
                 unit = str(ch.properties.get("unit_string", "")) or None
-                fname = sanitize_channel_filename(name) + ".parquet"
-                out_path = out_dir / fname
+                dest_name = str(rename.get(name, name))
+                fname = sanitize_channel_filename(dest_name) + ".parquet"
+                out_path = target / fname
                 npts = _write_channel_parquet(out_path, sub["__time__"], sub["y"], unit=unit)
                 if npts == 0:
                     continue
-                xs = _times_to_epoch_ms(sub["__time__"])
+                xs = _times_to_epoch_ms(_coerce_utc_timestamps_us(sub["__time__"]))
                 tmin_ms = float(xs.min()) if tmin_ms is None else min(tmin_ms, float(xs.min()))
                 tmax_ms = float(xs.max()) if tmax_ms is None else max(tmax_ms, float(xs.max()))
                 channel_rows.append(
                     {
-                        "channel_name": name,
+                        "channel_name": dest_name,
+                        "source_name": name,
                         "unit": unit,
                         "parquet": f"data/{fname}",
                         "point_count": npts,
+                        "kind": "raw",
                     }
                 )
             except Exception:
@@ -415,6 +483,7 @@ def ingest_tdms(file_path: str, artifact_id: str) -> dict[str, Any]:
         "channels": channel_rows,
         "time_bounds": {"start_ms": tmin_ms, "end_ms": tmax_ms} if tmin_ms is not None else None,
         "t0_utc": t0_utc,
+        "data_dir": str(target.resolve()),
     }
 
 
@@ -462,6 +531,14 @@ def run_ingest(
     parameters: dict[str, Any] | None = None,
     apply_range_rule_ids: list[int] | None = None,
     catalog_id: str | None = None,
+    channel_include: list[str] | None = None,
+    channel_exclude: list[str] | None = None,
+    channel_rename: dict[str, str] | None = None,
+    channel_mode: str | None = None,
+    channel_require: list[str] | None = None,
+    calculated_channels: list[dict[str, Any]] | None = None,
+    range_definition_ids: list[str] | None = None,
+    ingestion_rule: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Ingest a file into Parquet artifacts and register in the DuckDB catalog.
 
@@ -470,9 +547,32 @@ def run_ingest(
     """
     from ..config import settings
     from ..services.database_library import LOCAL_CATALOG_ID, resolve_duckdb_profile
+    from ..services.ingestion_rule_library import resolve_channel_selection
     from .catalog_store import catalog_path_override
     from .file_schema import validate_file_schema
+    from .ingest_rules import (
+        apply_range_definitions_to_test,
+        materialize_calculated_channels,
+        write_ingest_meta,
+    )
     from .range_detect import apply_range_rule_to_test
+
+    rule = ingestion_rule if isinstance(ingestion_rule, dict) else None
+    if rule:
+        units_in_headers = bool(rule.get("units_in_headers") or units_in_headers)
+        time_index_channel = rule.get("time_index_channel") or time_index_channel
+        catalog_id = str(rule.get("target_catalog_id") or catalog_id or "")
+        ingest_mode = "permanent"
+        parameters = {**(parameters or {}), **(rule.get("parameters") or {})}
+        apply_range_rule_ids = list(rule.get("apply_range_rule_ids") or apply_range_rule_ids or [])
+        range_definition_ids = list(rule.get("range_definition_ids") or range_definition_ids or [])
+        calculated_channels = list(rule.get("calculated_channels") or calculated_channels or [])
+        ch_block = rule.get("channels") if isinstance(rule.get("channels"), dict) else {}
+        channel_mode = str(ch_block.get("mode") or channel_mode or "all")
+        channel_include = list(ch_block.get("include") or channel_include or [])
+        channel_exclude = list(ch_block.get("exclude") or channel_exclude or [])
+        channel_rename = dict(ch_block.get("rename") or channel_rename or {})
+        channel_require = list(ch_block.get("require") or channel_require or [])
 
     st = source_type.strip().lower()
     if st not in {"csv", "h5", "tdms", "parquet", "arrow"}:
@@ -523,6 +623,37 @@ def run_ingest(
             ):
                 return manifest
 
+    # Resolve channel selection against probed channel names.
+    include_set: set[str] | None = None
+    rename_map: dict[str, str] | None = None
+    has_channel_opts = bool(
+        channel_mode
+        or channel_include
+        or channel_exclude
+        or channel_rename
+        or channel_require
+    )
+    if has_channel_opts:
+        from .file_probe import probe_file
+
+        probed = probe_file(
+            resolved,
+            units_in_headers=units_in_headers,
+            time_index_channel=time_index_channel,
+        )
+        available = [str(c.channel_name) for c in (probed.channels or [])]
+        selected, rename_map = resolve_channel_selection(
+            available,
+            {
+                "mode": channel_mode or "all",
+                "include": channel_include or [],
+                "exclude": channel_exclude or [],
+                "rename": channel_rename or {},
+                "require": channel_require or [],
+            },
+        )
+        include_set = set(selected)
+
     manifest = initial_manifest(
         artifact_id=artifact_id,
         source_type=st,
@@ -535,10 +666,17 @@ def run_ingest(
     try:
         run_code = path.stem
         out_dir: Path | None = None
+        lake_run_dir: Path | None = None
         if mode == "permanent":
             lake_root = Path(str(profile.get("parquet_root") or settings.parquet_root))
-            out_dir = lake_root / run_code / "data"
+            lake_run_dir = lake_root / run_code
+            out_dir = lake_run_dir / "data"
             out_dir.mkdir(parents=True, exist_ok=True)
+
+        writer_kwargs = {
+            "include_columns": include_set,
+            "channel_rename": rename_map,
+        }
 
         if st == "csv":
             result = ingest_csv(
@@ -547,15 +685,23 @@ def run_ingest(
                 units_in_headers=units_in_headers,
                 time_index_channel=time_index_channel,
                 out_dir=out_dir,
+                **writer_kwargs,
             )
         elif st == "h5":
-            result = ingest_h5(str(path), artifact_id, time_index_channel=time_index_channel)
-            if out_dir is not None:
-                result = _copy_channels_to_dir(artifact_id, result, out_dir)
+            result = ingest_h5(
+                str(path),
+                artifact_id,
+                time_index_channel=time_index_channel,
+                out_dir=out_dir,
+                **writer_kwargs,
+            )
         elif st == "tdms":
-            result = ingest_tdms(str(path), artifact_id)
-            if out_dir is not None:
-                result = _copy_channels_to_dir(artifact_id, result, out_dir)
+            result = ingest_tdms(
+                str(path),
+                artifact_id,
+                out_dir=out_dir,
+                **writer_kwargs,
+            )
         else:
             result = ingest_tabular(
                 str(path),
@@ -564,7 +710,16 @@ def run_ingest(
                 time_index_channel=time_index_channel,
                 units_in_headers=units_in_headers,
                 out_dir=out_dir,
+                **writer_kwargs,
             )
+
+        if calculated_channels:
+            result = materialize_calculated_channels(
+                result,
+                calculated_channels,
+                test_run_id=1,
+            )
+
         manifest = _finalize_manifest(
             manifest,
             channels=result["channels"],
@@ -575,6 +730,9 @@ def run_ingest(
         manifest["run_code"] = result["run_code"]
         manifest["durability"] = mode
         manifest["catalog_id"] = profile.get("id")
+        if rule:
+            manifest["ingestion_rule_id"] = rule.get("id")
+            manifest["ingestion_rule_name"] = rule.get("name")
 
         channel_uris: dict[str, str] = {}
         data_root = Path(result.get("data_dir") or (out_dir or data_dir(artifact_id)))
@@ -607,7 +765,38 @@ def run_ingest(
             applied_ranges = []
             for rule_id in apply_range_rule_ids or []:
                 applied_ranges.extend(apply_range_rule_to_test(test_id, int(rule_id)))
+
+            if range_definition_ids:
+                from ..services.range_definition_library import clean_range_definition_rows
+
+                def_path = Path(__file__).resolve().parents[1] / ".nova_range_definition_library.json"
+                rows: list[Any] = []
+                if def_path.exists():
+                    try:
+                        payload = json.loads(def_path.read_text(encoding="utf-8"))
+                        raw = payload.get("definitions") if isinstance(payload, dict) else []
+                        rows = raw if isinstance(raw, list) else []
+                    except Exception:
+                        rows = []
+                try:
+                    defs = clean_range_definition_rows(rows)
+                except Exception:
+                    defs = []
+                wanted = {str(x) for x in range_definition_ids}
+                selected_defs = [d for d in defs if str(d.get("id")) in wanted]
+                applied_ranges.extend(apply_range_definitions_to_test(test_id, selected_defs))
+
             manifest["applied_ranges"] = [r.model_dump(mode="json") for r in applied_ranges]
+
+        if mode == "permanent" and lake_run_dir is not None:
+            write_ingest_meta(
+                lake_run_dir,
+                manifest=manifest,
+                result=result,
+                rule=rule,
+                parameters=parameters or {},
+                applied_ranges=manifest.get("applied_ranges") or [],
+            )
 
         if mode == "temporary":
             from .range_store import restore_ranges_from_durable_sidecar

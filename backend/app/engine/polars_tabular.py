@@ -247,6 +247,8 @@ def write_channel_parquets_from_polars(
     *,
     unit_map: dict[str, str | None] | None = None,
     skip_columns: set[str] | None = None,
+    include_columns: set[str] | None = None,
+    channel_rename: dict[str, str] | None = None,
     sanitize_name,
 ) -> tuple[list[dict[str, Any]], dict[str, float] | None]:
     """Write per-channel Parquet files with timestamp_utc, x_ms, y."""
@@ -255,6 +257,8 @@ def write_channel_parquets_from_polars(
 
     units = unit_map or {}
     excluded = skip_columns or set()
+    include = include_columns
+    rename = channel_rename or {}
     channel_rows: list[dict[str, Any]] = []
     tmin_ms: float | None = None
     tmax_ms: float | None = None
@@ -266,6 +270,8 @@ def write_channel_parquets_from_polars(
 
     for col in with_ms.columns:
         if col in {"__time__", "x_ms", "timestamp_utc"} or col in excluded:
+            continue
+        if include is not None and col not in include:
             continue
         dtype = with_ms.schema[col]
         if not dtype.is_numeric():
@@ -282,7 +288,8 @@ def write_channel_parquets_from_polars(
         if sub.is_empty():
             continue
 
-        fname = sanitize_name(col) + ".parquet"
+        dest_name = str(rename.get(col, col))
+        fname = sanitize_name(dest_name) + ".parquet"
         out_path = out_dir / fname
         unit = units.get(col)
         y_meta = {b"unit": str(unit).encode("utf-8")} if unit else None
@@ -302,10 +309,12 @@ def write_channel_parquets_from_polars(
         tmax_ms = xs_max if tmax_ms is None else max(tmax_ms, xs_max)
         channel_rows.append(
             {
-                "channel_name": col,
+                "channel_name": dest_name,
+                "source_name": col,
                 "unit": unit,
                 "parquet": f"data/{fname}",
                 "point_count": n,
+                "kind": "raw",
             }
         )
 

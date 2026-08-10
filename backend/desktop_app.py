@@ -8,11 +8,11 @@ from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlopen
 
-from PySide6.QtCore import QUrl, Qt
+from PySide6.QtCore import QUrl, Qt, QEvent, QTimer
 from PySide6.QtGui import QIcon, QPainter, QPixmap
 from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen
+from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen, QMainWindow
 
 HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
@@ -177,6 +177,45 @@ def resolve_backend_port(
     return free_port, server, log_file, ""
 
 
+class NovaMainWindow(QMainWindow):
+    """Main window that forces a layout pass after maximize/restore.
+
+    Qt WebEngine often keeps a stale 0×0/wrong viewport after maximize until the
+    next manual resize; nudge the page so CSS/Plotly recover without user action.
+    """
+
+    def __init__(self, view: QWebEngineView):
+        super().__init__()
+        self._view = view
+        self.setCentralWidget(view)
+        self.setWindowTitle(view.windowTitle() or "NOVA")
+        if not view.windowIcon().isNull():
+            self.setWindowIcon(view.windowIcon())
+
+    def changeEvent(self, event) -> None:  # noqa: N802
+        super().changeEvent(event)
+        if event is None or event.type() != QEvent.Type.WindowStateChange:
+            return
+        # Defer until after Qt finishes applying the new geometry.
+        QTimer.singleShot(0, self._nudge_web_layout)
+        QTimer.singleShot(80, self._nudge_web_layout)
+        QTimer.singleShot(250, self._nudge_web_layout)
+
+    def _nudge_web_layout(self) -> None:
+        try:
+            page = self._view.page()
+            if page is None:
+                return
+            page.runJavaScript(
+                "try{"
+                "window.dispatchEvent(new Event('resize'));"
+                "if(typeof window.novaForceLayoutRefresh==='function') window.novaForceLayoutRefresh();"
+                "}catch(e){}"
+            )
+        except Exception:
+            pass
+
+
 def main() -> None:
     backend_dir = Path(__file__).resolve().parent
     project_root = backend_dir.parent
@@ -231,10 +270,12 @@ def main() -> None:
         view.setWindowTitle("NOVA")
         if icon_path.exists():
             view.setWindowIcon(QIcon(str(icon_path)))
-        view.resize(1500, 920)
+
+        window = NovaMainWindow(view)
+        window.resize(1500, 920)
         view.setUrl(QUrl(f"http://{HOST}:{port}/?v={int(time.time())}"))
-        view.show()
-        splash.finish(view)
+        window.show()
+        splash.finish(window)
 
         exit_code = app.exec()
     finally:

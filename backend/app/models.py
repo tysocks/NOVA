@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -16,6 +16,13 @@ class TestRunItem(BaseModel):
     end_time: datetime | None = None
     duration_s: float | None = None
     t0_utc: datetime | None = None
+    icon: str | None = None
+
+
+class CatalogTestUpdateRequest(BaseModel):
+    run_code: str | None = None
+    icon: str | None = None
+    catalog_id: str | None = None
 
 
 class ChannelItem(BaseModel):
@@ -233,6 +240,22 @@ class FileIngestRequest(BaseModel):
     parameters: dict[str, str | float | int | bool | None] = Field(default_factory=dict)
     apply_range_rule_ids: list[int] = Field(default_factory=list)
     catalog_id: str | None = None
+    # Permanent ingestion rule controls (ignored for temporary folder/file open).
+    channel_mode: Literal["all", "include"] | None = None
+    channel_include: list[str] = Field(default_factory=list)
+    channel_exclude: list[str] = Field(default_factory=list)
+    channel_rename: dict[str, str] = Field(default_factory=dict)
+    channel_require: list[str] = Field(default_factory=list)
+    calculated_channels: list[CalculatedChannelSpec] = Field(default_factory=list)
+    range_definition_ids: list[str] = Field(default_factory=list)
+    ingestion_rule_id: str | None = None
+
+
+class IngestWithRuleRequest(BaseModel):
+    file_path: str
+    source_type: Literal["csv", "h5", "tdms", "parquet", "arrow"] | None = None
+    rule_id: str | None = None
+    rule: dict[str, Any] | None = None
 
 
 class FileProbeChannel(BaseModel):

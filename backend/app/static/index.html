@@ -52,10 +52,10 @@
       --nova-shadow:0 14px 40px rgba(15,15,15,0.12), 0 0 0 1px rgba(55,53,47,0.08);
     }
     *{ box-sizing:border-box; }
-    html{ font-size:var(--nova-base-font-size); }
-    body{ margin:0; font-family:var(--nova-font-family,"Inter",system-ui,-apple-system,"Segoe UI",sans-serif); font-size:1rem; background:var(--nova-view-bg); color:var(--nova-text); height:100vh; overflow:hidden; -webkit-font-smoothing:antialiased; letter-spacing:-0.003em; }
+    html{ font-size:var(--nova-base-font-size); height:100%; }
+    body{ margin:0; font-family:var(--nova-font-family,"Inter",system-ui,-apple-system,"Segoe UI",sans-serif); font-size:1rem; background:var(--nova-view-bg); color:var(--nova-text); height:100%; min-height:100%; overflow:hidden; -webkit-font-smoothing:antialiased; letter-spacing:-0.003em; display:flex; flex-direction:column; }
     /* Menubar */
-    .menubar{ display:flex; align-items:center; gap:1px; padding:0 10px; height:36px; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); user-select:none; }
+    .menubar{ display:flex; align-items:center; gap:1px; padding:0 10px; height:36px; flex:0 0 36px; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); user-select:none; }
     .menuItem{ position:relative; padding:5px 9px; border:none; border-radius:var(--nova-radius-xs); cursor:pointer; font-size:0.875rem; color:var(--nova-text-dim); font-weight:500; }
     .menuItem:hover{ background:var(--nova-hover); color:var(--nova-text); }
     .menuDropdown{ position:absolute; top:calc(100% + 4px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); box-shadow:var(--nova-shadow); overflow:hidden; padding:4px; }
@@ -64,8 +64,8 @@
     .menuAction:last-child{ border-bottom:none; }
     .menuAction:hover{ background:var(--nova-hover); }
     .menuSep{ height:1px; background:var(--nova-divider); margin:4px 2px; }
-    /* Layout */
-    .app{ display:flex; height:calc(100vh - 36px); width:100vw; }
+    /* Layout — prefer flex/% over 100vh/100vw (Qt WebEngine maximize can report a stale viewport). */
+    .app{ display:flex; flex:1 1 auto; min-height:0; width:100%; height:auto; }
     .sidebar{ width:auto; min-width:44px; max-width:704px; background:var(--nova-sidebar-bg); border-right:1px solid var(--nova-divider); overflow:hidden; flex:0 0 auto; font-size:0.875rem; display:flex; flex-direction:row; align-items:stretch; }
     .toolbarRail{ width:44px; flex:0 0 44px; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 0 10px; border-right:1px solid var(--nova-divider); background:var(--nova-sidebar-bg); z-index:2; }
     .railBtn{ width:32px; height:32px; min-width:32px; border:none; border-radius:6px; background:transparent; color:var(--nova-text-dim); padding:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
@@ -1327,6 +1327,39 @@
     .rangeMetaRow:hover{
       background:var(--nova-hover);
     }
+    .rangeMetaRow.active{
+      background:var(--nova-hover);
+    }
+    #ing_channels.rangeMetaTable{
+      max-height:min(240px, 32vh);
+      overflow-y:auto;
+      scrollbar-width:thin;
+    }
+    #ing_ranges.rangeMetaTable{
+      max-height:min(180px, 24vh);
+      overflow-y:auto;
+      scrollbar-width:thin;
+    }
+    .ingChannelActionBtn{
+      border:none;
+      background:transparent;
+      color:var(--nova-text-dim);
+      font:inherit;
+      font-size:0.875rem;
+      padding:4px 2px;
+      margin:0;
+      cursor:pointer;
+      text-align:left;
+      width:100%;
+      min-height:30px;
+    }
+    .ingChannelActionBtn:hover{
+      color:var(--nova-text);
+    }
+    .ingChannelActionBtn.is-exclude{
+      color:var(--nova-text-dim);
+      font-style:italic;
+    }
     .rangeMetaCell{
       min-width:0;
       min-height:30px;
@@ -1387,6 +1420,8 @@
     #m_ov_def .objPropControl,
     #m_mask_props select,
     #m_mask_props .objPropControl,
+    #ing_props select,
+    #ing_props .objPropControl,
     .summaryEditorWrap select,
     .summaryEditorWrap .objPropControl,
     #optionsProps select,
@@ -1440,7 +1475,8 @@
     #optionsProps input.objPropControl,
     #m_obj_props input.objPropControl,
     #m_ov_def input.objPropControl,
-    #m_mask_props input.objPropControl{
+    #m_mask_props input.objPropControl,
+    #ing_props input.objPropControl{
       cursor:text;
     }
     .channelPickField--empty{ color:rgba(255,255,255,0.45); }
@@ -1467,6 +1503,7 @@
     #m_obj_props .novaSelect,
     #m_ov_def .novaSelect,
     #m_mask_props .novaSelect,
+    #ing_props .novaSelect,
     .summaryEditorWrap .novaSelect,
     #optionsProps .novaSelect{
       height:30px !important;
@@ -1485,6 +1522,10 @@
     #m_mask_props .novaSelectBtn:hover,
     #m_mask_props .novaSelectBtn:focus,
     #m_mask_props .novaSelect.open .novaSelectBtn,
+    #ing_props .novaSelectBtn,
+    #ing_props .novaSelectBtn:hover,
+    #ing_props .novaSelectBtn:focus,
+    #ing_props .novaSelect.open .novaSelectBtn,
     .summaryEditorWrap .novaSelectBtn,
     .summaryEditorWrap .novaSelectBtn:hover,
     .summaryEditorWrap .novaSelectBtn:focus,
@@ -1513,6 +1554,8 @@
     #m_ov_def .objPropControl:focus,
     #m_mask_props select:focus,
     #m_mask_props .objPropControl:focus,
+    #ing_props select:focus,
+    #ing_props .objPropControl:focus,
     .summaryEditorWrap select:focus,
     .summaryEditorWrap .objPropControl:focus,
     #optionsProps select:focus,
@@ -1527,6 +1570,7 @@
     #m_obj_props select::-ms-expand,
     #m_ov_def select::-ms-expand,
     #m_mask_props select::-ms-expand,
+    #ing_props select::-ms-expand,
     .summaryEditorWrap select::-ms-expand,
     #optionsProps select::-ms-expand{
       display:none;
@@ -1841,6 +1885,12 @@
       box-sizing:border-box;
       flex:0 0 auto;
     }
+    .channelEditorForm > .rangeMetaSection{
+      padding:0 16px 10px;
+      box-sizing:border-box;
+      flex:0 0 auto;
+      width:auto;
+    }
     .maskConditionPad .formFieldRow{
       gap:12px;
     }
@@ -1997,8 +2047,8 @@
       z-index:260;
       display:none;
       flex-direction:column;
-      width:240px;
-      max-height:280px;
+      width:min(300px, calc(100vw - 16px));
+      max-height:min(320px, 50vh);
       background:var(--nova-elevated);
       border:1px solid var(--nova-divider);
       border-radius:var(--nova-radius-md);
@@ -2091,9 +2141,13 @@
       gap:10px;
       min-width:0;
       min-height:34px;
-      padding-left:100px;
+      padding-left:12px;
       padding-right:12px;
       box-sizing:border-box;
+    }
+    .dbManagerRow > .treeIcon{
+      flex:0 0 14px;
+      color:var(--nova-text-dim);
     }
     .dbManagerRow .itemPrimary{
       flex:1 1 auto;
@@ -2217,6 +2271,62 @@
       margin:0;
     }
     #appWindowLayer{ position:fixed; inset:0; pointer-events:none; z-index:110; }
+    .nameWithIconField{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      min-width:0;
+    }
+    .nameWithIconField .formNameInput{
+      flex:1 1 auto;
+      min-width:0;
+    }
+    .iconPickBtn{
+      width:34px;
+      height:34px;
+      min-width:34px;
+      border:1px solid var(--nova-divider);
+      border-radius:8px;
+      background:var(--nova-input-bg, transparent);
+      color:var(--nova-text);
+      padding:0;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      flex:0 0 auto;
+    }
+    .iconPickBtn:hover{ background:var(--nova-hover); }
+    .iconPickBtn svg{ width:16px; height:16px; display:block; }
+    .iconPickerPopover{
+      position:fixed;
+      z-index:10050;
+      width:220px;
+      padding:8px;
+      background:var(--nova-elevated);
+      border:1px solid var(--nova-divider);
+      border-radius:10px;
+      box-shadow:var(--nova-shadow);
+      display:grid;
+      grid-template-columns:repeat(5, 1fr);
+      gap:4px;
+    }
+    .iconPickerItem{
+      width:100%;
+      aspect-ratio:1;
+      border:none;
+      border-radius:8px;
+      background:transparent;
+      color:var(--nova-text);
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:0;
+    }
+    .iconPickerItem:hover,
+    .iconPickerItem.active{ background:var(--nova-hover); }
+    .iconPickerItem svg{ width:16px; height:16px; display:block; }
     .appWindow{ position:fixed; pointer-events:auto; display:flex; flex-direction:column; min-width:220px; min-height:140px; max-width:96vw; max-height:96vh; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-lg); box-shadow:var(--nova-shadow); overflow:hidden; z-index:111; }
     .appWindow.modalScale{ width:420px; height:520px; }
     .appWindow.modalSourceForm{ width:598px; height:300px; }
@@ -2420,6 +2530,7 @@
         <div class="menuAction" id="file_databaseManager">Database Manager</div>
         <div class="menuAction" id="file_unitManager">Unit Manager</div>
         <div class="menuAction" id="file_rangeDefinitionManager">Range Definitions</div>
+        <div class="menuAction" id="file_ingestionManager">Ingestion Manager</div>
         <div class="menuAction" id="file_limitManager">Limits Manager</div>
         <div class="menuSep"></div>
         <div class="menuAction" id="file_preferences">Preferences…</div>
@@ -2464,9 +2575,6 @@
         <button type="button" class="railBtn" data-toolbar="pages" title="Pages" aria-label="Pages">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3 1.5h7.2L13.5 4.8V14.5H3V1.5zm1.2 1.2v10.6h8.1V5.5H9.2V2.7H4.2zm5 0v2.1h2.1L9.2 2.7z"/><path fill="currentColor" d="M5.2 7.2h5.6v1.1H5.2V7.2zm0 2.2h5.6v1.1H5.2V9.4zm0 2.2h3.8v1.1H5.2v-1.1z"/></svg>
         </button>
-        <button type="button" class="railBtn" data-toolbar="ingestion" title="Ingestion" aria-label="Ingestion">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg>
-        </button>
         <div class="railSpacer"></div>
         <button type="button" class="railBtn" id="loadBtn" title="Plot" aria-label="Plot">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 2h1.5v10.5H14V14H2V2zm3.2 7.2l2.1-2.6 2 1.6L12.6 4.8l1.1.9-4.1 5.1-2.05-1.65L5.4 11.4 5.2 9.2z"/></svg>
@@ -2477,7 +2585,7 @@
           <div class="toolbarSectionHeader">
             <h3>Sources</h3>
             <div class="headerBtns">
-              <button id="refreshSourcesBtn" class="addBtn" type="button" title="Refresh sources">↻</button>
+              <button id="refreshSourcesBtn" class="addBtn" type="button" title="Reload selected folder or database">↻</button>
               <button id="addSourceBtn" class="addBtn" type="button" title="Add folder">+</button>
             </div>
           </div>
@@ -2546,14 +2654,6 @@
           </div>
           <div id="pagesList" class="list"></div>
         </section>
-        <section class="toolbarSection" data-section="ingestion" id="section_ingestion">
-          <div class="toolbarSectionHeader">
-            <h3>Ingestion</h3>
-            <div class="headerBtns"><button id="addIngestionBtn" class="addBtn" type="button" title="Add rule" disabled>+</button></div>
-          </div>
-          <div id="ingestionList" class="list"></div>
-          <div class="toolbarPlaceholder"><strong>Coming soon.</strong> Define automatic ingestion rules — e.g. create ranges from ignition or other event signatures.</div>
-        </section>
       </div>
     </aside>
     <div class="sidebarResizer" id="sidebarResizer" title="Drag to resize"></div>
@@ -2574,6 +2674,12 @@
       <input id="dbTagPickerSearch" class="searchInput" type="text" placeholder="Search tags..." spellcheck="false" />
     </div>
     <div id="dbTagPickerList" class="dbTagPickerList"></div>
+  </div>
+  <div id="listSearchPicker" class="dbTagPicker" aria-hidden="true">
+    <div class="dbTagPickerSearch">
+      <input id="listSearchPickerSearch" class="searchInput" type="text" placeholder="Search..." spellcheck="false" />
+    </div>
+    <div id="listSearchPickerList" class="dbTagPickerList"></div>
   </div>
   <div id="sourceAddMenu" class="miniMenu"></div>
   <div id="channelAddMenu" class="miniMenu"></div>
@@ -2769,7 +2875,7 @@
     function sanitizeAliasedChannelLists(){
       // Only collapse members under an alias when that alias is itself on the
       // active channel list. If the alias is not listed, members may be plotted
-      // directly while the alias definition remains available for range defs/calcs.
+      // directly while the alias definition remains available for calcs.
       (state.channelAliases||[]).forEach((a)=>{
         if(!a?.name || !addedChannelIds.has(a.name)) return;
         purgeAliasedMembersFromChannelLists(aliasMemberNames(a));
@@ -2948,20 +3054,38 @@
     }
     function resizeAllPlotHosts(){
       document.querySelectorAll(".plotHost").forEach((el)=>{
+        if(!el || el.clientWidth < 8 || el.clientHeight < 8) return;
         try{ if(el.data||el.layout||el._fullLayout) Plotly.Plots.resize(el); }catch{}
       });
       try{ PlotInteractions.refresh(); }catch{}
       try{ if(typeof PlotAnalysisTools.syncEditHitLayer==="function") PlotAnalysisTools.syncEditHitLayer(); }catch{}
     }
+    let _layoutRefreshTimer=0;
+    function novaForceLayoutRefresh(){
+      clearTimeout(_layoutRefreshTimer);
+      const run=()=>{
+        try{ updateSidebarListHeights(); }catch{}
+        resizeAllPlotHosts();
+      };
+      // Maximize can report 0-size briefly — retry a couple times.
+      requestAnimationFrame(()=>{
+        run();
+        _layoutRefreshTimer=setTimeout(run, 60);
+        setTimeout(run, 200);
+      });
+    }
+    window.novaForceLayoutRefresh=novaForceLayoutRefresh;
     function observePlotHostResize(host){
       if(!host || host._novaResizeObs || typeof ResizeObserver==="undefined") return;
       let timer=0;
       const ro=new ResizeObserver(()=>{
+        if(host.clientWidth < 8 || host.clientHeight < 8) return;
         clearTimeout(timer);
         timer=setTimeout(()=>{
+          if(host.clientWidth < 8 || host.clientHeight < 8) return;
           try{ if(host.data||host.layout||host._fullLayout) Plotly.Plots.resize(host); }catch{}
           try{ PlotInteractions.refresh(); }catch{}
-        }, 48);
+        }, 120);
       });
       host._novaResizeObs=ro;
       ro.observe(host);
@@ -3179,7 +3303,12 @@
           if(t._novaChannelKey) o._novaChannelKey=String(t._novaChannelKey);
           return o;
         }
-        const xy=coercePlotSeries(t.x, t.y, cap);
+        const xy=coercePlotSeries(
+          t.x,
+          t.y,
+          // Keep fill polygons dense — striding a closed toself path can collapse the area.
+          t._novaFillBaseline ? PLOTLY_MAX_TRACE_POINTS : cap
+        );
         const o={
           type:t.type||"scatter",
           mode:t.mode||"lines",
@@ -3191,8 +3320,10 @@
         // Preserve custom style (color/dash/markers) — stripping these made
         // Edit Trace colors vanish on double-click full rebuild.
         if(t.line && typeof t.line==="object"){
+          const lw=Number(t.line.width);
           o.line={
-            width:Number(t.line.width)||1.5,
+            // Allow 0 (invisible edge for fill polygons); `|| 1.5` would force a stroke.
+            width:Number.isFinite(lw) ? lw : 1.5,
             ...(t.line.color!=null ? { color:t.line.color } : {}),
             ...(t.line.dash ? { dash:String(t.line.dash) } : {}),
           };
@@ -3221,6 +3352,12 @@
           }
           if(Object.keys(m).length) o.marker=m;
         }
+        // Trace fill-to-setpoint (and overlay-like fills) must survive sanitizing —
+        // dropping these left only the line while the fill area still affected y-lims.
+        if(t.fill) o.fill=String(t.fill);
+        if(t.fillcolor!=null) o.fillcolor=t.fillcolor;
+        if(t.fillpattern && typeof t.fillpattern==="object") o.fillpattern=t.fillpattern;
+        if(t.hoverinfo!=null) o.hoverinfo=t.hoverinfo;
         if(t.connectgaps===false) o.connectgaps=false;
         if(t.xaxis) o.xaxis=t.xaxis;
         if(t.yaxis) o.yaxis=t.yaxis;
@@ -3231,6 +3368,8 @@
         if(t._novaColorMapKey) o._novaColorMapKey=String(t._novaColorMapKey);
         if(Array.isArray(t._novaColorMapValues)) o._novaColorMapValues=t._novaColorMapValues;
         if(t._novaSpectralLegendProxy) o._novaSpectralLegendProxy=true;
+        if(t._novaFillBaseline) o._novaFillBaseline=true;
+        if(t._novaOverlayLegend) o._novaOverlayLegend=true;
         if(t._novaStyle && typeof t._novaStyle==="object") o._novaStyle=t._novaStyle;
         if(t.meta && typeof t.meta==="object" && !Array.isArray(t.meta)) o.meta=t.meta;
         return o;
@@ -3330,6 +3469,9 @@
           String(t.name||""),
           String(t.yaxis||""),
           String(t._unit||""),
+          String(t.fill||""),
+          String(t.fillcolor||""),
+          t._novaFillBaseline ? "fillbase" : "",
           // Include colormap chrome so theme / colorbar changes aren't skipped by data-only draws.
           Array.isArray(t?.marker?.colorscale) ? "custom-scale" : String(t?.marker?.colorscale||""),
           t?.marker?.showscale===true ? "1" : "0",
@@ -7329,6 +7471,9 @@
           if(db) out.push({ sourceId:s.id, dbId:db.id, label:s.name||s.type, kind:"file" });
         } else if(isPostgresTestLeaf(s)){
           out.push({ sourceId:s.id, dbId:s.db_entry_id, label:s.name, kind:"postgres" });
+        } else if(isCatalogSource(s)){
+          const db=state.databases.find((d)=>d.sourceId===s.id) || ensureCatalogSourceDb(s);
+          if(db) out.push({ sourceId:s.id, dbId:db.id, label:s.name||s.run_code||"catalog", kind:"catalog" });
         }
       });
       return out;
@@ -7527,6 +7672,92 @@
     function isPostgresProfile(row){
       return String(row?.type||"").toLowerCase()==="postgres";
     }
+    const SOURCE_ICON_CHOICES=[
+      { value:"database", label:"Database" },
+      { value:"test", label:"Test / flask" },
+      { value:"folder", label:"Folder" },
+      { value:"file", label:"File" },
+      { value:"csv", label:"CSV / table" },
+      { value:"tdms", label:"TDMS" },
+      { value:"chart", label:"Chart" },
+      { value:"flame", label:"Flame" },
+      { value:"rocket", label:"Rocket" },
+    ];
+    function normalizeSourceIcon(value, fallback="test"){
+      const raw=String(value||"").trim().toLowerCase();
+      if(SOURCE_ICON_CHOICES.some((c)=>c.value===raw)) return raw;
+      return fallback;
+    }
+    function closeIconPicker(){
+      document.querySelectorAll(".iconPickerPopover").forEach((el)=>el.remove());
+      document.removeEventListener("mousedown", _iconPickerOutsideClose, true);
+    }
+    function _iconPickerOutsideClose(ev){
+      const pop=document.querySelector(".iconPickerPopover");
+      if(!pop) return;
+      if(pop.contains(ev.target) || ev.target?.closest?.(".iconPickBtn")) return;
+      closeIconPicker();
+    }
+    function openIconPicker(anchorBtn, hiddenInput, onPicked){
+      closeIconPicker();
+      const cur=normalizeSourceIcon(hiddenInput?.value, "test");
+      const pop=document.createElement("div");
+      pop.className="iconPickerPopover";
+      pop.setAttribute("role","listbox");
+      SOURCE_ICON_CHOICES.forEach((c)=>{
+        const btn=document.createElement("button");
+        btn.type="button";
+        btn.className="iconPickerItem"+(c.value===cur?" active":"");
+        btn.title=c.label;
+        btn.setAttribute("aria-label", c.label);
+        btn.innerHTML=treeIconSvg(c.value, false);
+        btn.onclick=(e)=>{
+          e.preventDefault();
+          e.stopPropagation();
+          if(hiddenInput) hiddenInput.value=c.value;
+          if(anchorBtn) anchorBtn.innerHTML=treeIconSvg(c.value, false);
+          if(typeof onPicked==="function") onPicked(c.value);
+          closeIconPicker();
+        };
+        pop.appendChild(btn);
+      });
+      document.body.appendChild(pop);
+      const rect=anchorBtn.getBoundingClientRect();
+      const pw=220;
+      const ph=Math.ceil(SOURCE_ICON_CHOICES.length/5)*40 + 16;
+      let left=rect.left;
+      let top=rect.bottom+6;
+      if(left+pw > window.innerWidth-8) left=Math.max(8, window.innerWidth-pw-8);
+      if(top+ph > window.innerHeight-8) top=Math.max(8, rect.top-ph-6);
+      pop.style.left=`${left}px`;
+      pop.style.top=`${top}px`;
+      setTimeout(()=>document.addEventListener("mousedown", _iconPickerOutsideClose, true), 0);
+    }
+    function nameWithIconFieldHtml({ nameId, iconId, nameValue="", iconValue="", fallback="test", namePlaceholder="" }={}){
+      const icon=normalizeSourceIcon(iconValue, fallback);
+      return `<div class="formField">
+        <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+        <div class="nameWithIconField">
+          <button type="button" class="iconPickBtn" id="${escAttr(iconId)}_btn" title="Choose icon" aria-label="Choose icon">${treeIconSvg(icon, false)}</button>
+          <input id="${escAttr(nameId)}" class="formNameInput" type="text" value="${escAttr(nameValue)}" spellcheck="false" placeholder="${escAttr(namePlaceholder||"")}" />
+          <input type="hidden" id="${escAttr(iconId)}" value="${escAttr(icon)}" />
+        </div>
+      </div>`;
+    }
+    function wireNameWithIconField(iconId){
+      const hidden=byId(iconId);
+      const btn=byId(`${iconId}_btn`);
+      if(!hidden || !btn) return;
+      btn.onclick=(ev)=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        openIconPicker(btn, hidden);
+      };
+    }
+    function managerListIconHtml(icon, fallback="file"){
+      const kind=normalizeSourceIcon(icon, fallback);
+      return `<span class="treeIcon icon-${kind}" aria-hidden="true">${treeIconSvg(kind, false)}</span>`;
+    }
     function normalizeDatabaseTags(value){
       const raw=Array.isArray(value)?value:(value==null||value===""?[]:[value]);
       const out=[];
@@ -7610,6 +7841,111 @@
       picker._mode=null;
       picker._listTags=null;
       picker._allowCreate=null;
+    }
+    function hideListSearchPicker(){
+      const picker=byId("listSearchPicker");
+      if(!picker) return;
+      picker.classList.remove("show");
+      picker.setAttribute("aria-hidden","true");
+      picker._onPick=null;
+      picker._items=null;
+      picker._closeOnPick=null;
+    }
+    function showListSearchPicker(anchorEl, items, onPick, opts={}){
+      const picker=byId("listSearchPicker");
+      const listEl=byId("listSearchPickerList");
+      const search=byId("listSearchPickerSearch");
+      if(!picker || !listEl || !anchorEl) return;
+      hideMenus();
+      hideDatabaseTagPicker();
+      const rowsIn=Array.isArray(items) ? items : [];
+      const closeOnPick=opts.closeOnPick!==false;
+      picker._onPick=typeof onPick==="function" ? onPick : null;
+      picker._items=rowsIn;
+      picker._closeOnPick=closeOnPick;
+      let activeIdx=-1;
+      const renderList=()=>{
+        const q=(search?.value||"").trim().toLowerCase();
+        const filtered=rowsIn.filter((it)=>{
+          const blob=`${it.label||""} ${it.meta||""} ${it.id||""}`.toLowerCase();
+          return !q || blob.includes(q);
+        });
+        if(!filtered.length){
+          listEl.innerHTML=`<div class="dbTagPickerEmpty">${q ? (opts.emptyMatch||"No matching items.") : (opts.empty||"No items.")}</div>`;
+          activeIdx=-1;
+          return;
+        }
+        if(activeIdx<0 || activeIdx>=filtered.length) activeIdx=0;
+        listEl.innerHTML=filtered.map((it,idx)=>{
+          const meta=it.meta ? `<span class="itemMeta" style="margin-left:auto;padding-left:8px;">${escapeHtml(it.meta)}</span>` : "";
+          return `<div class="dbTagPickerItem${idx===activeIdx?" active":""}" data-id="${escAttr(it.id)}" role="option"><span class="dbTagPickerItemLabel">${escapeHtml(it.label||it.id)}</span>${meta}</div>`;
+        }).join("");
+        listEl.querySelectorAll(".dbTagPickerItem").forEach((el,idx)=>{
+          el.onmouseenter=()=>{ activeIdx=idx; listEl.querySelectorAll(".dbTagPickerItem").forEach((n,i)=>n.classList.toggle("active", i===idx)); };
+          el.onclick=(ev)=>{
+            if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+            const id=el.getAttribute("data-id");
+            const hit=rowsIn.find((r)=>String(r.id)===String(id));
+            if(!hit) return;
+            if(picker._onPick) picker._onPick(hit);
+            if(picker._closeOnPick) hideListSearchPicker();
+            else{
+              renderList();
+              place();
+              search?.focus();
+            }
+          };
+        });
+      };
+      const place=()=>{
+        const rect=anchorEl.getBoundingClientRect();
+        const z=Math.max(260, appWindowZ + 20);
+        picker.style.zIndex=String(z);
+        picker.classList.add("show");
+        picker.setAttribute("aria-hidden","false");
+        picker.style.visibility="hidden";
+        const width=picker.offsetWidth || 260;
+        const height=picker.offsetHeight || 200;
+        let left=rect.left;
+        let top=rect.bottom + 4;
+        left=Math.max(8, Math.min(left, window.innerWidth - width - 8));
+        if(top + height > window.innerHeight - 8){
+          top=Math.max(8, rect.top - height - 4);
+        }
+        picker.style.left=`${Math.round(left)}px`;
+        picker.style.top=`${Math.round(top)}px`;
+        picker.style.visibility="visible";
+      };
+      if(search){
+        search.value="";
+        search.placeholder=opts.placeholder || "Search...";
+        search.oninput=()=>{ activeIdx=0; renderList(); place(); };
+        search.onkeydown=(ev)=>{
+          const els=[...listEl.querySelectorAll(".dbTagPickerItem")];
+          if(ev.key==="ArrowDown"){
+            ev.preventDefault();
+            if(!els.length) return;
+            activeIdx=(activeIdx+1) % els.length;
+            els.forEach((n,i)=>n.classList.toggle("active", i===activeIdx));
+            els[activeIdx]?.scrollIntoView({ block:"nearest" });
+          }else if(ev.key==="ArrowUp"){
+            ev.preventDefault();
+            if(!els.length) return;
+            activeIdx=(activeIdx-1+els.length) % els.length;
+            els.forEach((n,i)=>n.classList.toggle("active", i===activeIdx));
+            els[activeIdx]?.scrollIntoView({ block:"nearest" });
+          }else if(ev.key==="Enter"){
+            ev.preventDefault();
+            els[activeIdx]?.click();
+          }else if(ev.key==="Escape"){
+            ev.preventDefault();
+            hideListSearchPicker();
+          }
+        };
+      }
+      renderList();
+      place();
+      setTimeout(()=>search?.focus(), 0);
     }
     function showDatabaseTagPicker(anchorEl, chosen, onPick, opts={}){
       const picker=byId("dbTagPicker");
@@ -7800,6 +8136,7 @@
             parquet_root:String(row.parquet_root||"").trim(),
             default_ingest_mode:"permanent",
             is_default:Boolean(row.is_default),
+            icon:normalizeSourceIcon(row.icon, "database"),
             tags,
             updated_at:updatedAt,
           };
@@ -7814,6 +8151,7 @@
           password:String(row.password||""),
           sslmode:String(row.sslmode||"disable"),
           is_default:Boolean(row.is_default),
+          icon:normalizeSourceIcon(row.icon, "database"),
           tags,
           updated_at:updatedAt,
         };
@@ -8211,6 +8549,30 @@
       selectedDatabaseIds.add(db.id);
       return db;
     }
+    function ensureCatalogSourceDb(src){
+      if(!src || !isCatalogSource(src)) return null;
+      let db=state.databases.find((d)=>d.sourceId===src.id);
+      if(!db){
+        db={
+          id:crypto.randomUUID(),
+          sourceId:src.id,
+          sourceType:"catalog",
+          name:src.name||src.run_code||`catalog-${src.test_id}`,
+          catalog_id:src.catalog_id||null,
+        };
+        state.databases.push(db);
+      }else{
+        if(src.catalog_id && !db.catalog_id) db.catalog_id=src.catalog_id;
+        if(src.name && db.name!==src.name) db.name=src.name;
+      }
+      if(src.test_id!=null && Number.isFinite(Number(src.test_id))){
+        const testKey=`${db.id}|${src.test_id}`;
+        addedTestIds.add(testKey);
+        selectedTestIds.add(testKey);
+      }
+      selectedDatabaseIds.add(db.id);
+      return db;
+    }
     function addPostgresTestLeaf({ parentSrc, db_name, test_table, test_run_id, run_code, select=true }){
       const displayName=`${run_code || String(test_run_id)}`;
       const existing=state.sources.find((s)=>isPostgresTestLeaf(s)&&s.parent_source_id===parentSrc.id&&s.db_name===db_name&&s.test_table===test_table&&String(s.test_run_id)===String(test_run_id));
@@ -8538,9 +8900,9 @@
           rowKind:"db_conn",
           expandable:true,
           expanded,
-          selectable:false,
-          icon:"database",
+          selectable:true,
           profileId,
+          icon:normalizeSourceIcon(profile.icon, "database"),
         });
         if(!expanded) return;
         if(!cache || cache.loading){
@@ -8591,12 +8953,12 @@
             items.push({
               id:leafId,
               treeKey:leafId,
-              primary:t.primary,
+              primary:leaf?.name || t.primary,
               depth:1,
               rowKind:"db_test",
               expandable:false,
               selectable:true,
-              icon:"test",
+              icon:normalizeSourceIcon(leaf?.icon || t.icon || profile.icon, "test"),
               profileId,
               dbName:"catalog",
               testTable:"tests",
@@ -8685,6 +9047,7 @@
         if(isPostgresConnSource(s)) return;
         if(isPostgresTestLeaf(s)) return;
         if(isFolderSource(s)) return;
+        if(isCatalogSource(s)) return; // permanently ingested tests render under their database only
         if(isFileSource(s) && s.parent_folder_id) return;
         if(isFileSource(s)){
           items.push({
@@ -8698,17 +9061,6 @@
             icon:fileSourceIconKind(s.type),
             probeClass:fileProbeClass(s),
             tipHtml:fileSourceHoverHtml(s),
-          });
-        } else if(isCatalogSource(s)){
-          items.push({
-            id:s.id,
-            treeKey:s.id,
-            primary:s.name||`catalog #${s.test_id}`,
-            depth:0,
-            rowKind:"catalog",
-            expandable:false,
-            selectable:true,
-            icon:"test",
           });
         }
       });
@@ -8851,6 +9203,9 @@
         else if(isFileSource(s)){
           const db=ensureFileSourceCatalog(s);
           if(db) out.add(db.id);
+        } else if(isCatalogSource(s)){
+          const db=ensureCatalogSourceDb(s);
+          if(db) out.add(db.id);
         } else if(isPostgresConnSource(s)){
           state.databases.filter((d)=>d.sourceId===s.id).forEach((d)=>out.add(d.id));
         }
@@ -8983,6 +9338,7 @@
     }
     function fitAppWindowInViewport(el, { cascade=0, recenter=false }={}){
       if(!el?.isConnected) return;
+      if(el._novaDragging || el._novaResizing) return;
       const maxH=Math.max(160, Math.floor(window.innerHeight*0.96));
       el.style.maxHeight=`${maxH}px`;
       el.style.height="auto";
@@ -9022,6 +9378,7 @@
       let dragging=false, resizing=false, dx=0, dy=0, startW=0, startH=0, startX=0, startY=0;
       header.addEventListener("mousedown",(e)=>{
         dragging=true;
+        el._novaDragging=true;
         const rect=el.getBoundingClientRect();
         dx=e.clientX-rect.left;
         dy=e.clientY-rect.top;
@@ -9030,6 +9387,7 @@
       });
       resizeHandle.addEventListener("mousedown",(e)=>{
         resizing=true;
+        el._novaResizing=true;
         startW=el.offsetWidth;
         startH=el.offsetHeight;
         startX=e.clientX;
@@ -9048,7 +9406,12 @@
           el.style.height=`${Math.max(140,startH+(e.clientY-startY))}px`;
         }
       };
-      const onUp=()=>{ dragging=false; resizing=false; };
+      const onUp=()=>{
+        dragging=false;
+        resizing=false;
+        el._novaDragging=false;
+        el._novaResizing=false;
+      };
       window.addEventListener("mousemove",onMove);
       window.addEventListener("mouseup",onUp);
       entry._cleanupDrag=()=>{
@@ -9195,6 +9558,7 @@
       if(e.key==="Escape") closeAllNovaSelects();
     });
     window.addEventListener("resize", closeAllNovaSelects);
+    window.addEventListener("resize", closeIconPicker);
     window.addEventListener("scroll", closeAllNovaSelects, true);
     function openAppWindow(title,bodyHtml,saveFn,layoutOpts){
       const layer=byId("appWindowLayer");
@@ -9337,6 +9701,7 @@
       byId("channelAddMenu").style.display = "none";
       byId("maskAddMenu").style.display = "none";
       hideDatabaseTagPicker();
+      hideListSearchPicker();
     }
     function showContextMenu(x,y,items,opts={}){
       const m=byId("contextMenu");
@@ -9534,6 +9899,7 @@
           test_id:Number(item.testRunId),
           run_code:item.runCode||item.testRunId,
           catalog_id:String(profile.id),
+          icon:item.icon||null,
           select:false,
         });
       }
@@ -9561,10 +9927,12 @@
       startFolderSourcePicker();
     }
     function isCatalogSource(s){ return s && (s.type==="catalog" || s.leaf_kind==="catalog_test"); }
-    function addCatalogTestSource({ test_id, run_code, select=true, catalog_id=null }){
+    function addCatalogTestSource({ test_id, run_code, select=true, catalog_id=null, icon=null }){
       const catId=catalog_id || activeCatalogId || null;
       const existing=state.sources.find((s)=>isCatalogSource(s)&&Number(s.test_id)===Number(test_id)&&String(s.catalog_id||"")===String(catId||""));
       if(existing){
+        if(run_code) existing.name=run_code;
+        if(icon) existing.icon=normalizeSourceIcon(icon, existing.icon||"test");
         if(select) selectedSourceIds.add(existing.id);
         return existing;
       }
@@ -9576,6 +9944,7 @@
         test_id:Number(test_id),
         catalog_id:catId,
         run_code:run_code||String(test_id),
+        icon:normalizeSourceIcon(icon, "test"),
         file_path:"",
         artifact_id:"",
       };
@@ -9625,21 +9994,25 @@
         return null;
       }
     }
-    async function browseProfileAccessible(profile, { force=false }={}){
+    const _browseInFlight=new Map();
+    async function browseProfileAccessible(profile, { force=false, silent=false }={}){
       if(isHiddenLocalCatalogProfile(profile)) return;
       const profileId=String(profile.id||"");
       if(!profileId) return;
       const existing=dbBrowseCache.get(profileId);
       if(!force && existing && existing.accessible!==undefined && !existing.loading) return;
+      if(!force && _browseInFlight.has(profileId)) return _browseInFlight.get(profileId);
+      const run=(async()=>{
       if(isDuckdbProfile(profile)){
         dbBrowseCache.set(profileId, { loading:true, accessible:false, error:null, databases:[], tests:{}, kind:"duckdb" });
-        renderAll();
+        if(!silent) renderAll();
         try{
           const tests=await getJson(`/api/catalog/tests?limit=500&catalog_id=${encodeURIComponent(profileId)}`);
           const rows=(tests||[]).map((t)=>({
             test_run_id:String(t.test_run_id),
             runCode:String(t.run_code||t.test_run_id),
             primary:String(t.run_code||t.test_run_id),
+            icon:t.icon||null,
           }));
           dbBrowseCache.set(profileId, {
             loading:false,
@@ -9659,11 +10032,11 @@
             tests:{},
           });
         }
-        renderAll();
+        if(!silent) renderAll();
         return;
       }
       dbBrowseCache.set(profileId, { loading:true, accessible:false, error:null, databases:[], tests:{} });
-      renderAll();
+      if(!silent) renderAll();
       try{
         const dbs=await getJson(`/api/databases?${profileConnQueryFrom(profile)}`);
         const names=(dbs||[]).map((d)=>String(d.name)).filter(Boolean);
@@ -9693,7 +10066,10 @@
           tests:{},
         });
       }
-      renderAll();
+      if(!silent) renderAll();
+      })();
+      _browseInFlight.set(profileId, run);
+      try{ await run; } finally { _browseInFlight.delete(profileId); }
     }
     async function ensureDbConnBrowsed(profileId, { force=false }={}){
       const profile=(databaseLibrary||[]).find((p)=>String(p.id)===String(profileId));
@@ -9743,36 +10119,188 @@
         if(src.type!=="tdms" && !src.time_index_channel) src.needs_time_index=true;
       }
     }
+    function folderAncestorChain(folderId){
+      const chain=[];
+      let cur=state.sources.find((s)=>isFolderSource(s)&&s.id===folderId);
+      while(cur){
+        chain.push(cur);
+        if(!cur.parent_folder_id) break;
+        cur=state.sources.find((s)=>isFolderSource(s)&&s.id===cur.parent_folder_id);
+      }
+      return chain;
+    }
+    function collectSelectedFoldersForReload(){
+      const byIdMap=new Map();
+      selectedSourceIds.forEach((id)=>{
+        const key=String(id);
+        if(key.startsWith("dbconn:")||key.startsWith("dbdb:")||key.startsWith("dbtest:")) return;
+        const src=state.sources.find((s)=>s.id===id);
+        if(!src) return;
+        let folder=null;
+        if(isFolderSource(src)) folder=src;
+        else if(isFileSource(src) && src.parent_folder_id){
+          folder=state.sources.find((s)=>isFolderSource(s)&&s.id===src.parent_folder_id)||null;
+        }
+        if(!folder) return;
+        // Prefer a folder that has an absolute scan path; walk up if needed.
+        const chain=folderAncestorChain(folder.id);
+        const withPath=chain.find((f)=>String(f.folder_path||"").trim() && !String(f.folder_path).includes("://")) || folder;
+        if(withPath && String(withPath.folder_path||"").trim()) byIdMap.set(withPath.id, withPath);
+      });
+      // Drop nested folders whose ancestor is also selected (one scan covers them).
+      const ids=[...byIdMap.keys()];
+      ids.forEach((id)=>{
+        const chain=folderAncestorChain(id).slice(1);
+        if(chain.some((anc)=>byIdMap.has(anc.id))) byIdMap.delete(id);
+      });
+      return [...byIdMap.values()];
+    }
+    function collectSelectedDatabaseProfilesForReload(){
+      const byIdMap=new Map();
+      const addProfile=(profileId)=>{
+        const pid=String(profileId||"");
+        if(!pid || byIdMap.has(pid)) return;
+        const profile=(databaseLibrary||[]).find((p)=>String(p.id)===pid);
+        if(profile && !isHiddenLocalCatalogProfile(profile)) byIdMap.set(pid, profile);
+      };
+      selectedSourceIds.forEach((id)=>{
+        const key=String(id);
+        if(key.startsWith("dbconn:")){
+          addProfile(key.slice("dbconn:".length));
+          return;
+        }
+        if(key.startsWith("dbtest:")){
+          // dbtest:profileId|db|table|testRunId
+          const rest=key.slice("dbtest:".length);
+          addProfile(rest.split("|")[0]);
+          return;
+        }
+        const src=state.sources.find((s)=>s.id===id);
+        if(!src) return;
+        if(isCatalogSource(src)) addProfile(src.catalog_id);
+        else if(src.type==="duckdb_catalog") addProfile(src.library_id||src.catalog_id||src.id);
+        else if(isPostgresTestLeaf(src) || isPostgresConnSource(src)){
+          const libId=src.library_id||src.profile_id||src.catalog_id;
+          if(libId) addProfile(libId);
+        }
+      });
+      return [...byIdMap.values()];
+    }
+    function removeFileSourceEntry(src){
+      if(!src || !isFileSource(src)) return;
+      state.databases=state.databases.filter((d)=>d.sourceId!==src.id);
+      selectedSourceIds.delete(src.id);
+      state.sources=state.sources.filter((x)=>x.id!==src.id);
+    }
+    function pruneEmptyFolderNodes(rootFolderId){
+      const walk=(folderId)=>{
+        folderDirectChildren(folderId).forEach((child)=>{
+          if(isFolderSource(child)) walk(child.id);
+        });
+        if(folderId===rootFolderId) return;
+        const folder=state.sources.find((s)=>isFolderSource(s)&&s.id===folderId);
+        if(!folder) return;
+        if(folderDirectChildren(folderId).length) return;
+        state.sources=state.sources.filter((s)=>s.id!==folderId);
+        selectedSourceIds.delete(folderId);
+      };
+      walk(rootFolderId);
+    }
+    async function resyncFolderSourceTree(rootFolder){
+      const folderPath=String(rootFolder?.folder_path||"").trim();
+      if(!folderPath) return { added:0, removed:0, total:0 };
+      const scan=await getJson(`/api/file/scan-folder?path=${encodeURIComponent(folderPath)}`);
+      const dataFiles=Array.isArray(scan?.files)?scan.files:[];
+      const rootAbsPath=String(scan.root||folderPath);
+      if(scan.root_name) rootFolder.name=String(scan.root_name);
+      if(scan.parent_name) rootFolder.display_parent=String(scan.parent_name);
+      const seen=new Set();
+      let added=0;
+      for(let i=0;i<dataFiles.length;i+=1){
+        const file=dataFiles[i];
+        const filePath=String(file.path||"").trim();
+        if(!filePath) continue;
+        const fileType=detectFileTypeFromPath(filePath);
+        if(!fileType) continue;
+        seen.add(normalizeFilePath(filePath));
+        const rel=String(file.relative_path||file.name||"").replace(/\\/g,"/");
+        const parts=rel.split("/").filter(Boolean);
+        const folderParts=parts.slice(0,-1);
+        const parentId=folderParts.length
+          ? ensureFolderPathParts(folderParts, { rootAbsPath, rootFolderId:rootFolder.id })
+          : rootFolder.id;
+        const existing=findFileSourceByPath(filePath, fileType);
+        if(existing){
+          existing.parent_folder_id=parentId;
+          if(!existing.origin_path) existing.origin_path=filePath;
+          continue;
+        }
+        const baseName=String(file.name||filePath.split(/[/\\]/).pop()||fileType);
+        const defaultName=baseName.replace(/\.[^.]+$/, "")||baseName||fileType;
+        // List-only sync: do not probe or temporarily index files on reload.
+        await addOrReuseFileSource({
+          type:fileType,
+          name:defaultName,
+          filePath,
+          originPath:filePath,
+          deferUi:true,
+          deferIngest:true,
+          parentFolderId:parentId,
+          schemaOk:true,
+          needsTimeIndex:false,
+          needsUnits:false,
+        });
+        added+=1;
+      }
+      let removed=0;
+      folderDescendantFileSources(rootFolder.id).forEach((src)=>{
+        if(seen.has(normalizeFilePath(src.file_path))) return;
+        removeFileSourceEntry(src);
+        removed+=1;
+      });
+      pruneEmptyFolderNodes(rootFolder.id);
+      return { added, removed, total:dataFiles.length };
+    }
     async function refreshSourcesPanel(){
       const btn=byId("refreshSourcesBtn");
       if(btn) btn.disabled=true;
       try{
-        setStatus("Refreshing sources…");
+        const folders=collectSelectedFoldersForReload();
+        const profiles=collectSelectedDatabaseProfilesForReload();
+        if(!folders.length && !profiles.length){
+          setStatus("Select a folder or database in Sources, then reload.", true);
+          return;
+        }
+        setStatus("Reloading selected sources…");
         await loadDatabaseLibrary();
         syncDatabaseLibrarySources();
-        dbBrowseCache.clear();
-        renderAll();
-        const profiles=[...(databaseLibrary||[])];
+
+        let folderAdded=0, folderRemoved=0;
+        for(let i=0;i<folders.length;i+=1){
+          const folder=folders[i];
+          setStatus(`Scanning folder ${i+1}/${folders.length}: ${folderTreePrimary(folder)||folder.name}`);
+          const stats=await resyncFolderSourceTree(folder);
+          folderAdded+=stats.added||0;
+          folderRemoved+=stats.removed||0;
+        }
+
         for(let i=0;i<profiles.length;i+=1){
-          setStatus(`Checking databases ${i+1}/${profiles.length}: ${profiles[i].name||"profile"}`);
-          await browseProfileAccessible(profiles[i], { force:true });
+          const profile=profiles[i];
+          setStatus(`Refreshing database ${i+1}/${profiles.length}: ${profile.name||"profile"}`);
+          dbBrowseCache.delete(String(profile.id));
+          await browseProfileAccessible(profile, { force:true });
         }
-        const files=state.sources.filter(isFileSource);
-        for(let i=0;i<files.length;i+=1){
-          setStatus(`Checking files ${i+1}/${files.length}: ${files[i].name||files[i].type}`);
-          await refreshFileProbeStatus(files[i]);
-        }
-        // Drop unsupported non-file entries that may have snuck in
+
         state.sources=state.sources.filter((s)=>!s.type || isFolderSource(s) || isFileSource(s) || isCatalogSource(s) || s.type==="duckdb_catalog" || s.type==="postgres");
+        clearCatalogCache();
         renderAll();
         saveState();
-        const shownProfiles=(databaseLibrary||[]).filter((p)=>{
-          const c=dbBrowseCache.get(String(p.id));
-          return c && c.accessible && (c.databases||[]).length;
-        }).length;
-        setStatus(`Sources refreshed. ${shownProfiles} accessible database profile(s), ${files.length} file(s).`);
+        const bits=[];
+        if(folders.length) bits.push(`${folders.length} folder(s) (+${folderAdded}/-${folderRemoved})`);
+        if(profiles.length) bits.push(`${profiles.length} database(s)`);
+        setStatus(`Reloaded ${bits.join(", ")}.`);
       }catch(err){
-        setStatus(`Source refresh failed: ${err}`, true);
+        setStatus(`Source reload failed: ${err}`, true);
       }finally{
         if(btn) btn.disabled=false;
       }
@@ -10160,10 +10688,7 @@
         let readTags=()=>normalizeDatabaseTags([...chosenTags]);
         openModal("Databases > Manager > Edit",`
           <div class="formStack">
-            <div class="formField">
-              <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
-              <input id="m_db_name" class="formNameInput" type="text" value="${escAttr(profile.name||"")}" spellcheck="false" />
-            </div>
+            ${nameWithIconFieldHtml({ nameId:"m_db_name", iconId:"m_db_icon", nameValue:profile.name||"", iconValue:profile.icon, fallback:"database" })}
             <div class="formFieldRow formFieldRowGrow">
               <div class="formField">
                 <label>Host<span class="reqMark" aria-hidden="true">*</span></label>
@@ -10220,6 +10745,7 @@
               user,
               password:byId("m_db_password")?.value||"",
               sslmode:(byId("m_db_ssl")?.value||"disable").trim()||"disable",
+              icon:normalizeSourceIcon(byId("m_db_icon")?.value, "database"),
               tags:readTags(),
               updated_at:new Date().toISOString(),
             };
@@ -10237,21 +10763,20 @@
           }
         });
         readTags=wireDatabaseTagEditor(chosenTags);
+        wireNameWithIconField("m_db_icon");
         return;
       }
       const leaf=isEdit ? "Edit" : "Create";
       const titleParts=isEdit ? ["Manager", "Edit"] : ["Manager", "Create"];
       const defaultName=isEdit ? (profile.name||"") : "";
       const defaultPath=isEdit ? (profile.catalog_path||"") : "";
+      const defaultIcon=isEdit ? (profile.icon||"database") : "database";
       const chosenTags=new Set(normalizeDatabaseTags(isEdit ? profile.tags : []));
       let readTags=()=>normalizeDatabaseTags([...chosenTags]);
       const folderIcon=`<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.5 3.2h4.2l1.2 1.3H14.5c.5 0 .9.4.9.9v6.5c0 .5-.4.9-.9.9H1.5c-.5 0-.9-.4-.9-.9V4.1c0-.5.4-.9.9-.9zm.3 2.2v6.3h12.4V5.4H1.8z"/></svg>`;
       openModal(`Databases > Manager > ${leaf}`,`
         <div class="formStack">
-          <div class="formField">
-            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
-            <input id="m_db_name" class="formNameInput" type="text" value="${escAttr(defaultName)}" spellcheck="false" placeholder="Project catalog" />
-          </div>
+          ${nameWithIconFieldHtml({ nameId:"m_db_name", iconId:"m_db_icon", nameValue:defaultName, iconValue:defaultIcon, fallback:"database", namePlaceholder:"Project catalog" })}
           <div class="formField">
             <label>Filepath<span class="reqMark" aria-hidden="true">*</span></label>
             <div class="inputWithSuffix">
@@ -10274,6 +10799,7 @@
         if(!name){ setStatus("Name is required.", true); return false; }
         if(!filepath){ setStatus("Filepath is required.", true); return false; }
         const tags=readTags();
+        const icon=normalizeSourceIcon(byId("m_db_icon")?.value, "database");
         const updatedAt=new Date().toISOString();
         try{
           await loadDatabaseLibrary();
@@ -10292,6 +10818,7 @@
               catalog_path:filepath,
               parquet_root:rows[idx].parquet_root||"",
               default_ingest_mode:"permanent",
+              icon,
               tags,
               updated_at:updatedAt,
             };
@@ -10305,6 +10832,7 @@
               parquet_root:"",
               default_ingest_mode:"permanent",
               is_default:!rows.some((r)=>isDuckdbProfile(r)),
+              icon,
               tags,
               updated_at:updatedAt,
             });
@@ -10325,6 +10853,7 @@
         }
       });
       readTags=wireDatabaseTagEditor(chosenTags);
+      wireNameWithIconField("m_db_icon");
       const browseBtn=byId("m_db_path_browse");
       if(browseBtn){
         browseBtn.onclick=async(ev)=>{
@@ -10403,8 +10932,10 @@
         const kind = isDuckdbProfile(r) ? "DuckDB" : "PostgreSQL";
         const tagsHtml = databaseTagsHtml(r.tags);
         const updated = formatDatabaseUpdatedAt(r.updated_at);
+        const icon = normalizeSourceIcon(r.icon, "database");
         return `
           <div class="selectRow dbManagerRow" data-id="${escAttr(r.id)}" title="${escAttr(r.name || kind)}">
+            ${managerListIconHtml(icon, "database")}
             <div class="itemPrimary">${escapeHtml(r.name || kind)}</div>
             ${tagsHtml ? `<div class="dbTagChipRow dbTagChipRowList">${tagsHtml}</div>` : ""}
             <div class="dbRowUpdated">${escapeHtml(updated)}</div>
@@ -10707,10 +11238,7 @@
         : [];
       openModal(`Units > Manager > ${leaf}`,`
         <div class="formStack">
-          <div class="formField">
-            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
-            <input id="m_unit_name" class="formNameInput" type="text" value="${escAttr(isEdit ? (category.name||"") : "")}" spellcheck="false" placeholder="Temperature" />
-          </div>
+          ${nameWithIconFieldHtml({ nameId:"m_unit_name", iconId:"m_unit_icon", nameValue:isEdit ? (category.name||"") : "", iconValue:isEdit ? (category.icon||"chart") : "chart", fallback:"chart", namePlaceholder:"Temperature" })}
           <div class="formField">
             <label>Preferred Unit<span class="reqMark" aria-hidden="true">*</span></label>
             <input id="m_unit_preferred" type="text" value="${escAttr(isEdit ? (category.preferred||"") : "")}" spellcheck="false" placeholder="K" />
@@ -10731,6 +11259,7 @@
         const preferred=(byId("m_unit_preferred")?.value||"").trim();
         if(!name){ setStatus("Name is required.", true); return false; }
         if(!preferred){ setStatus("Preferred unit is required.", true); return false; }
+        const icon=normalizeSourceIcon(byId("m_unit_icon")?.value, "chart");
         const cleanedUnits=units
           .map((u)=>({
             symbol:String(u.symbol||"").trim(),
@@ -10746,6 +11275,7 @@
             rows[idx]={
               ...rows[idx],
               name,
+              icon,
               preferred,
               units:cleanedUnits,
             };
@@ -10753,6 +11283,7 @@
             rows.unshift({
               id:crypto.randomUUID(),
               name,
+              icon,
               preferred,
               units:cleanedUnits,
             });
@@ -10815,6 +11346,7 @@
           renderUnits();
         };
       }
+      wireNameWithIconField("m_unit_icon");
       renderUnits();
     }
     async function openUnitManagerModal(){
@@ -10836,8 +11368,10 @@
         const count=(cat.units||[]).length;
         const preferred=String(cat.preferred||"").trim() || "—";
         const meta=`${preferred} · ${count} translation${count===1?"":"s"}`;
+        const icon=normalizeSourceIcon(cat.icon, "chart");
         return `
           <div class="selectRow dbManagerRow" data-id="${escAttr(cat.id)}" title="${escAttr(cat.name||"Unit category")}">
+            ${managerListIconHtml(icon, "chart")}
             <div class="itemPrimary">${escapeHtml(cat.name||"Unit category")}</div>
             <div class="dbRowUpdated">${escapeHtml(meta)}</div>
           </div>
@@ -11045,9 +11579,13 @@
       const addRangeMaskBtn = byId("addRangeMaskBtn");
       const ctxMenu=byId("contextMenu");
       const tagPicker=byId("dbTagPicker");
+      const listPicker=byId("listSearchPicker");
       if(ctxMenu&&ctxMenu.contains(e.target)) return;
       if(tagPicker&&tagPicker.contains(e.target)) return;
+      if(listPicker&&listPicker.contains(e.target)) return;
       if(e.target.closest&&e.target.closest("#m_db_tag_add")) return;
+      if(e.target.closest&&e.target.closest("#ing_range_add")) return;
+      if(e.target.closest&&e.target.closest("#ing_calc_add_ch")) return;
       if(e.target.closest&&e.target.closest("#m_db_filter_btn")) return;
       if(e.target.closest&&e.target.closest("[data-summary-limit-pick]")) return;
       if(e.target.closest&&e.target.closest(".cfgMenuBtn")) return;
@@ -11558,6 +12096,7 @@
       return {
         id:String(src.id||crypto.randomUUID()),
         name:String(src.name||"").trim() || "Limit",
+        icon:normalizeSourceIcon(src.icon, "chart"),
         unit:String(src.unit||"").trim(),
         thresholds,
       };
@@ -12053,10 +12592,7 @@
       let entry=null;
       entry=openModal(`Configurations > Manager > ${leaf}`,`
         <div class="formStack">
-          <div class="formField">
-            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
-            <input id="m_cfg_name" class="formNameInput" type="text" value="${escAttr(isEdit ? (config.name||"") : "")}" spellcheck="false" placeholder="Hotfire channels" />
-          </div>
+          ${nameWithIconFieldHtml({ nameId:"m_cfg_name", iconId:"m_cfg_icon", nameValue:isEdit ? (config.name||"") : "", iconValue:isEdit ? (config.icon||"chart") : "chart", fallback:"chart", namePlaceholder:"Hotfire channels" })}
           <div class="itemMeta" style="padding:0 2px;">
             Captures current channels (${channelCount}), calculated (${calcCount}), aliases (${aliasCount}),
             range masks (${rangeMaskCount}), and channel masks (${channelMaskCount}).
@@ -12068,6 +12604,7 @@
         const nameInput=entry?.root?.querySelector?.("#m_cfg_name") || byId("m_cfg_name");
         const name=(nameInput?.value||"").trim();
         if(!name){ setStatus("Name is required.", true); nameInput?.focus?.(); return false; }
+        const icon=normalizeSourceIcon(byId("m_cfg_icon")?.value, "chart");
         try{
           let library=await loadConfigLibrary();
           const snap=isEdit
@@ -12081,6 +12618,7 @@
           const body={
             id: isEdit ? String(config.id) : crypto.randomUUID(),
             name,
+            icon,
             updated_at:new Date().toISOString(),
             channels:snap.channels||[],
             calculatedChannels:snap.calculatedChannels||[],
@@ -12104,6 +12642,7 @@
           return false;
         }
       });
+      wireNameWithIconField("m_cfg_icon");
       requestAnimationFrame(()=>{
         const input=entry?.root?.querySelector?.("#m_cfg_name");
         if(input){ input.focus(); input.select?.(); }
@@ -12127,8 +12666,10 @@
         const ch=(cfg.channels||[]).length;
         const masks=(cfg.masks||[]).length;
         const meta=`${ch} channel${ch===1?"":"s"} · ${masks} mask${masks===1?"":"s"} · ${formatConfigUpdatedAt(cfg.updated_at||cfg.savedAt)}`;
+        const icon=normalizeSourceIcon(cfg.icon, "chart");
         return `
           <div class="selectRow dbManagerRow" data-id="${escAttr(cfg.id)}" title="${escAttr(cfg.name||"Configuration")}">
+            ${managerListIconHtml(icon, "chart")}
             <div class="itemPrimary">${escapeHtml(cfg.name||"Configuration")}</div>
             <div class="dbRowUpdated">${escapeHtml(meta)}</div>
           </div>
@@ -12286,6 +12827,889 @@
 
     /* ── Range Definition library ───────────────────────────────── */
     let rangeDefinitionLibrary=[];
+    /* ── Ingestion rule library ─────────────────────────────────── */
+    let ingestionLibrary=[];
+    async function loadIngestionLibrary(){
+      try{
+        const data=await getJson("/api/ingestion-library");
+        ingestionLibrary=Array.isArray(data?.rules)?data.rules:[];
+      }catch{
+        ingestionLibrary=ingestionLibrary||[];
+      }
+      return ingestionLibrary;
+    }
+    async function saveIngestionLibrary(list){
+      const res=await postJson("/api/ingestion-library",{rules:list||[]});
+      if(res && res.ok===false) throw new Error(res.error||"Failed to save ingestion rules");
+      return loadIngestionLibrary();
+    }
+    function blankIngestionRule(){
+      return {
+        id:crypto.randomUUID(),
+        name:"",
+        icon:"flame",
+        target_catalog_id:"",
+        channels:{ mode:"all", include:[], exclude:[], rename:{}, require:[] },
+        calculated_channels:[],
+        range_definition_ids:[],
+        apply_range_rule_ids:[],
+        time_index_channel:null,
+        units_in_headers:false,
+        parameters:{},
+        note:"",
+      };
+    }
+    function ingestionChannelEntriesFromChannels(ch){
+      const rename=(ch && typeof ch.rename==="object" && ch.rename) ? ch.rename : {};
+      const include=Array.isArray(ch?.include) ? ch.include : [];
+      const exclude=Array.isArray(ch?.exclude) ? ch.exclude : [];
+      const seen=new Set();
+      const entries=[];
+      include.forEach((src)=>{
+        const source=String(src||"").trim();
+        if(!source || seen.has(source)) return;
+        seen.add(source);
+        const stored=String(rename[source]||source).trim() || source;
+        entries.push({ source, stored, excluded:false });
+      });
+      exclude.forEach((src)=>{
+        const source=String(src||"").trim();
+        if(!source || seen.has(source)) return;
+        seen.add(source);
+        const stored=String(rename[source]||source).trim() || source;
+        entries.push({ source, stored, excluded:true });
+      });
+      Object.entries(rename).forEach(([src, dest])=>{
+        const source=String(src||"").trim();
+        if(!source || seen.has(source)) return;
+        seen.add(source);
+        const stored=String(dest||source).trim() || source;
+        entries.push({ source, stored, excluded:false });
+      });
+      return entries;
+    }
+    function channelsBlockFromChannelEntries(entries, mode, preserve={}){
+      const include=[];
+      const exclude=[];
+      const rename={};
+      (entries||[]).forEach((e)=>{
+        const source=String(e?.source||"").trim();
+        if(!source) return;
+        const stored=String(e?.stored||source).trim() || source;
+        if(e?.excluded){
+          exclude.push(source);
+        }else{
+          include.push(source);
+          if(stored!==source) rename[source]=stored;
+        }
+      });
+      return {
+        mode:mode==="include" ? "include" : "all",
+        include,
+        exclude,
+        rename,
+        require:Array.isArray(preserve.require) ? preserve.require.slice() : [],
+      };
+    }
+    function ingestionIncludeEntriesFromChannels(ch){
+      return ingestionChannelEntriesFromChannels(ch);
+    }
+    function channelsBlockFromIncludeEntries(entries, mode, preserve={}){
+      return channelsBlockFromChannelEntries(entries, mode, preserve);
+    }
+    function ingestionSourceIdsForRule(seedSourceIds=null){
+      if(Array.isArray(seedSourceIds) && seedSourceIds.length){
+        return [...new Set(seedSourceIds.map(String).filter(Boolean))];
+      }
+      return [...new Set(effectiveSelectedSourceIds().map(String).filter(Boolean))];
+    }
+    async function collectIngestionReferenceChannels(seedSourceIds=null){
+      const sourceIds=ingestionSourceIdsForRule(seedSourceIds);
+      const byName=new Map();
+      for(const id of sourceIds){
+        const src=state.sources.find((s)=>String(s.id)===String(id));
+        if(!src) continue;
+        let db=null;
+        try{
+          if(isFileSource(src)){
+            await ensureFileSourceIndexed(src);
+            db=state.databases.find((d)=>d.sourceId===src.id) || ensureFileSourceCatalog(src);
+          }else if(isCatalogSource(src)){
+            db=state.databases.find((d)=>d.sourceId===src.id) || ensureCatalogSourceDb(src);
+          }else if(isPostgresTestLeaf(src)){
+            db={ id:src.db_entry_id };
+          }else if(isFolderSource(src)){
+            for(const child of folderDescendantFileSources(src.id)){
+              try{
+                await ensureFileSourceIndexed(child);
+                const childDb=state.databases.find((d)=>d.sourceId===child.id) || ensureFileSourceCatalog(child);
+                if(!childDb) continue;
+                const rows=await fetchChannelsForDb(childDb.id);
+                rows.forEach((r)=>{
+                  const name=String(r.primary||r.channel_name||"").trim();
+                  if(!name || byName.has(name)) return;
+                  byName.set(name, { name, unit:null, sourceLabel:child.name||child.type||"" });
+                });
+              }catch{}
+            }
+            continue;
+          }
+          if(!db?.id) continue;
+          const rows=await fetchChannelsForDb(db.id);
+          rows.forEach((r)=>{
+            const name=String(r.primary||r.channel_name||"").trim();
+            if(!name || byName.has(name)) return;
+            byName.set(name, { name, unit:null, sourceLabel:src.name||src.type||"" });
+          });
+        }catch(err){
+          setStatus(`Failed to index channels for '${src.name||id}': ${err}`, true);
+        }
+      }
+      return [...byName.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+    }
+    async function createIngestionRuleFromSources(seedSourceIds=null, { onSaved=null }={}){
+      const ids=ingestionSourceIdsForRule(seedSourceIds);
+      if(!ids.length){
+        setStatus("Select at least one source first.", true);
+        return;
+      }
+      ids.forEach((id)=>selectedSourceIds.add(String(id)));
+      setStatus("Indexing selected sources for ingestion rule…");
+      await nextPaint();
+      const referenceChannels=await collectIngestionReferenceChannels(ids);
+      if(!referenceChannels.length){
+        setStatus("No channels found on the selected sources.", true);
+        return;
+      }
+      const first=state.sources.find((s)=>String(s.id)===String(ids[0]));
+      const preferredName=first?.name ? `${first.name} ingest` : "";
+      openIngestionRuleForm({
+        mode:"create",
+        rule:{
+          ...blankIngestionRule(),
+          name:preferredName,
+          channels:{ mode:"include", include:[], exclude:[], rename:{}, require:[] },
+        },
+        referenceChannels,
+        seedSourceIds:ids,
+        onSaved,
+      });
+    }
+    function parseRenameMap(text){
+      const out={};
+      String(text||"").split(/\r?\n/).forEach((line)=>{
+        const s=line.trim();
+        if(!s) return;
+        const m=s.split(/=>|->|=/).map((p)=>p.trim()).filter(Boolean);
+        if(m.length>=2) out[m[0]]=m[1];
+      });
+      return out;
+    }
+    function formatRenameMap(map){
+      return Object.entries(map||{}).map(([k,v])=>`${k} => ${v}`).join("\n");
+    }
+    function parseNameList(text){
+      return String(text||"").split(/[\n,;]+/).map((s)=>s.trim()).filter(Boolean);
+    }
+    async function projectCatalogOptionsHtml(selectedId=""){
+      let rows=[];
+      try{
+        const data=await getJson("/api/database-library");
+        rows=(Array.isArray(data?.databases)?data.databases:[]).filter((d)=>
+          String(d?.type||"duckdb")==="duckdb" && String(d?.id||"")!=="local"
+        );
+      }catch{ rows=[]; }
+      if(!rows.length) return `<option value="">No project databases — create one in File → Databases</option>`;
+      return rows.map((d)=>{
+        const id=String(d.id||"");
+        return `<option value="${escAttr(id)}" ${id===String(selectedId||"")?"selected":""}>${escapeHtml(d.name||id)}</option>`;
+      }).join("");
+    }
+    function ingestionWindowTitleHtml(...leaves){
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg></span>`;
+      const sep=`<span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span>`;
+      const parts=[`<span>Ingestion</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${escapeHtml(leaf)}</span>`));
+      return `${icon}${parts.join("")}`;
+    }
+    function renderIngestionList(){ /* sidebar removed — use File → Ingestion Manager */ }
+    async function openIngestionManagerModal(){
+      await loadIngestionLibrary();
+      let library=structuredClone(ingestionLibrary||[]);
+      library=library.map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
+      const byIdRow=(id)=>library.find((x)=>String(x.id)===String(id))||null;
+      const filterList=(rows)=>{
+        const q=(byId("m_ing_search")?.value||"").trim().toLowerCase();
+        if(!q) return rows;
+        return rows.filter((r)=>{
+          const blob=`${r.name||""} ${r.note||""} ${r.target_catalog_id||""}`.toLowerCase();
+          return blob.includes(q);
+        });
+      };
+      const rowHtml=(rule)=>{
+        const meta=formatConfigUpdatedAt(rule.updated_at);
+        const icon=normalizeSourceIcon(rule.icon, "flame");
+        return `
+          <div class="selectRow dbManagerRow" data-id="${escAttr(rule.id)}" title="${escAttr(rule.name||"Ingestion rule")}">
+            ${managerListIconHtml(icon, "flame")}
+            <div class="itemPrimary">${escapeHtml(rule.name||"Untitled rule")}</div>
+            <div class="dbRowUpdated">${escapeHtml(meta)}</div>
+          </div>
+        `;
+      };
+      const persistLibrary=async()=>{
+        try{
+          library=await saveIngestionLibrary(library);
+          library=library.map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
+          return true;
+        }catch(err){
+          setStatus(`Failed to save ingestion rules: ${err}`, true);
+          return false;
+        }
+      };
+      const refreshFromServer=async()=>{
+        await loadIngestionLibrary();
+        library=structuredClone(ingestionLibrary||[]);
+        library=library.map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
+        renderList();
+      };
+      const deleteRule=async(id)=>{
+        const idx=library.findIndex((x)=>String(x.id)===String(id));
+        if(idx<0) return;
+        const removed=library[idx];
+        library.splice(idx,1);
+        const ok=await persistLibrary();
+        if(ok){
+          setStatus(`Deleted ingestion rule '${removed?.name||id}'.`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
+      };
+      const duplicateRule=async(id)=>{
+        const rule=byIdRow(id);
+        if(!rule) return;
+        const copy={ ...structuredClone(rule), id:crypto.randomUUID(), name:`${rule.name||"rule"} copy`, updated_at:new Date().toISOString() };
+        library=[copy, ...library];
+        const ok=await persistLibrary();
+        if(ok){
+          setStatus(`Duplicated rule '${copy.name}'.`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
+      };
+      const importRules=async()=>{
+        const obj=await pickConfigJsonFile();
+        if(!obj) return;
+        const rows=Array.isArray(obj.rules) ? obj.rules
+          : (Array.isArray(obj) ? obj : [obj]);
+        const imported=rows.filter((r)=>r && typeof r==="object").map((r)=>({
+          ...r,
+          id:crypto.randomUUID(),
+          updated_at:new Date().toISOString(),
+        }));
+        if(!imported.length){
+          setStatus("No valid ingestion rules found in import file.", true);
+          return;
+        }
+        library=[...imported, ...library];
+        const ok=await persistLibrary();
+        if(ok){
+          setStatus(`Imported ${imported.length} ingestion rule(s).`);
+          renderList();
+        }else{
+          await refreshFromServer();
+        }
+      };
+      const exportRules=async()=>{
+        const result=await saveJsonToFile("nova_ingestion_library.json", { rules:library });
+        if(result.ok&&result.viaPicker) setStatus("Ingestion library exported.");
+        if(result.ok&&!result.viaPicker) setStatus("Ingestion library downloaded.");
+        if(!result.ok&&result.cancelled) setStatus("Export cancelled.");
+      };
+      const renderList=()=>{
+        const el=byId("m_ing_list");
+        if(!el) return;
+        const filtered=filterList(library);
+        el.innerHTML=filtered.length
+          ? filtered.map((r)=>rowHtml(r)).join("")
+          : `<div class="empty">${library.length?"No matching rules.":"No ingestion rules yet. Use + to create one."}</div>`;
+        el.querySelectorAll(".selectRow[data-id]").forEach((row)=>{
+          const id=row.getAttribute("data-id");
+          row.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const rule=byIdRow(id);
+            if(!rule) return;
+            const z=Math.max(200, appWindowZ+15);
+            showContextMenu(ev.clientX, ev.clientY, [
+              { label:"Edit", action:()=>openIngestionRuleForm({ mode:"edit", rule, onSaved:()=>{ void refreshFromServer(); } }) },
+              { label:"Run on file…", action:()=>{ void runIngestionRuleOnFile(rule); } },
+              { label:"Duplicate", action:()=>{ void duplicateRule(id); } },
+              { label:"Delete", action:()=>{ void deleteRule(id); } },
+              { sep:true },
+              { label:"Import rules...", action:()=>{ void importRules(); } },
+              { label:"Export rules...", action:()=>{ void exportRules(); } },
+            ], { zIndex:z });
+          };
+          row.ondblclick=()=>{
+            const rule=byIdRow(id);
+            if(rule) openIngestionRuleForm({ mode:"edit", rule, onSaved:()=>{ void refreshFromServer(); } });
+          };
+        });
+      };
+      openModal(
+        "Ingestion > Manager",
+        `<div class="maskSearchPad dbManagerToolbar">
+            <input id="m_ing_search" class="searchInput" type="text" placeholder="Search..." />
+            <button id="m_ing_add_btn" type="button" class="addBtn" aria-label="Create ingestion rule">+</button>
+         </div>
+         <div class="maskListPad">
+           <div id="m_ing_list" class="modalList"></div>
+         </div>
+         <div class="modalActions" style="display:none" aria-hidden="true"></div>`,
+        async()=>true,
+        { ...WF_CFG, closable:true, titleHtml:ingestionWindowTitleHtml("Manager") }
+      );
+      byId("m_ing_search").oninput=()=>renderList();
+      byId("m_ing_add_btn").onclick=(ev)=>{
+        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+        const seed=ingestionSourceIdsForRule();
+        const onSaved=()=>{ void refreshFromServer(); };
+        if(seed.length){
+          void createIngestionRuleFromSources(seed, { onSaved });
+        }else{
+          openIngestionRuleForm({ mode:"create", onSaved });
+        }
+      };
+      const listHost=byId("m_ing_list");
+      if(listHost){
+        listHost.oncontextmenu=(ev)=>{
+          if(ev.target.closest && ev.target.closest(".selectRow[data-id]")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const z=Math.max(200, appWindowZ+15);
+          showContextMenu(ev.clientX, ev.clientY, [
+            { label:"Import rules...", action:()=>{ void importRules(); } },
+            { label:"Export rules...", action:()=>{ void exportRules(); } },
+          ], { zIndex:z });
+        };
+      }
+      renderList();
+    }
+    async function openIngestionRuleForm({
+      mode="create",
+      rule=null,
+      onSaved=null,
+      referenceChannels=null,
+      seedSourceIds=null,
+    }={}){
+      const draft=rule ? structuredClone(rule) : blankIngestionRule();
+      await loadRangeDefinitionLibrary();
+      let refChannels=Array.isArray(referenceChannels) ? referenceChannels.slice() : null;
+      if(!refChannels){
+        try{
+          refChannels=await collectIngestionReferenceChannels(seedSourceIds);
+        }catch{
+          refChannels=[];
+        }
+      }
+      const catalogOpts=await projectCatalogOptionsHtml(draft.target_catalog_id);
+      const ch=draft.channels||{ mode:"all", include:[], exclude:[], rename:{}, require:[] };
+      let includeEntries=ingestionIncludeEntriesFromChannels(ch);
+      let calculatedChannels=Array.isArray(draft.calculated_channels)
+        ? structuredClone(draft.calculated_channels)
+        : [];
+      let rangeDefinitionIds=(draft.range_definition_ids||[]).map(String).filter(Boolean);
+      const leaf=mode==="edit" ? "Edit Rule" : "New Rule";
+      const titleParts=mode==="edit" ? ["Manager", "Edit Rule"] : ["Manager", "New Rule"];
+      const calcIconSvg=`<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M1.5 1.5h5v5h-5v-5zm7 0h5v5h-5v-5zm-7 7h5v5h-5v-5zm8.25 1h1.5v1.75H13v1.5h-1.75V14h-1.5v-1.75H8v-1.5h1.75V9.5z"/></svg>`;
+      const propRow=(label, controlHtml)=>`<div class="rangeMetaRow">
+            <div class="rangeMetaCell">${escapeHtml(label)}</div>
+            ${controlHtml}
+          </div>`;
+      const boolSelect=(id, on)=>`<select id="${escAttr(id)}" class="objPropControl">
+        <option value="true" ${on?"selected":""}>True</option>
+        <option value="false" ${on?"":"selected"}>False</option>
+      </select>`;
+
+      const formEntry=openModal(`Ingestion > ${leaf}`, `
+        <div class="formStack">
+          ${nameWithIconFieldHtml({
+            nameId:"ing_name",
+            iconId:"ing_icon",
+            nameValue:draft.name||"",
+            iconValue:draft.icon||"flame",
+            fallback:"flame",
+            namePlaceholder:"Hotfire ingest",
+          })}
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader"><label>Properties</label></div>
+            <div class="rangeMetaDivider"></div>
+            <div class="rangeMetaTable" id="ing_props">
+              ${propRow("Target Database", `<select id="ing_catalog" class="objPropControl">${catalogOpts}</select>`)}
+              ${propRow("Channel Mode", `<select id="ing_mode" class="objPropControl">
+                <option value="all" ${ch.mode!=="include"?"selected":""}>All channels</option>
+                <option value="include" ${ch.mode==="include"?"selected":""}>Only listed channels</option>
+              </select>`)}
+              ${propRow("Parse Units", boolSelect("ing_units", Boolean(draft.units_in_headers)))}
+            </div>
+          </div>
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader">
+              <label>Channels</label>
+              <div class="headerBtns" style="display:inline-flex;gap:2px;">
+                <button type="button" class="dbTagAddBtn" id="ing_calc_add" title="Add calculated channel" aria-label="Add calculated channel">${calcIconSvg}</button>
+                <button type="button" class="dbTagAddBtn" id="ing_ch_add" title="Add channel" aria-label="Add channel">+</button>
+              </div>
+            </div>
+            <div class="rangeMetaDivider"></div>
+            <div id="ing_channels" class="rangeMetaTable"></div>
+          </div>
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader">
+              <label>Range Definitions</label>
+              <button type="button" class="dbTagAddBtn" id="ing_range_add" title="Add range definition" aria-label="Add range definition">+</button>
+            </div>
+            <div class="rangeMetaDivider"></div>
+            <div id="ing_ranges" class="rangeMetaTable"></div>
+          </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>
+      `, { ...WF_ALIAS_FORM, titleHtml:ingestionWindowTitleHtml(...titleParts) }, async()=>{
+        const name=(byId("ing_name")?.value||"").trim();
+        if(!name){ setStatus("Rule name is required.", true); return false; }
+        const target=(byId("ing_catalog")?.value||"").trim();
+        if(!target){ setStatus("Select a project database.", true); return false; }
+        const channelMode=(byId("ing_mode")?.value||"all");
+        const includedCount=includeEntries.filter((e)=>!e.excluded).length;
+        if(channelMode==="include" && !includedCount){
+          setStatus("Add at least one included channel when mode is 'Only listed channels'.", true);
+          return false;
+        }
+        const nextRule={
+          ...draft,
+          name,
+          icon:normalizeSourceIcon(byId("ing_icon")?.value, "flame"),
+          target_catalog_id:target,
+          channels:channelsBlockFromChannelEntries(includeEntries, channelMode, ch),
+          calculated_channels:structuredClone(calculatedChannels),
+          range_definition_ids:rangeDefinitionIds.slice(),
+          units_in_headers:String(byId("ing_units")?.value||"false")==="true",
+          updated_at:new Date().toISOString(),
+        };
+        let library=await loadIngestionLibrary();
+        if(mode==="edit") library=library.map((r)=>r.id===nextRule.id ? nextRule : r);
+        else library=[...library, nextRule];
+        await saveIngestionLibrary(library);
+        setStatus(`Saved ingestion rule '${nextRule.name}'.`);
+        if(typeof onSaved==="function") onSaved(nextRule);
+        return true;
+      });
+
+      const fitIngestionForm=()=>{
+        const win=formEntry?.el;
+        if(!win) return;
+        requestAnimationFrame(()=>fitAppWindowInViewport(win, { recenter:false }));
+      };
+
+      wireNameWithIconField("ing_icon");
+
+      const channelListEl=byId("ing_channels");
+      const rangeListEl=byId("ing_ranges");
+
+      const editIncludeEntry=(entry, idx)=>{
+        openIngestionIncludeChannelForm({
+          mode:"edit",
+          entry,
+          titleParts,
+          onSaved:(next)=>{
+            includeEntries[idx]={ ...includeEntries[idx], ...next, excluded:Boolean(includeEntries[idx]?.excluded) };
+            renderChannelList();
+          },
+        });
+      };
+      const editCalculated=(calc, idx)=>{
+        openIngestionCalculatedChannelForm({
+          mode:"edit",
+          calc,
+          titleParts,
+          referenceChannels:refChannels,
+          onSaved:(next)=>{
+            calculatedChannels[idx]=next;
+            renderChannelList();
+          },
+        });
+      };
+
+      const renderChannelList=()=>{
+        if(!channelListEl) return;
+        const rows=[];
+        includeEntries.forEach((e, idx)=>{
+          const key=`inc:${e.source}`;
+          const renamed=e.stored && e.stored!==e.source;
+          const action=e.excluded ? "exclude" : "include";
+          const meta=renamed ? `${action} · → ${e.stored}` : action;
+          rows.push({
+            key,
+            kind:"channel",
+            idx,
+            primary:e.source,
+            meta,
+            excluded:Boolean(e.excluded),
+            onEdit:()=>editIncludeEntry(e, idx),
+            onToggle:()=>{
+              includeEntries[idx]={ ...includeEntries[idx], excluded:!includeEntries[idx].excluded };
+              renderChannelList();
+            },
+            onDelete:()=>{
+              includeEntries.splice(idx,1);
+              renderChannelList();
+            },
+          });
+        });
+        calculatedChannels.forEach((c, idx)=>{
+          const key=`calc:${c.name}`;
+          const formula=c.kind==="rolling"
+            ? `${c.op||"mean"}(${c.window||"?"})`
+            : String(c.formula||"");
+          rows.push({
+            key,
+            kind:"calc",
+            idx,
+            primary:c.name,
+            meta:formula ? `calc · ${formula}` : "calculated",
+            onEdit:()=>editCalculated(c, idx),
+            onDelete:()=>{
+              calculatedChannels.splice(idx,1);
+              renderChannelList();
+            },
+          });
+        });
+        if(!rows.length){
+          channelListEl.innerHTML="";
+          fitIngestionForm();
+          return;
+        }
+        channelListEl.innerHTML=rows.map((r)=>{
+          if(r.kind==="channel"){
+            return `<div class="rangeMetaRow" data-ch-key="${escAttr(r.key)}">
+              <div class="rangeMetaCell rangeMetaCellName">
+                <span class="rangeMetaNameText">${escapeHtml(r.primary)}</span>
+              </div>
+              <div class="rangeMetaCell">
+                <button type="button" class="ingChannelActionBtn${r.excluded?" is-exclude":""}" data-a="toggle" data-ch-key="${escAttr(r.key)}" title="Toggle include/exclude">${escapeHtml(r.meta)}</button>
+              </div>
+            </div>`;
+          }
+          return `<div class="rangeMetaRow" data-ch-key="${escAttr(r.key)}" style="cursor:pointer;">
+            <div class="rangeMetaCell rangeMetaCellName">
+              <span class="rangeMetaNameText">${escapeHtml(r.primary)}</span>
+            </div>
+            <div class="rangeMetaCell muted">${escapeHtml(r.meta)}</div>
+          </div>`;
+        }).join("");
+        channelListEl.querySelectorAll(".rangeMetaRow[data-ch-key]").forEach((row)=>{
+          const key=row.getAttribute("data-ch-key");
+          const item=rows.find((r)=>r.key===key);
+          if(!item) return;
+          row.ondblclick=()=>item.onEdit();
+          row.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const z=Math.max(200, appWindowZ+15);
+            const items=[
+              { label:"Edit", action:()=>item.onEdit() },
+            ];
+            if(item.kind==="channel"){
+              items.push({
+                label:item.excluded ? "Set include" : "Set exclude",
+                action:()=>item.onToggle(),
+              });
+            }
+            items.push({ label:"Delete", action:()=>item.onDelete() });
+            showContextMenu(ev.clientX, ev.clientY, items, { zIndex:z });
+          };
+        });
+        channelListEl.querySelectorAll('button[data-a="toggle"]').forEach((btn)=>{
+          btn.onclick=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const key=btn.getAttribute("data-ch-key");
+            const item=rows.find((r)=>r.key===key);
+            if(item?.onToggle) item.onToggle();
+          };
+        });
+        fitIngestionForm();
+      };
+
+      const renderRangeList=()=>{
+        if(!rangeListEl) return;
+        const defs=rangeDefinitionIds.map((id)=>{
+          const def=(rangeDefinitionLibrary||[]).find((d)=>String(d.id)===String(id));
+          return { id, def };
+        });
+        if(!defs.length){
+          rangeListEl.innerHTML="";
+          fitIngestionForm();
+          return;
+        }
+        rangeListEl.innerHTML=defs.map(({ id, def })=>{
+          const n=(def?.nodes||[]).length;
+          const meta=def ? `${n} node${n===1?"":"s"}` : "missing definition";
+          return `<div class="rangeMetaRow" data-range-id="${escAttr(id)}" style="cursor:pointer;">
+            <div class="rangeMetaCell rangeMetaCellName">
+              <span class="rangeMetaNameText">${escapeHtml(def?.name||id)}</span>
+            </div>
+            <div class="rangeMetaCell muted">${escapeHtml(meta)}</div>
+          </div>`;
+        }).join("");
+        rangeListEl.querySelectorAll(".rangeMetaRow[data-range-id]").forEach((row)=>{
+          const id=row.getAttribute("data-range-id");
+          row.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const z=Math.max(200, appWindowZ+15);
+            showContextMenu(ev.clientX, ev.clientY, [
+              { label:"Delete", action:()=>{
+                rangeDefinitionIds=rangeDefinitionIds.filter((x)=>String(x)!==String(id));
+                renderRangeList();
+              } },
+            ], { zIndex:z });
+          };
+        });
+        fitIngestionForm();
+      };
+
+      const openIncludeFromReferences=()=>{
+        if(!selectedSourceIds.size || !effectiveSelectedSourceIds().length){
+          setStatus("Select at least one source first.", true);
+          return;
+        }
+        const prevBySource=Object.fromEntries(includeEntries.map((e)=>[e.source, e]));
+        const chosen=new Set(includeEntries.map((e)=>e.source));
+        void showAddChannelsModal({
+          external:true,
+          selectedSet:chosen,
+          modalTitle:`Ingestion > Add Channels`,
+          titleHtml:ingestionWindowTitleHtml(...titleParts, "Add Channels"),
+          onApply:(next)=>{
+            const names=(next||[]).map((n)=>String(n||"").trim()).filter(Boolean);
+            includeEntries=names.map((source)=>{
+              const prev=prevBySource[source];
+              return {
+                source,
+                stored:prev?.stored||source,
+                excluded:Boolean(prev?.excluded),
+              };
+            });
+            renderChannelList();
+          },
+        });
+      };
+
+      const addBtn=byId("ing_ch_add");
+      if(addBtn){
+        addBtn.onclick=(ev)=>{
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          openIncludeFromReferences();
+        };
+      }
+      const calcAddBtn=byId("ing_calc_add");
+      if(calcAddBtn){
+        calcAddBtn.onclick=(ev)=>{
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          openIngestionCalculatedChannelForm({
+            mode:"create",
+            titleParts,
+            referenceChannels:refChannels,
+            onSaved:(next)=>{
+              const idx=calculatedChannels.findIndex((c)=>c.name===next.name);
+              if(idx>=0) calculatedChannels[idx]=next;
+              else calculatedChannels.push(next);
+              renderChannelList();
+            },
+          });
+        };
+      }
+
+      const rangeAddBtn=byId("ing_range_add");
+      if(rangeAddBtn){
+        rangeAddBtn.onclick=(ev)=>{
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          const available=(rangeDefinitionLibrary||[]).filter((d)=>
+            !rangeDefinitionIds.map(String).includes(String(d.id))
+          );
+          if(!available.length){
+            setStatus((rangeDefinitionLibrary||[]).length
+              ? "All range definitions are already on this rule."
+              : "No range definitions yet. Create one in File → Range Definitions.", true);
+            return;
+          }
+          const picker=byId("listSearchPicker");
+          if(picker?.classList.contains("show")){
+            hideListSearchPicker();
+            return;
+          }
+          showListSearchPicker(
+            rangeAddBtn,
+            available.map((d)=>{
+              const n=(d.nodes||[]).length;
+              return {
+                id:String(d.id),
+                label:d.name||d.id,
+                meta:`${n} node${n===1?"":"s"}`,
+              };
+            }),
+            (item)=>{
+              if(!item?.id) return;
+              if(rangeDefinitionIds.map(String).includes(String(item.id))) return;
+              rangeDefinitionIds.push(String(item.id));
+              renderRangeList();
+            },
+            {
+              placeholder:"Search range definitions...",
+              empty:"No range definitions.",
+              emptyMatch:"No matching range definitions.",
+              closeOnPick:true,
+            }
+          );
+        };
+      }
+
+      renderChannelList();
+      renderRangeList();
+    }
+    function openIngestionIncludeChannelForm({ mode="create", entry=null, titleParts=[], onSaved=null }={}){
+      const isEdit=mode==="edit" && entry;
+      const leaf=isEdit ? "Edit Channel" : "Include Channel";
+      openModal(`Ingestion > ${leaf}`, `
+        <div class="formStack">
+          <div class="formField">
+            <label>Source name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="ing_inc_src" class="formNameInput" type="text" value="${escAttr(isEdit ? (entry.source||"") : "")}" spellcheck="false" placeholder="P_CHAMBER" />
+          </div>
+          <div class="formField">
+            <label>Stored name</label>
+            <input id="ing_inc_stored" type="text" value="${escAttr(isEdit ? (entry.stored||entry.source||"") : "")}" spellcheck="false" placeholder="Same as source (optional rename)" />
+          </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>
+      `, { ...WF_ALIAS_FORM, titleHtml:ingestionWindowTitleHtml(...titleParts, leaf) }, async()=>{
+        const source=(byId("ing_inc_src")?.value||"").trim();
+        if(!source){ setStatus("Source channel name is required.", true); return false; }
+        const stored=(byId("ing_inc_stored")?.value||"").trim() || source;
+        if(typeof onSaved==="function") onSaved({ source, stored });
+        return true;
+      });
+    }
+    function openIngestionCalculatedChannelForm({ mode="create", calc=null, titleParts=[], referenceChannels=null, onSaved=null }={}){
+      const isEdit=mode==="edit" && calc;
+      const leaf="Calculated Channel";
+      const deps=isEdit ? (Array.isArray(calc.channels) ? calc.channels.slice() : []) : [];
+      const chosen=new Set(deps);
+      const defaultName=isEdit ? (calc?.name||"channel_formula") : "channel_formula";
+      const unitCurrent=isEdit ? String(calc?.unit||"") : "";
+      const formulaCurrent=isEdit ? String(calc?.formula||"") : "";
+      openModal(`Ingestion > ${leaf}`, `
+        <div class="channelEditorForm">
+        <div class="formStack">
+          <div class="formField">
+            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
+            <input id="ing_calc_name" class="formNameInput" type="text" value="${escAttr(defaultName)}" spellcheck="false" />
+          </div>
+          <div class="formField">
+            <label>Unit</label>
+            <input id="ing_calc_unit" type="text" value="${escAttr(unitCurrent)}" placeholder="e.g. -" spellcheck="false" />
+          </div>
+        </div>
+        <div class="aliasMembersBlock">
+          <div class="aliasMembersHeader">
+            <label>Channels</label>
+            <button type="button" class="addBtn" id="ing_calc_add_ch" title="Add channel" aria-label="Add channel">+</button>
+          </div>
+          <div id="ing_calc_members" class="aliasMemberList"></div>
+        </div>
+        <div class="calcFormulaPad">
+          <div class="formField">
+            <label>Formula</label>
+            <input id="ing_calc_expr" type="text" value="${escAttr(formulaCurrent)}" placeholder="A + B" spellcheck="false" />
+          </div>
+        </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>
+      `, { ...WF_ALIAS_FORM, titleHtml:ingestionWindowTitleHtml(...titleParts, leaf) }, async()=>{
+        const ordered=[...chosen].map((id)=>channelKeyFromId(id)||String(id||"").trim()).filter(Boolean);
+        if(!ordered.length){ setStatus("Add at least one input channel.", true); return false; }
+        const compiled=compileFormula(byId("ing_calc_expr")?.value||"", ordered.length);
+        if(!compiled.ok){ setStatus(compiled.error, true); return false; }
+        const rawName=(byId("ing_calc_name")?.value||"").trim();
+        if(!rawName){ setStatus("Calculated channel name is required.", true); return false; }
+        const unitRaw=(byId("ing_calc_unit")?.value||"").trim();
+        const next={
+          kind:"formula",
+          name:rawName,
+          unit:unitRaw || null,
+          channels:ordered,
+          formula:compiled.expr,
+        };
+        if(typeof onSaved==="function") onSaved(next);
+        return true;
+      });
+      const listEl=byId("ing_calc_members");
+      const renderMembers=()=>renderCalcMemberList(listEl, chosen);
+      renderMembers();
+      const addChBtn=byId("ing_calc_add_ch");
+      if(addChBtn){
+        addChBtn.onclick=()=>showAddAliasMembersModal(chosen, renderMembers, {
+          leaf,
+          titleHtml:ingestionWindowTitleHtml(...titleParts, leaf, "Add"),
+          modalTitle:`Ingestion > ${leaf} > Add`,
+          allowAliases:false,
+        });
+      }
+    }
+    async function runIngestionRuleOnFile(rule){
+      try{
+        const picked=await postJson("/api/desktop/pick-files", { multiple:false });
+        const paths=Array.isArray(picked?.paths) ? picked.paths : (picked?.path ? [picked.path] : []);
+        if(!paths.length){ setStatus("No file selected."); return; }
+        const filePath=paths[0];
+        setStatus(`Ingesting ${filePath} with rule '${rule.name}'…`);
+        await nextPaint();
+        const r=await fetch("/api/v3/ingest/rule", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({ file_path:filePath, rule_id:rule.id }),
+        });
+        if(!r.ok){
+          let msg=`Ingest failed (${r.status})`;
+          try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
+          throw new Error(msg);
+        }
+        const ing=await r.json();
+        setStatus(`Permanent ingest ready: ${ing.run_code||""} · ${(ing.channels||[]).length} channel(s) · test_id=${ing.test_id??"—"}`);
+        try{
+          if(typeof syncDatabaseLibrarySources==="function") syncDatabaseLibrarySources();
+          if(typeof clearCatalogCache==="function") clearCatalogCache();
+          const catId=String(rule?.target_catalog_id||"");
+          if(catId){
+            const profile=(databaseLibrary||[]).find((p)=>String(p.id)===catId);
+            if(profile) await browseProfileAccessible(profile, { force:true });
+          }
+          renderAll();
+        }catch{}
+      }catch(err){
+        setStatus(String(err?.message||err), true);
+      }
+    }
+
     async function loadRangeDefinitionLibrary(){
       try{
         const data=await getJson("/api/range-definition-library");
@@ -12395,7 +13819,9 @@
       return String(cond?.expression||"").trim();
     }
     function serializeRangeDefCondition(cond){
-      const channels=(Array.isArray(cond?.channels)?cond.channels:[]).map((c)=>String(c||"").trim()).filter(Boolean);
+      const channels=(Array.isArray(cond?.channels)?cond.channels:[])
+        .map((c)=>channelKeyFromId(c))
+        .filter((n)=>n && !isAliasChannelKey(n) && !isCalculatedChannelKey(n));
       const formula=String(cond?.formula||"").trim()||(channels.length?"A":"");
       const op=String(cond?.op||">").trim()||">";
       const occurrence=String(cond?.occurrence||"first").toLowerCase()||"first";
@@ -12491,11 +13917,9 @@
         const channels=Array.isArray(cond.channels)?cond.channels:[];
         const chList=channels.length
           ? channels.map((name,ci)=>{
-              const alias=findAliasByKey(name);
-              const meta=alias ? ` <span class="itemMeta">alias (${aliasMemberNames(alias).length})</span>` : "";
               return `
               <div class="selectRow" data-ch="${escAttr(name)}">
-                <div class="itemPrimary">${escapeHtml(name)}${meta}</div>
+                <div class="itemPrimary">${escapeHtml(name)}</div>
                 <span class="selectRowVar">${ci<26 ? String.fromCharCode(65+ci) : String(ci+1)}</span>
                 <button type="button" class="aliasMemberRemove" data-a="rm-ch" data-side="${side}" data-ch="${escAttr(name)}" aria-label="Remove">&#10005;</button>
               </div>`;
@@ -12575,6 +13999,11 @@
           setStatus("Start and end need channels (or expression) and values.", true);
           return false;
         }
+        const aliasHit=[...(draft.start.channels||[]), ...(draft.end.channels||[])].find((ch)=>isAliasChannelKey(channelKeyFromId(ch)));
+        if(aliasHit){
+          setStatus("Range definitions require source channels, not aliases. Pick channels from a selected source.", true);
+          return false;
+        }
         const start=serializeRangeDefCondition(draft.start);
         const end=serializeRangeDefCondition(draft.end);
         if(start.channels.length){
@@ -12635,11 +14064,9 @@
         const channels=Array.isArray(draft[side]?.channels)?draft[side].channels:[];
         list.innerHTML=channels.length
           ? channels.map((name,ci)=>{
-              const alias=findAliasByKey(name);
-              const meta=alias ? ` <span class="itemMeta">alias (${aliasMemberNames(alias).length})</span>` : "";
               return `
               <div class="selectRow" data-ch="${escAttr(name)}">
-                <div class="itemPrimary">${escapeHtml(name)}${meta}</div>
+                <div class="itemPrimary">${escapeHtml(name)}</div>
                 <span class="selectRowVar">${ci<26 ? String.fromCharCode(65+ci) : String(ci+1)}</span>
                 <button type="button" class="aliasMemberRemove" data-a="rm-ch" data-side="${side}" data-ch="${escAttr(name)}" aria-label="Remove">&#10005;</button>
               </div>`;
@@ -12683,10 +14110,11 @@
           draft[side]=draft[side]||blankRangeDefCondition(side);
           const chosen=new Set(draft[side].channels||[]);
           showAddAliasMembersModal(chosen, ()=>{
-            draft[side].channels=[...chosen];
+            // Range definitions only accept physical source channels (no aliases).
+            draft[side].channels=[...chosen].map((id)=>channelKeyFromId(id)).filter((n)=>n && !isAliasChannelKey(n) && !isCalculatedChannelKey(n));
             if(!draft[side].formula) draft[side].formula="A";
             refreshCondChannels(side);
-          }, { leaf:"Range Definition", titleHtml:rangeDefsWindowTitleHtml(...titleParts, leaf, "Add"), allowAliases:true });
+          }, { leaf:"Range Definition", titleHtml:rangeDefsWindowTitleHtml(...titleParts, leaf, "Add"), allowAliases:false });
         };
       });
       refreshCondChannels("start");
@@ -12707,10 +14135,7 @@
       let selectedNodeId=nodes[0]?.id ? String(nodes[0].id) : "";
       openModal(`Ranges > Definitions > ${leaf}`,`
         <div class="formStack">
-          <div class="formField">
-            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
-            <input id="m_rdef_name" class="formNameInput" type="text" value="${escAttr(isEdit ? (definition.name||"") : "")}" spellcheck="false" placeholder="Hotfire range tree" />
-          </div>
+          ${nameWithIconFieldHtml({ nameId:"m_rdef_name", iconId:"m_rdef_icon", nameValue:isEdit ? (definition.name||"") : "", iconValue:isEdit ? (definition.icon||"chart") : "chart", fallback:"chart", namePlaceholder:"Hotfire range tree" })}
           <div class="formField">
             <label>Description</label>
             <input id="m_rdef_desc" type="text" value="${escAttr(isEdit ? (definition.description||"") : "")}" spellcheck="false" placeholder="Optional" />
@@ -12730,6 +14155,7 @@
         const name=(byId("m_rdef_name")?.value||"").trim();
         const description=(byId("m_rdef_desc")?.value||"").trim();
         if(!name){ setStatus("Name is required.", true); return false; }
+        const icon=normalizeSourceIcon(byId("m_rdef_icon")?.value, "chart");
         const cleanedNodes=[];
         for(const n of nodes){
           const nodeName=String(n.name||"").trim();
@@ -12768,6 +14194,7 @@
           const body={
             id:isEdit ? definition.id : crypto.randomUUID(),
             name,
+            icon,
             description:description||null,
             updated_at:new Date().toISOString(),
             nodes:cleanedNodes,
@@ -12884,6 +14311,7 @@
           onSaved:upsertNode,
         });
       };
+      wireNameWithIconField("m_rdef_icon");
       renderTree();
     }
     function collectRangeDefChannels(definition){
@@ -12921,18 +14349,24 @@
         return new Set();
       }
     }
+    function rangeDefPhysicalNames(depName, availableSet){
+      // Range definitions do not expand aliases — only physical source channels.
+      const name=channelKeyFromId(depName);
+      if(!name || isAliasChannelKey(name) || isCalculatedChannelKey(name)) return [];
+      if(availableSet!=null && !availableSet.has(name)) return [];
+      return [name];
+    }
     async function missingRangeDefChannelsForSource(definition, src){
       const required=collectRangeDefChannels(definition);
       if(!required.length) return required;
       const available=await sourceChannelNameSet(src);
-      // Aliases resolve to physical members present on this source.
-      return required.filter((ch)=>resolveCalcDepRawNames(ch, available).length===0);
+      return required.filter((ch)=>rangeDefPhysicalNames(ch, available).length===0);
     }
     function resolveRangeDefFetchChannels(definition, available){
       const names=[];
       const seen=new Set();
       collectRangeDefChannels(definition).forEach((ch)=>{
-        resolveCalcDepRawNames(ch, available).forEach((raw)=>{
+        rangeDefPhysicalNames(ch, available).forEach((raw)=>{
           if(!raw || seen.has(raw)) return;
           seen.add(raw);
           names.push(raw);
@@ -12940,32 +14374,14 @@
       });
       return names;
     }
-    function dbForRangeCapableSource(src){
-      if(!src) return null;
-      if(isFileSource(src)) return ensureFileSourceCatalog(src);
-      let db=state.databases.find((d)=>d.sourceId===src.id);
-      if(db) return db;
-      if(src.parent_source_id){
-        db=state.databases.find((d)=>d.sourceId===src.parent_source_id);
-        if(db) return db;
-      }
-      return null;
-    }
-    function testIdsForRangeSource(src, db){
-      if(!db) return [];
-      if(src?.test_id!=null) return [String(src.test_id)];
-      const fromAdded=[...addedTestIds]
-        .filter((k)=>k.startsWith(`${db.id}|`))
-        .map((k)=>k.split("|")[1])
-        .filter(Boolean);
-      if(fromAdded.length) return fromAdded;
-      return ["1"];
-    }
     function buildRangeDefFormulaSeries(rows, channels, formula){
       const compiled=compileFormula(formula||"A", channels.length);
       if(!compiled.ok) throw new Error(compiled.error);
       const available=new Set((rows||[]).map((r)=>r.channel_name).filter(Boolean));
-      const resolved=channels.map((ch)=>resolveCalcDepForEval(ch, available));
+      const resolved=channels.map((ch)=>{
+        const raws=rangeDefPhysicalNames(ch, available);
+        return raws[0]||null;
+      });
       if(resolved.some((ch)=>!ch)) return [];
       const byTime=new Map();
       resolved.forEach((ch, idx)=>{
@@ -13059,17 +14475,87 @@
       nodes.forEach((n)=>walk(String(n.id)));
       return ordered;
     }
+    function dbForRangeCapableSource(src){
+      if(!src) return null;
+      if(isFileSource(src)) return ensureFileSourceCatalog(src);
+      let db=state.databases.find((d)=>d.sourceId===src.id);
+      if(db) return db;
+      if(src.parent_source_id){
+        db=state.databases.find((d)=>d.sourceId===src.parent_source_id);
+        if(db) return db;
+      }
+      return null;
+    }
+    function testIdsForRangeSource(src, db){
+      if(!db) return [];
+      if(src?.test_id!=null) return [String(src.test_id)];
+      const fromAdded=[...addedTestIds]
+        .filter((k)=>k.startsWith(`${db.id}|`))
+        .map((k)=>k.split("|")[1])
+        .filter(Boolean);
+      if(fromAdded.length) return fromAdded;
+      return ["1"];
+    }
+    function nodeMissingChannels(node, available){
+      const startCond=normalizeRangeDefCondition(node.start, "start");
+      const endCond=normalizeRangeDefCondition(node.end, "end");
+      const missing=[];
+      [...startCond.channels, ...endCond.channels].forEach((ch)=>{
+        if(rangeDefPhysicalNames(ch, available).length===0 && !missing.includes(ch)) missing.push(ch);
+      });
+      return missing;
+    }
     async function evaluateRangeDefinitionOnSource(definition, src){
       const channels=collectRangeDefChannels(definition);
       if(!channels.length) throw new Error(`Definition '${definition.name}' has no selectable channels`);
       const available=await sourceChannelNameSet(src);
-      const missing=channels.filter((ch)=>resolveCalcDepRawNames(ch, available).length===0);
-      if(missing.length){
-        return { created:[], skipped:true, reason:`missing ${missing.join(", ")}` };
+      const ordered=topoRangeDefNodes(definition.nodes||[]);
+      const runnable=[];
+      const skippedNodes=[];
+      for(const node of ordered){
+        const startCond=normalizeRangeDefCondition(node.start, "start");
+        const endCond=normalizeRangeDefCondition(node.end, "end");
+        if(!startCond.channels.length || !endCond.channels.length){
+          skippedNodes.push({ id:String(node.id), name:node.name, reason:"needs channels on start and end" });
+          continue;
+        }
+        const parentNodeId=node.parent_id!=null ? String(node.parent_id) : null;
+        if(parentNodeId){
+          const parentSkipped=skippedNodes.some((s)=>String(s.id)===parentNodeId);
+          const parentRunnable=runnable.some((n)=>String(n.id)===parentNodeId);
+          if(parentSkipped || !parentRunnable){
+            skippedNodes.push({ id:String(node.id), name:node.name, reason:"parent range was skipped" });
+            continue;
+          }
+        }
+        const missing=nodeMissingChannels(node, available);
+        if(missing.length){
+          skippedNodes.push({ id:String(node.id), name:node.name, reason:`missing ${missing.join(", ")}` });
+          continue;
+        }
+        runnable.push(node);
       }
-      const fetchChannels=resolveRangeDefFetchChannels(definition, available);
+      if(!runnable.length){
+        const reason=skippedNodes.length
+          ? skippedNodes.map((s)=>`'${s.name}' (${s.reason})`).join("; ")
+          : "no runnable nodes";
+        return { created:[], skipped:true, skippedNodes, reason };
+      }
+      const fetchChannels=[];
+      const seenFetch=new Set();
+      runnable.forEach((node)=>{
+        const startCond=normalizeRangeDefCondition(node.start, "start");
+        const endCond=normalizeRangeDefCondition(node.end, "end");
+        [...startCond.channels, ...endCond.channels].forEach((ch)=>{
+          rangeDefPhysicalNames(ch, available).forEach((raw)=>{
+            if(!raw || seenFetch.has(raw)) return;
+            seenFetch.add(raw);
+            fetchChannels.push(raw);
+          });
+        });
+      });
       if(!fetchChannels.length){
-        return { created:[], skipped:true, reason:"missing required channels" };
+        return { created:[], skipped:true, skippedNodes, reason:"missing required channels" };
       }
       const db=dbForRangeCapableSource(src);
       if(!db) throw new Error(`No catalog entry for source '${src.name||src.id}'`);
@@ -13081,32 +14567,34 @@
       const { rows }=await queryV3ForDb(db.id, src, db, fetchChannels, tests, { mode:"detail", resolutionPx });
       rows.forEach((r)=>{ if(!Number.isFinite(r.__ts)) r.__ts=parseRowTimeMs(r); });
       const present=new Set(rows.map((r)=>r.channel_name).filter(Boolean));
-      const missingInData=channels.filter((ch)=>resolveCalcDepRawNames(ch, present).length===0);
-      if(missingInData.length){
-        return { created:[], skipped:true, reason:`missing ${missingInData.join(", ")}` };
-      }
-      const ordered=topoRangeDefNodes(definition.nodes||[]);
       const createdByNode=new Map();
       const created=[];
       const defaultParent=(()=>{
         const sr=findSourceRangeForSource(src);
         return sr ? Number(sr.range_id) : null;
       })();
-      for(const node of ordered){
+      for(const node of runnable){
+        const missingInData=nodeMissingChannels(node, present);
+        if(missingInData.length){
+          skippedNodes.push({ id:String(node.id), name:node.name, reason:`missing ${missingInData.join(", ")}` });
+          continue;
+        }
+        const parentNodeId=node.parent_id!=null ? String(node.parent_id) : null;
+        if(parentNodeId && !createdByNode.has(parentNodeId)){
+          skippedNodes.push({ id:String(node.id), name:node.name, reason:"parent range was skipped" });
+          continue;
+        }
         const startCond=normalizeRangeDefCondition(node.start, "start");
         const endCond=normalizeRangeDefCondition(node.end, "end");
-        if(!startCond.channels.length || !endCond.channels.length){
-          throw new Error(`Node '${node.name}' needs channels on start and end`);
-        }
         const startSeries=buildRangeDefFormulaSeries(rows, startCond.channels, startCond.formula||"A");
         const endSeries=buildRangeDefFormulaSeries(rows, endCond.channels, endCond.formula||"A");
         const starts=findRangeDefEventTimes(startSeries, startCond);
         const ends=findRangeDefEventTimes(endSeries, endCond);
         const pairs=pairRangeDefTimes(starts, ends);
         if(!pairs.length){
-          throw new Error(`No matches for '${node.name}' on '${src.name||src.id}'`);
+          skippedNodes.push({ id:String(node.id), name:node.name, reason:"no threshold matches" });
+          continue;
         }
-        const parentNodeId=node.parent_id!=null ? String(node.parent_id) : null;
         const parentCreated=parentNodeId ? (createdByNode.get(parentNodeId)||[]) : [];
         const nodeCreated=[];
         for(let i=0;i<pairs.length;i+=1){
@@ -13141,7 +14629,14 @@
         }
         createdByNode.set(String(node.id), nodeCreated);
       }
-      return { created, skipped:false };
+      return {
+        created,
+        skipped:!created.length,
+        skippedNodes,
+        reason:skippedNodes.length
+          ? skippedNodes.map((s)=>`'${s.name}' (${s.reason})`).join("; ")
+          : null,
+      };
     }
     async function applyRangeDefinition(definition, targets=null){
       const sources=Array.isArray(targets) && targets.length
@@ -13161,15 +14656,19 @@
       for(const src of sources){
         try{
           const result=await evaluateRangeDefinitionOnSource(definition, src);
-          if(result?.skipped){
-            skipped.push(`${src.name||src.id}${result.reason?` (${result.reason})`:""}`);
-            continue;
-          }
           const items=result?.created || [];
           created+=items.length;
-          collapsedRangeSourceIds.delete(String(src.id));
-          const sr=findSourceRangeForSource(src);
-          if(sr) collapsedRangeIds.delete(Number(sr.range_id));
+          if(items.length){
+            collapsedRangeSourceIds.delete(String(src.id));
+            const sr=findSourceRangeForSource(src);
+            if(sr) collapsedRangeIds.delete(Number(sr.range_id));
+          }
+          const nodeSkips=Array.isArray(result?.skippedNodes) ? result.skippedNodes : [];
+          if(nodeSkips.length){
+            skipped.push(`${src.name||src.id}: ${nodeSkips.map((s)=>`'${s.name}' (${s.reason})`).join("; ")}`);
+          }else if(result?.skipped && result.reason){
+            skipped.push(`${src.name||src.id} (${result.reason})`);
+          }
         }catch(err){
           errors.push(`${src.name||src.id}: ${err?.message||err}`);
         }
@@ -13177,12 +14676,12 @@
       await refreshCatalogRanges();
       if(created){
         const extra=[
-          skipped.length ? `Skipped ${skipped.length} source(s) missing channels.` : "",
+          skipped.length ? `Skipped: ${skipped.join(" · ")}` : "",
           errors.length ? `Some sources failed: ${errors[0]}` : "",
         ].filter(Boolean).join(" ");
         setStatus(`Created ${created} range(s) from '${definition.name}'.${extra?` ${extra}`:""}`);
       }else if(skipped.length && !errors.length){
-        setStatus(`Skipped all ${skipped.length} source(s) — missing required channels.`, true);
+        setStatus(`No ranges created. Skipped: ${skipped.join(" · ")}`, true);
       }else{
         setStatus(errors[0] || "No ranges created.", true);
       }
@@ -13204,8 +14703,10 @@
       const rowHtml=(def)=>{
         const n=(def.nodes||[]).length;
         const meta=`${n} node${n===1?"":"s"} · ${formatConfigUpdatedAt(def.updated_at)}`;
+        const icon=normalizeSourceIcon(def.icon, "chart");
         return `
           <div class="selectRow dbManagerRow" data-id="${escAttr(def.id)}" title="${escAttr(def.name||"Range definition")}">
+            ${managerListIconHtml(icon, "chart")}
             <div class="itemPrimary">${escapeHtml(def.name||"Range definition")}</div>
             <div class="dbRowUpdated">${escapeHtml(meta)}</div>
           </div>
@@ -13435,10 +14936,7 @@
       };
       const entry=openModal(`Limits > ${leaf}`, `
         <div class="formStack">
-          <div class="formField">
-            <label>Name<span class="reqMark" aria-hidden="true">*</span></label>
-            <input id="m_lim_name" class="formNameInput" type="text" value="${escAttr(isEdit ? draft.name : "")}" spellcheck="false" placeholder="Mass flow" />
-          </div>
+          ${nameWithIconFieldHtml({ nameId:"m_lim_name", iconId:"m_lim_icon", nameValue:isEdit ? draft.name : "", iconValue:draft.icon||"chart", fallback:"chart", namePlaceholder:"Mass flow" })}
           <div class="formField">
             <label>Unit<span class="reqMark" aria-hidden="true">*</span></label>
             <input id="m_lim_unit" type="text" value="${escAttr(draft.unit)}" spellcheck="false" placeholder="e.g. kg/s, K" />
@@ -13461,6 +14959,7 @@
           const unit=(scopeEl("m_lim_unit")?.value||"").trim();
           if(!name){ setStatus("Name is required.", true); return false; }
           if(!unit){ setStatus("Unit is required so Summary can match limits to channels.", true); return false; }
+          const icon=normalizeSourceIcon(scopeEl("m_lim_icon")?.value, "chart");
           [...(scopeEl("m_lim_thresholds")?.querySelectorAll(".limitThresholdRow")||[])].forEach((row)=>{
             const idx=Number(row.getAttribute("data-th-idx"));
             if(!Number.isFinite(idx) || !thresholds[idx]) return;
@@ -13481,6 +14980,7 @@
           const next=normalizeLimit({
             id:draft.id,
             name,
+            icon,
             unit,
             thresholds:cleaned,
           });
@@ -13508,6 +15008,7 @@
         thresholds.push(newLimitThreshold({ value:0, direction:"upper", type:"warn" }));
         renderThresholdRows();
       });
+      wireNameWithIconField("m_lim_icon");
       renderThresholdRows();
       if(formWin){
         bringAppWindowToFront(formWin);
@@ -13529,8 +15030,10 @@
       };
       const rowHtml=(lim)=>{
         const meta=limitManagerMeta(lim);
+        const icon=normalizeSourceIcon(lim.icon, "chart");
         return `
           <div class="selectRow dbManagerRow" data-id="${escAttr(lim.id)}" title="${escAttr(lim.name||"Limit")}">
+            ${managerListIconHtml(icon, "chart")}
             <div class="itemPrimary">${escapeHtml(lim.name||"Limit")}</div>
             <div class="dbRowUpdated">${escapeHtml(meta)}</div>
           </div>
@@ -15124,6 +16627,15 @@
       if(kind==="file"){
         return `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4 1.5h5.2L12.5 5v9.5H4V1.5zm1.2 1.2v10.6h6.1V5.7H8.4V2.7H5.2z"/></svg>`;
       }
+      if(kind==="chart"){
+        return `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.2 13.2h11.6v1.2H2.2v-1.2zm1.2-1.5 2.4-3.2 2.1 1.7 3.4-4.6 1.5 1.1-4.6 6.2-2.1-1.7-1.5 2-1.2-.5z"/></svg>`;
+      }
+      if(kind==="flame"){
+        return `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.6c1.8 2.1 3.9 3.5 3.9 6.1 0 2.4-1.7 4.3-3.9 4.3S4.1 10.1 4.1 7.7c0-1.5.7-2.8 1.7-3.8-.1 1.3.5 2.4 1.5 2.9-.2-1.8.5-3.4 1.7-4.6.3-.3.7-.5 1-.6z"/></svg>`;
+      }
+      if(kind==="rocket"){
+        return `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.8 1.6c1.9.3 3.4 1.8 3.7 3.7L9.2 9.6l-.9-.9 1.1-2.3-2.3 1.1-.9-.9 4.3-4.3c.1-.1.2-.2.3-.2zM6.4 8.8l1.7 1.7-2.5.6c-.5.1-.9-.3-.8-.8l.6-2.5 1-.9zm-2.7 4.1.9-.9 1.3.4-.4 1.3-.9-.9-.9.1z"/></svg>`;
+      }
       return "";
     }
     function treeTwistSvg(expanded){
@@ -15414,10 +16926,30 @@
             }
           }
           focusedItem={kind:"source",id:it.id};
-          const menu=[{label:"Delete",action:deleteFocused}];
-          if(it.rowKind==="file" || it.rowKind==="folder" || it.rowKind==="db_test"){
-            menu.unshift({label:"Set Range",action:()=>showSetSourceT0Modal(it.id)});
-            if(it.rowKind!=="db_test") menu.unshift({label:"Edit source",action:()=>editSource(it.id)});
+          const menu=[];
+          if(it.rowKind==="db_test"){
+            menu.push({label:"Edit",action:()=>editCatalogTestSource(it)});
+            menu.push({label:"Set Range",action:()=>showSetSourceT0Modal(it.id)});
+            menu.push({label:"Delete",action:()=>deleteCatalogTestRow(it)});
+          } else {
+            if(it.rowKind==="file" || it.rowKind==="folder"){
+              menu.push({
+                label:"Create ingestion rule",
+                action:()=>{
+                  const seedIds=it.rowKind==="folder"
+                    ? folderDescendantFileSources(it.id).map((f)=>f.id)
+                    : [it.id];
+                  if(!seedIds.length){
+                    setStatus("No files found under this folder.", true);
+                    return;
+                  }
+                  void createIngestionRuleFromSources(seedIds);
+                },
+              });
+              menu.push({label:"Edit source",action:()=>editSource(it.id)});
+              menu.push({label:"Set Range",action:()=>showSetSourceT0Modal(it.id)});
+            }
+            menu.push({label:"Delete",action:deleteFocused});
           }
           showContextMenu(ev.clientX,ev.clientY,menu);
           renderAll();
@@ -15572,7 +17104,7 @@
       });
     }
 
-    const SIDEBAR_LIST_SCROLL_CAPS={ sourcesList:999, channelsList:999, masksList:999, rangesList:999, optionsList:999, pagesList:999, ingestionList:999 };
+    const SIDEBAR_LIST_SCROLL_CAPS={ sourcesList:999, channelsList:999, masksList:999, rangesList:999, optionsList:999, pagesList:999 };
     function applySidebarListHeight(listId, maxVisible){
       const el=byId(listId);
       if(!el) return;
@@ -15950,6 +17482,7 @@
         }
         phase="layout";
         const yLayout=buildUnitAxes(traces, plotWidth, { resetRanges:resetView });
+        syncTraceFillBaselineAxes(traces);
         const unitCount=Object.keys(yLayout).length;
         const extraRight=Math.max(0,unitCount-1);
         const axisSpacingPx = plotWidth < 1200 ? 64 : 54;
@@ -17316,6 +18849,7 @@
       const plottableTraces=traces.filter(traceHasFinitePoints);
       const resetXRange=useDateAxis && !uiLocks ? traceTimeExtentMs(plottableTraces) : null;
       const yLayout=buildUnitAxes(plottableTraces, plotWidth, { resetRanges:resetView });
+      syncTraceFillBaselineAxes(plottableTraces);
       const unitCount=Object.keys(yLayout).length;
       // Drop empty traces so they cannot create phantom axes or inflate autorange.
       traces.length=0;
@@ -17436,6 +18970,14 @@
           sslmode: src.sslmode || "disable",
         });
       }
+      if(isCatalogSource(src)){
+        return JSON.stringify({
+          dbId: db.id,
+          sourceType: "catalog",
+          catalogId: src.catalog_id || db.catalog_id || "",
+          testId: src.test_id ?? "",
+        });
+      }
       return JSON.stringify({
         dbId: db.id,
         sourceType: src.type,
@@ -17453,6 +18995,13 @@
         const tt = db.test_table ? `&test_table=${encodeURIComponent(db.test_table)}` : "";
         tests = await getJson(`/api/tests?limit=5000000&db_name=${encodeURIComponent(db.name)}${tt}&${conn}`);
         channels = await getJson(`/api/channels?limit=5000000&db_name=${encodeURIComponent(db.name)}&${conn}`);
+      } else if(isCatalogSource(src)){
+        const tid=Number(src.test_id);
+        const q=src.catalog_id?`?catalog_id=${encodeURIComponent(src.catalog_id)}`:"";
+        tests=[{ test_run_id:tid, run_code:src.run_code||String(tid) }];
+        channels=Number.isFinite(tid)
+          ? await getJson(`/api/catalog/tests/${tid}/channels${q}`)
+          : [];
       } else {
         await linkArtifactForSource(src);
         if(src.artifact_id){
@@ -17473,6 +19022,7 @@
       testsData=[]; channelsData=[];
       const selectedIds=new Set(effectiveSelectedSourceIds());
       state.sources.filter((s)=>isFileSource(s)&&selectedIds.has(s.id)).forEach(ensureFileSourceCatalog);
+      state.sources.filter((s)=>isCatalogSource(s)&&selectedIds.has(s.id)).forEach(ensureCatalogSourceDb);
       let dbIds=effectiveSelectedDatabaseIds();
       if(onlyWithAddedChannels && !addedChannelIds.size && !(state.calculatedChannels||[]).length){
         dbIds=[];
@@ -17798,10 +19348,26 @@
     }
     function sourceIconKindForRanges(src){
       if(!src) return "file";
+      if(src.icon){
+        const fallback=isCatalogSource(src) ? "test"
+          : (src.type==="database" || src.leaf_kind==="catalog" || src.type==="duckdb_catalog") ? "database"
+          : isFileSource(src) ? (src.type==="csv" ? "csv" : src.type==="tdms" ? "tdms" : "file")
+          : "file";
+        return normalizeSourceIcon(src.icon, fallback);
+      }
+      // Match Sources tree: catalog tests inherit the database profile icon when unset.
+      if(isCatalogSource(src) && src.catalog_id){
+        const profile=(databaseLibrary||[]).find((p)=>String(p.id)===String(src.catalog_id));
+        if(profile?.icon) return normalizeSourceIcon(profile.icon, "test");
+      }
       if(isCatalogSource(src)) return "test";
       if(src.type==="csv") return "csv";
       if(src.type==="tdms") return "tdms";
-      if(src.type==="database" || src.leaf_kind==="catalog") return "database";
+      if(src.type==="database" || src.leaf_kind==="catalog" || src.type==="duckdb_catalog"){
+        const profile=(databaseLibrary||[]).find((p)=>String(p.id)===String(src.catalog_id||src.id));
+        if(profile?.icon) return normalizeSourceIcon(profile.icon, "database");
+        return "database";
+      }
       return isFileSource(src) ? "file" : "file";
     }
     function tryZoomToSelectedRange(){
@@ -19463,10 +21029,34 @@
       }
       const m=raw.match(/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)/i);
       if(m){
-        const hex=(n)=>Math.max(0, Math.min(255, Math.round(Number(n)))).toString(16).padStart(2,"0");
-        return `#${hex(m[1])}${hex(m[2])}${hex(m[3])}`;
+        const toHex=(n)=>Math.max(0, Math.min(255, Math.round(Number(n)))).toString(16).padStart(2,"0");
+        return `#${toHex(m[1])}${toHex(m[2])}${toHex(m[3])}`;
       }
       return fallback;
+    }
+    function cssColorWithAlpha(color, alpha, fallback="#3b82f6"){
+      const hex=colorToHexInput(color, fallback);
+      const a=Math.max(0, Math.min(1, Number(alpha)));
+      if(/^#([0-9a-fA-F]{6})$/.test(hex)){
+        const n=parseInt(hex.slice(1), 16);
+        return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+      }
+      return `rgba(59,130,246,${a})`;
+    }
+    function tracePlotStyleSupportsFill(plotStyle){
+      const s=resolveObjPlotStyle(plotStyle);
+      return s==="lines" || s==="lines+markers" || s==="winplot";
+    }
+    function resolveTraceFillStyle(value){
+      const v=String(value||"none").toLowerCase();
+      if(v==="fill" || v==="hatched") return v;
+      return "none";
+    }
+    function resolveTraceFillOpacity01(value, fallback=0.2){
+      const raw=Number(value);
+      if(!Number.isFinite(raw)) return fallback;
+      if(raw>1) return Math.max(0, Math.min(1, raw/100));
+      return Math.max(0, Math.min(1, raw));
     }
     function objTracePreviewHtml(color, opts={}){
       return `<span class="objTracePreview" aria-hidden="true">${objTraceIconSvgHtml(color, opts)}</span>`;
@@ -19577,6 +21167,11 @@
         channelKey:String(trace?._novaChannelKey || trace?.meta?.novaChannelKey || ""),
         colorMapChannelId:String(trace?._novaStyle?.colorMapChannelId || trace?.meta?.novaColorMapChannelId || ""),
         colorMapScale:resolveColorMapScale(trace?._novaStyle?.colorMapScale || trace?.meta?.novaColorMapScale || trace?.marker?.colorscale),
+        fillStyle:resolveTraceFillStyle(trace?._novaStyle?.fillStyle || trace?.meta?.novaFillStyle || "none"),
+        fillOpacity:Math.round(resolveTraceFillOpacity01(trace?._novaStyle?.fillOpacity ?? trace?.meta?.novaFillOpacity, 0.2)*100),
+        fillSetpoint:Number.isFinite(Number(trace?._novaStyle?.fillSetpoint ?? trace?.meta?.novaFillSetpoint))
+          ? Number(trace._novaStyle?.fillSetpoint ?? trace.meta?.novaFillSetpoint)
+          : 0,
       };
       const styleMap=getPlotTraceStyles();
       const saved=styleMap[state.sourceKey] || (state.channelKey ? styleMap[state.channelKey] : null);
@@ -19586,6 +21181,9 @@
       if(saved?.colorMapScale){
         state.colorMapScale=resolveColorMapScale(saved.colorMapScale);
       }
+      if(saved?.fillStyle!=null) state.fillStyle=resolveTraceFillStyle(saved.fillStyle);
+      if(saved?.fillOpacity!=null) state.fillOpacity=Math.round(resolveTraceFillOpacity01(saved.fillOpacity, 0.2)*100);
+      if(saved?.fillSetpoint!=null && Number.isFinite(Number(saved.fillSetpoint))) state.fillSetpoint=Number(saved.fillSetpoint);
       return state;
     }
     function applyTraceStyleToTraceObject(trace, style){
@@ -19603,6 +21201,9 @@
       const colorMapScale=resolveColorMapScale(style.colorMapScale);
       // Colorbar replaces the trace legend entry.
       const showlegend=colorMapChannelId ? false : (style.showlegend!==false);
+      const fillStyle=tracePlotStyleSupportsFill(plotStyle) ? resolveTraceFillStyle(style.fillStyle) : "none";
+      const fillOpacity01=resolveTraceFillOpacity01(style.fillOpacity, 0.2);
+      const fillSetpoint=Number(style.fillSetpoint);
       if(style.name) trace.name=String(style.name);
       trace.mode=plotlyModeForPlotStyle(plotStyle);
       trace.showlegend=showlegend;
@@ -19644,24 +21245,107 @@
           pointCount:n,
         });
       }
+      // Fill is applied later via injectTraceFillBaselines (needs a baseline sibling).
+      delete trace.fill;
+      delete trace.fillcolor;
+      delete trace.fillpattern;
       trace._novaSourceKey=String(style.sourceKey||trace._novaSourceKey||trace.name||"");
       if(style.channelKey || trace._novaChannelKey){
         trace._novaChannelKey=String(style.channelKey||trace._novaChannelKey||"");
       }
+      const fillMeta=(fillStyle!=="none" && Number.isFinite(fillSetpoint))
+        ? { fillStyle, fillOpacity:fillOpacity01, fillSetpoint }
+        : { fillStyle:"none" };
       trace._novaStyle={
         plotStyle,
         markerEvery,
         markerSize,
+        ...fillMeta,
         ...(colorMapChannelId ? { colorMapChannelId, colorMapScale } : {}),
       };
       trace.meta=Object.assign({}, (trace.meta && typeof trace.meta==="object" && !Array.isArray(trace.meta)) ? trace.meta : {}, {
         novaPlotStyle:plotStyle,
         novaMarkerEvery:markerEvery,
         novaSourceKey:trace._novaSourceKey,
+        novaFillStyle:fillMeta.fillStyle||"none",
+        ...(Number.isFinite(fillMeta.fillOpacity) ? { novaFillOpacity:fillMeta.fillOpacity } : {}),
+        ...(Number.isFinite(fillMeta.fillSetpoint) ? { novaFillSetpoint:fillMeta.fillSetpoint } : {}),
         ...(trace._novaChannelKey ? { novaChannelKey:trace._novaChannelKey } : {}),
         ...(colorMapChannelId ? { novaColorMapChannelId:colorMapChannelId, novaColorMapScale:colorMapScale } : {}),
       });
       return trace;
+    }
+    function injectTraceFillBaselines(traces){
+      const list=Array.isArray(traces)?traces:[];
+      if(!list.length) return list;
+      const out=[];
+      list.forEach((t)=>{
+        if(!t || t._novaFillBaseline) return;
+        const style=t._novaStyle||{};
+        const plotStyle=resolveObjPlotStyle(style.plotStyle||readTracePlotStyle(t));
+        const fillStyle=resolveTraceFillStyle(style.fillStyle);
+        const fillSetpoint=Number(style.fillSetpoint);
+        const supports=tracePlotStyleSupportsFill(plotStyle);
+        // Keep the line/markers trace fill-free; paint a closed SVG area underneath.
+        delete t.fill;
+        delete t.fillcolor;
+        delete t.fillpattern;
+        if(!supports || fillStyle==="none" || !Number.isFinite(fillSetpoint)){
+          out.push(t);
+          return;
+        }
+        const xs=Array.isArray(t.x) ? t.x : [];
+        const ys=Array.isArray(t.y) ? t.y : [];
+        if(!xs.length || ys.length!==xs.length){
+          out.push(t);
+          return;
+        }
+        const color=t.line?.color || (typeof t.marker?.color==="string" ? t.marker.color : null) || "#3b82f6";
+        const opacity=resolveTraceFillOpacity01(style.fillOpacity, 0.2);
+        const fillcolor=cssColorWithAlpha(color, opacity, "#3b82f6");
+        // Closed polygon: data path forward, setpoint path reverse.
+        // Must be SVG scatter (not scattergl) — WebGL traces do not render fill.
+        const fillX=xs.concat(xs.slice().reverse());
+        const fillY=ys.concat(xs.map(()=>fillSetpoint).reverse());
+        const area={
+          type:"scatter",
+          mode:"lines",
+          x:fillX,
+          y:fillY,
+          fill:"toself",
+          fillcolor,
+          line:{ width:0, color:"rgba(0,0,0,0)" },
+          hoverinfo:"skip",
+          showlegend:false,
+          visible:true,
+          yaxis:t.yaxis||"y",
+          xaxis:t.xaxis||"x",
+          _unit:t._unit,
+          _novaFillBaseline:true,
+          _novaSourceKey:`${t._novaSourceKey||t.name||"trace"}::__fill_base`,
+          name:"",
+        };
+        if(fillStyle==="hatched"){
+          area.fillpattern={ shape:"/", size:6, solidity:0.35, fgcolor:color, bgcolor:fillcolor };
+        }
+        out.push(area, t);
+      });
+      list.length=0;
+      out.forEach((t)=>list.push(t));
+      return list;
+    }
+    function syncTraceFillBaselineAxes(traces){
+      const list=Array.isArray(traces)?traces:[];
+      for(let i=0;i<list.length;i+=1){
+        const area=list[i];
+        if(!area?._novaFillBaseline) continue;
+        const parent=list[i+1];
+        if(!parent || parent._novaFillBaseline) continue;
+        area._unit=parent._unit;
+        area.yaxis=parent.yaxis||"y";
+        area.xaxis=parent.xaxis||"x";
+        area.type="scatter";
+      }
     }
     function getPlotTraceStyles(plot=getActivePlot()){
       if(!plot) return {};
@@ -19670,6 +21354,27 @@
       }
       return plot.traceStyles;
     }
+    function lockDefaultTraceColors(traces){
+      // Plotly colorway is indexed by position in gd.data. Fill-area helper traces
+      // inserted before a line would otherwise shift every later default color.
+      const cw=parseColorway();
+      let i=0;
+      (traces||[]).forEach((t)=>{
+        if(!t || t._novaFillBaseline || t._novaSpectralLegendProxy || t._novaOverlayLegend) return;
+        if(String(t.type||"")==="heatmap") return;
+        const color=cw[i % Math.max(1, cw.length)] || "#888";
+        i+=1;
+        const hasLineColor=t.line?.color!=null && String(t.line.color).trim()!=="";
+        const markerColor=t.marker?.color;
+        const hasMarkerColor=typeof markerColor==="string" && markerColor.trim()!=="";
+        if(!hasLineColor){
+          t.line=Object.assign({}, t.line||{}, { color, width:Number(t.line?.width)||1.5 });
+        }
+        if(t.marker && typeof t.marker==="object" && !Array.isArray(markerColor) && !hasMarkerColor){
+          t.marker=Object.assign({}, t.marker, { color: t.line?.color || color });
+        }
+      });
+    }
     function applySavedStylesToBuiltTraces(traces){
       const map=getPlotTraceStyles(getDrawingPlot());
       const list=traces||[];
@@ -19677,6 +21382,7 @@
       const allowMap=parametricColorMapAllowed(getDrawingPlot()||getActivePlot()) && list.length===1;
       list.forEach((t)=>{
         if(String(t?.type||"")==="heatmap") return;
+        if(t?._novaFillBaseline || t?._novaSpectralLegendProxy || t?._novaOverlayLegend) return;
         const key=String(t._novaSourceKey || t.name || "");
         const chKey=String(t._novaChannelKey || t.meta?.novaChannelKey || "");
         if(!key && !chKey) return;
@@ -19688,6 +21394,8 @@
         applyTraceStyleToTraceObject(t, style);
       });
       if(!allowMap) enforceSingleTraceColorMap(list);
+      lockDefaultTraceColors(list);
+      injectTraceFillBaselines(list);
       return suppressLegendForColorBarTraces(list);
     }
     function saveTraceStyleToActivePlot(style){
@@ -19695,6 +21403,9 @@
       if(!plot || !style?.sourceKey) return;
       const map=getPlotTraceStyles(plot);
       const hasMap=Boolean(style.colorMapChannelId);
+      const fillStyle=tracePlotStyleSupportsFill(style.plotStyle) ? resolveTraceFillStyle(style.fillStyle) : "none";
+      const fillOpacity01=resolveTraceFillOpacity01(style.fillOpacity, 0.2);
+      const fillSetpoint=Number(style.fillSetpoint);
       const entry={
         name:String(style.name||""),
         color:style.color,
@@ -19705,6 +21416,9 @@
         markerSize:style.markerSize,
         markerEvery:Math.max(1, Number(style.markerEvery)||25),
         showlegend:hasMap ? false : (style.showlegend!==false),
+        fillStyle,
+        fillOpacity:fillOpacity01,
+        fillSetpoint:Number.isFinite(fillSetpoint) ? fillSetpoint : 0,
         ...(hasMap ? {
           colorMapChannelId:String(style.colorMapChannelId),
           colorMapScale:resolveColorMapScale(style.colorMapScale),
@@ -20095,7 +21809,7 @@
       if(!list) return;
       // Always bind Objects to the focused plot — never the last multi-tile draw host.
       const gd=plotlyGraphDiv(getPlotDiv(activePlotId));
-      const traces=(gd?.data||[]).filter((t)=>t.name && !t._novaOverlayLegend);
+      const traces=(gd?.data||[]).filter((t)=>t.name && !t._novaOverlayLegend && !t._novaFillBaseline);
       const analysis=getActivePlot()?.analysis;
       const overlays=Array.isArray(analysis?.overlays) ? analysis.overlays : [];
       const measurements=overlays.filter((o)=>overlayCategory(o)==="measurements");
@@ -20112,7 +21826,7 @@
       const validKeys=new Set();
       const traceRows=[];
       (gd?.data||[]).forEach((t, idx)=>{
-        if(!t?.name) return;
+        if(!t?.name || t._novaFillBaseline || t._novaSpectralLegendProxy || t._novaOverlayLegend) return;
         traceRows.push({ t, idx });
         validKeys.add(objectKeyTrace(idx));
       });
@@ -20309,7 +22023,7 @@
       const activePlot=getActivePlot();
       const isParametric=normalizeViewType(activePlot?.viewType)==="parametric";
       const dataTraceCount=(gd?.data||[]).filter((t)=>
-        t && !t._novaSpectralLegendProxy && !t._novaOverlayLegend && String(t.type||"")!=="heatmap"
+        t && !t._novaSpectralLegendProxy && !t._novaOverlayLegend && !t._novaFillBaseline && String(t.type||"")!=="heatmap"
       ).length;
       const colorMapAllowed=isParametric && parametricColorMapAllowed(activePlot) && dataTraceCount<=1;
       const markerOpts=OBJ_MARKER_SYMBOLS.map(([val,label])=>`<option value="${val}" ${st.markerSymbol===val?"selected":""}>${label}</option>`).join("");
@@ -20370,6 +22084,13 @@
               ${propRow("Marker Size", `<input id="m_obj_ms" class="objPropControl" type="number" step="0.5" min="1" max="40" value="${st.markerSize}" />`)}
               ${propRow("Marker Spacing", `<input id="m_obj_every" class="objPropControl" type="number" step="1" min="1" max="10000" value="${st.markerEvery}" />`)}
               ${colorMapRows}
+              ${propRow("Fill Style", `<select id="m_obj_fill_style" class="objPropControl">
+                <option value="none" ${st.fillStyle==="none"?"selected":""}>None</option>
+                <option value="fill" ${st.fillStyle==="fill"?"selected":""}>Fill</option>
+                <option value="hatched" ${st.fillStyle==="hatched"?"selected":""}>Hatched</option>
+              </select>`)}
+              ${propRow("Fill Opacity", `<input id="m_obj_fill_opacity" class="objPropControl" type="number" step="1" min="0" max="100" value="${Number.isFinite(st.fillOpacity)?st.fillOpacity:20}" />`)}
+              ${propRow("Fill Setpoint", `<input id="m_obj_fill_setpoint" class="objPropControl" type="number" step="any" value="${Number.isFinite(st.fillSetpoint)?st.fillSetpoint:0}" />`)}
               ${propRow("Show in Legend", `<select id="m_obj_legend" class="objPropControl">
                 <option value="true" ${st.showlegend?"selected":""}>True</option>
                 <option value="false" ${st.showlegend?"":"selected"}>False</option>
@@ -20389,6 +22110,13 @@
         const markerSymbol=(byId("m_obj_marker").value||"circle").trim();
         const markerSize=Math.max(1, Number(byId("m_obj_ms").value)||st.markerSize||6);
         const markerEvery=Math.max(1, Math.round(Number(byId("m_obj_every").value)||25));
+        const fillStyle=tracePlotStyleSupportsFill(plotStyle) ? resolveTraceFillStyle(byId("m_obj_fill_style")?.value||"none") : "none";
+        const fillOpacity=Math.round(resolveTraceFillOpacity01(byId("m_obj_fill_opacity")?.value, 0.2)*100);
+        const fillSetpoint=Number(byId("m_obj_fill_setpoint")?.value);
+        if(fillStyle!=="none" && !Number.isFinite(fillSetpoint)){
+          setStatus("Fill setpoint must be a number.", true);
+          return false;
+        }
         const sourceKey=String(trace._novaSourceKey || st.sourceKey || st.name);
         const channelKey=String(trace._novaChannelKey || st.channelKey || "");
         const colorMapChannelIdRaw=colorMapAllowed
@@ -20396,7 +22124,7 @@
           : "";
         const colorMapScale=resolveColorMapScale(byId("m_obj_color_map_scale")?.value||st.colorMapScale);
         const dataTraceCount=(gd?.data||[]).filter((t)=>
-          t && !t._novaSpectralLegendProxy && !t._novaOverlayLegend && String(t.type||"")!=="heatmap"
+          t && !t._novaSpectralLegendProxy && !t._novaOverlayLegend && !t._novaFillBaseline && String(t.type||"")!=="heatmap"
         ).length;
         // Hard gate: colormap only when a single trace is on the plot.
         const colorMapChannelId=(colorMapChannelIdRaw && dataTraceCount<=1) ? colorMapChannelIdRaw : "";
@@ -20419,10 +22147,18 @@
           channelKey,
           colorMapChannelId,
           colorMapScale,
+          fillStyle,
+          fillOpacity,
+          fillSetpoint:Number.isFinite(fillSetpoint)?fillSetpoint:0,
         };
+        const fillChanged=
+          resolveTraceFillStyle(st.fillStyle)!==fillStyle
+          || Math.round(Number(st.fillOpacity)||20)!==fillOpacity
+          || Number(st.fillSetpoint||0)!==Number(styleState.fillSetpoint)
+          || tracePlotStyleSupportsFill(st.plotStyle)!==tracePlotStyleSupportsFill(plotStyle);
         const colorMapChanged=colorMapChannelId!==String(st.colorMapChannelId||"");
-        if(isParametric && colorMapChanged){
-          // Channel added/cleared/changed — need data reload for color values.
+        if((isParametric && colorMapChanged) || fillChanged){
+          // Channel/fill topology changed — need data reload for color values / fill baseline.
           saveTraceStyleToActivePlot(styleState);
           renderObjectsList();
           try{ refreshLegendViews(); }catch{}
@@ -20467,7 +22203,7 @@
               live.marker=colorMarker;
               live.showlegend=false;
               live._novaColorMapValues=colorMarker.color;
-              live._novaStyle={ plotStyle, markerEvery, markerSize, colorMapChannelId, colorMapScale };
+              live._novaStyle={ plotStyle, markerEvery, markerSize, colorMapChannelId, colorMapScale, fillStyle:styleState.fillStyle, fillOpacity:resolveTraceFillOpacity01(styleState.fillOpacity, 0.2), fillSetpoint:styleState.fillSetpoint };
               live.meta=Object.assign({}, (live.meta && typeof live.meta==="object" && !Array.isArray(live.meta)) ? live.meta : {}, {
                 novaPlotStyle:plotStyle,
                 novaMarkerEvery:markerEvery,
@@ -20522,7 +22258,7 @@
         if(live){
           live._novaSourceKey=sourceKey;
           if(channelKey) live._novaChannelKey=channelKey;
-          live._novaStyle={ plotStyle, markerEvery, markerSize };
+          live._novaStyle={ plotStyle, markerEvery, markerSize, fillStyle:styleState.fillStyle, fillOpacity:resolveTraceFillOpacity01(styleState.fillOpacity, 0.2), fillSetpoint:styleState.fillSetpoint };
           live.marker=marker;
           live.meta=Object.assign({}, (live.meta && typeof live.meta==="object" && !Array.isArray(live.meta)) ? live.meta : {}, {
             novaPlotStyle:plotStyle,
@@ -20568,6 +22304,16 @@
         el.addEventListener("input", ()=>syncIcon());
         el.addEventListener("change", ()=>syncIcon());
       });
+      const syncFillRows=()=>{
+        const supports=tracePlotStyleSupportsFill(modeSel?.value||st.plotStyle);
+        ["m_obj_fill_style","m_obj_fill_opacity","m_obj_fill_setpoint"].forEach((id)=>{
+          const el=byId(id);
+          const row=el?.closest?.(".rangeMetaRow");
+          if(row) row.style.display=supports?"":"none";
+        });
+      };
+      if(modeSel) modeSel.addEventListener("change", ()=>syncFillRows());
+      syncFillRows();
       const colorMapEl=byId("m_obj_color_map");
       const colorMapClear=byId("m_obj_color_map_clear");
       const colorMapScaleEl=byId("m_obj_color_map_scale");
@@ -21318,6 +23064,37 @@
             state.databases=state.databases.filter((d)=>d.id!==s.db_entry_id);
             selectedDatabaseIds.delete(s.db_entry_id);
           }
+        } else if(isCatalogSource(s)){
+          const catalogId=String(s.catalog_id||"");
+          const testId=Number(s.test_id);
+          const db=state.databases.find((d)=>d.sourceId===s.id);
+          if(db){
+            const testKey=`${db.id}|${s.test_id}`;
+            addedTestIds.delete(testKey);
+            selectedTestIds.delete(testKey);
+            selectedDatabaseIds.delete(db.id);
+            state.databases=state.databases.filter((d)=>d.id!==db.id);
+          }
+          state.sources=state.sources.filter((x)=>x.id!==id);
+          selectedSourceIds.delete(id);
+          if(Number.isFinite(testId) && catalogId && confirm(`Also delete '${s.name||s.run_code||testId}' from the database permanently?`)){
+            (async()=>{
+              try{
+                const r=await fetch(`/api/catalog/tests/${testId}?catalog_id=${encodeURIComponent(catalogId)}`, { method:"DELETE" });
+                if(!r.ok) throw new Error(`Delete failed (${r.status})`);
+                const profile=(databaseLibrary||[]).find((p)=>String(p.id)===catalogId);
+                if(profile) await browseProfileAccessible(profile, { force:true });
+                setStatus(`Deleted catalog test '${s.name||testId}'.`);
+              }catch(err){
+                setStatus(String(err?.message||err), true);
+              }
+              clearCatalogCache();
+              renderAll();
+              saveStateDeferred();
+            })();
+            focusedItem=null;
+            return;
+          }
         } else {
           state.sources=state.sources.filter((x)=>x.id!==id && x.parent_source_id!==id);
           state.databases=state.databases.filter((d)=>d.sourceId!==id);
@@ -21332,7 +23109,7 @@
         addedChannelIds.delete(id); addedChannelIds.delete(key);
         // Calculated channels are owned by the channel list entry.
         state.calculatedChannels=(state.calculatedChannels||[]).filter((c)=>c.name!==id && c.name!==key);
-        // Alias definitions stay available for range defs / calcs even when the
+        // Alias definitions stay available for calcs even when the
         // alias is removed from the active channel list. Delete the definition
         // from the alias editor instead.
         if(state.channelLabels){
@@ -21601,7 +23378,7 @@
         const passAll=activeMasks.every((m)=>{
           if(m.kind==="range"){
             const intervals=rangeMaskIntervalsForSample(rangeMaskMaps.get(m.id), g.sample);
-            if(!intervals || !intervals.length) return Boolean(m.includeMissingSources);
+            if(!intervals || !intervals.length) return m.includeMissingSources!==false;
             const ts=g.sample.__ts;
             if(!Number.isFinite(ts)) return false;
             return intervals.some((iv)=>ts>=iv.lo && ts<=iv.hi);
@@ -21609,6 +23386,9 @@
           if(m.kind==="rolling" || m.kind==="formula"){
             const key=`${g.sample.__dbId}|${g.sample.test_run_id}|${String(g.sample.time)}`;
             const v=derivedMaskVals.get(m.id)?.get(key);
+            if(v==null || !Number.isFinite(Number(v))){
+              return m.includeMissingChannels!==false;
+            }
             const { a, b } = parseMaskCompareValues(m, false, rows);
             return evalMaskValue(Number(v), m.op, a, b);
           }
@@ -21628,7 +23408,11 @@
               const rel=(ts-t0)/1000;
               return evalMaskValue(rel, m.op, a, b);
             }
-            return evalMaskValue(Number(g.vals[chId]), m.op, a, b);
+            const raw=g.vals[chId];
+            if(raw==null || !Number.isFinite(Number(raw))){
+              return m.includeMissingChannels!==false;
+            }
+            return evalMaskValue(Number(raw), m.op, a, b);
           });
         });
         if(passAll) appendRows(kept, g.rows);
@@ -21835,6 +23619,11 @@
       const valueACurrent=isEdit ? String(mask?.valueA ?? "") : "";
       const valueBCurrent=isEdit ? String(mask?.valueB ?? "") : "";
       const twoVals=maskOpNeedsTwoValues(opCurrent);
+      const includeMissingChannels=isEdit ? (mask?.includeMissingChannels!==false) : true;
+      const propRow=(label, controlHtml)=>`<div class="rangeMetaRow">
+            <div class="rangeMetaCell">${escapeHtml(label)}</div>
+            ${controlHtml}
+          </div>`;
       openModal(`Masks > ${leaf}`,`
         <div class="channelEditorForm">
         <div class="formStack">
@@ -21857,6 +23646,15 @@
           </div>
         </div>
         ${maskConditionFieldsHtml({ opCurrent, valueA:valueACurrent, valueB:valueBCurrent, twoVals })}
+        <div class="rangeMetaSection">
+          <div class="rangeMetaHeader">
+            <label>Properties</label>
+          </div>
+          <div class="rangeMetaDivider"></div>
+          <div class="rangeMetaTable" id="m_mask_props">
+            ${propRow("Include Sources without Channel", overlayBoolSelectHtml("m_mask_include_missing_ch", includeMissingChannels))}
+          </div>
+        </div>
         </div>
         <div class="modalActions modalActionsIconOnly">
           <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
@@ -21875,6 +23673,7 @@
         const valueB=Number(rawB);
         if(!Number.isFinite(valueA)){ setStatus(needsB?"Min is required.":"Value is required.", true); return false; }
         if(needsB && !Number.isFinite(valueB)){ setStatus("Max is required for this condition.", true); return false; }
+        const includeMissingCh=readOverlayBool("m_mask_include_missing_ch", true);
         if(isEdit){
           const oldName=mask.name||"";
           const name=nextMaskName(rawName, oldName);
@@ -21889,13 +23688,14 @@
           mask.op=op;
           mask.valueA=String(valueA);
           mask.valueB=needsB?String(valueB):null;
+          mask.includeMissingChannels=includeMissingCh;
           renderAll();
           saveState();
           setStatus(`Updated mask '${name}'.`);
           return true;
         }
         const name=nextMaskName(rawName);
-        const next={ id:crypto.randomUUID(), kind:"formula", name, channels:ordered, formula:compiled.expr, op, valueA:String(valueA), valueB:needsB?String(valueB):null };
+        const next={ id:crypto.randomUUID(), kind:"formula", name, channels:ordered, formula:compiled.expr, op, valueA:String(valueA), valueB:needsB?String(valueB):null, includeMissingChannels:includeMissingCh };
         state.masks=state.masks||[];
         state.masks.push(next);
         selectedMaskIds.add(next.id);
@@ -21920,7 +23720,7 @@
       const names=uniqueRangeNames();
       const defaultName=isEdit ? (mask?.name || "range_mask") : "range_mask";
       const rangeCurrent=isEdit ? String(mask?.rangeName || "") : (names[0] || "");
-      const includeMissing=isEdit ? Boolean(mask?.includeMissingSources) : false;
+      const includeMissing=isEdit ? (mask?.includeMissingSources!==false) : true;
       if(!names.length && !rangeCurrent){
         setStatus("No named ranges available. Create a range first.", true);
         return;
@@ -21959,7 +23759,7 @@
         if(!rawName){ setStatus("Mask name is required.", true); return false; }
         const rangeName=(byId("m_mask_range").value||"").trim();
         if(!rangeName){ setStatus("Select a range name.", true); return false; }
-        const includeMissingSources=readOverlayBool("m_mask_include_missing", false);
+        const includeMissingSources=readOverlayBool("m_mask_include_missing", true);
         if(isEdit){
           const oldName=mask.name||"";
           const name=nextMaskName(rawName, oldName);
@@ -22086,9 +23886,126 @@
         if(sel&&wrap) sel.onchange=()=>{ wrap.style.display=sel.value==="t0_relative"?"block":"none"; };
       }, 0);
     }
+    async function deleteCatalogTestRow(item){
+      const profileId=String(item?.profileId||"");
+      const testId=Number(item?.testRunId);
+      const label=item?.primary || item?.runCode || String(testId);
+      if(!Number.isFinite(testId) || !profileId){
+        setStatus("Catalog test not found.", true);
+        return;
+      }
+      if(!confirm(`Delete '${label}' from the database permanently?`)) return;
+      try{
+        const r=await fetch(`/api/catalog/tests/${testId}?catalog_id=${encodeURIComponent(profileId)}`, { method:"DELETE" });
+        if(!r.ok){
+          let msg=`Delete failed (${r.status})`;
+          try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
+          throw new Error(msg);
+        }
+        state.sources=state.sources.filter((s)=>!(isCatalogSource(s)&&String(s.catalog_id||"")===profileId&&Number(s.test_id)===testId));
+        state.databases=state.databases.filter((d)=>{
+          const src=state.sources.find((s)=>s.id===d.sourceId);
+          return !!src;
+        });
+        selectedSourceIds.delete(item.id);
+        const profile=(databaseLibrary||[]).find((p)=>String(p.id)===profileId);
+        if(profile) await browseProfileAccessible(profile, { force:true });
+        clearCatalogCache();
+        renderAll();
+        saveState();
+        setStatus(`Deleted '${label}'.`);
+      }catch(err){
+        setStatus(String(err?.message||err), true);
+      }
+    }
+    async function editCatalogTestSource(item){
+      let leaf=null;
+      if(item?.rowKind==="db_test" || item?.provisional!=null || item?.testRunId!=null){
+        if(item.provisional){
+          leaf=materializeDbTestSelection(item);
+          if(leaf){ item.id=leaf.id; item.provisional=false; }
+        }else{
+          leaf=state.sources.find((s)=>s.id===item.id) || null;
+          if(!leaf && item.testRunId!=null){
+            leaf=addCatalogTestSource({
+              test_id:Number(item.testRunId),
+              run_code:item.runCode||item.testRunId,
+              catalog_id:String(item.profileId||""),
+              select:false,
+            });
+            if(leaf) item.id=leaf.id;
+          }
+        }
+      }else if(item?.id){
+        leaf=state.sources.find((s)=>s.id===item.id)||null;
+      }
+      if(!leaf || !isCatalogSource(leaf)){
+        setStatus("Catalog test not found.", true);
+        return;
+      }
+      const catalogId=String(leaf.catalog_id||item?.profileId||"");
+      const testId=Number(leaf.test_id||item?.testRunId);
+      if(!Number.isFinite(testId)){
+        setStatus("Catalog test id missing.", true);
+        return;
+      }
+      const titleHtml=`<span class="modalTitleIcon">${treeIconSvg(normalizeSourceIcon(leaf.icon,"test"), false)}</span><span>Source</span><span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span><span>Edit</span>`;
+      openModal("Source > Edit",`
+        <div class="formStack">
+          ${nameWithIconFieldHtml({ nameId:"m_cat_name", iconId:"m_cat_icon", nameValue:leaf.name||leaf.run_code||"", iconValue:leaf.icon, fallback:"test" })}
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${modalSaveIconHtml()}</button>
+        </div>`,{ ...WF_SOURCE_FORM, titleHtml },async()=>{
+        const name=(byId("m_cat_name")?.value||"").trim();
+        if(!name){ setStatus("Name is required.", true); return false; }
+        const icon=normalizeSourceIcon(byId("m_cat_icon")?.value, "test");
+        try{
+          const r=await fetch(`/api/catalog/tests/${testId}`, {
+            method:"PATCH",
+            headers:{ "Content-Type":"application/json" },
+            body:JSON.stringify({ run_code:name, icon, catalog_id:catalogId||null }),
+          });
+          if(!r.ok){
+            let msg=`Update failed (${r.status})`;
+            try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
+            throw new Error(msg);
+          }
+          const updated=await r.json();
+          leaf.name=String(updated.run_code||name);
+          leaf.run_code=leaf.name;
+          leaf.icon=normalizeSourceIcon(updated.icon||icon, "test");
+          const db=state.databases.find((d)=>d.sourceId===leaf.id);
+          if(db) db.name=leaf.name;
+          if(catalogId){
+            const profile=(databaseLibrary||[]).find((p)=>String(p.id)===catalogId);
+            if(profile) await browseProfileAccessible(profile, { force:true });
+          }
+          clearCatalogCache();
+          renderAll();
+          saveState();
+          setStatus(`Updated '${leaf.name}'.`);
+          return true;
+        }catch(err){
+          setStatus(String(err?.message||err), true);
+          return false;
+        }
+      });
+      wireNameWithIconField("m_cat_icon");
+    }
     function editSource(sourceId){
       const src=state.sources.find((s)=>s.id===sourceId);
       if(!src){ setStatus("Source not found.", true); return; }
+      if(isCatalogSource(src)){
+        editCatalogTestSource({
+          id:src.id,
+          profileId:src.catalog_id,
+          testRunId:src.test_id,
+          runCode:src.run_code||src.name,
+          provisional:false,
+        });
+        return;
+      }
       if(isFolderSource(src) || isPostgresTestLeaf(src)){
         renameSource(sourceId);
         return;
@@ -22579,7 +24496,7 @@
       const raws=resolveCalcDepRawNames(depName, availableSet);
       if(!raws.length) return null;
       // Prefer a member the user currently has on the channel list (common when
-      // plotting a physical channel while a range definition still names the alias).
+      // plotting a physical channel while a calc still names the alias).
       const listed=raws.find((m)=>addedChannelIds.has(m) || selectedChannelIds.has(m));
       if(listed) return listed;
       return raws[0];
@@ -22843,7 +24760,7 @@
 
       const appendAliasesToAvailable=(byName)=>{
         if(!allowAliases) return;
-        // All defined aliases remain pickable for range defs / calcs, even if the
+        // All defined aliases remain pickable for calcs, even if the
         // alias is not currently on the active channel list.
         (state.channelAliases||[]).forEach((alias)=>{
           const name=String(alias?.name||"").trim();
@@ -23071,7 +24988,7 @@
           if(ev){ ev.preventDefault(); ev.stopPropagation(); }
           const name=alias?.name||"";
           if(!name) return;
-          if(!confirm(`Delete alias definition '${name}'? Range definitions that reference it will stop resolving until updated.`)) return;
+          if(!confirm(`Delete alias definition '${name}'? Calculated channels that reference it will stop resolving until updated.`)) return;
           if(!deleteChannelAliasDefinition(name)){
             setStatus(`Alias '${name}' was not found.`, true);
             return;
@@ -23121,7 +25038,14 @@
         });
       });
     }
-    async function showAddChannelsModal(){
+    async function showAddChannelsModal({
+      selectedSet=null,
+      onApply=null,
+      titleHtml=null,
+      modalTitle=null,
+      external=false,
+    }={}){
+      const useExternal=Boolean(external || typeof onApply==="function" || selectedSet instanceof Set);
       if(!selectedSourceIds.size || !effectiveSelectedSourceIds().length){
         setStatus("Select at least one source first.", true);
         return;
@@ -23135,7 +25059,14 @@
 
       let activeSourceId=defaultChannelPickerSourceId(sourceOptions);
       const rowCache=new Map();
-      addedChannelIds.forEach((key)=>{
+      const initialSelected=useExternal
+        ? [...(selectedSet instanceof Set ? selectedSet : [])].map((id)=>channelKeyFromId(id)||String(id||"").trim()).filter(Boolean)
+        : [...addedChannelIds];
+      initialSelected.forEach((key)=>{
+        if(useExternal){
+          rowCache.set(key, { id:key, primary:key, meta:"" });
+          return;
+        }
         const calc=findCalculatedByKey(key);
         const alias=findAliasByKey(key);
         rowCache.set(key, {
@@ -23148,13 +25079,17 @@
       let allRows=[];
       // Aliased members live under their alias key — keep them out of Selected only when
       // that alias is currently on the channel list.
-      const selected=new Set([...addedChannelIds].filter((id)=>!isChannelCollapsedUnderListedAlias(id)));
+      const selected=new Set(useExternal
+        ? initialSelected
+        : initialSelected.filter((id)=>!isChannelCollapsedUnderListedAlias(id))
+      );
       const availActive=new Set();
       const selActive=new Set();
       let availAnchor=-1;
       let selAnchor=-1;
 
       const aliasBadgeHtml=(channelName)=>{
+        if(useExternal) return "";
         const hits=aliasesOwningListedChannel(channelName);
         if(!hits.length) return "";
         const tip=hits.map((a)=>a.name).join(", ");
@@ -23188,10 +25123,10 @@
         listRows.forEach((r)=>{
           const el=document.createElement("div");
           const isSelected = selected.has(r.id);
-          const aliased = kind==="avail" && isChannelCollapsedUnderListedAlias(r.id);
+          const aliased = !useExternal && kind==="avail" && isChannelCollapsedUnderListedAlias(r.id);
           el.className="selectRow"+(activeSet.has(r.id)?" active":"")+(kind==="avail" && isSelected ? " disabled" : "");
           const suffix=(kind==="avail" && isSelected)?" · selected":"";
-          el.innerHTML=`<div class="itemPrimary">${r.primary}${suffix}</div>${kind==="avail"?aliasBadgeHtml(r.id):""}`;
+          el.innerHTML=`<div class="itemPrimary">${escapeHtml(r.primary)}${suffix}</div>${kind==="avail"?aliasBadgeHtml(r.id):""}`;
           if(aliased) el.title=`In alias: ${aliasesOwningListedChannel(r.id).map((a)=>a.name).join(", ")}`;
           el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
           el.onclick=(ev)=>{
@@ -23206,7 +25141,7 @@
       };
 
       const selectedRows = ()=> [...selected]
-        .filter((id)=>!isChannelCollapsedUnderListedAlias(id))
+        .filter((id)=>useExternal || !isChannelCollapsedUnderListedAlias(id))
         .map((id)=>rowCache.get(id)||{id, primary:id, meta:""})
         .filter(Boolean)
         .sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
@@ -23237,6 +25172,7 @@
           rows.forEach((r)=>{
             const name=channelKeyFromId(r.id) || r.primary;
             if(!name || byName.has(name)) return;
+            if(useExternal && (isCalculatedChannelKey(name) || isAliasChannelKey(name))) return;
             const entry={ id:name, primary:name, meta:r.meta||"" };
             byName.set(name, entry);
             rowCache.set(name, entry);
@@ -23253,7 +25189,7 @@
 
       const sourceSelectHtml=`<div class="formField" id="cm_source_wrap" style="margin-bottom:8px;flex:0 0 auto;"><label>Source</label><div class="selectLock"><select id="cm_source_sel" class="formSelectStable">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div></div>`;
 
-      openModal("Channels > Add",`
+      openModal(modalTitle || "Channels > Add",`
         <div class="modalBodyPad">
           ${sourceSelectHtml}
           <div class="channelTransferGrid">
@@ -23269,6 +25205,15 @@
           <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Apply">${modalCheckIconHtml()}</button>
         </div>
       `, async()=>{
+        if(useExternal){
+          const next=[...selected].map((id)=>channelKeyFromId(id)||String(id||"").trim()).filter(Boolean);
+          if(typeof onApply==="function") onApply(next);
+          else if(selectedSet instanceof Set){
+            selectedSet.clear();
+            next.forEach((n)=>selectedSet.add(n));
+          }
+          return true;
+        }
         const next=new Set();
         selected.forEach((id)=>{
           if(isChannelCollapsedUnderListedAlias(id)) return;
@@ -23282,7 +25227,7 @@
         saveState();
         setStatus(`Selected ${[...next].filter((k)=>!isCalculatedChannelKey(k) && !isAliasChannelKey(k)).length} channel key(s).`);
         return true;
-      }, { ...WF_CHANNELS, closable:true, titleHtml:channelsWindowTitleHtml("Add") });
+      }, { ...WF_CHANNELS, closable:true, titleHtml: titleHtml || channelsWindowTitleHtml("Add") });
 
       const srcSel=byId("cm_source_sel");
       if(srcSel){
@@ -23296,7 +25241,7 @@
         const toMove=[...availActive];
         const skipped=[];
         toMove.forEach((id)=>{
-          if(isChannelCollapsedUnderListedAlias(id)){ skipped.push(id); return; }
+          if(!useExternal && isChannelCollapsedUnderListedAlias(id)){ skipped.push(id); return; }
           selected.add(id);
         });
         availActive.clear();
@@ -23312,7 +25257,7 @@
       byId("cm_to_avail").onclick=()=>{
         const toMove=[...selActive];
         toMove.forEach((id)=>{
-          if(isCalculatedChannelKey(id) || isAliasChannelKey(id)) return;
+          if(!useExternal && (isCalculatedChannelKey(id) || isAliasChannelKey(id))) return;
           selected.delete(id);
         });
         selActive.clear();
@@ -23685,6 +25630,7 @@
       byId("file_databaseManager").onclick=()=>openDatabaseManagerModal();
       byId("file_unitManager").onclick=()=>openUnitManagerModal();
       byId("file_rangeDefinitionManager").onclick=()=>openRangeDefinitionManagerModal();
+      byId("file_ingestionManager").onclick=()=>openIngestionManagerModal();
       byId("file_limitManager").onclick=()=>openLimitManagerModal();
     }
 
@@ -24395,13 +26341,13 @@
       window.addEventListener("resize",()=>{
         clearTimeout(winResizeT);
         winResizeT=setTimeout(()=>{
-          requestPlotResize();
-          updateSidebarListHeights();
-        }, 80);
+          if(window.innerWidth < 8 || window.innerHeight < 8) return;
+          novaForceLayoutRefresh();
+        }, 120);
       });
     }
 
-    const TOOLBAR_IDS=["sources","channels","masks","ranges","objects","options","pages","ingestion"];
+    const TOOLBAR_IDS=["sources","channels","masks","ranges","objects","options","pages"];
     function applyToolbarUI(){
       const sidebar=byId("sidebar");
       const open=Boolean(activeToolbar);
@@ -24466,8 +26412,21 @@
       await refreshArtifactIdsForFileSources();
       await loadDatabaseLibrary();
       syncDatabaseLibrarySources();
-      // Discover accessible DBs with data (non-blocking UI updates as each finishes)
-      (databaseLibrary||[]).forEach((profile)=>{ browseProfileAccessible(profile, { force:true }); });
+      // Warm database browse cache before first paint so expanded catalogs show tests.
+      const profiles=(databaseLibrary||[]).filter((p)=>!isHiddenLocalCatalogProfile(p));
+      await Promise.all(profiles.map(async(profile)=>{
+        try{ await browseProfileAccessible(profile, { force:true, silent:true }); }catch{}
+      }));
+      // Auto-expand DuckDB catalogs that have tests so permanent sources are visible on start.
+      profiles.forEach((profile)=>{
+        if(!isDuckdbProfile(profile)) return;
+        const pid=String(profile.id||"");
+        const cache=dbBrowseCache.get(pid);
+        const rows=cache?.tests?.catalog?.rows || [];
+        if(cache?.accessible && rows.length){
+          setSourceTreeExpanded(`dbconn:${pid}`, true);
+        }
+      });
       await loadUnitLibrary();
       loadLimitLibrary();
       loadPreferences();
@@ -24549,7 +26508,6 @@
       void openRangeDefinitionManagerModal();
     });
     byId("addObjectBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Plot objects are coming soon."); });
-    byId("addIngestionBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Ingestion rules are coming soon."); });
     byId("loadBtn").addEventListener("mousedown",(e)=>{
       e.preventDefault();
       e.stopPropagation();

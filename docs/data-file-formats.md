@@ -121,6 +121,7 @@ NOVA’s primary analytical store is **DuckDB + Parquet**, not PostgreSQL.
 - **Samples** — one Parquet file per channel with columns `x_ms`, `y`.
 - **Temporary ingest** (file open / plot) — always writes under `.nova_sessions/{artifact_id}/data/` and registers `durability=temporary` in the **local** catalog. Re-opening the same file reuses the cached artifact within the same app instance.
 - **Permanent ingest** — requires a project `catalog_id`; writes under `{profile.parquet_root}/{run_code}/data/` with `durability=permanent`.
+- **Ingestion rules** (Ingestion sidebar) — reusable recipes for permanent ingest: channel include/exclude/rename, materialized calculated channels, range definitions. Run via `POST /api/v3/ingest/rule`. Each run writes per-channel Parquet plus `meta.json` beside `data/`. Rules are stored in `.nova_ingestion_library.json`. **Does not change** temporary folder/file Sources open.
 
 Profiles are stored in `backend/.nova_database_library.json` (also supports optional PostgreSQL profiles when `NOVA_ENABLE_POSTGRES=1`).
 
@@ -128,7 +129,9 @@ Profiles are stored in `backend/.nova_database_library.json` (also supports opti
 
 - `GET /api/catalog/tests` — list registered tests (also the default for `GET /api/tests`)
 - `GET /api/catalog/tests/{id}/channels` / `.../parameters`
-- `POST /api/v3/ingest/file` — temporary by default (local catalog); permanent requires `catalog_id` of a project profile. Accepts `parameters`, `apply_range_rule_ids`
+- `POST /api/v3/ingest/file` — temporary by default (local catalog); permanent requires `catalog_id` of a project profile. Accepts `parameters`, `apply_range_rule_ids`, optional channel filter/rename/calcs when permanent
+- `POST /api/v3/ingest/rule` — permanent ingest using an ingestion rule (`rule_id` or inline `rule`)
+- `GET|POST /api/ingestion-library` — CRUD for ingestion rules
 - `POST /api/v3/series/query?format=series` — columnar JSON (`series[].x_ms` / `series[].y`); `format=arrow` IPC; `format=json` row compat
 - Ranges: `POST /api/catalog/ranges`, `POST /api/catalog/range-rules`, `POST /api/catalog/range-rules/apply`
 - Results: `GET|POST /api/catalog/results`

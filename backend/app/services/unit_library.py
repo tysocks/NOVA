@@ -89,6 +89,7 @@ def _clean_category(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": str(row.get("id") or uuid.uuid4()),
         "name": name,
+        "icon": str(row.get("icon") or "").strip(),
         "preferred": preferred,
         "units": units,
     }

@@ -12,6 +12,7 @@ from .engine.catalog_store import (
     catalog_path_override,
     create_range,
     create_range_rule,
+    delete_catalog_test,
     delete_range,
     list_catalog_channels,
     list_catalog_tests,
@@ -19,6 +20,7 @@ from .engine.catalog_store import (
     list_ranges,
     list_results,
     list_test_parameters,
+    update_catalog_test,
     update_range,
     write_result,
 )
@@ -35,6 +37,7 @@ from .engine.file_probe import probe_file_with_validation
 from .engine.series_query import execute_series_query
 from .models import (
     ApplyRangeRuleRequest,
+    CatalogTestUpdateRequest,
     ChannelItem,
     DatabaseItem,
     FileIngestRequest,
@@ -42,6 +45,7 @@ from .models import (
     FileProbeRequest,
     FileProbeResponse,
     HealthResponse,
+    IngestWithRuleRequest,
     RangeCreateRequest,
     RangeDeleteRequest,
     RangeItem,
@@ -72,6 +76,7 @@ from .services.file_sources import detect_source_type, file_channels, file_tests
 from .services.unit_library import clean_unit_library_rows, default_unit_library_rows
 from .services.config_library import clean_config_library_rows
 from .services.range_definition_library import clean_range_definition_rows
+from .services.ingestion_rule_library import clean_ingestion_rule, clean_ingestion_rule_rows
 from .services.query_router import resolve_overlay_targets
 from .services import database_library as db_library
 from .config import settings
@@ -121,6 +126,7 @@ DATABASE_LIBRARY_FILE = db_library.DATABASE_LIBRARY_FILE
 UNIT_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_unit_library.json"
 CONFIG_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_config_library.json"
 RANGE_DEFINITION_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_range_definition_library.json"
+INGESTION_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_ingestion_library.json"
 SOURCES_WORKSPACE_FILE = Path(__file__).resolve().parents[1] / ".nova_sources_workspace.json"
 
 
@@ -364,6 +370,28 @@ def save_range_definition_library(payload: dict = Body(...)) -> dict:
     return {"ok": True, "count": len(cleaned)}
 
 
+@app.get("/api/ingestion-library")
+def get_ingestion_library() -> dict:
+    rows = _load_json_library_rows(INGESTION_LIBRARY_FILE, "rules")
+    try:
+        return {"rules": clean_ingestion_rule_rows(rows)}
+    except Exception:
+        return {"rules": []}
+
+
+@app.post("/api/ingestion-library")
+def save_ingestion_library(payload: dict = Body(...)) -> dict:
+    rows = payload.get("rules") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return {"ok": False, "error": "rules must be a list"}
+    try:
+        cleaned = clean_ingestion_rule_rows(rows)
+    except (ValueError, TypeError) as exc:
+        return {"ok": False, "error": str(exc)}
+    _write_json_library_rows(INGESTION_LIBRARY_FILE, "rules", cleaned)
+    return {"ok": True, "count": len(cleaned)}
+
+
 def _require_postgres() -> None:
     if not settings.enable_postgres:
         raise HTTPException(
@@ -499,6 +527,47 @@ def catalog_test_parameters(
 ) -> list[TestParameterItem]:
     with _with_catalog(catalog_id):
         return list_test_parameters(test_id)
+
+
+@app.patch("/api/catalog/tests/{test_id}", response_model=TestRunItem)
+def patch_catalog_test(test_id: int, body: CatalogTestUpdateRequest) -> TestRunItem:
+    try:
+        with _with_catalog(body.catalog_id):
+            updated = update_catalog_test(
+                test_id,
+                run_code=body.run_code,
+                icon=body.icon,
+            )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not updated:
+        raise HTTPException(status_code=404, detail=f"Test {test_id} not found")
+    start = updated.get("start_time")
+    if start is None:
+        from datetime import datetime, timezone
+
+        start = datetime.now(timezone.utc)
+    return TestRunItem(
+        test_run_id=int(updated["test_id"]),
+        run_code=str(updated["run_code"]),
+        start_time=start,
+        end_time=updated.get("end_time"),
+        duration_s=updated.get("duration_s"),
+        t0_utc=None,
+        icon=updated.get("icon"),
+    )
+
+
+@app.delete("/api/catalog/tests/{test_id}")
+def remove_catalog_test(
+    test_id: int,
+    catalog_id: str | None = Query(default=None),
+) -> dict:
+    with _with_catalog(catalog_id):
+        ok = delete_catalog_test(test_id, remove_parquet=True)
+    if not ok:
+        raise HTTPException(status_code=404, detail=f"Test {test_id} not found")
+    return {"ok": True, "test_id": test_id}
 
 
 @app.get("/api/catalog/ranges", response_model=list[RangeItem])
@@ -917,6 +986,13 @@ def probe_file_v3(body: FileProbeRequest) -> FileProbeResponse:
 def ingest_file_v3(body: FileIngestRequest) -> FileIngestResponse:
     """Index CSV/H5/TDMS into session or permanent Parquet artifacts."""
     try:
+        rule = None
+        if body.ingestion_rule_id:
+            rows = _load_json_library_rows(INGESTION_LIBRARY_FILE, "rules")
+            cleaned = clean_ingestion_rule_rows(rows)
+            rule = next((r for r in cleaned if str(r.get("id")) == str(body.ingestion_rule_id)), None)
+            if rule is None:
+                raise ValueError(f"Ingestion rule not found: {body.ingestion_rule_id}")
         manifest = run_ingest(
             body.source_type,
             body.file_path,
@@ -926,6 +1002,14 @@ def ingest_file_v3(body: FileIngestRequest) -> FileIngestResponse:
             parameters=body.parameters,
             apply_range_rule_ids=body.apply_range_rule_ids,
             catalog_id=body.catalog_id,
+            channel_mode=body.channel_mode,
+            channel_include=body.channel_include,
+            channel_exclude=body.channel_exclude,
+            channel_rename=body.channel_rename,
+            channel_require=body.channel_require,
+            calculated_channels=[c.model_dump() for c in (body.calculated_channels or [])],
+            range_definition_ids=body.range_definition_ids,
+            ingestion_rule=rule,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -940,6 +1024,61 @@ def ingest_file_v3(body: FileIngestRequest) -> FileIngestResponse:
                 status="failed",
                 error=str(exc),
             )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    applied = []
+    for row in manifest.get("applied_ranges") or []:
+        if isinstance(row, dict):
+            try:
+                applied.append(RangeItem(**row))
+            except Exception:
+                continue
+
+    return FileIngestResponse(
+        artifact_id=str(manifest["artifact_id"]),
+        status=str(manifest.get("status", "ready")),
+        run_code=manifest.get("run_code"),
+        channels=list(manifest.get("channels") or []),
+        time_bounds=manifest.get("time_bounds"),
+        error=manifest.get("error"),
+        test_id=int(manifest["test_run_id"]) if manifest.get("test_run_id") is not None else None,
+        durability=str(manifest.get("durability") or "temporary"),
+        applied_ranges=applied,
+    )
+
+
+@app.post("/api/v3/ingest/rule", response_model=FileIngestResponse)
+def ingest_with_rule_v3(body: IngestWithRuleRequest) -> FileIngestResponse:
+    """Permanently ingest a file using an ingestion rule (library id or inline rule)."""
+    from .services.file_sources import detect_source_type
+
+    try:
+        rule = None
+        if body.rule is not None:
+            rule = clean_ingestion_rule(body.rule)
+        elif body.rule_id:
+            rows = _load_json_library_rows(INGESTION_LIBRARY_FILE, "rules")
+            cleaned = clean_ingestion_rule_rows(rows)
+            rule = next((r for r in cleaned if str(r.get("id")) == str(body.rule_id)), None)
+            if rule is None:
+                raise ValueError(f"Ingestion rule not found: {body.rule_id}")
+        else:
+            raise ValueError("Provide rule_id or rule")
+
+        source_type = body.source_type or detect_source_type(body.file_path)
+        if not source_type:
+            raise ValueError("Could not detect source_type for file")
+
+        manifest = run_ingest(
+            source_type,
+            body.file_path,
+            ingest_mode="permanent",
+            catalog_id=str(rule.get("target_catalog_id")),
+            ingestion_rule=rule,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     applied = []

@@ -126,6 +126,7 @@ def clean_duckdb_row(row: dict) -> dict:
         "role": "project",
         "hidden": False,
         "tags": clean_tags(row.get("tags")),
+        "icon": str(row.get("icon") or "").strip(),
         "updated_at": clean_updated_at(row.get("updated_at")),
     }
 
@@ -144,6 +145,7 @@ def clean_postgres_row(row: dict) -> dict:
         "role": "postgres",
         "hidden": False,
         "tags": clean_tags(row.get("tags")),
+        "icon": str(row.get("icon") or "").strip(),
         "updated_at": clean_updated_at(row.get("updated_at")),
     }
 
