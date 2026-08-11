@@ -1324,6 +1324,7 @@
       box-sizing:border-box;
       cursor:default;
     }
+    .rangeMetaRow[hidden]{ display:none !important; }
     .rangeMetaRow:hover{
       background:var(--nova-hover);
     }
@@ -1500,6 +1501,10 @@
       cursor:pointer;
     }
     /* Properties table uses novaSelect chrome — strip border + chevron there */
+    .rangeMetaTable .novaSelect,
+    #export_props .novaSelect,
+    #ingest_props .novaSelect,
+    #src_edit_props .novaSelect,
     #m_obj_props .novaSelect,
     #m_ov_def .novaSelect,
     #m_mask_props .novaSelect,
@@ -1510,6 +1515,22 @@
       max-height:30px !important;
       min-height:30px !important;
     }
+    .rangeMetaTable .novaSelectBtn,
+    .rangeMetaTable .novaSelectBtn:hover,
+    .rangeMetaTable .novaSelectBtn:focus,
+    .rangeMetaTable .novaSelect.open .novaSelectBtn,
+    #export_props .novaSelectBtn,
+    #export_props .novaSelectBtn:hover,
+    #export_props .novaSelectBtn:focus,
+    #export_props .novaSelect.open .novaSelectBtn,
+    #ingest_props .novaSelectBtn,
+    #ingest_props .novaSelectBtn:hover,
+    #ingest_props .novaSelectBtn:focus,
+    #ingest_props .novaSelect.open .novaSelectBtn,
+    #src_edit_props .novaSelectBtn,
+    #src_edit_props .novaSelectBtn:hover,
+    #src_edit_props .novaSelectBtn:focus,
+    #src_edit_props .novaSelect.open .novaSelectBtn,
     #m_obj_props .novaSelectBtn,
     #m_obj_props .novaSelectBtn:hover,
     #m_obj_props .novaSelectBtn:focus,
@@ -2329,7 +2350,7 @@
     .iconPickerItem svg{ width:16px; height:16px; display:block; }
     .appWindow{ position:fixed; pointer-events:auto; display:flex; flex-direction:column; min-width:220px; min-height:140px; max-width:96vw; max-height:96vh; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-lg); box-shadow:var(--nova-shadow); overflow:hidden; z-index:111; }
     .appWindow.modalScale{ width:420px; height:520px; }
-    .appWindow.modalSourceForm{ width:598px; height:300px; }
+    .appWindow.modalSourceForm{ width:598px; height:auto; min-height:280px; max-height:96vh; }
     .appWindow.modalAliasForm{ width:598px; height:auto; min-height:280px; max-height:96vh; }
     .appWindow.modalRangeDef{
       width:640px;
@@ -2341,6 +2362,8 @@
     .appWindow.modalDbSource{ width:960px; height:640px; }
     .appWindow.modalMask{ width:360px; height:500px; }
     .appWindow.modalNarrow{ width:260px; height:340px; }
+    .appWindow.modalExport{ width:360px; height:280px; }
+    .appWindow.modalExport .formStack{ padding:10px 16px 4px; gap:10px; }
     .appWindowHeader{ display:flex; align-items:center; gap:6px; cursor:move; flex:0 0 auto; user-select:none; padding-right:8px; }
     .appWindowHeader .modalTitle{ flex:1; min-width:0; margin:0; display:flex; align-items:center; gap:8px; }
     .appWindowHeader .modalTitleIcon{
@@ -2369,7 +2392,7 @@
       width:20px; min-width:20px; height:20px;
     }
     .appWindow.modalSourceForm .appWindowHeader .modalTitle{ font-size:0.85rem; }
-    .appWindow.modalSourceForm .formStack{ padding:10px 16px 4px; gap:12px; }
+    .appWindow.modalSourceForm .formStack{ padding:10px 16px 4px; gap:12px; flex:0 0 auto; }
     .appWindow.modalSourceForm .modalActions.modalActionsIconOnly{ padding:6px 12px; }
     .appWindow.modalAliasForm .appWindowHeader.modalHeader{ padding:8px 14px; }
     .appWindow.modalAliasForm .appWindowHeader .appWindowClose{ width:20px; min-width:20px; height:20px; }
@@ -2527,13 +2550,19 @@
     <div class="menuItem" data-menu="file">File
       <div class="menuDropdown" id="menu_file">
         <div class="menuAction" id="file_configManager">Configuration Manager</div>
-        <div class="menuAction" id="file_databaseManager">Database Manager</div>
-        <div class="menuAction" id="file_unitManager">Unit Manager</div>
+        <div class="menuAction" id="file_databaseManager">Databases</div>
+        <div class="menuAction" id="file_unitManager">Units</div>
         <div class="menuAction" id="file_rangeDefinitionManager">Range Definitions</div>
-        <div class="menuAction" id="file_ingestionManager">Ingestion Manager</div>
-        <div class="menuAction" id="file_limitManager">Limits Manager</div>
+        <div class="menuAction" id="file_ingestionManager">Ingestion Rules</div>
+        <div class="menuAction" id="file_limitManager">Limits</div>
         <div class="menuSep"></div>
-        <div class="menuAction" id="file_preferences">Preferences…</div>
+        <div class="menuAction" id="file_export">Export</div>
+        <div class="menuSep"></div>
+        <div class="menuAction" id="file_saveProject">Save Project</div>
+        <div class="menuAction" id="file_openProject">Open Project</div>
+        <div class="menuAction" id="file_resetScope">Reset Scope</div>
+        <div class="menuSep"></div>
+        <div class="menuAction" id="file_preferences">Preferences</div>
       </div>
     </div>
     <div class="menuItem" data-menu="edit">Edit
@@ -2549,7 +2578,7 @@
         <div class="menuAction" id="help_versionCheck">Version check</div>
       </div>
     </div>
-    <input id="filePicker" type="file" accept="application/json,.json" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0;" />
+    <input id="filePicker" type="file" accept="application/json,.json,.nova" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0;" />
   </div>
   <div class="app">
     <aside class="sidebar" id="sidebar">
@@ -6535,10 +6564,11 @@
             { label:"Arrow", action:()=>removeByType("arrow") },
           ]},
           { label:"Define Range", action:()=>armTool("define-range") },
-          { label:"Align", submenu:[
+          { label:"Alignment", submenu:[
             { label:"Align Ranges", action:()=>{ if(typeof alignSelectedRangesOnPlot === "function") void alignSelectedRangesOnPlot(); } },
             { label:"Toggle Mode", action:()=>{ if(typeof togglePlotTimeMode === "function") void togglePlotTimeMode(); } },
           ]},
+          { label:"Copy", action:()=>{ void copyViewPng(plotEl?.dataset?.plotId); } },
         ]);
       }
 
@@ -7562,6 +7592,25 @@
         return `<option value="${c.channel_name}"${selected}>${c.channel_name}</option>`;
       }).join("");
     }
+    async function fetchFileSourceChannelRows(fileSrc){
+      await linkArtifactForSource(fileSrc);
+      if(fileSrc.artifact_id){
+        try{
+          return await getJson(`/api/v3/ingest/${encodeURIComponent(fileSrc.artifact_id)}/channels`);
+        }catch(err){
+          const msg=String(err?.message||err);
+          if(!/404|not ready|not found/i.test(msg)) throw err;
+          fileSrc.artifact_id="";
+          delete fileSrc.test_id;
+        }
+      }
+      const p=new URLSearchParams();
+      p.append("source_type", fileSrc.type);
+      p.append("file_path", fileSrc.file_path||"");
+      if(supportsHeaderUnitParsing(fileSrc.type) && fileSrc.units_in_headers) p.append("units_in_headers","true");
+      if(fileSrc.time_index_channel) p.append("time_index_channel", fileSrc.time_index_channel);
+      return getJson(`/api/file/channels?${p.toString()}`);
+    }
     async function fetchChannelsForDb(dbId){
       const rows=[];
       const { db, src, connSrc }=resolveDbSource(dbId);
@@ -7586,7 +7635,7 @@
         }catch(err){
           setStatus(`Failed to load channels for '${db.name}': ${err}`, true);
         }
-      } else if(isCatalogSource(src) || src.test_id){
+      } else if(isCatalogSource(src) && !isFileSource(src)){
         const tid=Number(src.test_id);
         if(!Number.isFinite(tid)) return rows;
         try{
@@ -7604,20 +7653,7 @@
         const fileSrc=isFileSource(src) ? src : state.sources.find((s)=>s.id===db.sourceId);
         if(!fileSrc) return rows;
         try{
-          await linkArtifactForSource(fileSrc);
-          let ch;
-          if(fileSrc.test_id){
-            ch=await getJson(`/api/catalog/tests/${Number(fileSrc.test_id)}/channels`);
-          } else if(fileSrc.artifact_id){
-            ch=await getJson(`/api/v3/ingest/${encodeURIComponent(fileSrc.artifact_id)}/channels`);
-          } else {
-            const p=new URLSearchParams();
-            p.append("source_type", fileSrc.type);
-            p.append("file_path", fileSrc.file_path||"");
-            if(supportsHeaderUnitParsing(fileSrc.type) && fileSrc.units_in_headers) p.append("units_in_headers","true");
-            if(fileSrc.time_index_channel) p.append("time_index_channel", fileSrc.time_index_channel);
-            ch=await getJson(`/api/file/channels?${p.toString()}`);
-          }
+          const ch=await fetchFileSourceChannelRows(fileSrc);
           ch.forEach((c)=>rows.push({
             id:`${dbId}|${c.channel_name}`,
             primary:c.channel_name,
@@ -7643,7 +7679,25 @@
       if(sourceType==="csv" || sourceType==="h5" || sourceType==="tdms" || sourceType==="parquet" || sourceType==="arrow") return true;
       return !(ch.unit || "").trim();
     }
-    async function getJson(url) { const r = await fetch(url); if (!r.ok) { let detail = ""; try { const body = await r.json(); detail = body?.detail ? `: ${body.detail}` : ""; } catch { try { const text = await r.text(); if (text) detail = `: ${text}`; } catch {} } throw new Error(`Request failed ${r.status}${detail}`); } return r.json(); }
+    async function getJson(url) {
+      let r;
+      try{
+        r = await fetch(url);
+      }catch(err){
+        const msg=String(err?.message||err);
+        if(/failed to fetch|networkerror|load failed/i.test(msg)){
+          throw new Error("Backend is not reachable. Restart NOVA and try again.");
+        }
+        throw err;
+      }
+      if (!r.ok) {
+        let detail = "";
+        try { const body = await r.json(); detail = body?.detail ? `: ${body.detail}` : ""; }
+        catch { try { const text = await r.text(); if (text) detail = `: ${text}`; } catch {} }
+        throw new Error(`Request failed ${r.status}${detail}`);
+      }
+      return r.json();
+    }
     async function postJson(url, payload){
       const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
       let body=null;
@@ -9315,17 +9369,18 @@
       });
     }
     function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); const toolbar = Object.prototype.hasOwnProperty.call(s, "activeToolbar") ? s.activeToolbar : "sources"; state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:migrateCalculatedChannels(s.calculatedChannels || []), channelAliases:migrateChannelAliases(s.channelAliases || []), channelLabels:(s.channelLabels && typeof s.channelLabels==="object" && !Array.isArray(s.channelLabels))?s.channelLabels:{}, freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {}, activeToolbar: toolbar, sourceTreeExpanded: Array.isArray(s.sourceTreeExpanded)?s.sourceTreeExpanded:[] }; migrateLegacyTimeRef(state.sources, s.t0Mode); plotTimeMode=DEFAULT_TIME_REF; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = migrateChannelKeySet(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = migrateChannelKeySet(s.addedChannelIds || []); previewVisible = Boolean(s.previewVisible); activeToolbar = state.activeToolbar ?? null; if(activeToolbar && !["sources","channels","masks","ranges","objects","options","pages","ingestion"].includes(activeToolbar)) activeToolbar="sources"; sourceTreeExpanded = new Set(state.sourceTreeExpanded || s.sourceTreeExpanded || []); } catch {} }
-    const MODAL_SIZE_CLASSES=["modalScale","modalSourceForm","modalAliasForm","modalRangeDef","modalChannels","modalDbSource","modalNarrow","modalMask","modalCompact"];
+    const MODAL_SIZE_CLASSES=["modalScale","modalSourceForm","modalAliasForm","modalRangeDef","modalChannels","modalDbSource","modalNarrow","modalMask","modalCompact","modalExport"];
     const WF={ floating:true };
     const WF_CHANNELS={ floating:true, size:"modalChannels", compact:true };
     const WF_DB_SOURCE={ floating:true, size:"modalDbSource", compact:true };
     const WF_NARROW={ floating:true, size:"modalNarrow", compact:true };
+    const WF_EXPORT={ floating:true, size:"modalExport", compact:true, closable:true };
     const WF_CFG={ floating:true, size:"default", compact:true };
     const WF_SOURCE_FORM={ floating:true, size:"modalSourceForm", closable:true };
     const WF_ALIAS_FORM={ floating:true, size:"modalAliasForm", closable:true };
     const WF_RANGE_DEF_FORM={ floating:true, size:"modalRangeDef", closable:true };
     const dialogCloseStack=[];
-    const APP_WINDOW_SIZES={ modalScale:[420,520], modalSourceForm:[598,300], modalAliasForm:[598,320], modalRangeDef:[640,720], modalChannels:[960,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], modalPreferences:[820,560], default:[520,560] };
+    const APP_WINDOW_SIZES={ modalScale:[420,520], modalSourceForm:[598,380], modalAliasForm:[598,320], modalRangeDef:[640,720], modalChannels:[960,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], modalExport:[360,280], modalPreferences:[820,560], default:[520,560] };
     function removeAppWindowEntry(dialogId){
       const idx=appWindowStack.findIndex((e)=>e.dialogId===dialogId);
       if(idx>=0) appWindowStack.splice(idx,1);
@@ -9572,7 +9627,8 @@
       const el=document.createElement("div");
       el.className="appWindow modal"+(layoutOpts?.size?` ${layoutOpts.size}`:"")+(layoutOpts?.compact?" modalCompact":"");
       el.style.width=`${defW}px`;
-      if(sizeKey==="modalAliasForm"){
+      const autoFit=sizeKey==="modalAliasForm" || sizeKey==="modalSourceForm";
+      if(autoFit){
         el.style.height="auto";
         el.style.minHeight=`${Math.max(280, defH)}px`;
       }else{
@@ -9619,7 +9675,7 @@
       bringAppWindowToFront(el);
       layer.appendChild(el);
       lockSelectGeometry(el);
-      if(sizeKey==="modalAliasForm"){
+      if(autoFit){
         requestAnimationFrame(()=>{
           fitAppWindowInViewport(el, { cascade, recenter:true });
           // Second pass only clamps size/position — do not yank back to center.
@@ -12512,55 +12568,465 @@
         localStorage.removeItem(CONFIG_LIBRARY_KEY);
       }catch{}
     }
-    async function saveJsonToFile(defaultName, payload){
-      const text = JSON.stringify(payload, null, 2);
-      const normalizedDefaultName = /\.json$/i.test(defaultName) ? defaultName : `${defaultName}.json`;
-      if (window.showSaveFilePicker) {
-        try {
-          let handle = await window.showSaveFilePicker({
-            suggestedName: normalizedDefaultName,
-            excludeAcceptAllOption: true,
-            types: [{ description: "JSON files", accept: { "application/json": [".json"] } }],
+    async function blobToBase64(blob){
+      const buf=await blob.arrayBuffer();
+      const bytes=new Uint8Array(buf);
+      let binary="";
+      const chunk=0x8000;
+      for(let i=0;i<bytes.length;i+=chunk){
+        binary+=String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+      }
+      return btoa(binary);
+    }
+    function exportFileKind(name, mime){
+      const ext=String(name||"").split(".").pop()?.toLowerCase()||"";
+      if(ext==="png" || mime==="image/png") return { ext:"png", mime:"image/png", label:"PNG image", filter:"*.png" };
+      if(ext==="pdf" || mime==="application/pdf") return { ext:"pdf", mime:"application/pdf", label:"PDF document", filter:"*.pdf" };
+      if(ext==="csv" || mime==="text/csv") return { ext:"csv", mime:"text/csv", label:"CSV file", filter:"*.csv" };
+      if(ext==="parquet" || String(mime||"").includes("parquet")) return { ext:"parquet", mime:"application/vnd.apache.parquet", label:"Parquet file", filter:"*.parquet" };
+      if(ext==="nova") return { ext:"nova", mime:"application/json", label:"NOVA project", filter:"*.nova" };
+      if(ext==="json" || mime==="application/json") return { ext:"json", mime:"application/json", label:"JSON files", filter:"*.json" };
+      return { ext:ext||"bin", mime:mime||"application/octet-stream", label:"File", filter:ext?`*.${ext}`:"*.*" };
+    }
+    function typedExportBlob(blob, mime){
+      if(blob && blob.type===mime) return blob;
+      return new Blob([blob], { type:mime });
+    }
+    async function saveBlobToFile(defaultName, blob, types){
+      const kind=exportFileKind(defaultName, blob?.type);
+      const suggested=String(defaultName||`nova_export.${kind.ext}`);
+      const named=suggested.toLowerCase().endsWith(`.${kind.ext}`) ? suggested : `${suggested}.${kind.ext}`;
+      const typed=typedExportBlob(blob, kind.mime);
+      const pickerTypes=Array.isArray(types)&&types.length
+        ? types
+        : [{ description:kind.label, accept:{ [kind.mime]:[`.${kind.ext}`] } }];
+      if(window.showSaveFilePicker){
+        try{
+          const handle=await window.showSaveFilePicker({
+            suggestedName:named,
+            types:pickerTypes,
           });
-          if (!/\.json$/i.test(handle.name || "")) {
-            const enforcedName = `${handle.name || "nova_config"}.json`;
-            setStatus("Please save with .json extension. Reopening save dialog...", true);
-            handle = await window.showSaveFilePicker({
-              suggestedName: enforcedName,
-              excludeAcceptAllOption: true,
-              types: [{ description: "JSON files", accept: { "application/json": [".json"] } }],
-            });
-            if (!/\.json$/i.test(handle.name || "")) {
-              setStatus("Save requires a .json file name.", true);
-              return { ok: false, cancelled: true };
-            }
-          }
-          const writable = await handle.createWritable();
-          await writable.write(text);
+          const writable=await handle.createWritable();
+          await writable.write(typed);
           await writable.close();
-          return { ok: true, viaPicker: true };
-        } catch (err) {
-          if (err && err.name === "AbortError") return { ok: false, cancelled: true };
-          setStatus(`Save dialog failed, using download fallback: ${err}`, true);
+          return { ok:true, viaPicker:true };
+        }catch(err){
+          if(err && err.name==="AbortError") return { ok:false, cancelled:true };
         }
       }
-      try {
-        const blob=new Blob([text],{type:"application/json"});
+      try{
+        const filetypes=pickerTypes.map((t)=>{
+          const ext=(Object.values(t.accept||{})[0]||[])[0]||`.${kind.ext}`;
+          const filter=String(ext).startsWith("*") ? ext : `*${ext.startsWith(".")?ext:`.${ext}`}`;
+          return [t.description||kind.label, filter];
+        });
+        if(!filetypes.some((pair)=>String(pair[1]).toLowerCase().includes(`.${kind.ext}`))){
+          filetypes.unshift([kind.label, kind.filter]);
+        }
+        const res=await postJson("/api/desktop/save-file", {
+          suggested_name:named,
+          content_base64:await blobToBase64(typed),
+          filetypes,
+        });
+        if(res.cancelled) return { ok:false, cancelled:true };
+        if(res.ok) return { ok:true, viaPicker:true, path:res.path };
+      }catch{}
+      try{
         const a=document.createElement("a");
-        a.href=URL.createObjectURL(blob);
-        a.download=normalizedDefaultName;
+        a.href=URL.createObjectURL(typed);
+        a.download=named;
         a.click();
         URL.revokeObjectURL(a.href);
-        return { ok: true, viaPicker: false };
-      } catch (err) {
-        setStatus(`Config save failed: ${err}`, true);
-        return { ok: false, cancelled: false };
+        return { ok:true, viaPicker:false };
+      }catch(err){
+        setStatus(`Save failed: ${err}`, true);
+        return { ok:false, cancelled:false };
+      }
+    }
+    async function saveJsonToFile(defaultName, payload){
+      const text=JSON.stringify(payload, null, 2);
+      const normalizedDefaultName=/\.json$/i.test(defaultName) ? defaultName : `${defaultName}.json`;
+      const blob=new Blob([text],{type:"application/json"});
+      return saveBlobToFile(normalizedDefaultName, blob, [
+        { description:"JSON files", accept:{ "application/json":[".json"] } },
+      ]);
+    }
+    function exportBasename(suffix){
+      const plot=getActivePlot();
+      const page=typeof getActivePage==="function" ? getActivePage() : null;
+      const raw=String(plot?.name||page?.name||"nova").trim()||"nova";
+      const stem=raw.replace(/[^\w\-]+/g,"_").replace(/^_+|_+$/g,"")||"nova";
+      return `${stem}${suffix||""}`;
+    }
+    function dataUrlToBlob(dataUrl, fallbackMime="image/png"){
+      const parts=String(dataUrl||"").split(",");
+      const mime=(parts[0].match(/data:([^;]+)/)||[])[1]||fallbackMime;
+      const bin=atob(parts[1]||"");
+      const bytes=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i+=1) bytes[i]=bin.charCodeAt(i);
+      return new Blob([bytes],{ type:mime||fallbackMime });
+    }
+    function concatBytes(parts){
+      const total=parts.reduce((n,p)=>n+p.length,0);
+      const out=new Uint8Array(total);
+      let off=0;
+      parts.forEach((p)=>{ out.set(p, off); off+=p.length; });
+      return out;
+    }
+    function jpegBytesToPdf(jpeg, widthPx, heightPx){
+      const w=Math.max(1, Math.round(widthPx));
+      const h=Math.max(1, Math.round(heightPx));
+      const enc=new TextEncoder();
+      const chunks=[];
+      const offsets=[0];
+      const push=(part)=>{
+        const bytes=typeof part==="string" ? enc.encode(part) : part;
+        chunks.push(bytes);
+        offsets[0]+=bytes.length;
+      };
+      const objStarts=[];
+      push("%PDF-1.4\n");
+      const writeObj=(body, streamBytes=null)=>{
+        objStarts.push(offsets[0]);
+        push(`${objStarts.length} 0 obj\n`);
+        push(body);
+        if(streamBytes){
+          push("stream\n");
+          push(streamBytes);
+          push("\nendstream\n");
+        }
+        push("endobj\n");
+      };
+      writeObj("<< /Type /Catalog /Pages 2 0 R >>\n");
+      writeObj("<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n");
+      writeObj(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Contents 4 0 R /Resources << /XObject << /Im0 5 0 R >> >> >>\n`);
+      const content=`q ${w} 0 0 ${h} 0 0 cm /Im0 Do Q\n`;
+      writeObj(`<< /Length ${content.length} >>\n`, enc.encode(content));
+      writeObj(`<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\n`, jpeg);
+      const xrefAt=offsets[0];
+      push(`xref\n0 ${objStarts.length+1}\n`);
+      push("0000000000 65535 f \n");
+      objStarts.forEach((off)=>{
+        push(`${String(off).padStart(10,"0")} 00000 n \n`);
+      });
+      push(`trailer\n<< /Size ${objStarts.length+1} /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF\n`);
+      return concatBytes(chunks);
+    }
+    function loadImageFromUrl(url){
+      return new Promise((resolve,reject)=>{
+        const img=new Image();
+        img.onload=()=>resolve(img);
+        img.onerror=()=>reject(new Error("Failed to load image"));
+        img.src=url;
+      });
+    }
+    async function pngDataUrlToJpegBytes(dataUrl){
+      const img=await loadImageFromUrl(dataUrl);
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1, img.naturalWidth||img.width);
+      canvas.height=Math.max(1, img.naturalHeight||img.height);
+      const ctx=canvas.getContext("2d");
+      ctx.fillStyle="#ffffff";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0);
+      const jpegUrl=canvas.toDataURL("image/jpeg", 0.92);
+      const blob=dataUrlToBlob(jpegUrl);
+      return { bytes:new Uint8Array(await blob.arrayBuffer()), width:canvas.width, height:canvas.height };
+    }
+    function fillHostFallbackCanvas(el, plot){
+      const scale=2;
+      const w=Math.max(1, el.clientWidth||320);
+      const h=Math.max(1, el.clientHeight||200);
+      const canvas=document.createElement("canvas");
+      canvas.width=w*scale;
+      canvas.height=h*scale;
+      const ctx=canvas.getContext("2d");
+      const ws=byId("plotWorkspace");
+      const bg=getComputedStyle(el).backgroundColor;
+      ctx.fillStyle=(bg && bg!=="rgba(0, 0, 0, 0)" && bg!=="transparent")
+        ? bg
+        : (getComputedStyle(ws||document.body).backgroundColor||"#111111");
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle=getComputedStyle(el).color||"#e2e8f0";
+      ctx.font=`${13*scale}px ${getComputedStyle(document.body).fontFamily}`;
+      const title=String(plot?.name||"View");
+      ctx.fillText(title, 16*scale, 28*scale);
+      const body=String(el.innerText||"").trim();
+      if(body){
+        ctx.font=`${11*scale}px ${getComputedStyle(document.body).fontFamily}`;
+        ctx.globalAlpha=0.85;
+        const lines=body.split(/\r?\n/).slice(0, 24);
+        lines.forEach((line, idx)=>{
+          ctx.fillText(line.slice(0, 120), 16*scale, (52+idx*16)*scale);
+        });
+        ctx.globalAlpha=1;
+      }
+      return canvas.toDataURL("image/png");
+    }
+    async function captureHostPngDataUrl(host){
+      if(!host) throw new Error("No plot host");
+      const plot=plots.find((p)=>p.id===host.dataset.plotId) || getActivePlot();
+      if(window.Plotly?.toImage && (host.data||host.layout||host._fullLayout)){
+        try{
+          return await Plotly.toImage(host, {
+            format:"png",
+            width:Math.max(320, host.clientWidth||800),
+            height:Math.max(200, host.clientHeight||480),
+            scale:2,
+          });
+        }catch(err){
+          console.warn("[NOVA] Plotly.toImage failed", err);
+        }
+      }
+      return fillHostFallbackCanvas(host, plot);
+    }
+    async function captureWorkspacePngDataUrl(){
+      const ws=byId("plotWorkspace");
+      if(!ws) throw new Error("Plot workspace is not available.");
+      const hosts=[...ws.querySelectorAll(".plotHost")].filter((el)=>el.clientWidth>4 && el.clientHeight>4);
+      if(!hosts.length) throw new Error("No visible views to export.");
+      const wsRect=ws.getBoundingClientRect();
+      const scale=2;
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1, Math.round(wsRect.width*scale));
+      canvas.height=Math.max(1, Math.round(wsRect.height*scale));
+      const ctx=canvas.getContext("2d");
+      ctx.fillStyle=getComputedStyle(ws).backgroundColor||"#111111";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(const host of hosts){
+        const rect=host.getBoundingClientRect();
+        const url=await captureHostPngDataUrl(host);
+        const img=await loadImageFromUrl(url);
+        ctx.drawImage(
+          img,
+          (rect.left-wsRect.left)*scale,
+          (rect.top-wsRect.top)*scale,
+          Math.max(1, rect.width*scale),
+          Math.max(1, rect.height*scale),
+        );
+      }
+      return canvas.toDataURL("image/png");
+    }
+    function reportExportResult(okLabel, result){
+      if(result?.ok && result.viaPicker) setStatus(okLabel);
+      else if(result?.ok) setStatus(`${okLabel} (download fallback).`);
+      else if(result?.cancelled) setStatus("Export cancelled.");
+    }
+    async function captureExportPngDataUrl(target){
+      if(String(target||"view")==="page") return captureWorkspacePngDataUrl();
+      const host=getPlotDiv(activePlotId);
+      if(!host) throw new Error("No active view.");
+      return captureHostPngDataUrl(host);
+    }
+    async function exportWorkspacePng(target="page"){
+      const scope=String(target||"page")==="page" ? "page" : "view";
+      try{
+        setStatus(`Exporting ${scope} PNG…`);
+        const url=await captureExportPngDataUrl(scope);
+        const result=await saveBlobToFile(exportBasename(`_${scope}.png`), dataUrlToBlob(url, "image/png"), [
+          { description:"PNG image", accept:{ "image/png":[".png"] } },
+        ]);
+        reportExportResult(`${scope==="page"?"Page":"View"} PNG exported.`, result);
+      }catch(err){
+        setStatus(`PNG export failed: ${err.message||err}`, true);
+      }
+    }
+    async function copyViewPng(plotId){
+      try{
+        if(plotId && plotId!==activePlotId && typeof switchPlot==="function"){
+          switchPlot(plotId);
+          await nextPaint();
+          await nextPaint();
+        }
+        const host=getPlotDiv(plotId||activePlotId);
+        if(!host) throw new Error("No active view.");
+        setStatus("Copying view…");
+        const url=await captureHostPngDataUrl(host);
+        const blob=dataUrlToBlob(url, "image/png");
+        if(navigator.clipboard?.write && window.ClipboardItem){
+          try{
+            await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+            setStatus("View copied to clipboard.");
+            return;
+          }catch(err){
+            console.warn("[NOVA] clipboard write failed", err);
+          }
+        }
+        await postJson("/api/desktop/clipboard-image", {
+          content_base64: await blobToBase64(blob),
+        });
+        setStatus("View copied to clipboard.");
+      }catch(err){
+        setStatus(`Copy view failed: ${err.message||err}`, true);
+      }
+    }
+    async function exportWorkspacePdf(target="page"){
+      const scope=String(target||"page")==="page" ? "page" : "view";
+      try{
+        setStatus(`Exporting ${scope} PDF…`);
+        const url=await captureExportPngDataUrl(scope);
+        const jpeg=await pngDataUrlToJpegBytes(url);
+        const pdf=jpegBytesToPdf(jpeg.bytes, jpeg.width, jpeg.height);
+        const result=await saveBlobToFile(exportBasename(`_${scope}.pdf`), new Blob([pdf],{ type:"application/pdf" }), [
+          { description:"PDF document", accept:{ "application/pdf":[".pdf"] } },
+        ]);
+        reportExportResult(`${scope==="page"?"Page":"View"} PDF exported.`, result);
+      }catch(err){
+        setStatus(`PDF export failed: ${err.message||err}`, true);
+      }
+    }
+    function rowsForExportPlot(plot){
+      if(!plot) return [];
+      if(plot.id===activePlotId) return latestRows||[];
+      return plot.latestRows||[];
+    }
+    function collectExportSeries(plot){
+      const target=plot||getActivePlot();
+      const rows=rowsForExportPlot(target);
+      const grouped=new Map();
+      (rows||[]).forEach((r)=>{
+        const name=legendKeyForRow(r)||r.channel_name||"channel";
+        if(!grouped.has(name)){
+          grouped.set(name, {
+            name,
+            unit:"",
+            source:String(r.test_run_code||r.__dbId||""),
+            x:[],
+            y:[],
+          });
+        }
+        const g=grouped.get(name);
+        const chId=`${r.__dbId||""}|${r.channel_name||""}`;
+        const rawUnit=getChannelSourceUnit(chId, r.unit);
+        g.unit=resolveChannelUnit(chId, r.unit)||r.unit||"";
+        const xMs=Number.isFinite(Number(r.x_ms)) ? Number(r.x_ms)
+          : (Number.isFinite(Number(r.__ts)) ? Number(r.__ts) : Date.parse(r.time));
+        const y=convertValueToPreferred(Number(r.value), rawUnit);
+        if(!Number.isFinite(xMs) || !Number.isFinite(y)) return;
+        g.x.push(xMs);
+        g.y.push(y);
+      });
+      let series=[...grouped.values()].filter((s)=>s.x.length);
+      if(series.length) return series;
+      const host=getPlotDiv(target?.id);
+      if(host?.data?.length){
+        series=(host.data||[]).map((tr)=>({
+          name:String(tr.name||"trace"),
+          unit:"",
+          source:"",
+          x:(tr.x||[]).map((v)=> v instanceof Date ? v.getTime() : v),
+          y:[...(tr.y||[])],
+        })).filter((s)=>s.x.length && s.y.length);
+      }
+      return series;
+    }
+    function collectExportSeriesForTarget(target){
+      if(String(target||"view")!=="page") return collectExportSeries(getActivePlot());
+      const prefixNames=(plots||[]).length>1;
+      const all=[];
+      (plots||[]).forEach((p)=>{
+        collectExportSeries(p).forEach((s)=>{
+          all.push(prefixNames ? { ...s, name:`${p.name||"View"} / ${s.name}` } : s);
+        });
+      });
+      return all;
+    }
+    async function exportVisibleSeries(format, target="view"){
+      const fmt=String(format||"csv").toLowerCase()==="parquet" ? "parquet" : "csv";
+      const scope=String(target||"view")==="page" ? "page" : "view";
+      try{
+        const series=collectExportSeriesForTarget(scope);
+        if(!series.length) throw new Error(scope==="page" ? "No plotted series on this page." : "No plotted series in the active view.");
+        setStatus(`Exporting series ${fmt.toUpperCase()}…`);
+        const filename=exportBasename(`_series.${fmt}`);
+        const res=await fetch("/api/v3/series/export", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({ format:fmt, filename, series }),
+        });
+        if(!res.ok){
+          let detail="";
+          try{ const body=await res.json(); detail=body?.detail||""; }catch{}
+          throw new Error(detail||`Export failed ${res.status}`);
+        }
+        const rawBlob=await res.blob();
+        const accept=fmt==="parquet"
+          ? { description:"Parquet file", accept:{ "application/vnd.apache.parquet":[".parquet"] } }
+          : { description:"CSV file", accept:{ "text/csv":[".csv"] } };
+        const typed=typedExportBlob(rawBlob, fmt==="parquet" ? "application/vnd.apache.parquet" : "text/csv");
+        const result=await saveBlobToFile(filename, typed, [accept]);
+        reportExportResult(`Series ${fmt.toUpperCase()} exported.`, result);
+      }catch(err){
+        setStatus(`Series export failed: ${err.message||err}`, true);
+      }
+    }
+    function exportWindowTitleHtml(){
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg></span>`;
+      return `${icon}<span>Export</span>`;
+    }
+    function syncExportTypeRow(scope){
+      const format=scope?.querySelector?.("#export_format")?.value||"png";
+      const row=scope?.querySelector?.("#export_type_row");
+      if(row) row.hidden=format!=="file";
+    }
+    function openExportModal(){
+      const entry=openModal(
+        "Export",
+        `<div class="formStack">
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader"><label>Properties</label></div>
+            <div class="rangeMetaDivider"></div>
+            <div class="rangeMetaTable" id="export_props">
+              <div class="rangeMetaRow">
+                <div class="rangeMetaCell">Target</div>
+                <select id="export_target" class="objPropControl">
+                  <option value="view" selected>View</option>
+                  <option value="page">Page</option>
+                </select>
+              </div>
+              <div class="rangeMetaRow">
+                <div class="rangeMetaCell">Format</div>
+                <select id="export_format" class="objPropControl">
+                  <option value="png" selected>PNG</option>
+                  <option value="pdf">PDF</option>
+                  <option value="file">File</option>
+                </select>
+              </div>
+              <div class="rangeMetaRow" id="export_type_row" hidden>
+                <div class="rangeMetaCell">Type</div>
+                <select id="export_type" class="objPropControl">
+                  <option value="csv" selected>CSV</option>
+                  <option value="parquet">Parquet</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Export">${modalSaveIconHtml()}</button>
+        </div>`,
+        { ...WF_EXPORT, titleHtml:exportWindowTitleHtml() },
+        async()=>{
+          const scope=entry?.root||document;
+          const target=scope.querySelector("#export_target")?.value||"view";
+          const format=scope.querySelector("#export_format")?.value||"png";
+          const type=scope.querySelector("#export_type")?.value||"csv";
+          if(format==="file") void exportVisibleSeries(type, target);
+          else if(format==="pdf") void exportWorkspacePdf(target);
+          else void exportWorkspacePng(target);
+          return true;
+        }
+      );
+      const scope=entry?.root||entry?.el;
+      if(scope){
+        syncExportTypeRow(scope);
+        scope.querySelector("#export_format")?.addEventListener("change",()=>syncExportTypeRow(scope));
       }
     }
     function pickConfigJsonFile(){
       return new Promise((resolve)=>{
         const picker=byId("filePicker");
-        picker.accept="application/json";
+        picker.accept="application/json,.json,.nova";
         picker.value="";
         picker.onchange=async()=>{
           const f=picker.files?.[0];
@@ -12577,6 +13043,125 @@
         };
         picker.click();
       });
+    }
+    function mergeLibraryById(current, incoming){
+      const map=new Map();
+      (current||[]).forEach((row)=>{
+        if(!row || typeof row!=="object") return;
+        map.set(String(row.id||crypto.randomUUID()), row);
+      });
+      (incoming||[]).forEach((row)=>{
+        if(!row || typeof row!=="object") return;
+        const id=String(row.id||crypto.randomUUID());
+        map.set(id, { ...row, id });
+      });
+      return [...map.values()];
+    }
+    async function collectNovaProject(){
+      try{ saveState(); }catch{}
+      try{ savePlots(); }catch{}
+      const safeGet=async(url)=>{
+        try{ return await getJson(url); }catch{ return {}; }
+      };
+      const [units, configs, ranges, rules]=await Promise.all([
+        safeGet("/api/unit-library"),
+        safeGet("/api/config-library"),
+        safeGet("/api/range-definition-library"),
+        safeGet("/api/ingestion-library"),
+      ]);
+      let session={};
+      let plotState={};
+      try{ session=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}"); }catch{ session={}; }
+      try{ plotState=JSON.parse(localStorage.getItem(PLOTS_KEY)||"{}"); }catch{ plotState={}; }
+      return {
+        kind:"nova-project",
+        version:1,
+        saved_at:new Date().toISOString(),
+        session,
+        plots:plotState,
+        appearance,
+        preferences,
+        limits:structuredClone(limitLibrary||[]),
+        sources_workspace:buildSourcesWorkspacePayload(),
+        units:units.categories||[],
+        configs:configs.configs||[],
+        range_definitions:ranges.definitions||[],
+        ingestion_rules:rules.rules||[],
+      };
+    }
+    async function saveNovaProject(){
+      try{
+        setStatus("Saving project…");
+        const payload=await collectNovaProject();
+        const blob=new Blob([JSON.stringify(payload, null, 2)],{ type:"application/json" });
+        const result=await saveBlobToFile(exportBasename(".nova"), blob, [
+          { description:"NOVA project", accept:{ "application/json":[".nova"] } },
+        ]);
+        reportExportResult("Project saved.", result);
+      }catch(err){
+        setStatus(`Save project failed: ${err.message||err}`, true);
+      }
+    }
+    async function applyNovaProject(obj){
+      if(!obj || obj.kind!=="nova-project") throw new Error("Not a NOVA project file.");
+      if(obj.session && typeof obj.session==="object"){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(obj.session));
+      }
+      if(obj.plots && typeof obj.plots==="object"){
+        localStorage.setItem(PLOTS_KEY, JSON.stringify(obj.plots));
+      }
+      if(obj.appearance && typeof obj.appearance==="object"){
+        localStorage.setItem(APPEAR_KEY, JSON.stringify(obj.appearance));
+      }
+      if(obj.preferences && typeof obj.preferences==="object"){
+        localStorage.setItem(PREFS_KEY, JSON.stringify(obj.preferences));
+      }
+      if(Array.isArray(obj.limits)){
+        localStorage.setItem(LIMIT_LIBRARY_KEY, JSON.stringify(normalizeLimitLibrary(obj.limits)));
+      }
+      if(obj.sources_workspace && typeof obj.sources_workspace==="object"){
+        try{ await postJson("/api/sources-workspace", obj.sources_workspace); }catch{}
+      }
+      const mergePost=async(url, key, incoming)=>{
+        if(!Array.isArray(incoming)) return;
+        let current=[];
+        try{
+          const data=await getJson(url);
+          current=Array.isArray(data?.[key]) ? data[key] : [];
+        }catch{}
+        await postJson(url, { [key]: mergeLibraryById(current, incoming) });
+      };
+      await mergePost("/api/unit-library", "categories", obj.units);
+      await mergePost("/api/config-library", "configs", obj.configs);
+      await mergePost("/api/range-definition-library", "definitions", obj.range_definitions);
+      await mergePost("/api/ingestion-library", "rules", obj.ingestion_rules);
+    }
+    async function openNovaProject(){
+      const obj=await pickConfigJsonFile();
+      if(!obj) return;
+      try{
+        setStatus("Opening project…");
+        await applyNovaProject(obj);
+        setStatus("Project loaded. Reloading…");
+        window.location.reload();
+      }catch(err){
+        setStatus(`Open project failed: ${err.message||err}`, true);
+      }
+    }
+    async function resetActiveScope(){
+      try{
+        const rows=latestRows||[];
+        if(rows.length && typeof plotRows==="function"){
+          await plotRows(rows, { preserveUi:false, resetView:true });
+        }else{
+          const host=getPlotDiv(activePlotId);
+          if(!host || !window.Plotly) throw new Error("No active scope.");
+          await Plotly.relayout(host, { "xaxis.autorange":true, "yaxis.autorange":true });
+        }
+        setStatus("Scope reset.");
+      }catch(err){
+        setStatus(`Reset scope failed: ${err.message||err}`, true);
+      }
     }
     function openConfigForm({ mode="create", config=null, onSaved=null }={}){
       const isEdit=mode==="edit" && config;
@@ -13031,7 +13616,7 @@
       const parts=[`<span>Ingestion</span>`].concat((leaves||[]).map((leaf)=>`${sep}<span>${escapeHtml(leaf)}</span>`));
       return `${icon}${parts.join("")}`;
     }
-    function renderIngestionList(){ /* sidebar removed — use File → Ingestion Manager */ }
+    function renderIngestionList(){ /* sidebar removed — use File → Ingestion Rules */ }
     async function openIngestionManagerModal(){
       await loadIngestionLibrary();
       let library=structuredClone(ingestionLibrary||[]);
@@ -13675,12 +14260,34 @@
         });
       }
     }
-    async function runIngestionRuleOnFile(rule){
-      try{
-        const picked=await postJson("/api/desktop/pick-files", { multiple:false });
-        const paths=Array.isArray(picked?.paths) ? picked.paths : (picked?.path ? [picked.path] : []);
-        if(!paths.length){ setStatus("No file selected."); return; }
-        const filePath=paths[0];
+    function fileSourcesForIngest(seedIds){
+      const ids=(Array.isArray(seedIds) && seedIds.length)
+        ? seedIds.map(String)
+        : [...selectedSourceIds].map(String);
+      const out=[];
+      const seen=new Set();
+      ids.forEach((id)=>{
+        const src=(state.sources||[]).find((s)=>String(s.id)===String(id));
+        if(!src) return;
+        const add=(fileSrc)=>{
+          if(!fileSrc?.file_path || seen.has(fileSrc.id)) return;
+          seen.add(fileSrc.id);
+          out.push(fileSrc);
+        };
+        if(typeof isFolderSource==="function" && isFolderSource(src)){
+          folderDescendantFileSources(id).forEach(add);
+        }else if(isFileSource(src)){
+          add(src);
+        }
+      });
+      return out;
+    }
+    async function ingestFilePathsWithRule(filePaths, rule){
+      const paths=(filePaths||[]).map((p)=>String(p||"").trim()).filter(Boolean);
+      if(!paths.length) throw new Error("No file to ingest.");
+      if(!rule?.id) throw new Error("Select an ingestion rule.");
+      let last=null;
+      for(const filePath of paths){
         setStatus(`Ingesting ${filePath} with rule '${rule.name}'…`);
         await nextPaint();
         const r=await fetch("/api/v3/ingest/rule", {
@@ -13693,18 +14300,74 @@
           try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
           throw new Error(msg);
         }
-        const ing=await r.json();
-        setStatus(`Permanent ingest ready: ${ing.run_code||""} · ${(ing.channels||[]).length} channel(s) · test_id=${ing.test_id??"—"}`);
-        try{
-          if(typeof syncDatabaseLibrarySources==="function") syncDatabaseLibrarySources();
-          if(typeof clearCatalogCache==="function") clearCatalogCache();
-          const catId=String(rule?.target_catalog_id||"");
-          if(catId){
-            const profile=(databaseLibrary||[]).find((p)=>String(p.id)===catId);
-            if(profile) await browseProfileAccessible(profile, { force:true });
+        last=await r.json();
+      }
+      try{
+        if(typeof syncDatabaseLibrarySources==="function") syncDatabaseLibrarySources();
+        if(typeof clearCatalogCache==="function") clearCatalogCache();
+        const catId=String(rule?.target_catalog_id||"");
+        if(catId){
+          const profile=(databaseLibrary||[]).find((p)=>String(p.id)===catId);
+          if(profile) await browseProfileAccessible(profile, { force:true });
+        }
+        renderAll();
+      }catch{}
+      const n=paths.length;
+      const extra=last?.run_code ? ` · ${last.run_code}` : "";
+      setStatus(`Ingested ${n} source${n===1?"":"s"} with '${rule.name}'${extra}.`);
+    }
+    async function openIngestSourcePicker(seedIds){
+      const files=fileSourcesForIngest(seedIds);
+      if(!files.length){
+        setStatus("Select a file source to ingest.", true);
+        return;
+      }
+      await loadIngestionLibrary();
+      const rules=ingestionLibrary||[];
+      if(!rules.length){
+        setStatus("No ingestion rules. Create one in File → Ingestion Rules.", true);
+        return;
+      }
+      const opts=rules.map((r)=>`<option value="${escAttr(r.id)}">${escAttr(r.name||"Untitled")}</option>`).join("");
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg></span>`;
+      openModal(
+        "Ingest",
+        `<div class="formStack">
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader"><label>Properties</label></div>
+            <div class="rangeMetaDivider"></div>
+            <div class="rangeMetaTable" id="ingest_props">
+              <div class="rangeMetaRow">
+                <div class="rangeMetaCell">Rule</div>
+                <select id="ingest_rule" class="objPropControl">${opts}</select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Ingest">${modalSaveIconHtml()}</button>
+        </div>`,
+        { ...WF_EXPORT, titleHtml:`${icon}<span>Ingest</span>` },
+        async()=>{
+          const ruleId=byId("ingest_rule")?.value||"";
+          const rule=rules.find((r)=>String(r.id)===String(ruleId));
+          if(!rule){ setStatus("Select an ingestion rule.", true); return false; }
+          try{
+            await ingestFilePathsWithRule(files.map((s)=>s.file_path), rule);
+          }catch(err){
+            setStatus(String(err?.message||err), true);
+            return false;
           }
-          renderAll();
-        }catch{}
+          return true;
+        }
+      );
+    }
+    async function runIngestionRuleOnFile(rule){
+      try{
+        const picked=await postJson("/api/desktop/pick-files", { multiple:false });
+        const paths=Array.isArray(picked?.paths) ? picked.paths : (picked?.path ? [picked.path] : []);
+        if(!paths.length){ setStatus("No file selected."); return; }
+        await ingestFilePathsWithRule(paths, rule);
       }catch(err){
         setStatus(String(err?.message||err), true);
       }
@@ -15045,6 +15708,25 @@
         try{ renderOptionsList(); }catch{}
         return true;
       };
+      const importLimits=async()=>{
+        const obj=await pickConfigJsonFile();
+        if(!obj) return;
+        const imported=normalizeLimitLibrary(obj);
+        if(!imported.length){
+          setStatus("No valid limits found in import file.", true);
+          return;
+        }
+        library=[...imported.map((row)=>({ ...row, id:crypto.randomUUID() })), ...library];
+        persistLibrary();
+        setStatus(`Imported ${imported.length} limit(s).`);
+        renderList();
+      };
+      const exportLimits=async()=>{
+        const result=await saveJsonToFile("nova_limit_library.json", { limits:library });
+        if(result.ok&&result.viaPicker) setStatus("Limits library exported.");
+        if(result.ok&&!result.viaPicker) setStatus("Limits library downloaded.");
+        if(!result.ok&&result.cancelled) setStatus("Export cancelled.");
+      };
       const deleteLim=(id)=>{
         const idx=library.findIndex((x)=>String(x.id)===String(id));
         if(idx<0) return;
@@ -15072,6 +15754,9 @@
             showContextMenu(ev.clientX, ev.clientY, [
               { label:"Edit", action:()=>{ setTimeout(()=>openLimitForm({ mode:"edit", limit:lim, onSaved:()=>{ library=structuredClone(limitLibrary||[]); renderList(); } }), 0); } },
               { label:"Delete", action:()=>deleteLim(id) },
+              { sep:true },
+              { label:"Import limits...", action:()=>{ void importLimits(); } },
+              { label:"Export limits...", action:()=>{ void exportLimits(); } },
             ], { zIndex:z });
           };
           row.ondblclick=()=>{
@@ -15098,6 +15783,19 @@
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
         setTimeout(()=>openLimitForm({ mode:"create", onSaved:()=>{ library=structuredClone(limitLibrary||[]); renderList(); } }), 0);
       };
+      const listHost=byId("m_lim_list");
+      if(listHost){
+        listHost.oncontextmenu=(ev)=>{
+          if(ev.target.closest && ev.target.closest(".selectRow[data-id]")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const z=Math.max(200, appWindowZ+15);
+          showContextMenu(ev.clientX, ev.clientY, [
+            { label:"Import limits...", action:()=>{ void importLimits(); } },
+            { label:"Export limits...", action:()=>{ void exportLimits(); } },
+          ], { zIndex:z });
+        };
+      }
       renderList();
     }
 
@@ -16929,16 +17627,19 @@
           const menu=[];
           if(it.rowKind==="db_test"){
             menu.push({label:"Edit",action:()=>editCatalogTestSource(it)});
-            menu.push({label:"Set Range",action:()=>showSetSourceT0Modal(it.id)});
             menu.push({label:"Delete",action:()=>deleteCatalogTestRow(it)});
           } else {
             if(it.rowKind==="file" || it.rowKind==="folder"){
+              menu.push({label:"Edit source",action:()=>editSource(it.id)});
+            }
+            menu.push({label:"Delete",action:deleteFocused});
+            if(it.rowKind==="file" || it.rowKind==="folder"){
+              const seedIds=it.rowKind==="folder"
+                ? folderDescendantFileSources(it.id).map((f)=>f.id)
+                : [it.id];
               menu.push({
-                label:"Create ingestion rule",
+                label:"Create Ingest",
                 action:()=>{
-                  const seedIds=it.rowKind==="folder"
-                    ? folderDescendantFileSources(it.id).map((f)=>f.id)
-                    : [it.id];
                   if(!seedIds.length){
                     setStatus("No files found under this folder.", true);
                     return;
@@ -16946,10 +17647,11 @@
                   void createIngestionRuleFromSources(seedIds);
                 },
               });
-              menu.push({label:"Edit source",action:()=>editSource(it.id)});
-              menu.push({label:"Set Range",action:()=>showSetSourceT0Modal(it.id)});
+              menu.push({
+                label:"Ingest Source",
+                action:()=>void openIngestSourcePicker(seedIds.length ? seedIds : [it.id]),
+              });
             }
-            menu.push({label:"Delete",action:deleteFocused});
           }
           showContextMenu(ev.clientX,ev.clientY,menu);
           renderAll();
@@ -17067,8 +17769,9 @@
           focusedItem={kind,id:it.id};
           const menu=[{label:"Delete",action:deleteFocused}];
           if(kind==="source"){
-            menu.unshift({label:"Set Range",action:()=>showSetSourceT0Modal(it.id)});
             menu.unshift({label:"Edit source",action:()=>editSource(it.id)});
+            menu.push({label:"Create Ingest",action:()=>void createIngestionRuleFromSources([it.id])});
+            menu.push({label:"Ingest Source",action:()=>void openIngestSourcePicker([it.id])});
           }
           if(kind==="channel"){
             const menuItems=[];
@@ -18397,7 +19100,7 @@
       const selected=new Set((selectedIds||[]).map(String));
       const lims=limitsForChannel(channelId);
       if(!lims.length){
-        return `<div class="summaryLimitPick"><div class="itemMeta">No matching limits. Define some in File → Limits Manager.</div></div>`;
+        return `<div class="summaryLimitPick"><div class="itemMeta">No matching limits. Define some in File → Limits.</div></div>`;
       }
       return `<div class="summaryLimitPick">${lims.map((lim)=>{
         const checked=selected.has(lim.id) ? "checked" : "";
@@ -18995,7 +19698,7 @@
         const tt = db.test_table ? `&test_table=${encodeURIComponent(db.test_table)}` : "";
         tests = await getJson(`/api/tests?limit=5000000&db_name=${encodeURIComponent(db.name)}${tt}&${conn}`);
         channels = await getJson(`/api/channels?limit=5000000&db_name=${encodeURIComponent(db.name)}&${conn}`);
-      } else if(isCatalogSource(src)){
+      } else if(isCatalogSource(src) && !isFileSource(src)){
         const tid=Number(src.test_id);
         const q=src.catalog_id?`?catalog_id=${encodeURIComponent(src.catalog_id)}`:"";
         tests=[{ test_run_id:tid, run_code:src.run_code||String(tid) }];
@@ -19005,9 +19708,17 @@
       } else {
         await linkArtifactForSource(src);
         if(src.artifact_id){
-          tests=await getJson(`/api/v3/ingest/${encodeURIComponent(src.artifact_id)}/tests`);
-          channels=await getJson(`/api/v3/ingest/${encodeURIComponent(src.artifact_id)}/channels`);
-        }else{
+          try{
+            tests=await getJson(`/api/v3/ingest/${encodeURIComponent(src.artifact_id)}/tests`);
+            channels=await getJson(`/api/v3/ingest/${encodeURIComponent(src.artifact_id)}/channels`);
+          }catch(err){
+            const msg=String(err?.message||err);
+            if(!/404|not ready|not found/i.test(msg)) throw err;
+            src.artifact_id="";
+            delete src.test_id;
+          }
+        }
+        if(!channels.length){
           const uh = (supportsHeaderUnitParsing(src.type) && src.units_in_headers) ? "&units_in_headers=true" : "";
           tests = await getJson(`/api/file/tests?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}${uh}`);
           channels = await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}${uh}`);
@@ -24019,13 +24730,28 @@
             return `<option value="${escAttr(c)}"${sel}>${escAttr(c)}</option>`;
           })
         ).join("");
-        const indexField=src.type==="tdms" ? "" : `
-          <div class="formField">
-            <label>Index${src.needs_time_index?'<span class="reqMark" aria-hidden="true">*</span>':""}</label>
-            <div class="selectLock"><select id="m_edit_time" class="formSelectStable">${timeOptions}</select></div>
-          </div>`;
-        const unitsField=supportsHeaderUnitParsing(src.type) ? `
-          <label class="formCheckRow"><input id="m_edit_units" type="checkbox" ${src.units_in_headers?"checked":""} /> Parse units from header</label>` : "";
+        const indexRow=src.type==="tdms" ? "" : `
+              <div class="rangeMetaRow">
+                <div class="rangeMetaCell">Index${src.needs_time_index?'<span class="reqMark" aria-hidden="true">*</span>':""}</div>
+                <select id="m_edit_time" class="objPropControl">${timeOptions}</select>
+              </div>`;
+        const unitsRow=supportsHeaderUnitParsing(src.type) ? `
+              <div class="rangeMetaRow">
+                <div class="rangeMetaCell">Parse Units</div>
+                <select id="m_edit_units" class="objPropControl">
+                  <option value="true" ${src.units_in_headers?"selected":""}>True</option>
+                  <option value="false" ${src.units_in_headers?"":"selected"}>False</option>
+                </select>
+              </div>` : "";
+        const propsSection=(indexRow || unitsRow) ? `
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader"><label>Properties</label></div>
+            <div class="rangeMetaDivider"></div>
+            <div class="rangeMetaTable" id="src_edit_props">
+              ${indexRow}
+              ${unitsRow}
+            </div>
+          </div>` : "";
         const sourceTitleHtml=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="3.2" rx="5.2" ry="1.8" fill="none" stroke="currentColor" stroke-width="1.2"/><path fill="none" stroke="currentColor" stroke-width="1.2" d="M2.8 3.2v8.2c0 1 2.3 1.8 5.2 1.8s5.2-.8 5.2-1.8V3.2"/><path fill="none" stroke="currentColor" stroke-width="1.2" d="M2.8 6.4c0 1 2.3 1.8 5.2 1.8s5.2-.8 5.2-1.8M2.8 9.6c0 1 2.3 1.8 5.2 1.8s5.2-.8 5.2-1.8"/></svg></span><span>Source</span><span class="modalTitleSep" aria-hidden="true"><svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.2 3.2l.9-.9L12.8 8l-5.7 5.7-.9-.9L11 8 6.2 3.2z"/></svg></span><span>Edit</span>`;
         const saveIcon=`<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.4 1.5h8.8L13.6 4v10.5H2.4V1.5zm1.3 1.2v10.6h8.2V4.5L10 2.7H3.7zm1.4 0H9v2.4H5.1V2.7zm-.3 5.6h7v4.4h-7V8.3zm1.2 1.2v2h4.6v-2H6z"/></svg>`;
         openModal("Source > Edit",`
@@ -24038,14 +24764,13 @@
               <label>Filepath</label>
               <input id="m_edit_path" type="text" value="${escAttr(src.file_path||"")}" disabled />
             </div>
-            ${indexField}
-            ${unitsField}
+            ${propsSection}
           </div>
           <div class="modalActions modalActionsIconOnly">
             <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${saveIcon}</button>
           </div>`,{ ...WF_SOURCE_FORM, titleHtml:sourceTitleHtml },async()=>{
           src.name=(byId("m_edit_name").value||"").trim()||src.name;
-          if(supportsHeaderUnitParsing(src.type)) src.units_in_headers=Boolean(byId("m_edit_units")?.checked);
+          if(supportsHeaderUnitParsing(src.type)) src.units_in_headers=String(byId("m_edit_units")?.value||"false")==="true";
           if(src.type!=="tdms"){
             const timeSel=byId("m_edit_time");
             const nextTime=(timeSel?.value||"").trim();
@@ -25632,6 +26357,10 @@
       byId("file_rangeDefinitionManager").onclick=()=>openRangeDefinitionManagerModal();
       byId("file_ingestionManager").onclick=()=>openIngestionManagerModal();
       byId("file_limitManager").onclick=()=>openLimitManagerModal();
+      byId("file_export").onclick=()=>{ hideAll(); openExportModal(); };
+      byId("file_saveProject").onclick=()=>{ hideAll(); void saveNovaProject(); };
+      byId("file_openProject").onclick=()=>{ hideAll(); void openNovaProject(); };
+      byId("file_resetScope").onclick=()=>{ hideAll(); void resetActiveScope(); };
     }
 
     const APPEAR_KEY="nova.appearance.notion-v1";
@@ -25652,12 +26381,16 @@
       { id:"plotAllVisible", label:"Plot All Visible Views", hint:"Plot every visible multiplot tile" },
       { id:"delete", label:"Delete", hint:"Delete focused sidebar item or selected plot objects" },
       { id:"preferences", label:"Open Preferences", hint:"Open settings" },
+      { id:"export", label:"Export", hint:"Open the export window" },
+      { id:"copyView", label:"Copy", hint:"Copy the active view image to the clipboard" },
     ];
     const DEFAULT_SHORTCUTS={
       plot:"f5",
       plotAllVisible:"shift+f5",
       delete:"delete",
       preferences:"ctrl+,",
+      export:"ctrl+shift+e",
+      copyView:"ctrl+shift+c",
     };
     let preferences={ ...DEFAULT_PREFS };
     let prefsShortcutRecording=null;
@@ -26541,6 +27274,16 @@
           return;
         }
         deleteFocused();
+        return;
+      }
+      if(action==="export"){
+        e.preventDefault();
+        openExportModal();
+        return;
+      }
+      if(action==="copyView"){
+        e.preventDefault();
+        void copyViewPng();
       }
     });
     byId("deleteObjectsBtn")?.addEventListener("click", (e)=>{

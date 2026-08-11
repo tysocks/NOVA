@@ -10,7 +10,7 @@ from urllib.request import urlopen
 
 from PySide6.QtCore import QUrl, Qt, QEvent, QTimer
 from PySide6.QtGui import QIcon, QPainter, QPixmap
-from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineSettings
+from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile, QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen, QMainWindow
 
@@ -265,8 +265,34 @@ def main() -> None:
         view = QWebEngineView()
         web_settings = view.settings()
         web_settings.setAttribute(QWebEngineSettings.JavascriptEnabled, True)
+        try:
+            web_settings.setAttribute(QWebEngineSettings.JavascriptCanAccessClipboard, True)
+            if hasattr(QWebEngineSettings, "JavascriptCanPaste"):
+                web_settings.setAttribute(QWebEngineSettings.JavascriptCanPaste, True)
+        except Exception:
+            pass
         web_settings.setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
         web_settings.setAttribute(QWebEngineSettings.ScrollAnimatorEnabled, False)
+        try:
+            page = view.page()
+            if page is not None and hasattr(page, "featurePermissionRequested"):
+                def _grant_clipboard(url, feature):
+                    clipboard_features = []
+                    for name in ("ClipboardReadWrite", "ClipboardUserGesture"):
+                        value = getattr(QWebEnginePage.Feature, name, None)
+                        if value is not None:
+                            clipboard_features.append(value)
+                    if feature in clipboard_features:
+                        granted = getattr(
+                            QWebEnginePage.PermissionPolicy,
+                            "PermissionGrantedByUser",
+                            getattr(QWebEnginePage, "PermissionGrantedByUser", None),
+                        )
+                        if granted is not None:
+                            page.setFeaturePermission(url, feature, granted)
+                page.featurePermissionRequested.connect(_grant_clipboard)
+        except Exception:
+            pass
         view.setWindowTitle("NOVA")
         if icon_path.exists():
             view.setWindowIcon(QIcon(str(icon_path)))

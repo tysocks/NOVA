@@ -373,6 +373,35 @@ class SeriesQueryRequest(BaseModel):
     calculated_channels: list[CalculatedChannelSpec] = Field(default_factory=list)
 
 
+class SeriesExportSeries(BaseModel):
+    name: str = Field(min_length=1)
+    unit: str | None = None
+    source: str | None = None
+    channel_name: str | None = None
+    test_run_code: str | None = None
+    x: list[float | str] = Field(default_factory=list)
+    x_ms: list[float] | None = None
+    y: list[float | None] = Field(default_factory=list)
+
+
+class SeriesExportRequest(BaseModel):
+    """POST /api/v3/series/export body — plotted series in preferred units."""
+
+    format: Literal["csv", "parquet"] = "csv"
+    filename: str | None = None
+    series: list[SeriesExportSeries] = Field(min_length=1)
+
+
+class DesktopSaveFileRequest(BaseModel):
+    suggested_name: str = "nova_export"
+    content_base64: str = Field(min_length=1)
+    filetypes: list[list[str]] | None = None
+
+
+class DesktopClipboardImageRequest(BaseModel):
+    content_base64: str = Field(min_length=1)
+
+
 class SeriesQueryResponseMeta(BaseModel):
     """JSON metadata returned in X-NOVA-Series-Meta header."""
 

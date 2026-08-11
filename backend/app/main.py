@@ -34,6 +34,7 @@ from .engine.range_store import (
 )
 from .engine.file_index import get_ingest_status, manifest_to_channels, manifest_to_tests, run_ingest
 from .engine.file_probe import probe_file_with_validation
+from .engine.export_series import build_series_csv, build_series_parquet
 from .engine.series_query import execute_series_query
 from .models import (
     ApplyRangeRuleRequest,
@@ -56,6 +57,9 @@ from .models import (
     RangeUpdateRequest,
     ResultItem,
     ResultWriteRequest,
+    DesktopClipboardImageRequest,
+    DesktopSaveFileRequest,
+    SeriesExportRequest,
     SeriesQueryRequest,
     TestParameterItem,
     TestRunItem,
@@ -969,6 +973,35 @@ def series_query_v3(
     )
 
 
+def _safe_export_filename(name: str | None, ext: str) -> str:
+    stem = Path(str(name or "nova_series")).stem.strip() or "nova_series"
+    cleaned = "".join(ch if ch.isalnum() or ch in ("-", "_", ".") else "_" for ch in stem)
+    return f"{cleaned}.{ext}"
+
+
+@app.post("/api/v3/series/export")
+def series_export_v3(request: SeriesExportRequest):
+    """Download plotted series as CSV or Parquet (preferred units, long format)."""
+    payload = [row.model_dump() for row in request.series]
+    fmt = request.format.strip().lower()
+    try:
+        if fmt == "parquet":
+            data = build_series_parquet(payload)
+            filename = _safe_export_filename(request.filename, "parquet")
+            media = "application/vnd.apache.parquet"
+        else:
+            data = build_series_csv(payload)
+            filename = _safe_export_filename(request.filename, "csv")
+            media = "text/csv; charset=utf-8"
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Export failed: {exc}") from exc
+    return Response(
+        content=data,
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @app.post("/api/v3/file/probe", response_model=FileProbeResponse)
 def probe_file_v3(body: FileProbeRequest) -> FileProbeResponse:
     """Inspect a data file for channels, time index options, and unit metadata."""
@@ -1305,6 +1338,75 @@ def pick_files_dialog() -> dict:
         root.destroy()
     paths = [str(Path(p).resolve()) for p in (chosen or []) if p]
     return {"paths": paths, "cancelled": not paths}
+
+
+@app.post("/api/desktop/save-file")
+def save_file_dialog(body: DesktopSaveFileRequest) -> dict:
+    """Native Save As dialog; writes the provided bytes to the chosen path."""
+    import base64
+
+    try:
+        raw = base64.b64decode(body.content_base64, validate=False)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid file payload: {exc}") from exc
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Save dialog unavailable: {exc}") from exc
+
+    suggested = Path(body.suggested_name or "nova_export").name or "nova_export"
+    filetypes = []
+    for pair in body.filetypes or []:
+        if len(pair) >= 2:
+            filetypes.append((str(pair[0]), str(pair[1])))
+    if not filetypes:
+        suffix = Path(suggested).suffix or ".*"
+        filetypes = [("Export", f"*{suffix}" if suffix.startswith(".") else "*.*"), ("All files", "*.*")]
+
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        root.attributes("-topmost", True)
+    except Exception:
+        pass
+    try:
+        chosen = filedialog.asksaveasfilename(
+            title="Save export",
+            initialfile=suggested,
+            defaultextension=Path(suggested).suffix or None,
+            filetypes=filetypes,
+        )
+    finally:
+        root.destroy()
+    if not chosen:
+        return {"ok": False, "cancelled": True, "path": None}
+    dest = Path(chosen)
+    wanted_suffix = Path(suggested).suffix
+    if wanted_suffix and not dest.suffix:
+        dest = dest.with_name(dest.name + wanted_suffix)
+    dest.write_bytes(raw)
+    return {"ok": True, "cancelled": False, "path": str(dest.resolve())}
+
+
+@app.post("/api/desktop/clipboard-image")
+def clipboard_image(body: DesktopClipboardImageRequest) -> dict:
+    """Copy a PNG onto the system clipboard (desktop app)."""
+    import base64
+
+    from .services.clipboard_image import set_clipboard_png
+
+    try:
+        raw = base64.b64decode(body.content_base64, validate=False)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid image payload: {exc}") from exc
+    if raw[:8] != b"\x89PNG\r\n\x1a\n":
+        raise HTTPException(status_code=400, detail="Clipboard copy requires a PNG image.")
+    try:
+        set_clipboard_png(raw)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"ok": True}
 
 
 @app.get("/api/file/scan-folder")
