@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import math
 
 from app.engine.calc_engine import apply_calculated_channels
 from app.engine.calc_graph import order_calculated_channels
@@ -73,6 +74,53 @@ def test_formula_addition():
     values = {p.time.isoformat(): p.value for p in out}
     assert values[BASE.isoformat()] == 3.0
     assert values[(BASE + timedelta(seconds=1)).isoformat()] == 7.0
+
+
+def test_formula_trapz_integral():
+    base = [_row("A", float(i), i) for i in range(4)]
+    specs = [
+        CalculatedChannelSpec(
+            kind="formula",
+            name="A_int",
+            channels=["A"],
+            formula="TRAPZ(A)",
+        )
+    ]
+    out = apply_calculated_channels(base, specs)
+    assert len(out) == 4
+    values = [p.value for p in out]
+    assert values[0] == 0.0
+    assert values[-1] > values[0]
+
+
+def test_formula_rms_window():
+    base = [_row("A", float((i % 3) + 1), i) for i in range(6)]
+    specs = [
+        CalculatedChannelSpec(
+            kind="formula",
+            name="A_rms",
+            channels=["A"],
+            formula="RMS(A, 3)",
+        )
+    ]
+    out = apply_calculated_channels(base, specs)
+    assert len(out) == 6
+    assert all(math.isfinite(p.value) for p in out)
+
+
+def test_formula_peak_window():
+    base = [_row("A", float((-1) ** i * (i + 1)), i) for i in range(5)]
+    specs = [
+        CalculatedChannelSpec(
+            kind="formula",
+            name="A_peak",
+            channels=["A"],
+            formula="PEAK(A, 3)",
+        )
+    ]
+    out = apply_calculated_channels(base, specs)
+    assert len(out) == 5
+    assert max(p.value for p in out) >= 1.0
 
 
 def test_calc_graph_orders_dependencies():

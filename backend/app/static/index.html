@@ -483,6 +483,19 @@
     .plotStubTable{ width:100%; border-collapse:collapse; font-size:0.8rem; }
     .plotStubTable th, .plotStubTable td{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--nova-divider); color:var(--nova-text-dim); }
     .plotStubTable th{ color:var(--nova-text); font-weight:500; }
+    .plotStub.cursorScopeStub{ position:relative; padding-top:28px; }
+    .plotStub.cursorScopeStub .cursorScopeCopyBtn{
+      position:absolute; top:8px; right:10px; margin:0; opacity:0;
+      transition:opacity .12s ease; pointer-events:none;
+      font:inherit; font-size:0.75rem; padding:4px 8px;
+      border-radius:var(--nova-radius-xs); border:1px solid var(--nova-divider);
+      background:var(--nova-input-bg); color:var(--nova-text); cursor:pointer;
+    }
+    .plotStub.cursorScopeStub:hover .cursorScopeCopyBtn,
+    .plotStub.cursorScopeStub:focus-within .cursorScopeCopyBtn{
+      opacity:1; pointer-events:auto;
+    }
+    .plotStubTable tbody tr[data-cursor-key]{ cursor:context-menu; }
     .summaryTableWrap{ width:100%; height:100%; overflow:auto; padding:10px 12px; box-sizing:border-box; }
     .summaryResultTable{ width:100%; border-collapse:collapse; font-size:0.85rem; }
     .summaryResultTable th, .summaryResultTable td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--nova-divider); vertical-align:middle; }
@@ -3579,10 +3592,14 @@
       function yAxisPixelX(full, layoutAx){
         const size = full._size;
         if(!size || !layoutAx) return null;
+        const plotLeft = size.l;
         const plotRight = size.l + size.w;
         const shift = Number(layoutAx.shift || 0);
-        if(layoutAx.overlaying) return plotRight + shift;
-        return plotRight;
+        const side = String(layoutAx.side || "left").toLowerCase();
+        if(layoutAx.overlaying){
+          return (side === "left" ? plotLeft : plotRight) + (side === "left" ? -shift : shift);
+        }
+        return side === "right" ? plotRight : plotLeft;
       }
 
       function listYAxisKeys(full){
@@ -3622,25 +3639,43 @@
         const yKeys = listYAxisKeys(full);
         yKeys.forEach((axisKey)=>{
           const layoutAx = layout[axisKey] || {};
+          const fullAx = full[axisKey] || {};
           const x = yAxisPixelX(full, layoutAx);
           if(!Number.isFinite(x)) return;
           const unit = axisRegistry.axisKeyToUnit.get(axisKey) || yAxisTitle(layoutAx) || axisKey;
           axisRegistry.axisKeyToUnit.set(axisKey, unit);
+          let top = plotTop;
+          let bottom = plotTop + plotH;
+          const domain = fullAx.domain || layoutAx.domain;
+          if(Array.isArray(domain) && domain.length===2 && Number.isFinite(domain[0]) && Number.isFinite(domain[1])){
+            const lo = Math.min(domain[0], domain[1]);
+            const hi = Math.max(domain[0], domain[1]);
+            top = plotTop + (1 - hi) * plotH;
+            bottom = plotTop + (1 - lo) * plotH;
+          }
           axisRegistry.axisHitZones.set(axisKey, {
             unit,
             axisKey,
             centerX: x,
             left: x - Z,
             right: x + Z,
-            top: plotTop,
-            bottom: plotTop + plotH,
+            top,
+            bottom,
           });
         });
+        const zoneLefts = [...axisRegistry.axisHitZones.values()].map((z)=>z.left);
         const zoneRights = [...axisRegistry.axisHitZones.values()].map((z)=>z.right);
         const maxAxisRight = zoneRights.length ? Math.max(plotRight, ...zoneRights) : plotRight;
+        const minAxisLeft = zoneLefts.length ? Math.min(plotLeft, ...zoneLefts) : plotLeft;
         axisRegistry.rightMargin = {
           left: plotRight - 8,
           right: maxAxisRight + Z,
+          top: plotTop,
+          bottom: plotTop + plotH - 54,
+        };
+        axisRegistry.leftMargin = {
+          left: Math.max(0, minAxisLeft - Z),
+          right: plotLeft + 8,
           top: plotTop,
           bottom: plotTop + plotH - 54,
         };
@@ -3844,9 +3879,11 @@
         }
         if(!bestKey) return null;
         const rm = reg.rightMargin;
-        const inMargin = rm && px >= rm.left && px <= rm.right && py >= rm.top && py <= rm.bottom;
+        const lm = reg.leftMargin;
+        const inRight = rm && px >= rm.left && px <= rm.right && py >= rm.top && py <= rm.bottom;
+        const inLeft = lm && px >= lm.left && px <= lm.right && py >= lm.top && py <= lm.bottom;
         const inBand = px >= reg.axisHitZones.get(bestKey).left && px <= reg.axisHitZones.get(bestKey).right;
-        if(inBand || (inMargin && bestDist <= 72)) return bestKey;
+        if(inBand || ((inRight || inLeft) && bestDist <= 72)) return bestKey;
         return null;
       }
 
@@ -4171,6 +4208,36 @@
         if(Object.keys(patch).length) void applyRelayout(patch);
       }
 
+      function zoomAllYAxes(factor, anchorPy){
+        const gd = graphDiv();
+        const patch = {};
+        for(const axisKey of plotYAxisKeys(gd)){
+          Object.assign(patch, zoomYAxisPatch(gd, axisKey, factor, anchorPy) || {});
+        }
+        if(Object.keys(patch).length) void applyRelayout(patch);
+      }
+
+      function wheelPanStep(e){
+        const mag=Math.max(24, Math.min(96, Math.abs(Number(e.deltaY)||40)));
+        return e.deltaY < 0 ? mag : -mag;
+      }
+
+      function panAllYAxes(deltaPx){
+        const gd = graphDiv();
+        const patch = {};
+        for(const axisKey of plotYAxisKeys(gd)){
+          const r = axisRange(gd, axisKey);
+          const axH = gd?._fullLayout?.[axisKey]?._length || gd?._fullLayout?._size?.h;
+          if(!r || !axH) continue;
+          const span = r[1] - r[0];
+          const dataShift = (deltaPx / axH) * span;
+          patch[`${axisKey}.autorange`] = false;
+          patch[`${axisKey}.range[0]`] = r[0] + dataShift;
+          patch[`${axisKey}.range[1]`] = r[1] + dataShift;
+        }
+        if(Object.keys(patch).length) void applyRelayout(patch);
+      }
+
       async function resetViewLimits(){
         if(latestRows?.length){
           try{
@@ -4310,9 +4377,18 @@
         e.preventDefault();
         e.stopPropagation();
         const factor = e.deltaY < 0 ? 0.85 : 1.18;
-        if(axisKey === "xaxis") zoomXAxis(factor, c.x);
-        else if(axisKey) zoomYAxis(axisKey, factor, c.y);
-        else zoomPlotArea(factor, c.x, c.y);
+        if(axisKey){
+          if(e.ctrlKey || e.metaKey) panXAxis(wheelPanStep(e));
+          else if(e.shiftKey) panAllYAxes(wheelPanStep(e));
+          else if(axisKey === "xaxis") zoomXAxis(factor, c.x);
+          else zoomYAxis(axisKey, factor, c.y);
+        }else if(e.ctrlKey || e.metaKey){
+          zoomXAxis(factor, c.x);
+        }else if(e.shiftKey){
+          zoomAllYAxes(factor, c.y);
+        }else{
+          zoomPlotArea(factor, c.x, c.y);
+        }
       }
 
       function onMouseDown(e){
@@ -6192,6 +6268,7 @@
         });
         if(opts.save !== false && !editDrag && !drag){
           savePlots();
+          try{ refreshCursorViews(); }catch{}
         }else{
           overlaySavePending = true;
         }
@@ -6201,6 +6278,7 @@
         if(!overlaySavePending) return;
         overlaySavePending = false;
         savePlots();
+        try{ refreshCursorViews(); }catch{}
       }
 
       function findOverlay(id){ return analysisState()?.overlays?.find((o)=>o.id===id) || null; }
@@ -6499,8 +6577,8 @@
         if(next==="plotline"){ setMode("plotline"); return; }
         if(next==="shape"){ setMode("shape"); return; }
         if(next==="define-range"){
-          if(normalizeViewType(getActivePlot()?.viewType)!=="time"){
-            setStatus("Define Range is only available on Time Scope views.", true);
+          if(!viewUsesTimeRangeAxis(getActivePlot())){
+            setStatus("Define Range is only available on Time Scope, Stacked Scope, and Grid Scope views.", true);
             return;
           }
           setMode("define-range");
@@ -6566,6 +6644,7 @@
           { label:"Define Range", action:()=>armTool("define-range") },
           { label:"Alignment", submenu:[
             { label:"Align Ranges", action:()=>{ if(typeof alignSelectedRangesOnPlot === "function") void alignSelectedRangesOnPlot(); } },
+            { label:"Stitch Ranges", action:()=>{ if(typeof stitchSelectedRangesOnPlot === "function") void stitchSelectedRangesOnPlot(); } },
             { label:"Toggle Mode", action:()=>{ if(typeof togglePlotTimeMode === "function") void togglePlotTimeMode(); } },
           ]},
           { label:"Copy", action:()=>{ void copyViewPng(plotEl?.dataset?.plotId); } },
@@ -6884,7 +6963,7 @@
       return (pts[0].__ts||0)>(pts[pts.length-1].__ts||0);
     }
     function buildDecimatedTimeTrace(pts, legendName, opts){
-      const { t0FirstSample, t0Meta, pointCap, lineW, chId, timeRef }=opts;
+      const { t0FirstSample, t0Meta, pointCap, lineW, chId, timeRef, stitch }=opts;
       const t0Mode=timeRef||effectiveTimeRefForDbId(pts[0].__dbId, pts);
       let down=applyFreq(pts, chId);
       if(t0Mode==="absolute") down=filterAbsoluteTimeOutliers(down);
@@ -6898,7 +6977,9 @@
       for(let i=0;i<n&&oi<nOut;i+=stride){
         const p=down[i];
         let xv;
-        if(t0Mode==="absolute"){
+        if(stitch){
+          xv=Number.isFinite(p.__ts)?p.__ts/1000:NaN;
+        }else if(t0Mode==="absolute"){
           xv=parseRowTimeMs(p);
         }else{
           const key=`${p.__dbId}|${p.test_run_id}`;
@@ -8954,7 +9035,7 @@
           rowKind:"db_conn",
           expandable:true,
           expanded,
-          selectable:true,
+          selectable:false,
           profileId,
           icon:normalizeSourceIcon(profile.icon, "database"),
         });
@@ -9188,6 +9269,11 @@
         return false;
       }
       plotTimeMode=next;
+      const active=getActivePlot();
+      if(active){
+        active.stitchActive=false;
+        active.eventOverlayActive=false;
+      }
       // Keep per-source timeRef in sync with the active plot mode so saved state
       // cannot resurrect a sticky t0 view after reload.
       (state.sources||[]).forEach((src)=>{
@@ -11652,8 +11738,11 @@
     const CONFIG_LIBRARY_KEY = "nova.configLibrary.v1";
     const VIEW_TYPES = [
       { id:"time", label:"Time Scope" },
+      { id:"strips", label:"Stacked Scope" },
+      { id:"grid", label:"Grid Scope" },
       { id:"parametric", label:"Parametric" },
       { id:"spectral", label:"Spectral" },
+      { id:"cursor", label:"Cursor" },
       { id:"summary", label:"Summary" },
       { id:"legend", label:"Legend" },
     ];
@@ -11733,14 +11822,339 @@
     }
     function isPlotlyViewType(v){
       const t=normalizeViewType(v);
-      return t==="time" || t==="parametric" || t==="spectral";
+      return t==="time" || t==="strips" || t==="grid" || t==="parametric" || t==="spectral";
     }
     function viewUsesTimeRangeAxis(plot){
-      return normalizeViewType(plot?.viewType)==="time";
+      const t=normalizeViewType(plot?.viewType);
+      return t==="time" || t==="strips" || t==="grid";
     }
     function isStubViewType(v){
       const t=normalizeViewType(v);
-      return t==="summary" || t==="legend";
+      return t==="summary" || t==="legend" || t==="cursor";
+    }
+    function gridDimsForCount(n){
+      const count=Math.max(1, Number(n)||1);
+      if(count===1) return { rows:1, cols:1 };
+      if(count===2) return { rows:1, cols:2 };
+      if(count===3) return { rows:1, cols:3 };
+      if(count===4) return { rows:2, cols:2 };
+      for(let rows=2; rows<=count; rows+=1){
+        const cols=Math.ceil(count/rows);
+        if(rows*cols>=count) return { rows, cols };
+      }
+      return { rows:count, cols:1 };
+    }
+    function plotsOnActivePage(){
+      const leaves=layoutLeaves(plotLayout);
+      const ids=new Set();
+      leaves.forEach((leaf)=>{ if(leaf.activeTabId) ids.add(leaf.activeTabId); });
+      return plots.filter((p)=>ids.has(p.id));
+    }
+    function driverPlotsForCursorScope(){
+      return plotsOnActivePage().filter((p)=>{
+        const t=normalizeViewType(p.viewType);
+        return t==="time" || t==="strips" || t==="grid";
+      });
+    }
+    function coerceCursorX(v){
+      if(v instanceof Date) return v.getTime();
+      if(typeof v==="string"){
+        const parsed=Date.parse(v);
+        if(Number.isFinite(parsed)) return parsed;
+      }
+      const n=Number(v);
+      return Number.isFinite(n) ? n : Number.NaN;
+    }
+    function interpolateXYAt(xs, ys, xPlot){
+      if(!Number.isFinite(xPlot) || !xs?.length || !ys?.length) return Number.NaN;
+      const samples=[];
+      const n=Math.min(xs.length, ys.length);
+      for(let i=0;i<n;i+=1){
+        const x=coerceCursorX(xs[i]);
+        const y=Number(ys[i]);
+        if(!Number.isFinite(x) || !Number.isFinite(y)) continue;
+        samples.push({ x, y });
+      }
+      if(!samples.length) return Number.NaN;
+      samples.sort((a,b)=>a.x-b.x);
+      if(xPlot<=samples[0].x) return samples[0].y;
+      if(xPlot>=samples[samples.length-1].x) return samples[samples.length-1].y;
+      for(let i=1;i<samples.length;i+=1){
+        const a=samples[i-1], b=samples[i];
+        if(xPlot<a.x || xPlot>b.x) continue;
+        const span=b.x-a.x;
+        if(span<=0) return b.y;
+        return a.y + ((xPlot-a.x)/span)*(b.y-a.y);
+      }
+      return Number.NaN;
+    }
+    function yAxisKeyFromRef(yref){
+      const raw=String(yref||"y");
+      if(raw==="y" || raw==="yaxis") return "yaxis";
+      const n=raw.replace(/^y(axis)?/, "");
+      return n ? `yaxis${n}` : "yaxis";
+    }
+    function horizontalCursorLevelsFromPlot(plot){
+      const overlays=Array.isArray(plot?.analysis?.overlays) ? plot.analysis.overlays : [];
+      return overlays
+        .filter((o)=>o && o.visible!==false && o.type==="line" && o.kind==="horizontal" && Number.isFinite(Number(o.y)))
+        .map((o)=>({ y:Number(o.y), yAxisKey:yAxisKeyFromRef(o.yAxisKey||"yaxis") }));
+    }
+    function verticalCursorPositionsFromPlot(plot){
+      const overlays=Array.isArray(plot?.analysis?.overlays) ? plot.analysis.overlays : [];
+      const xs=overlays
+        .filter((o)=>o && o.visible!==false && o.type==="line" && o.kind==="vertical")
+        .map((o)=>coerceCursorX(o.x))
+        .filter((x)=>Number.isFinite(x))
+        .sort((a,b)=>a-b);
+      return { a:xs[0]??null, b:xs[1]??xs[0]??null };
+    }
+    function resolveCursorDriver(){
+      const drivers=driverPlotsForCursorScope();
+      const withLines=drivers.find((p)=>{
+        const v=verticalCursorPositionsFromPlot(p);
+        return v.a!=null || horizontalCursorLevelsFromPlot(p).length;
+      });
+      return drivers.find((p)=>p.id===activePlotId) || withLines || drivers[0] || null;
+    }
+    function interpolateXAtY(xs, ys, yLevel, afterX){
+      if(!Number.isFinite(yLevel) || !xs?.length || !ys?.length) return Number.NaN;
+      const minX=Number.isFinite(afterX) ? afterX : -Infinity;
+      const n=Math.min(xs.length, ys.length);
+      const samples=[];
+      for(let i=0;i<n;i+=1){
+        const x=coerceCursorX(xs[i]);
+        const y=Number(ys[i]);
+        if(!Number.isFinite(x) || !Number.isFinite(y)) continue;
+        samples.push({ x, y });
+      }
+      samples.sort((a,b)=>a.x-b.x);
+      for(let i=1;i<samples.length;i+=1){
+        const a=samples[i-1], b=samples[i];
+        if(b.x<minX) continue;
+        const ya=a.y-yLevel, yb=b.y-yLevel;
+        if(ya===0 && a.x>=minX) return a.x;
+        if(ya*yb>0) continue;
+        const span=b.y-a.y;
+        if(span===0) return b.x>=minX ? b.x : Number.NaN;
+        const x=a.x + ((yLevel-a.y)/span)*(b.x-a.x);
+        if(x>=minX) return x;
+      }
+      return Number.NaN;
+    }
+    function levelsForCursorSeries(series, horizontals){
+      const key=yAxisKeyFromRef(series?.yaxis);
+      const lines=horizontals.filter((h)=>!h.yAxisKey || h.yAxisKey===key);
+      const use=lines.length ? lines : horizontals;
+      const ys=use.map((h)=>h.y);
+      return { a:ys[0]??null, b:ys[1]??null };
+    }
+    function formatCursorTime(x, driver){
+      if(!Number.isFinite(x)) return "—";
+      const host=getPlotDiv(driver?.id);
+      const type=host?._fullLayout?.xaxis?.type || host?.layout?.xaxis?.type;
+      if(type==="date"){
+        const d=new Date(x);
+        if(!Number.isFinite(d.getTime())) return "—";
+        return d.toISOString().replace("T"," ").replace("Z","");
+      }
+      return `${formatLimitValue(x)} s`;
+    }
+    function formatCursorDt(tA, tB, driver){
+      if(!Number.isFinite(tA) || !Number.isFinite(tB)) return "—";
+      const host=getPlotDiv(driver?.id);
+      const type=host?._fullLayout?.xaxis?.type || host?.layout?.xaxis?.type;
+      const dt=type==="date" ? (tB-tA)/1000 : (tB-tA);
+      return `${formatLimitValue(dt)} s`;
+    }
+    function rowsForCursorDriver(driver){
+      if(Array.isArray(driver?.latestRows) && driver.latestRows.length) return driver.latestRows;
+      if(driver?.id===activePlotId && (latestRows||[]).length) return latestRows;
+      const fromOther=plotsOnActivePage().find((p)=>Array.isArray(p.latestRows) && p.latestRows.length);
+      return fromOther?.latestRows || latestRows || [];
+    }
+    function rowPlotXForReadout(row, plot, rows){
+      if(!row || !plot) return Number.NaN;
+      const src=rows||rowsForCursorDriver(plot);
+      if(plot.stitchActive){
+        return Number.isFinite(row.__ts) ? row.__ts/1000 : Number.NaN;
+      }
+      const t0Mode=effectiveTimeRefForDbId(row.__dbId, src);
+      if(t0Mode==="absolute") return parseRowTimeMs(row);
+      const { t0FirstSample, t0Meta }=buildTimeRefMaps(src);
+      const key=`${row.__dbId}|${row.test_run_id}`;
+      const base=t0Mode==="t0_relative"?t0Meta.get(key):t0FirstSample.get(key);
+      return Number.isFinite(base)?(row.__ts-base)/1000:(Number.isFinite(row.__ts)?row.__ts/1000:Number.NaN);
+    }
+    function interpolateSeriesAtX(series, xPlot, driver){
+      if(series?.x && series?.y) return interpolateXYAt(series.x, series.y, xPlot);
+      const rows=rowsForCursorDriver(driver);
+      const key=String(series?.key||"");
+      const short=channelKeyFromId(key)||key;
+      const pts=(rows||[]).filter((r)=>{
+        const full=`${r.__dbId}|${r.channel_name}`;
+        return full===key || r.channel_name===key || r.channel_name===short || channelKeyFromId(full)===short;
+      });
+      if(!pts.length) return Number.NaN;
+      return interpolateXYAt(
+        pts.map((r)=>rowPlotXForReadout(r, driver, rows)),
+        pts.map((r)=>Number(r.value)),
+        xPlot,
+      );
+    }
+    function cursorScopeSeriesFromDriver(driver){
+      const host=getPlotDiv(driver?.id);
+      const traces=(host?.data||[]).filter((t)=>
+        t && t._novaFillBaseline!==true && t._novaEnvelope!==true && t._novaOverlayLegend!==true
+        && String(t.type||"")!=="heatmap"
+        && (t.x||[]).length && (t.y||[]).length
+      );
+      if(traces.length){
+        return traces.map((t)=>({
+          key:String(t._novaChannelKey||t.name||""),
+          name:String(t.name||channelKeyFromId(t._novaChannelKey)||"channel"),
+          unit:normalizePlotUnit(t._unit),
+          yaxis:t.yaxis||"y",
+          x:t.x,
+          y:t.y,
+        }));
+      }
+      const rows=rowsForCursorDriver(driver);
+      const grouped=new Map();
+      (rows||[]).forEach((r)=>{
+        const key=`${r.__dbId}|${r.channel_name}`;
+        if(!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(r);
+      });
+      const out=[];
+      grouped.forEach((pts, key)=>{
+        out.push({
+          key,
+          name:legendKeyForRow(pts[0]) || pts[0].channel_name,
+          unit:normalizePlotUnit(channelUnitMap.get(key)||resolveChannelUnit(key, pts[0]?.unit)),
+        });
+      });
+      return out;
+    }
+    function formatCursorReadoutValue(value, unit, alreadyPreferred=false){
+      if(!Number.isFinite(value)) return "—";
+      const converted=alreadyPreferred ? value : convertValueToPreferred(value, unit);
+      const pref=normalizePlotUnit(unit);
+      return `${formatLimitValue(converted)}${pref && pref!=="unitless" ? ` ${pref}` : ""}`;
+    }
+    function cursorHiddenKeySet(plot){
+      const raw=plot?.cursorHiddenKeys;
+      return new Set(Array.isArray(raw) ? raw.map(String) : []);
+    }
+    function hideCursorScopeRow(plot, key){
+      if(!plot || !key) return;
+      const set=cursorHiddenKeySet(plot);
+      set.add(String(key));
+      plot.cursorHiddenKeys=[...set];
+      savePlots();
+      const host=getPlotDiv(plot.id);
+      if(host) renderCursorScope(host, plot);
+    }
+    function renderCursorScope(host, plot){
+      if(!host || !plot) return;
+      const driver=resolveCursorDriver();
+      if(!driver){
+        host.innerHTML=`<div class="plotStub cursorScopeStub"><table class="plotStubTable"><thead><tr><th>Channel</th><th>A</th><th>B</th><th>Δ</th></tr></thead><tbody></tbody></table></div>`;
+        return;
+      }
+      const vertical=verticalCursorPositionsFromPlot(driver);
+      const horizontals=horizontalCursorLevelsFromPlot(driver);
+      const hidden=cursorHiddenKeySet(plot);
+      const series=cursorScopeSeriesFromDriver(driver).filter((ch)=>!hidden.has(String(ch.key||ch.name||"")));
+      const hasV=Number.isFinite(vertical.a);
+      const hasH=horizontals.length>0;
+      if(!hasV && !hasH){
+        host.innerHTML=`<div class="plotStub cursorScopeStub"><table class="plotStubTable"><thead><tr><th>Channel</th><th>A</th><th>B</th><th>Δ</th></tr></thead><tbody></tbody></table></div>`;
+        return;
+      }
+      if(!series.length){
+        host.innerHTML=`<div class="plotStub cursorScopeStub"><table class="plotStubTable"><thead><tr><th>Channel</th><th>A</th><th>B</th><th>Δ</th></tr></thead><tbody></tbody></table></div>`;
+        return;
+      }
+      const showVDelta=Number.isFinite(vertical.b) && vertical.b!==vertical.a;
+      const valueRows=hasV ? series.map((ch)=>{
+        const preferred=Boolean(ch.x && ch.y);
+        const rawA=interpolateSeriesAtX(ch, vertical.a, driver);
+        const rawB=showVDelta ? interpolateSeriesAtX(ch, vertical.b, driver) : Number.NaN;
+        const valA=formatCursorReadoutValue(rawA, ch.unit, preferred);
+        const valB=showVDelta ? formatCursorReadoutValue(rawB, ch.unit, preferred) : "—";
+        const delta=showVDelta && Number.isFinite(rawA) && Number.isFinite(rawB)
+          ? formatCursorReadoutValue(rawB-rawA, ch.unit, preferred)
+          : "—";
+        const rowKey=escAttr(String(ch.key||ch.name||""));
+        return `<tr data-cursor-key="${rowKey}"><td>${escapeHtml(ch.name)}</td><td>${escapeHtml(valA)}</td><td>${escapeHtml(valB)}</td><td>${escapeHtml(delta)}</td></tr>`;
+      }).join("") : "";
+      const timeRows=hasH ? series.map((ch)=>{
+        const lv=levelsForCursorSeries(ch, horizontals);
+        const xs=ch.x, ys=ch.y;
+        const tA=interpolateXAtY(xs, ys, lv.a);
+        const tB=Number.isFinite(lv.b) ? interpolateXAtY(xs, ys, lv.b, tA) : Number.NaN;
+        const rowKey=escAttr(String(ch.key||ch.name||""));
+        return `<tr data-cursor-key="${rowKey}"><td>${escapeHtml(ch.name)}</td><td>${escapeHtml(formatCursorTime(tA, driver))}</td><td>${escapeHtml(formatCursorTime(tB, driver))}</td><td>${escapeHtml(formatCursorDt(tA, tB, driver))}</td></tr>`;
+      }).join("") : "";
+      const valueTable=hasV ? `<table class="plotStubTable">
+          <thead><tr><th>Channel</th><th>A</th><th>B</th><th>Δ</th></tr></thead>
+          <tbody>${valueRows}</tbody>
+        </table>` : "";
+      const timeTable=hasH ? `<table class="plotStubTable" ${hasV?`style="margin-top:12px;"`:""}>
+          <thead><tr><th>Channel</th><th>t(A)</th><th>t(B)</th><th>Δt</th></tr></thead>
+          <tbody>${timeRows}</tbody>
+        </table>` : "";
+      host.innerHTML=`<div class="plotStub cursorScopeStub">${valueTable}${timeTable}
+        <button type="button" class="cursorScopeCopyBtn" id="cursorScopeCopyBtn">Copy table</button>
+      </div>`;
+      host.querySelectorAll("tr[data-cursor-key]").forEach((row)=>{
+        row.oncontextmenu=(ev)=>{
+          ev.preventDefault();
+          if(ev.stopPropagation) ev.stopPropagation();
+          const key=String(row.getAttribute("data-cursor-key")||"");
+          if(!key) return;
+          showContextMenu(ev.clientX, ev.clientY, [
+            { label:"Remove from table", action:()=>hideCursorScopeRow(plot, key) },
+          ]);
+        };
+      });
+      byId("cursorScopeCopyBtn")?.addEventListener("click", async ()=>{
+        const lines=[];
+        if(hasV){
+          lines.push("Channel\tA\tB\tDelta");
+          series.forEach((ch)=>{
+            const preferred=Boolean(ch.x && ch.y);
+            const rawA=interpolateSeriesAtX(ch, vertical.a, driver);
+            const rawB=showVDelta ? interpolateSeriesAtX(ch, vertical.b, driver) : Number.NaN;
+            lines.push([ch.name, rawA, Number.isFinite(rawB)?rawB:"", (Number.isFinite(rawA)&&Number.isFinite(rawB))?(rawB-rawA):""].join("\t"));
+            void preferred;
+          });
+        }
+        if(hasH){
+          if(lines.length) lines.push("");
+          lines.push("Channel\tt(A)\tt(B)\tDelta t");
+          series.forEach((ch)=>{
+            const lv=levelsForCursorSeries(ch, horizontals);
+            const tA=interpolateXAtY(ch.x, ch.y, lv.a);
+            const tB=Number.isFinite(lv.b) ? interpolateXAtY(ch.x, ch.y, lv.b, tA) : Number.NaN;
+            lines.push([ch.name, tA, Number.isFinite(tB)?tB:"", (Number.isFinite(tA)&&Number.isFinite(tB))?(tB-tA):""].join("\t"));
+          });
+        }
+        try{
+          await navigator.clipboard.writeText(lines.join("\n"));
+          setStatus("Cursor table copied.");
+        }catch{
+          setStatus("Could not copy cursor table.", true);
+        }
+      });
+    }
+    function refreshCursorViews(){
+      plotsOnActivePage().forEach((p)=>{
+        if(normalizeViewType(p.viewType)!=="cursor") return;
+        const host=document.getElementById(`plot-${p.id}`);
+        if(host) renderCursorScope(host, p);
+      });
     }
     function syncLegendToActivePlot(layout){
       const plot=getActivePlot();
@@ -11792,6 +12206,8 @@
         summaryHeaderFontSize:12,
         summaryRowHeight:32,
         summaryColumns:[],
+        linkX:false,
+        linkY:false,
       };
     }
     function normalizePlotOptions(raw){
@@ -11819,6 +12235,8 @@
         summaryHeaderFontSize:Math.max(9, Math.min(22, Number(src.summaryHeaderFontSize ?? base.summaryHeaderFontSize) || base.summaryHeaderFontSize)),
         summaryRowHeight:Math.max(24, Math.min(56, Number(src.summaryRowHeight ?? base.summaryRowHeight) || base.summaryRowHeight)),
         summaryColumns,
+        linkX:src.linkX===true,
+        linkY:src.linkY===true,
       };
     }
     function getPlotOptions(plot=getActivePlot()){
@@ -11886,6 +12304,7 @@
         parametric:{ xChannelId:"" },
         spectral:defaultSpectralConfig(),
         summary:defaultSummaryConfig(),
+        cursorHiddenKeys:[],
       };
     }
     function newPlotInstance(){
@@ -11919,6 +12338,9 @@
             : { xChannelId:"" },
           spectral:normalizeSpectralConfig(p.spectral),
           summary:normalizeSummaryConfig(p.summary),
+          cursorHiddenKeys:Array.isArray(p.cursorHiddenKeys) ? p.cursorHiddenKeys.map(String) : [],
+          stitchActive:p.stitchActive===true,
+          eventOverlayActive:p.eventOverlayActive===true,
         };
       });
     }
@@ -12348,6 +12770,56 @@
       p.masks=structuredClone(state.masks||[]);
       savePlots();
     }
+    let channelClipboard=[];
+    function normalizeChannelClipboardKey(id){
+      return channelKeyFromId(id) || String(id||"").trim();
+    }
+    function channelsForClipboard(seedId){
+      const keys=[];
+      const seen=new Set();
+      const add=(id)=>{
+        const key=normalizeChannelClipboardKey(id);
+        if(!key || seen.has(key)) return;
+        seen.add(key);
+        keys.push(key);
+      };
+      if(selectedChannelIds.size) selectedChannelIds.forEach(add);
+      else if(seedId) add(seedId);
+      else if(focusedItem?.kind==="channel") add(focusedItem.id);
+      return keys;
+    }
+    function copySelectedChannels(seedId){
+      const keys=channelsForClipboard(seedId);
+      if(!keys.length){
+        setStatus("No channels selected to copy.", true);
+        return false;
+      }
+      channelClipboard=keys.slice();
+      setStatus(`Copied ${keys.length} channel${keys.length===1?"":"s"}.`);
+      return true;
+    }
+    function pasteChannelsToActiveView(){
+      if(!channelClipboard.length){
+        setStatus("Channel clipboard is empty.", true);
+        return false;
+      }
+      let added=0;
+      channelClipboard.forEach((key)=>{
+        if(!addedChannelIds.has(key)){
+          addedChannelIds.add(key);
+          added+=1;
+        }
+        selectedChannelIds.add(key);
+      });
+      persistFocusedViewSelections();
+      if(typeof rebuildChannelUnitMap==="function") rebuildChannelUnitMap();
+      renderAll();
+      saveState();
+      setStatus(added
+        ? `Pasted ${added} channel${added===1?"":"s"} into the active view.`
+        : "Channels already in the active view.");
+      return true;
+    }
     function getActivePlot(){ return plots.find((p)=>p.id===activePlotId) || null; }
     function persistActivePlotLocalState(){
       const cur=getActivePlot();
@@ -12404,6 +12876,9 @@
           : undefined,
         spectral: normalizeSpectralConfig(p.spectral),
         summary: normalizeSummaryConfig(p.summary),
+        cursorHiddenKeys: Array.isArray(p.cursorHiddenKeys) ? p.cursorHiddenKeys.map(String) : [],
+        stitchActive: p.stitchActive===true,
+        eventOverlayActive: p.eventOverlayActive===true,
       };
     }
     function buildConfigPayload(){
@@ -13149,16 +13624,43 @@
       }
     }
     async function resetActiveScope(){
+      if(!confirm("Reset NOVA? This clears all views, pages, channels, masks, and plot objects.")) return;
       try{
-        const rows=latestRows||[];
-        if(rows.length && typeof plotRows==="function"){
-          await plotRows(rows, { preserveUi:false, resetView:true });
-        }else{
-          const host=getPlotDiv(activePlotId);
-          if(!host || !window.Plotly) throw new Error("No active scope.");
-          await Plotly.relayout(host, { "xaxis.autorange":true, "yaxis.autorange":true });
+        try{ destroyAllPlotHosts(); }catch{}
+        try{ clearPageSessionPlotCache(); }catch{}
+        latestRows=[];
+        overviewRows=[];
+        metadataRows=[];
+        if(typeof selectedObjectKeys!=="undefined") selectedObjectKeys=new Set();
+        if(typeof channelClipboard!=="undefined") channelClipboard=[];
+        focusedItem=null;
+        state.masks=[];
+        plotTimeMode=DEFAULT_TIME_REF;
+        const page=newPageInstance("Page 1");
+        pages=[page];
+        hydrateGlobalsFromPage(page, { preserveSharedSelections:true });
+        selectedChannelIds=new Set();
+        addedChannelIds=new Set();
+        selectedMaskIds=new Set();
+        selectedRangeKeys=new Set();
+        state.masks=[];
+        const active=getActivePlot();
+        if(active){
+          active.masks=[];
+          active.analysis={ overlays:[] };
+          active.latestRows=[];
+          active.metadataRows=[];
+          active.traceStyles={};
+          active.stitchActive=false;
+          active.eventOverlayActive=false;
+          active.selections=snapshotSelections();
         }
-        setStatus("Scope reset.");
+        persistActivePageToPages();
+        savePlots();
+        saveState();
+        await rebuildPlotMosaicAndCharts();
+        renderAll();
+        setStatus("NOVA reset.");
       }catch(err){
         setStatus(`Reset scope failed: ${err.message||err}`, true);
       }
@@ -16299,6 +16801,14 @@
     function setPlotViewType(id, viewType){
       const p=plots.find((x)=>x.id===id); if(!p) return;
       p.viewType=normalizeViewType(viewType);
+      const vt=normalizeViewType(p.viewType);
+      if(vt==="grid"){
+        const opts=getPlotOptions(p);
+        if(opts.linkX!==true){
+          opts.linkX=true;
+          p.options=normalizePlotOptions(opts);
+        }
+      }
       // Destroy Plotly only when switching to a non-chart stub view.
       if(id===activePlotId && isStubViewType(p.viewType)){
         try{ destroyChartHost(getPlotDiv(id)); }catch{}
@@ -16330,6 +16840,9 @@
         parametric:structuredClone(p.parametric||{ xChannelId:"" }),
         spectral:structuredClone(normalizeSpectralConfig(p.spectral)),
         summary:structuredClone(normalizeSummaryConfig(p.summary)),
+        cursorHiddenKeys:Array.isArray(p.cursorHiddenKeys) ? p.cursorHiddenKeys.map(String) : [],
+        stitchActive:p.stitchActive===true,
+        eventOverlayActive:p.eventOverlayActive===true,
       };
       plots.push(copy);
       const leaf=findLeafContainingPlot(plotLayout, id) || findFocusedLeaf();
@@ -16800,6 +17313,10 @@
         renderSummaryPlot(host, plot);
         return;
       }
+      if(type==="cursor"){
+        renderCursorScope(host, plot);
+        return;
+      }
       if(type==="legend"){
         const legendOpts=getPlotOptions(plot);
         const entries=collectLegendEntriesFromVisiblePlots();
@@ -17019,9 +17536,12 @@
         b.oncontextmenu=(e)=>{
           e.preventDefault();
           e.stopPropagation();
+          const opts=getPlotOptions(p);
           showContextMenu(e.clientX,e.clientY,[
             {label:"Rename...", action:()=>renamePlot(p.id)},
             {label:"Duplicate", action:()=>duplicatePlot(p.id)},
+            {label:"Link X", checked:opts.linkX===true, action:()=>togglePlotAxisLink(p.id, "x")},
+            {label:"Link Y", checked:opts.linkY===true, action:()=>togglePlotAxisLink(p.id, "y")},
             {label:"Close", action:()=>closePlot(p.id)},
           ]);
         };
@@ -17390,9 +17910,29 @@
       }
       await refreshCatalogRanges();
     }
+    function findMaterializedDbTestLeaf(row){
+      if(!row || row.rowKind!=="db_test") return null;
+      const testRunId=String(row.testRunId||"");
+      const profileId=String(row.profileId||"");
+      const dbName=String(row.dbName||"");
+      return state.sources.find((s)=>{
+        if(isCatalogSource(s)){
+          return String(s.catalog_id||"")===profileId && String(s.test_id)===testRunId;
+        }
+        if(isPostgresTestLeaf(s)){
+          return String(s.test_run_id)===testRunId && String(s.db_name||"")===dbName;
+        }
+        return false;
+      }) || null;
+    }
     function applySourceTreeSelection(items, clickIndex, ev){
       const it=items[clickIndex];
       if(!it || it.selectable===false) return;
+      // Drop legacy connection/folder browse keys that used to be selectable.
+      [...selectedSourceIds].forEach((id)=>{
+        const key=String(id);
+        if(key.startsWith("dbconn:") || key.startsWith("dbdb:")) selectedSourceIds.delete(key);
+      });
       const selectableIdxs=[];
       items.forEach((row,i)=>{ if(row.selectable!==false) selectableIdxs.push(i); });
       const selPos=selectableIdxs.indexOf(clickIndex);
@@ -17401,11 +17941,24 @@
       const meta=hasMetaOrCtrlKey(ev);
 
       const resolveId=(row)=>{
+        if(!row) return "";
         if(row.rowKind==="db_test" && row.provisional){
+          const provisionalId=String(row.id||"");
           const leaf=materializeDbTestSelection(row);
           if(leaf){
             row.id=leaf.id;
             row.provisional=false;
+            // Drop stale dbtest:… keys so Ctrl/Shift multi-select keeps working after materialize.
+            if(provisionalId && provisionalId!==leaf.id) selectedSourceIds.delete(provisionalId);
+            const testRunId=String(row.testRunId||"");
+            const profileId=String(row.profileId||"");
+            [...selectedSourceIds].forEach((id)=>{
+              const key=String(id);
+              if(!key.startsWith("dbtest:")) return;
+              if(testRunId && key.includes(`|${testRunId}`) && (!profileId || key.startsWith(`dbtest:${profileId}|`))){
+                selectedSourceIds.delete(key);
+              }
+            });
             return leaf.id;
           }
         }
@@ -17413,6 +17966,7 @@
       };
       const selectionTargetsForRow=(row)=>{
         const id=resolveId(row);
+        if(!id) return [];
         if(row.rowKind==="folder"){
           const ids=[id];
           const walk=(folderId)=>{
@@ -17430,15 +17984,24 @@
         }
         return [id];
       };
-      const addTargets=(row)=> selectionTargetsForRow(row).forEach((id)=>selectedSourceIds.add(id));
+      const addTargets=(row)=> selectionTargetsForRow(row).forEach((id)=>{ if(id) selectedSourceIds.add(id); });
       const removeTargets=(row)=> selectionTargetsForRow(row).forEach((id)=>selectedSourceIds.delete(id));
       const rowIsSelected=(row)=>{
+        if(!row) return false;
         if(row.rowKind==="folder"){
           if(selectedSourceIds.has(row.id)) return true;
           const files=folderDescendantFileSources(row.id);
           return files.length>0 && files.every((f)=>selectedSourceIds.has(f.id));
         }
-        return selectedSourceIds.has(resolveId(row));
+        const id=String(row.id||"");
+        if(id && selectedSourceIds.has(id)) return true;
+        // Read-only: do not materialize while checking selection.
+        if(row.rowKind==="db_test"){
+          const leaf=findMaterializedDbTestLeaf(row);
+          if(leaf && selectedSourceIds.has(leaf.id)) return true;
+          if(id.startsWith("dbtest:") && selectedSourceIds.has(id)) return true;
+        }
+        return false;
       };
 
       if(shift && Number.isInteger(anchorIdx) && anchorIdx>=0 && anchorIdx<items.length){
@@ -17449,6 +18012,7 @@
           for(let i=a;i<=b;i+=1){
             addTargets(items[selectableIdxs[i]]);
           }
+          lastClickedByKind.source=clickIndex;
           return;
         }
       }
@@ -17469,7 +18033,13 @@
         const files=folderDescendantFileSources(it.id);
         return files.length>0 && files.every((f)=>selectedSourceIds.has(f.id));
       }
-      return selectedSourceIds.has(it.id);
+      const id=String(it.id||"");
+      if(id && selectedSourceIds.has(id)) return true;
+      if(it.rowKind==="db_test"){
+        const leaf=findMaterializedDbTestLeaf(it);
+        if(leaf && selectedSourceIds.has(leaf.id)) return true;
+      }
+      return false;
     }
     function patchExplorerListSelection(listId, items, set, kind){
       const root=byId(listId);
@@ -17533,7 +18103,10 @@
         const tipBlock=it.tipHtml ? `<span class="sourceFileTip">${it.tipHtml}</span>` : "";
         if(it.tipHtml) row.classList.add("sourceFileTipHost");
         row.innerHTML=`<button type="button" class="${twistClass}" data-twist="1" tabindex="-1">${it.expandable?treeTwistSvg(!!it.expanded):""}</button>${iconHtml}<div class="itemPrimary">${escapeHtml(it.primary||"")}</div>${tipBlock}`;
-        row.onmousedown=(ev)=>{ if(ev && ev.preventDefault) ev.preventDefault(); };
+        row.onmousedown=(ev)=>{
+          // Prevent shift+click from selecting/highlighting text ranges.
+          if(ev && ev.preventDefault) ev.preventDefault();
+        };
         const twist=row.querySelector("[data-twist]");
         if(twist && it.expandable){
           twist.onclick=async(ev)=>{
@@ -17561,8 +18134,8 @@
             }
             return;
           }
-          focusedItem={kind:"source",id:it.id};
           applySourceTreeSelection(items, idx, ev);
+          focusedItem={kind:"source",id:it.id};
           rebuildChannelsDataLocal();
           if(!patchSourcesTreeSelection()){
             renderSourcesTree();
@@ -17607,8 +18180,13 @@
           if(!isSourceTreeRowActive(it)){
             selectedSourceIds.clear();
             if(it.rowKind==="db_test" && it.provisional){
+              const provisionalId=String(it.id||"");
               const leaf=materializeDbTestSelection(it);
-              if(leaf){ it.id=leaf.id; it.provisional=false; }
+              if(leaf){
+                it.id=leaf.id;
+                it.provisional=false;
+                if(provisionalId && provisionalId!==leaf.id) selectedSourceIds.delete(provisionalId);
+              }
             }
             if(it.rowKind==="folder"){
               selectedSourceIds.add(it.id);
@@ -17789,6 +18367,8 @@
                 });
               }
             }
+            menuItems.push({label:"Copy",action:()=>copySelectedChannels(it.id)});
+            menuItems.push({label:"Paste",action:()=>pasteChannelsToActiveView()});
             menuItems.push({label:"Delete",action:deleteFocused});
             showContextMenu(ev.clientX,ev.clientY,menuItems);
             return;
@@ -17973,6 +18553,254 @@
         }
       });
       return layout;
+    }
+    function stripChannelKey(t){
+      return String(channelKeyFromId(t?._novaChannelKey)||channelKeyFromId(t?.name)||t?.name||"").trim();
+    }
+    function stripSourceKey(t){
+      if(t?._novaDbId!=null && String(t._novaDbId)!=="") return String(t._novaDbId);
+      const raw=String(t?.name||t?._novaSourceKey||"");
+      const split=raw.lastIndexOf(" | ");
+      if(split>=0) return raw.slice(0, split).trim();
+      return "source";
+    }
+    function stripTitleForChannel(channelName, unit){
+      const ch=channelDisplayName(channelName) || String(channelName||"channel");
+      const u=normalizePlotUnit(unit);
+      if(u && u!=="unitless") return `${ch}<br>(${u})`;
+      return ch;
+    }
+    function yRangeFromTracesForAxisList(traces){
+      let lo=Infinity;
+      let hi=-Infinity;
+      (traces||[]).forEach((t)=>{
+        const ys=t.y||[];
+        for(let i=0;i<ys.length;i+=1){
+          const v=Number(ys[i]);
+          if(!Number.isFinite(v)) continue;
+          if(v<lo) lo=v;
+          if(v>hi) hi=v;
+        }
+      });
+      if(!Number.isFinite(lo) || !Number.isFinite(hi)) return null;
+      if(lo===hi){
+        const pad=Math.max(Math.abs(lo)*0.05, 1e-9);
+        return [lo-pad, hi+pad];
+      }
+      const pad=(hi-lo)*0.05;
+      return [lo-pad, hi+pad];
+    }
+    function yRangeFromTracesForUnit(traces, unit){
+      const want=normalizePlotUnit(unit);
+      return yRangeFromTracesForAxisList((traces||[]).filter((t)=>normalizePlotUnit(t?._unit)===want));
+    }
+    function buildStripAxes(traces, { resetRanges=false }={}){
+      const list=(traces||[]).filter(traceHasFinitePoints);
+      const byChannel=new Map();
+      list.forEach((t)=>{
+        const ch=stripChannelKey(t)||"channel";
+        if(!byChannel.has(ch)) byChannel.set(ch, []);
+        byChannel.get(ch).push(t);
+      });
+      const channels=[...byChannel.keys()].sort((a,b)=>{
+        const da=String(channelDisplayName(a)||a);
+        const db=String(channelDisplayName(b)||b);
+        return da.localeCompare(db);
+      });
+      const n=Math.max(1, channels.length);
+      const gap=n>12 ? 0.008 : 0.016;
+      const usable=Math.max(0.2, 1 - gap*Math.max(0, n-1));
+      const h=usable/n;
+      const layout={};
+      channels.forEach((ch, idx)=>{
+        const i=idx+1;
+        const yref=i===1 ? "y" : `y${i}`;
+        const key=i===1 ? "yaxis" : `yaxis${i}`;
+        const top=1 - idx*(h+gap);
+        const bottom=top-h;
+        const cell=byChannel.get(ch)||[];
+        cell.forEach((t)=>{ t.yaxis=yref; t.xaxis="x"; });
+        const unit=normalizePlotUnit(cell[0]?._unit);
+        const dataRange=yRangeFromTracesForAxisList(cell);
+        layout[key]={
+          title:{ text:stripTitleForChannel(ch, unit), standoff:8 },
+          domain:[Math.max(0, bottom), Math.min(1, top)],
+          automargin:true,
+          side:"left",
+          anchor:"x",
+          showticklabels:true,
+          ticks:"outside",
+          ticklen:3,
+          showline:true,
+          zeroline:false,
+          autorange:!dataRange,
+          ...(dataRange ? { range:dataRange } : {}),
+          titlefont:{ size:Number(appearance.axisTitleSize||11) },
+          tickfont:{ size:Math.max(8, Number(appearance.axisTickSize||10)-1) },
+        };
+      });
+      return layout;
+    }
+    function applyStripSourceColors(traces){
+      const cw=parseColorway();
+      const sources=[];
+      (traces||[]).forEach((t)=>{
+        if(!t || t._novaFillBaseline || t._novaEnvelope) return;
+        const src=stripSourceKey(t);
+        if(src && !sources.includes(src)) sources.push(src);
+      });
+      const seenLegend=new Set();
+      (traces||[]).forEach((t)=>{
+        if(!t || t._novaFillBaseline || t._novaEnvelope) return;
+        const src=stripSourceKey(t);
+        if(!src || !sources.length) return;
+        const color=cw[sources.indexOf(src) % Math.max(1, cw.length)] || "#888";
+        t.line=Object.assign({}, t.line||{}, { color });
+        if(t.marker && typeof t.marker==="object" && !Array.isArray(t.marker.color)){
+          t.marker=Object.assign({}, t.marker, { color });
+        }
+        const label=sourceLabelForDbId(src) || src;
+        t.legendgroup=`source:${src}`;
+        t.legendgrouptitle=undefined;
+        if(seenLegend.has(src)){
+          t.showlegend=false;
+        }else{
+          seenLegend.add(src);
+          t.showlegend=true;
+          t.name=label;
+        }
+      });
+    }
+    function buildGridAxes(tracesBySource, { resetRanges=false, useDateAxis=false }={}){
+      const entries=[...tracesBySource.entries()].filter(([, list])=>list?.length);
+      const n=Math.max(1, entries.length);
+      const { rows, cols }=gridDimsForCount(n);
+      const edgePadX=0.01;
+      const edgePadY=0.01;
+      const xGap=0.02;
+      const yGap=0.025;
+      const cellW=(1 - 2*edgePadX - xGap*Math.max(0, cols-1))/cols;
+      const cellH=(1 - 2*edgePadY - yGap*Math.max(0, rows-1))/rows;
+      const layout={};
+      const allTraces=entries.flatMap(([, list])=>(list||[]).filter(traceHasFinitePoints));
+      const unitRange=new Map();
+      allTraces.forEach((t)=>{
+        const unit=normalizePlotUnit(t?._unit);
+        t._unit=unit;
+        if(!unitRange.has(unit)) unitRange.set(unit, yRangeFromTracesForUnit(allTraces, unit));
+      });
+      const unitMaster=new Map();
+      let axisN=1;
+      entries.forEach(([srcKey, cellTraces], idx)=>{
+        const xi=idx+1;
+        const xref=xi===1 ? "x" : `x${xi}`;
+        const xkey=xi===1 ? "xaxis" : `xaxis${xi}`;
+        const row=Math.floor(idx/cols);
+        const col=idx%cols;
+        const x0=edgePadX + col*(cellW+xGap);
+        const x1=x0 + cellW;
+        const y1=1 - edgePadY - row*(cellH+yGap);
+        const y0=y1 - cellH;
+        const list=(cellTraces||[]).filter(traceHasFinitePoints);
+        const units=[];
+        const seen=new Set();
+        list.forEach((t)=>{
+          const u=normalizePlotUnit(t._unit);
+          t._unit=u;
+          if(seen.has(u)) return;
+          seen.add(u);
+          units.push(u);
+        });
+        units.sort((a,b)=>{
+          const au=a==="unitless"?1:0;
+          const bu=b==="unitless"?1:0;
+          if(au!==bu) return au-bu;
+          return a.localeCompare(b);
+        });
+        let cellPrimaryYref=null;
+        units.forEach((unit, uIdx)=>{
+          const nAxis=axisN;
+          axisN+=1;
+          const yref=nAxis===1 ? "y" : `y${nAxis}`;
+          const ykey=nAxis===1 ? "yaxis" : `yaxis${nAxis}`;
+          list.filter((t)=>normalizePlotUnit(t._unit)===unit).forEach((t)=>{
+            t.xaxis=xref;
+            t.yaxis=yref;
+          });
+          if(!cellPrimaryYref) cellPrimaryYref=yref;
+          const dataRange=unitRange.get(unit);
+          const axis={
+            title:{ text: uIdx===0 ? sourceLabelForDbId(srcKey) : unit },
+            domain:[y0, y1],
+            anchor:xref,
+            automargin:true,
+            side: uIdx===0 ? "left" : "right",
+            showticklabels:true,
+            ticks:"outside",
+            ticklen:3,
+            showline:true,
+            zeroline:false,
+            titlefont:{ size:Number(appearance.axisTitleSize||11) },
+            tickfont:{ size:Math.max(8, Number(appearance.axisTickSize||10)-1) },
+          };
+          if(uIdx>0) axis.overlaying=cellPrimaryYref;
+          const master=unitMaster.get(unit);
+          if(master){
+            axis.matches=master;
+            axis.autorange=false;
+          }else{
+            unitMaster.set(unit, yref);
+            axis.autorange=!dataRange;
+            if(dataRange) axis.range=dataRange;
+            else if(resetRanges){
+              const fallback=yRangeFromTracesForAxis(list.filter((t)=>normalizePlotUnit(t._unit)===unit), yref);
+              if(fallback){ axis.range=fallback; axis.autorange=false; }
+            }
+          }
+          layout[ykey]=axis;
+        });
+        layout[xkey]={
+          domain:[x0, x1],
+          anchor:cellPrimaryYref||"y",
+          automargin:true,
+          type:useDateAxis?"date":"linear",
+          visible:true,
+          showticklabels:row===rows-1,
+          ticks:row===rows-1 ? "outside" : "",
+          showline:true,
+          zeroline:false,
+          ...(idx>0 ? { matches:"x" } : {}),
+        };
+      });
+      return layout;
+    }
+    function applyGridConsistentChannelColors(traces){
+      const cw=parseColorway();
+      const names=[];
+      (traces||[]).forEach((t)=>{
+        if(!t || t._novaFillBaseline || t._novaEnvelope) return;
+        const name=String(channelKeyFromId(t._novaChannelKey)||channelKeyFromId(t.name)||t.name||"").trim();
+        if(name && !names.includes(name)) names.push(name);
+      });
+      const seen=new Set();
+      (traces||[]).forEach((t)=>{
+        if(!t || t._novaFillBaseline || t._novaEnvelope) return;
+        const name=String(channelKeyFromId(t._novaChannelKey)||channelKeyFromId(t.name)||t.name||"").trim();
+        if(!name || !names.length) return;
+        const color=cw[names.indexOf(name) % Math.max(1, cw.length)] || "#888";
+        t.line=Object.assign({}, t.line||{}, { color });
+        if(t.marker && typeof t.marker==="object" && !Array.isArray(t.marker.color)){
+          t.marker=Object.assign({}, t.marker, { color });
+        }
+        t.legendgroup=name;
+        if(seen.has(name)){
+          t.showlegend=false;
+        }else{
+          seen.add(name);
+          t.showlegend=true;
+          t.name=name;
+        }
+      });
     }
     function effectiveSampleHz(chId){
       const overrides=state.freqOverrides||{};
@@ -19519,7 +20347,7 @@
       const applyAxisLocks=plotOpts.applyAxisLocks===true
         || (plotOpts.applyAxisLocks!==false && Boolean(axisLocksFromOpts) && !dataOnly);
       const plotSourceRows=rows;
-      const useDateAxis=plotUsesDateAxis(plotSourceRows);
+      const useDateAxis=targetPlot?.stitchActive?false:plotUsesDateAxis(plotSourceRows);
       phase="group";
       const grouped=new Map();
       for(let i=0;i<plotSourceRows.length;i+=1){
@@ -19542,17 +20370,38 @@
       grouped.forEach((pts,name)=>{
         const chId=`${pts[0].__dbId}|${pts[0].channel_name}`;
         const timeRef=effectiveTimeRefForDbId(pts[0].__dbId, plotSourceRows);
-        const built=buildDecimatedTimeTrace(pts, name, { timeRef, t0FirstSample, t0Meta, pointCap, lineW, chId });
+        const built=buildDecimatedTimeTrace(pts, name, {
+          timeRef, t0FirstSample, t0Meta, pointCap, lineW, chId,
+          stitch:Boolean(targetPlot?.stitchActive),
+        });
+        built.trace._novaDbId=pts[0].__dbId;
         plotOriginalPoints+=built.original;
         shownPts+=built.shown;
         if(built.decimated) plotDecimated=true;
         traces.push(built.trace);
       });
       applySavedStylesToBuiltTraces(traces);
-      const plottableTraces=traces.filter(traceHasFinitePoints);
+      const plottableTraces=traces.filter((t)=>traceHasFinitePoints(t) && !t._novaEnvelope);
       const resetXRange=useDateAxis && !uiLocks ? traceTimeExtentMs(plottableTraces) : null;
-      const yLayout=buildUnitAxes(plottableTraces, plotWidth, { resetRanges:resetView });
-      syncTraceFillBaselineAxes(plottableTraces);
+      const useStrips=vt==="strips";
+      const useGrid=vt==="grid";
+      if(useGrid) applyGridConsistentChannelColors(traces);
+      if(useStrips) applyStripSourceColors(traces);
+      let yLayout;
+      if(useGrid){
+        const bySource=new Map();
+        plottableTraces.forEach((t)=>{
+          const key=String(t._novaDbId||"default");
+          if(!bySource.has(key)) bySource.set(key, []);
+          bySource.get(key).push(t);
+        });
+        yLayout=buildGridAxes(bySource, { resetRanges:resetView, useDateAxis });
+      }else if(useStrips){
+        yLayout=buildStripAxes(plottableTraces, { resetRanges:resetView });
+      }else{
+        yLayout=buildUnitAxes(plottableTraces, plotWidth, { resetRanges:resetView });
+      }
+      if(!useStrips && !useGrid) syncTraceFillBaselineAxes(plottableTraces);
       const unitCount=Object.keys(yLayout).length;
       // Drop empty traces so they cannot create phantom axes or inflate autorange.
       traces.length=0;
@@ -19608,15 +20457,45 @@
           clearTitle:true,
         }),
         margin:{
-          l:12,
-          r:Math.max(70,56+extraRight*(axisSpacingPx+6)),
-          t: hasTitle ? 44 : 12,
-          b:48,
+          l: useStrips ? 52 : (useGrid ? 56 : 12),
+          r: useStrips ? 10 : (useGrid ? 10 : Math.max(70,56+extraRight*(axisSpacingPx+6))),
+          t: hasTitle ? 44 : (useGrid || useStrips ? 8 : 12),
+          b: (useGrid || useStrips) ? 28 : 48,
         },
         legend:{...legendLayoutForActivePlot(), bgcolor:ink.legendBg, bordercolor:ink.legendBorder, borderwidth:1, font:{color:ink.legendFont} },
         ...yLayout,
         ...PlotAnalysisTools.analysisLayoutExtras(),
       };
+      if(useStrips){
+        const yKeys=Object.keys(yLayout).filter((k)=>/^yaxis\d*$/.test(k));
+        const lastKey=yKeys[yKeys.length-1]||"yaxis";
+        const lastRef=lastKey==="yaxis" ? "y" : `y${lastKey.replace("yaxis","")}`;
+        layoutBase.xaxis={ ...layoutBase.xaxis, anchor:lastRef, domain:[0,1] };
+        yKeys.forEach((k)=>{ layoutBase[k]={ ...yLayout[k] }; });
+      }
+      if(useGrid){
+        Object.keys(yLayout).forEach((k)=>{
+          if(!/^(xaxis|yaxis)\d*$/.test(k)) return;
+          layoutBase[k]={ ...yLayout[k] };
+          if(!/^xaxis\d*$/.test(k)) return;
+          const keepLabels=yLayout[k].showticklabels!==false;
+          layoutBase[k]=applyAxisChrome({ ...yLayout[k] }, {
+            showAxis:axisVisible && keepLabels,
+            showGrid:gridVisible,
+            ink,
+            titleSize,
+            tickSize,
+            clearTitle:true,
+          });
+          layoutBase[k].domain=yLayout[k].domain;
+          layoutBase[k].anchor=yLayout[k].anchor;
+          layoutBase[k].type=yLayout[k].type;
+          layoutBase[k].visible=true;
+          layoutBase[k].showticklabels=axisVisible && keepLabels;
+          layoutBase[k].ticks=layoutBase[k].showticklabels ? "outside" : "";
+          layoutBase[k].showline=true;
+        });
+      }
       mergeAxisLocksIntoLayout(layoutBase, uiLocks);
       phase="layout";
       const plotDiv=getPlotDiv(targetPlotId);
@@ -19638,7 +20517,7 @@
           dataOnly,
           applyAxisLocks,
           useDateAxis,
-          forceFullRebuild: resetView,
+          forceFullRebuild: resetView || useStrips || useGrid,
         });
         if(hasAxisLocks(uiLocks) && !dataOnly){
           try{ applyPlotAxisLocks(plotDiv, uiLocks); }catch{}
@@ -19652,6 +20531,7 @@
         cacheOverviewPlot(traces, layoutBase);
       }
       try{ refreshLegendViews(); }catch{}
+      try{ refreshCursorViews(); }catch{}
       }catch(err){
         lastPlotFailPhase=phase;
         const msg=formatPlotError(err);
@@ -20056,6 +20936,109 @@
       renderAll();
       saveState();
       setStatus(`Aligned ${applied} sources to selected range starts (t0 mode).`);
+    }
+    function togglePlotAxisLink(plotId, axis){
+      const p=plots.find((x)=>x.id===plotId);
+      if(!p) return;
+      const opts=getPlotOptions(p);
+      if(axis==="y") opts.linkY=!opts.linkY;
+      else opts.linkX=!opts.linkX;
+      p.options=normalizePlotOptions(opts);
+      savePlots();
+      try{ renderOptionsList(); }catch{}
+      setStatus(`${p.name}: ${axis.toUpperCase()} ${axis==="y"?(opts.linkY?"linked":"unlinked"):(opts.linkX?"linked":"unlinked")}.`);
+    }
+    let linkAxisPropagating=false;
+    function rangeFromRelayoutEvent(ev, axisPrefix){
+      if(!ev) return null;
+      if(Array.isArray(ev[`${axisPrefix}.range`]) && ev[`${axisPrefix}.range`].length===2){
+        return [ev[`${axisPrefix}.range`][0], ev[`${axisPrefix}.range`][1]];
+      }
+      const a=ev[`${axisPrefix}.range[0]`];
+      const b=ev[`${axisPrefix}.range[1]`];
+      if(a===undefined || b===undefined) return null;
+      return [a, b];
+    }
+    function propagateLinkedAxes(sourcePlotId, ev){
+      if(linkAxisPropagating || !ev) return;
+      const src=plots.find((p)=>p.id===sourcePlotId);
+      if(!src) return;
+      const opts=getPlotOptions(src);
+      const xRange=opts.linkX ? rangeFromRelayoutEvent(ev, "xaxis") : null;
+      const yRange=opts.linkY ? rangeFromRelayoutEvent(ev, "yaxis") : null;
+      if(!xRange && !yRange) return;
+      const targets=plots.filter((p)=>p.id!==sourcePlotId && isPlotlyViewType(p.viewType));
+      if(!targets.length) return;
+      linkAxisPropagating=true;
+      beginPlotProgrammaticUpdate();
+      try{
+        targets.forEach((p)=>{
+          const po=getPlotOptions(p);
+          const host=getPlotDiv(p.id);
+          if(!host || !window.Plotly) return;
+          const patch={};
+          if(xRange && po.linkX){
+            patch["xaxis.autorange"]=false;
+            patch["xaxis.range"]=xRange;
+          }
+          if(yRange && po.linkY){
+            patch["yaxis.autorange"]=false;
+            patch["yaxis.range"]=yRange;
+          }
+          if(!Object.keys(patch).length) return;
+          void Plotly.relayout(host, patch);
+        });
+      }finally{
+        endPlotProgrammaticUpdate(220);
+        setTimeout(()=>{ linkAxisPropagating=false; }, 240);
+      }
+    }
+    async function stitchSelectedRangesOnPlot(){
+      const selected=getSelectedRanges();
+      if(selected.length<2){
+        setStatus("Select at least 2 ranges to stitch.", true);
+        return;
+      }
+      const windows=selected.map((r)=>{
+        const start=Date.parse(String(r.start_time||""));
+        const end=Date.parse(String(r.end_time||""));
+        return { start, end, name:r.name||r.range_id };
+      }).filter((w)=>Number.isFinite(w.start) && Number.isFinite(w.end) && w.end>w.start)
+        .sort((a,b)=>a.start-b.start);
+      if(windows.length<2){
+        setStatus("Selected ranges need valid From/To times.", true);
+        return;
+      }
+      let cursor=0;
+      const segs=windows.map((w)=>{
+        const dur=w.end-w.start;
+        const seg={ ...w, x0:cursor, x1:cursor+dur };
+        cursor+=dur;
+        return seg;
+      });
+      const srcRows=latestRows||[];
+      const stitched=[];
+      srcRows.forEach((r)=>{
+        const t=Number.isFinite(Number(r.__ts)) ? Number(r.__ts) : parseRowTimeMs(r);
+        if(!Number.isFinite(t)) return;
+        const seg=segs.find((s)=>t>=s.start && t<=s.end);
+        if(!seg) return;
+        stitched.push({ ...r, __ts:seg.x0+(t-seg.start) });
+      });
+      if(!stitched.length){
+        setStatus("No samples fall inside the selected ranges.", true);
+        return;
+      }
+      const plot=getActivePlot();
+      if(plot) plot.stitchActive=true;
+      plotTimeMode="t0_relative";
+      latestRows=stitched;
+      if(plot) plot.latestRows=stitched;
+      await plotRows(stitched, { preserveUi:false, resetView:true });
+      renderAll();
+      saveState();
+      savePlots();
+      setStatus(`Stitched ${segs.length} ranges tip-to-tail.`);
     }
     function sourceIconKindForRanges(src){
       if(!src) return "file";
@@ -20803,11 +21786,14 @@
         getParentId:()=>pendingParentId,
       };
     }
+    let rangesRefreshGen=0;
     async function refreshCatalogRanges(){
+      const gen=++rangesRefreshGen;
       const sources=rangeCapableSources();
       const list=byId("rangesList");
       const ph=byId("rangesPlaceholder");
       if(!sources.length){
+        if(gen!==rangesRefreshGen) return;
         catalogRanges=[];
         selectedRangeKeys.clear();
         persistFocusedViewSelections();
@@ -20815,14 +21801,20 @@
         if(ph){ ph.style.display=""; ph.textContent="Select sources that have been ingested or catalog tests."; }
         return;
       }
+      // Paint selected-source headers immediately so source switches update the list live.
+      if(gen===rangesRefreshGen) renderRangesList();
       try{
-        catalogRanges=await postJson("/api/ranges/query", {
+        const next=await postJson("/api/ranges/query", {
           sources: sources.map(rangeSourceRef),
         });
+        if(gen!==rangesRefreshGen) return;
+        catalogRanges=Array.isArray(next) ? next : [];
       }catch(err){
+        if(gen!==rangesRefreshGen) return;
         catalogRanges=[];
         setStatus(`Failed to load ranges: ${err}`, true);
       }
+      if(gen!==rangesRefreshGen) return;
       (catalogRanges||[]).forEach((r)=>{
         if(!isSourceRange(r)) return;
         const src=state.sources.find((s)=>String(s.id)===resolveRangeSourceId(r));
@@ -20859,8 +21851,19 @@
       sources.forEach((src)=>bySource.set(String(src.id), []));
       (catalogRanges||[]).forEach((r)=>{
         const key=resolveRangeSourceId(r);
-        if(!bySource.has(key)) bySource.set(key, []);
-        bySource.get(key).push(r);
+        if(bySource.has(key)){
+          bySource.get(key).push(r);
+          return;
+        }
+        // Remap legacy/mismatched source_id rows onto the current selection when possible.
+        const remapped=sources.find((s)=>{
+          if(r.artifact_id && s.artifact_id && String(s.artifact_id)===String(r.artifact_id)) return true;
+          if(r.test_id!=null && s.test_id!=null && Number(s.test_id)===Number(r.test_id)){
+            if(!r.catalog_id || String(s.catalog_id||"")===String(r.catalog_id||"")) return true;
+          }
+          return false;
+        });
+        if(remapped) bySource.get(String(remapped.id)).push(r);
       });
 
       const htmlParts=[];
@@ -20958,13 +21961,8 @@
       };
 
       sources.forEach((src)=>renderSourceBlock(src, bySource.get(String(src.id))||[]));
-      // Orphan groups (ranges whose source is not in the capable selection)
-      const known=new Set(sources.map((s)=>String(s.id)));
-      bySource.forEach((rangesForSrc, key)=>{
-        if(known.has(key) || !rangesForSrc.length) return;
-        const fake={ id:key, name:rangesForSrc[0].source_name||`Source ${key}`, type:"file" };
-        renderSourceBlock(fake, rangesForSrc);
-      });
+      // Do not render orphan source groups while Sources has an explicit selection —
+      // the Ranges panel should mirror the selected sources, not stale query rows.
 
       list.innerHTML=htmlParts.join("");
       list.onclick=(ev)=>{
@@ -21041,7 +22039,10 @@
             renderRangesList();
             void applyRangeOverlaysToPlot();
           }
-          const menu=[{ label:"Edit", action:()=>void openCreateRangeModal({ edit:item }) }];
+          const menu=[
+            { label:"Edit", action:()=>void openCreateRangeModal({ edit:item }) },
+            { label:"Stitch Ranges", action:()=>void stitchSelectedRangesOnPlot() },
+          ];
           if(!isSourceRange(item)){
             menu.push({ label:"Delete", action:()=>void deleteUnifiedRange(item) });
           }
@@ -22190,7 +23191,7 @@
       plot.spectral=normalizeSpectralConfig(plot.spectral);
       plot.summary=normalizeSummaryConfig(plot.summary);
       const vt=normalizeViewType(plot.viewType);
-      const isTime=vt==="time";
+      const isTime=vt==="time" || vt==="strips" || vt==="grid";
       const isChart=isPlotlyViewType(vt);
       const isParametric=vt==="parametric";
       const isSpectral=vt==="spectral";
@@ -22235,7 +23236,9 @@
 
       const timeMode=normalizeTimeRef(plotTimeMode);
       const timescopeRows=isTime ? `
-          ${propRow("Time Mode", `<select id="opt_time_mode" class="objPropControl">${selectOpts([["absolute","UTC"],["t0_relative","t0"]], timeMode)}</select>`)}`
+          ${propRow("Time Mode", `<select id="opt_time_mode" class="objPropControl">${selectOpts([["absolute","UTC"],["t0_relative","t0"]], timeMode)}</select>`)}
+          ${propRow("Link X", boolSelect("opt_linkX", opts.linkX===true))}
+          ${propRow("Link Y", boolSelect("opt_linkY", opts.linkY===true))}`
         : "";
 
       const parametricRows=isParametric ? `
@@ -22376,6 +23379,8 @@
           summaryFontSize:byId("opt_summaryFontSize") ? Number(byId("opt_summaryFontSize").value) : opts.summaryFontSize,
           summaryHeaderFontSize:byId("opt_summaryHeaderFontSize") ? Number(byId("opt_summaryHeaderFontSize").value) : opts.summaryHeaderFontSize,
           summaryRowHeight:byId("opt_summaryRowHeight") ? Number(byId("opt_summaryRowHeight").value) : opts.summaryRowHeight,
+          linkX:byId("opt_linkX") ? String(byId("opt_linkX").value||"false")==="true" : opts.linkX===true,
+          linkY:byId("opt_linkY") ? String(byId("opt_linkY").value||"false")==="true" : opts.linkY===true,
         });
         const tabsChanged=next.showTabs!==(plot.options?.showTabs!==false);
         const legendChanged=next.showLegend!==(plot.options?.showLegend!==false);
@@ -22417,7 +23422,7 @@
         ()=>plot.parametric.xChannelId||"",
         applyParametricIndex,
       );
-      ["opt_title","opt_showLegend","opt_showAxis","opt_showGrid","opt_showTabs","opt_axisTitleSize","opt_axisTickSize","opt_legendFontSize","opt_legendIconSize","opt_legendRowGap","opt_summaryFontSize","opt_summaryHeaderFontSize","opt_summaryRowHeight"].forEach((id)=>{
+      ["opt_title","opt_showLegend","opt_showAxis","opt_showGrid","opt_showTabs","opt_axisTitleSize","opt_axisTickSize","opt_legendFontSize","opt_legendIconSize","opt_legendRowGap","opt_summaryFontSize","opt_summaryHeaderFontSize","opt_summaryRowHeight","opt_linkX","opt_linkY"].forEach((id)=>{
         const el=byId(id);
         if(!el) return;
         el.addEventListener("change", applyOptionsFields);
@@ -24890,7 +25895,7 @@
       return name;
     }
     function varLetters(n){ return Array.from({length:n}, (_,i)=>String.fromCharCode(65+i)); }
-    const FORMULA_FUNC_NAMES=["ABS","SQRT","POW","EXP","LOG","LOG10","SIN","COS","TAN","ASIN","ACOS","ATAN","ROUND","FLOOR","CEIL","MIN","MAX","CLAMP","BAND_PASS_FILTER","SMOOTH","ROLLING_MEAN","ROLLING_SUM","ROLLING_MIN","ROLLING_MAX","ROLLING_STD"];
+    const FORMULA_FUNC_NAMES=["ABS","SQRT","POW","EXP","LOG","LOG10","SIN","COS","TAN","ASIN","ACOS","ATAN","ROUND","FLOOR","CEIL","MIN","MAX","CLAMP","BAND_PASS_FILTER","SMOOTH","ROLLING_MEAN","ROLLING_SUM","ROLLING_MIN","ROLLING_MAX","ROLLING_STD","RMS","PEAK","TRAPZ"];
     function compileFormula(exprRaw, variableCount){
       let expr=String(exprRaw||"").trim().toUpperCase();
       if(expr.startsWith("=")) expr=expr.slice(1).trim();
@@ -24948,6 +25953,12 @@
           const variance=buf.reduce((a,b)=>a+((b-m)*(b-m)),0)/buf.length;
           return Math.sqrt(variance);
         }
+        if(op==="rms"){
+          return Math.sqrt(buf.reduce((a,b)=>a+b*b,0)/buf.length);
+        }
+        if(op==="peak"){
+          return buf.reduce((a,b)=>Math.max(a, Math.abs(b)), 0);
+        }
         return NaN;
       };
       helper.SMOOTH=pushRolling("smooth");
@@ -24956,6 +25967,21 @@
       helper.ROLLING_MIN=pushRolling("min");
       helper.ROLLING_MAX=pushRolling("max");
       helper.ROLLING_STD=pushRolling("std");
+      helper.RMS=pushRolling("rms");
+      helper.PEAK=pushRolling("peak");
+      const trapzStates={};
+      let trapzCallIndex=0;
+      helper.TRAPZ=(x)=>{
+        const key=`trapz${trapzCallIndex+=1}`;
+        const ctx=helper.__ctx||{};
+        const dt=Math.max(0, Number(ctx.dt_s||0));
+        const st=trapzStates[key]||(trapzStates[key]={prev:Number.NaN, sum:0});
+        const v=Number(x);
+        if(!Number.isFinite(v)) return st.sum;
+        if(Number.isFinite(st.prev) && dt>0) st.sum += (st.prev+v)*0.5*dt;
+        st.prev=v;
+        return st.sum;
+      };
       let jsExpr=expr;
       funcs.forEach((f)=>{ jsExpr=jsExpr.replace(new RegExp(`\\b${f}\\b`,"g"),`__f.${f}`); });
       try{
@@ -26383,6 +27409,11 @@
       { id:"preferences", label:"Open Preferences", hint:"Open settings" },
       { id:"export", label:"Export", hint:"Open the export window" },
       { id:"copyView", label:"Copy", hint:"Copy the active view image to the clipboard" },
+      { id:"copyChannels", label:"Copy Channels", hint:"Copy selected channels to the channel clipboard" },
+      { id:"pasteChannels", label:"Paste Channels", hint:"Paste copied channels into the active view" },
+      { id:"resetZoom", label:"Reset Scope", hint:"Reset NOVA views, pages, channels, masks, and objects" },
+      { id:"stitchRanges", label:"Stitch Ranges", hint:"Place selected ranges tip-to-tail on the active view" },
+      { id:"linkAxes", label:"Toggle Link X", hint:"Toggle linked X on the active view" },
     ];
     const DEFAULT_SHORTCUTS={
       plot:"f5",
@@ -26391,6 +27422,11 @@
       preferences:"ctrl+,",
       export:"ctrl+shift+e",
       copyView:"ctrl+shift+c",
+      copyChannels:"ctrl+c",
+      pasteChannels:"ctrl+v",
+      resetZoom:"home",
+      stitchRanges:"ctrl+shift+s",
+      linkAxes:"ctrl+shift+l",
     };
     let preferences={ ...DEFAULT_PREFS };
     let prefsShortcutRecording=null;
@@ -26907,6 +27943,10 @@
         }
         if(plotProgrammaticUpdate||suppressZoomRelayout>0) return;
         if(!isPlotRangeRelayoutEvent(ev)) return;
+        try{
+          const linkPid=plotEl?.dataset?.plotId || String(plotEl?.id||"").replace(/^plot-/,"");
+          if(linkPid) propagateLinkedAxes(linkPid, ev);
+        }catch{}
         // Persist zoom/pan per host so mosaic rebuilds can restore sibling limits.
         try{
           const pid=plotEl?.dataset?.plotId || String(plotEl?.id||"").replace(/^plot-/,"");
@@ -27284,6 +28324,32 @@
       if(action==="copyView"){
         e.preventDefault();
         void copyViewPng();
+        return;
+      }
+      if(action==="copyChannels"){
+        e.preventDefault();
+        copySelectedChannels();
+        return;
+      }
+      if(action==="pasteChannels"){
+        e.preventDefault();
+        pasteChannelsToActiveView();
+        return;
+      }
+      if(action==="resetZoom"){
+        e.preventDefault();
+        void resetActiveScope();
+        return;
+      }
+      if(action==="stitchRanges"){
+        e.preventDefault();
+        void stitchSelectedRangesOnPlot();
+        return;
+      }
+      if(action==="linkAxes"){
+        e.preventDefault();
+        const plot=getActivePlot();
+        if(plot) togglePlotAxisLink(plot.id, "x");
       }
     });
     byId("deleteObjectsBtn")?.addEventListener("click", (e)=>{

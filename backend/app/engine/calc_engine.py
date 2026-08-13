@@ -152,6 +152,10 @@ class _RollingWindowState:
             m = sum(buf) / len(buf)
             var = sum((v - m) * (v - m) for v in buf) / len(buf)
             return math.sqrt(var)
+        if op == "rms":
+            return math.sqrt(sum(v * v for v in buf) / len(buf))
+        if op == "peak":
+            return max(abs(v) for v in buf)
         return float("nan")
 
     def apply(self, op: str, x: float, window: int, key: str) -> float:
@@ -163,6 +167,22 @@ class _RollingWindowState:
         if len(buf) > n:
             del buf[:-n]
         return self._reduce(op, buf)
+
+
+class _TrapzState:
+    """Cumulative trapezoidal integral for TRAPZ()."""
+
+    def __init__(self) -> None:
+        self.states: dict[str, dict[str, float]] = {}
+
+    def integrate(self, x: float, dt_s: float, key: str) -> float:
+        st = self.states.setdefault(key, {"prev_x": float("nan"), "sum": 0.0})
+        if not math.isfinite(x):
+            return st["sum"]
+        if math.isfinite(st["prev_x"]) and dt_s > 0:
+            st["sum"] += (st["prev_x"] + float(x)) * 0.5 * dt_s
+        st["prev_x"] = float(x)
+        return st["sum"]
 
 
 class _FormulaEvaluator:
@@ -194,6 +214,8 @@ class _FormulaEvaluator:
         "ROLLING_MIN": "min",
         "ROLLING_MAX": "max",
         "ROLLING_STD": "std",
+        "RMS": "rms",
+        "PEAK": "peak",
     }
 
     def __init__(
@@ -202,15 +224,18 @@ class _FormulaEvaluator:
         var_count: int,
         band_pass: _BandPassState,
         rolling: _RollingWindowState,
+        trapz: _TrapzState,
     ) -> None:
         self.band_pass = band_pass
         self.rolling = rolling
+        self.trapz = trapz
         self.vars = [chr(ord("A") + i) for i in range(var_count)]
         cleaned = expr.strip()
         if cleaned.startswith("="):
             cleaned = cleaned[1:].strip()
         cleaned = cleaned.upper()
         cleaned = re.sub(r"\bBAND_PASS_FILTER\b", "band_pass_filter", cleaned)
+        cleaned = re.sub(r"\bTRAPZ\b", "trapz", cleaned)
         # Longer rolling tokens first so ROLLING_MEAN is not partially mishandled.
         for name in sorted(self.ROLLING_FUNCS.keys(), key=len, reverse=True):
             cleaned = re.sub(rf"\b{name}\b", f"rolling_{self.ROLLING_FUNCS[name]}", cleaned)
@@ -230,6 +255,10 @@ class _FormulaEvaluator:
                 float(x), float(low), float(high), f"bp{call_i[0]}", dt_s
             )
 
+        def trapz(x: float) -> float:
+            call_i[0] += 1
+            return self.trapz.integrate(float(x), dt_s, f"trapz{call_i[0]}")
+
         def _rolling_fn(op: str):
             def fn(x: float, window: float = 1) -> float:
                 call_i[0] += 1
@@ -240,6 +269,7 @@ class _FormulaEvaluator:
         for name, fn in self.ALLOWED_NAMES.items():
             env[f"__{name.lower()}__"] = fn
         env["band_pass_filter"] = band_pass_filter
+        env["trapz"] = trapz
         for op in set(self.ROLLING_FUNCS.values()):
             env[f"rolling_{op}"] = _rolling_fn(op)
         try:
@@ -276,7 +306,7 @@ def _eval_formula(base: list[TimeSeriesPoint], spec: CalculatedChannelSpec) -> l
 
     try:
         evaluator = _FormulaEvaluator(
-            spec.formula, len(dep_names), _BandPassState(), _RollingWindowState()
+            spec.formula, len(dep_names), _BandPassState(), _RollingWindowState(), _TrapzState()
         )
     except Exception as exc:
         raise ValueError(f"Invalid formula: {exc}") from exc
