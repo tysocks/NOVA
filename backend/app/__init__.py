@@ -1,1 +1,1 @@
-
+"""NOVA application package."""

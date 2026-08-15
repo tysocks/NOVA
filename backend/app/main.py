@@ -110,6 +110,7 @@ app = FastAPI(
     redoc_url=None,
     lifespan=_app_lifespan,
 )
+NOVA_GITHUB_URL = "https://github.com/tysocks/NOVA"
 
 _LEGACY_TS_HEADERS = {
     "Deprecation": "true",
@@ -169,6 +170,11 @@ def static_js(file_path: str) -> FileResponse:
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(ok=True, app="NOVA")
+
+
+@app.get("/api/version")
+def api_version() -> dict:
+    return {"name": "NOVA", "version": app.version, "github": NOVA_GITHUB_URL}
 
 
 @app.get("/api/database-library")
@@ -1334,6 +1340,8 @@ def pick_files_dialog() -> dict:
     ]
     try:
         chosen = filedialog.askopenfilenames(title="Select data files", filetypes=filetypes)
+        if isinstance(chosen, str):
+            chosen = root.tk.splitlist(chosen)
     finally:
         root.destroy()
     paths = [str(Path(p).resolve()) for p in (chosen or []) if p]

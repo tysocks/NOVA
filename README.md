@@ -151,6 +151,12 @@ Supported formula functions:
 - `MIN(...)`, `MAX(...)`
 - `CLAMP(x, lo, hi)`
 - `BAND_PASS_FILTER(A, low_freq, high_freq)`
+- `SMOOTH(A, N)`, `ROLLING_MEAN(A, N)`, `ROLLING_SUM(A, N)`, `ROLLING_MIN(A, N)`, `ROLLING_MAX(A, N)`, `ROLLING_STD(A, N)`
+- `RMS(A, N)`, `PEAK(A, N)` — trailing-window RMS and peak magnitude
+- `TRAPZ(A)` — cumulative trapezoidal integral (output in source-unit · seconds)
+- `RISE(A)` / `RISE(A, lo, hi)` — rise time in seconds, 10%→90% of the series span by default. Values in `[0, 1]` with `lo < hi` are span fractions; otherwise absolute levels (e.g. `RISE(A, 10, 90)`). Holds the last completed rise.
+- `FALL(A)` / `FALL(A, lo, hi)` — fall time in seconds, 90%→10% of the series span by default (same `lo`/`hi` rules as `RISE`)
+- `SETTLING(A)` / `SETTLING(A, band, hold_s)` — settling time in seconds from leaving the start value until staying within `band` of the final value. `band` in `(0, 1]` is a fraction of the start-to-final span (default `0.02`); otherwise an absolute band. `hold_s` is extra time the signal must remain in-band (default `0`)
 
 You can configure:
 

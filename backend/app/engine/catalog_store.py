@@ -375,7 +375,21 @@ def register_ingested_artifact(
     channel_parquet_uris: dict[str, str] | None = None,
 ) -> int:
     artifact_id = str(manifest["artifact_id"])
-    test_id = _artifact_test_id(artifact_id)
+    existing = get_test_by_artifact_id(artifact_id)
+    if existing:
+        test_id = int(existing["test_id"])
+    else:
+        hashed = _artifact_test_id(artifact_id)
+        occupant = get_test_by_id(hashed)
+        occupant_aid = str((occupant or {}).get("artifact_id") or "")
+        if occupant and occupant_aid and occupant_aid != artifact_id:
+            con = connect_catalog()
+            try:
+                test_id = _next_id(con, "tests", "test_id")
+            finally:
+                con.close()
+        else:
+            test_id = hashed
     root = artifact_dir(artifact_id)
     bounds = manifest.get("time_bounds") or {}
     start_ms = bounds.get("start_ms")
@@ -585,7 +599,9 @@ def list_catalog_tests(limit: int = 500) -> list[TestRunItem]:
                 FROM test_parameters p
                 WHERE p.test_id = t.test_id AND p.key = 'ui_icon'
                 LIMIT 1
-              ) AS ui_icon
+              ) AS ui_icon,
+              t.source_uri,
+              t.source_type
             FROM tests t
             ORDER BY COALESCE(t.start_time, t.created_at) DESC, t.test_id DESC
             LIMIT ?
@@ -601,6 +617,8 @@ def list_catalog_tests(limit: int = 500) -> list[TestRunItem]:
                 duration_s=row[4],
                 t0_utc=_parse_dt(row[5]),
                 icon=(str(row[6]).strip() if row[6] is not None and str(row[6]).strip() else None),
+                source_uri=(str(row[7]).strip() if row[7] is not None and str(row[7]).strip() else None),
+                source_type=(str(row[8]).strip() if row[8] is not None and str(row[8]).strip() else None),
             )
             for row in rows
         ]

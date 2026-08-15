@@ -205,6 +205,62 @@ def test_permanent_rule_ingest_filters_renames_and_calcs(monkeypatch, tmp_path: 
     assert "noise" not in catalog_names
 
 
+def test_sequential_rule_ingest_keeps_both_runs(monkeypatch, tmp_path: Path):
+    _patch_sessions(monkeypatch, tmp_path / "sessions")
+    catalog = tmp_path / "proj" / "catalog.duckdb"
+    lake = tmp_path / "proj" / "parquet"
+    _patch_catalog(monkeypatch, tmp_path / "local.duckdb")
+    monkeypatch.setattr("app.config.settings.parquet_root", str(tmp_path / "local_parquet"))
+    monkeypatch.setattr("app.config.settings.default_ingest_mode", "temporary")
+
+    library_file = tmp_path / "library.json"
+    monkeypatch.setattr("app.main.DATABASE_LIBRARY_FILE", library_file)
+    monkeypatch.setattr("app.services.database_library.DATABASE_LIBRARY_FILE", library_file)
+    client.post(
+        "/api/database-library",
+        json={
+            "databases": [
+                {
+                    "id": "proj",
+                    "type": "duckdb",
+                    "name": "Project",
+                    "catalog_path": str(catalog),
+                    "parquet_root": str(lake),
+                    "is_default": True,
+                }
+            ],
+            "active_catalog_id": "proj",
+        },
+    )
+
+    rule = clean_ingestion_rule(
+        {
+            "id": "r-batch",
+            "name": "Batch",
+            "target_catalog_id": "proj",
+            "channels": {"mode": "all"},
+        }
+    )
+    first = tmp_path / "HFR-0004_run.csv"
+    second = tmp_path / "HFR-0005_run.csv"
+    first.write_text("time_s,thrust\n0.0,1\n0.1,2\n", encoding="utf-8")
+    second.write_text("time_s,thrust\n0.0,3\n0.1,4\n", encoding="utf-8")
+
+    m1 = run_ingest("csv", str(first), ingest_mode="permanent", catalog_id="proj", ingestion_rule=rule)
+    m2 = run_ingest("csv", str(second), ingest_mode="permanent", catalog_id="proj", ingestion_rule=rule)
+    assert m1["status"] == "ready"
+    assert m2["status"] == "ready"
+    assert m1["test_run_id"] != m2["test_run_id"]
+
+    tests = client.get("/api/catalog/tests?catalog_id=proj").json()
+    codes = {t["run_code"] for t in tests}
+    assert "HFR-0004_run" in codes
+    assert "HFR-0005_run" in codes
+    by_code = {t["run_code"]: t for t in tests}
+    assert str(first.resolve()) in str(by_code["HFR-0004_run"].get("source_uri") or "")
+    assert str(second.resolve()) in str(by_code["HFR-0005_run"].get("source_uri") or "")
+
+
 def test_temporary_ingest_unaffected_by_rules(monkeypatch, tmp_path: Path):
     _patch_sessions(monkeypatch, tmp_path / "sessions")
     _patch_catalog(monkeypatch, tmp_path / "local.duckdb")

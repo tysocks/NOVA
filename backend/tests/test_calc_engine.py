@@ -123,6 +123,78 @@ def test_formula_peak_window():
     assert max(p.value for p in out) >= 1.0
 
 
+def test_formula_rise_time():
+    # 10%→90% of 0..100 is 10→90; 1 Hz samples.
+    vals = [0, 0, 0, 10, 50, 90, 100, 100, 100]
+    base = [_row("A", float(v), i) for i, v in enumerate(vals)]
+    specs = [
+        CalculatedChannelSpec(kind="formula", name="A_rise", channels=["A"], formula="RISE(A)")
+    ]
+    out = apply_calculated_channels(base, specs)
+    by_sec = {int((p.time - BASE).total_seconds()): p.value for p in out}
+    assert by_sec[0] == 0.0
+    assert by_sec[4] == 0.0
+    assert by_sec[5] == 2.0
+    assert by_sec[8] == 2.0
+
+
+def test_formula_rise_absolute_levels():
+    vals = [0, 0, 10, 50, 90, 100]
+    base = [_row("A", float(v), i) for i, v in enumerate(vals)]
+    specs = [
+        CalculatedChannelSpec(
+            kind="formula", name="A_rise", channels=["A"], formula="RISE(A, 10, 90)"
+        )
+    ]
+    out = apply_calculated_channels(base, specs)
+    by_sec = {int((p.time - BASE).total_seconds()): p.value for p in out}
+    assert by_sec[4] == 2.0
+
+
+def test_formula_fall_time():
+    vals = [100, 100, 90, 50, 10, 0, 0]
+    base = [_row("A", float(v), i) for i, v in enumerate(vals)]
+    specs = [
+        CalculatedChannelSpec(kind="formula", name="A_fall", channels=["A"], formula="FALL(A)")
+    ]
+    out = apply_calculated_channels(base, specs)
+    by_sec = {int((p.time - BASE).total_seconds()): p.value for p in out}
+    assert by_sec[0] == 0.0
+    assert by_sec[4] == 2.0
+    assert by_sec[6] == 2.0
+
+
+def test_formula_settling_time():
+    vals = [0, 0, 0, 80, 110, 95, 100, 100, 100]
+    base = [_row("A", float(v), i) for i, v in enumerate(vals)]
+    specs = [
+        CalculatedChannelSpec(
+            kind="formula", name="A_set", channels=["A"], formula="SETTLING(A)"
+        )
+    ]
+    out = apply_calculated_channels(base, specs)
+    by_sec = {int((p.time - BASE).total_seconds()): p.value for p in out}
+    assert by_sec[0] == 0.0
+    assert by_sec[5] == 0.0
+    assert by_sec[6] == 3.0
+    assert by_sec[8] == 3.0
+
+
+def test_formula_settling_hold():
+    vals = [0, 0, 80, 100, 100, 100]
+    base = [_row("A", float(v), i) for i, v in enumerate(vals)]
+    specs = [
+        CalculatedChannelSpec(
+            kind="formula", name="A_set", channels=["A"], formula="SETTLING(A, 0.02, 1)"
+        )
+    ]
+    out = apply_calculated_channels(base, specs)
+    by_sec = {int((p.time - BASE).total_seconds()): p.value for p in out}
+    # Leaves 0 at t=2; enters final band at t=3; hold 1 s completes at t=4 → 2 s.
+    assert by_sec[3] == 0.0
+    assert by_sec[4] == 2.0
+
+
 def test_calc_graph_orders_dependencies():
     specs = [
         CalculatedChannelSpec(kind="formula", name="B", channels=["A", "raw"], formula="A + 1"),

@@ -54,16 +54,7 @@
     *{ box-sizing:border-box; }
     html{ font-size:var(--nova-base-font-size); height:100%; }
     body{ margin:0; font-family:var(--nova-font-family,"Inter",system-ui,-apple-system,"Segoe UI",sans-serif); font-size:1rem; background:var(--nova-view-bg); color:var(--nova-text); height:100%; min-height:100%; overflow:hidden; -webkit-font-smoothing:antialiased; letter-spacing:-0.003em; display:flex; flex-direction:column; }
-    /* Menubar */
-    .menubar{ display:flex; align-items:center; gap:1px; padding:0 10px; height:36px; flex:0 0 36px; border-bottom:1px solid var(--nova-divider); background:var(--nova-ui-bg); user-select:none; }
-    .menuItem{ position:relative; padding:5px 9px; border:none; border-radius:var(--nova-radius-xs); cursor:pointer; font-size:0.875rem; color:var(--nova-text-dim); font-weight:500; }
-    .menuItem:hover{ background:var(--nova-hover); color:var(--nova-text); }
-    .menuDropdown{ position:absolute; top:calc(100% + 4px); left:0; min-width:220px; display:none; z-index:120; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); box-shadow:var(--nova-shadow); overflow:hidden; padding:4px; }
-    .menuDropdown.show{ display:block; }
-    .menuAction{ padding:6px 10px; border-bottom:none; border-radius:var(--nova-radius-xs); font-size:0.875rem; cursor:pointer; color:var(--nova-text); }
-    .menuAction:last-child{ border-bottom:none; }
-    .menuAction:hover{ background:var(--nova-hover); }
-    .menuSep{ height:1px; background:var(--nova-divider); margin:4px 2px; }
+    body.nova-composite-kick{ transform:translateZ(0); }
     /* Layout — prefer flex/% over 100vh/100vw (Qt WebEngine maximize can report a stale viewport). */
     .app{ display:flex; flex:1 1 auto; min-height:0; width:100%; height:auto; }
     .sidebar{ width:auto; min-width:44px; max-width:704px; background:var(--nova-sidebar-bg); border-right:1px solid var(--nova-divider); overflow:hidden; flex:0 0 auto; font-size:0.875rem; display:flex; flex-direction:row; align-items:stretch; }
@@ -72,6 +63,14 @@
     .railBtn:hover{ background:var(--nova-hover); color:var(--nova-text); }
     .railBtn.active{ background:var(--nova-active); color:var(--nova-text); }
     .railBtn svg{ width:16px; height:16px; display:block; }
+    .railBtn.menuOpen{ background:var(--nova-active); color:var(--nova-text); }
+    .railDivider{ width:18px; height:1px; margin:4px 0; background:var(--nova-divider); flex:0 0 auto; }
+    .menuDropdown{ position:fixed; min-width:220px; display:none; z-index:220; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md); box-shadow:var(--nova-shadow); overflow:hidden; padding:4px; }
+    .menuDropdown.show{ display:block; }
+    .menuAction{ padding:6px 10px; border-bottom:none; border-radius:var(--nova-radius-xs); font-size:0.875rem; cursor:pointer; color:var(--nova-text); }
+    .menuAction:last-child{ border-bottom:none; }
+    .menuAction:hover{ background:var(--nova-hover); }
+    .menuSep{ height:1px; background:var(--nova-divider); margin:4px 2px; }
     .railSpacer{ flex:1 1 auto; min-height:8px; }
     .toolbarBody{ display:none; flex-direction:column; width:248px; min-width:180px; max-width:520px; flex:0 0 auto; min-height:0; overflow:hidden; background:var(--nova-sidebar-bg); }
     .sidebar.toolbar-open .toolbarBody{ display:flex; }
@@ -835,10 +834,7 @@
     .menuAction.menuChecked{ color:var(--nova-accent); }
     .menuAction.menuChecked::before{ content:"✓ "; }
     /* Button overrides */
-    .menuItem{ width:auto; }
     .plotTab,.plotAdd{ width:auto !important; }
-    .menubar button{ width:auto; border:none; background:transparent; }
-    .menubar button:hover{ background:var(--nova-hover); }
     /* Scrollbars hidden */
     .sidebar,.list,.modalList,.tableWrap{ scrollbar-width:none; }
     .sidebar::-webkit-scrollbar,.list::-webkit-scrollbar,.modalList::-webkit-scrollbar,.tableWrap::-webkit-scrollbar{ width:0; height:0; }
@@ -878,16 +874,6 @@
       background:rgba(255,240,240,0.98);
       border-color:rgba(235,87,87,0.35);
     }
-    .versionCheckPanel{ font-size:0.85rem; line-height:1.45; }
-    .versionCheckSummary{ margin:0 0 10px; padding:8px 10px; border:1px solid var(--nova-divider); border-radius:var(--nova-radius-sm); }
-    .versionCheckSummary.ok{ color:#4dab9a; border-color:rgba(77,171,154,0.35); background:rgba(77,171,154,0.12); }
-    .versionCheckSummary.warn{ color:#ffb238; border-color:rgba(255,178,56,0.35); background:rgba(255,178,56,0.12); }
-    .versionCheckTable{ width:100%; border-collapse:collapse; }
-    .versionCheckTable th,.versionCheckTable td{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--nova-divider); vertical-align:top; }
-    .versionCheckTable th{ color:var(--nova-text-dim); font-weight:500; font-size:0.72rem; text-transform:none; letter-spacing:0.01em; width:42%; }
-    .versionCheckStatus{ font-size:0.75rem; font-weight:600; }
-    .versionCheckStatus.ok{ color:#4dab9a; }
-    .versionCheckStatus.warn{ color:#ffb238; }
     /* Drawer */
     .drawer{ position:fixed; left:12px; right:12px; bottom:12px; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-md) var(--nova-radius-md) 0 0; max-height:44vh; padding:10px; display:none; z-index:40; box-shadow:var(--nova-shadow); }
     .drawer.show{ display:block; }
@@ -2304,7 +2290,14 @@
       height:30px;
       margin:0;
     }
-    #appWindowLayer{ position:fixed; inset:0; pointer-events:none; z-index:110; }
+    #appWindowLayer{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:110;
+      transform:translateZ(0);
+      -webkit-transform:translateZ(0);
+    }
     .nameWithIconField{
       display:flex;
       align-items:center;
@@ -2361,7 +2354,26 @@
     .iconPickerItem:hover,
     .iconPickerItem.active{ background:var(--nova-hover); }
     .iconPickerItem svg{ width:16px; height:16px; display:block; }
-    .appWindow{ position:fixed; pointer-events:auto; display:flex; flex-direction:column; min-width:220px; min-height:140px; max-width:96vw; max-height:96vh; background:var(--nova-elevated); border:1px solid var(--nova-divider); border-radius:var(--nova-radius-lg); box-shadow:var(--nova-shadow); overflow:hidden; z-index:111; }
+    .appWindow{
+      position:fixed;
+      pointer-events:auto;
+      display:flex;
+      flex-direction:column;
+      min-width:220px;
+      min-height:140px;
+      max-width:96vw;
+      max-height:96vh;
+      background:var(--nova-elevated);
+      border:1px solid var(--nova-divider);
+      border-radius:var(--nova-radius-lg);
+      box-shadow:var(--nova-shadow);
+      overflow:hidden;
+      z-index:111;
+      transform:translateZ(0);
+      -webkit-transform:translateZ(0);
+      backface-visibility:hidden;
+      -webkit-backface-visibility:hidden;
+    }
     .appWindow.modalScale{ width:420px; height:520px; }
     .appWindow.modalSourceForm{ width:598px; height:auto; min-height:280px; max-height:96vh; }
     .appWindow.modalAliasForm{ width:598px; height:auto; min-height:280px; max-height:96vh; }
@@ -2556,46 +2568,19 @@
     .prefsKeyBadge.empty{ color:var(--nova-text-dim); font-style:italic; }
     .prefsFooter{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--nova-divider); flex:0 0 auto; }
     .prefsFooter .modalActions{ margin:0; padding:0; border:none; flex:0 0 auto; }
+    .prefsAboutLink{ color:var(--nova-text); text-decoration:none; border-bottom:1px solid var(--nova-divider); font-size:0.8125rem; }
+    .prefsAboutLink:hover{ border-bottom-color:var(--nova-text); }
+    .prefsAboutValue{ font-size:0.8125rem; color:var(--nova-text); font-variant-numeric:tabular-nums; }
   </style>
 </head>
 <body>
-  <div class="menubar" id="menubar">
-    <div class="menuItem" data-menu="file">File
-      <div class="menuDropdown" id="menu_file">
-        <div class="menuAction" id="file_configManager">Configuration Manager</div>
-        <div class="menuAction" id="file_databaseManager">Databases</div>
-        <div class="menuAction" id="file_unitManager">Units</div>
-        <div class="menuAction" id="file_rangeDefinitionManager">Range Definitions</div>
-        <div class="menuAction" id="file_ingestionManager">Ingestion Rules</div>
-        <div class="menuAction" id="file_limitManager">Limits</div>
-        <div class="menuSep"></div>
-        <div class="menuAction" id="file_export">Export</div>
-        <div class="menuSep"></div>
-        <div class="menuAction" id="file_saveProject">Save Project</div>
-        <div class="menuAction" id="file_openProject">Open Project</div>
-        <div class="menuAction" id="file_resetScope">Reset Scope</div>
-        <div class="menuSep"></div>
-        <div class="menuAction" id="file_preferences">Preferences</div>
-      </div>
-    </div>
-    <div class="menuItem" data-menu="edit">Edit
-      <div class="menuDropdown" id="menu_edit">
-        <div class="menuAction" id="edit_showMetadata">Show Metadata</div>
-      </div>
-    </div>
-    <div class="menuItem" data-menu="help">Help
-      <div class="menuDropdown" id="menu_help">
-        <div class="menuAction" id="help_github">Open GitHub Repo</div>
-        <div class="menuAction" id="help_sourceHelp">Source Help</div>
-        <div class="menuSep"></div>
-        <div class="menuAction" id="help_versionCheck">Version check</div>
-      </div>
-    </div>
-    <input id="filePicker" type="file" accept="application/json,.json,.nova" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0;" />
-  </div>
   <div class="app">
     <aside class="sidebar" id="sidebar">
       <nav class="toolbarRail" id="toolbarRail" aria-label="NOVA toolbars">
+        <button type="button" class="railBtn" id="appMenuBtn" title="File" aria-label="File" aria-haspopup="menu" aria-expanded="false" aria-controls="menu_file">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 3.75h11v1.5h-11v-1.5zm0 3.5h11v1.5h-11v-1.5zm0 3.5h11v1.5h-11v-1.5z"/></svg>
+        </button>
+        <div class="railDivider" aria-hidden="true"></div>
         <button type="button" class="railBtn" data-toolbar="sources" title="Sources" aria-label="Sources">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5c-3.2 0-5.5 1-5.5 2.3v8.4c0 1.3 2.3 2.3 5.5 2.3s5.5-1 5.5-2.3V3.8C13.5 2.5 11.2 1.5 8 1.5zm0 1.2c2.6 0 4.2.7 4.2 1.1S10.6 5 8 5 3.8 4.2 3.8 3.8 5.4 2.7 8 2.7zM3.8 6.2C4.6 6.7 6.1 7 8 7s3.4-.3 4.2-.8v1.6C11.4 8.3 9.9 8.6 8 8.6s-3.4-.3-4.2-.8V6.2zm0 3.2c.8.5 2.3.8 4.2.8s3.4-.3 4.2-.8v1.6c-.8.5-2.3.8-4.2.8s-3.4-.3-4.2-.8V9.4z"/></svg>
         </button>
@@ -2628,6 +2613,9 @@
             <h3>Sources</h3>
             <div class="headerBtns">
               <button id="refreshSourcesBtn" class="addBtn" type="button" title="Reload selected folder or database">↻</button>
+              <button id="ingestFilesBtn" class="addBtn" type="button" title="Ingest files" aria-label="Ingest files">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg>
+              </button>
               <button id="addSourceBtn" class="addBtn" type="button" title="Add folder">+</button>
             </div>
           </div>
@@ -2711,6 +2699,23 @@
   <div id="modalBackdrop" class="modalBackdrop"><div class="modal"><div class="modalHeader"><h4 id="modalTitle" class="modalTitle"></h4><button id="modalCloseBtn" class="modalClose" type="button">X</button></div><div id="modalBody"></div></div></div>
   <div id="appWindowLayer"></div>
   <div id="contextMenu" class="contextMenu"></div>
+  <div class="menuDropdown" id="menu_file" role="menu" aria-labelledby="appMenuBtn">
+    <div class="menuAction" id="file_configManager" role="menuitem">Configuration Manager</div>
+    <div class="menuAction" id="file_databaseManager" role="menuitem">Databases</div>
+    <div class="menuAction" id="file_unitManager" role="menuitem">Units</div>
+    <div class="menuAction" id="file_rangeDefinitionManager" role="menuitem">Range Definitions</div>
+    <div class="menuAction" id="file_ingestionManager" role="menuitem">Ingestion Rules</div>
+    <div class="menuAction" id="file_limitManager" role="menuitem">Limits</div>
+    <div class="menuSep"></div>
+    <div class="menuAction" id="file_export" role="menuitem">Export</div>
+    <div class="menuSep"></div>
+    <div class="menuAction" id="file_saveProject" role="menuitem">Save Project</div>
+    <div class="menuAction" id="file_openProject" role="menuitem">Open Project</div>
+    <div class="menuAction" id="file_resetScope" role="menuitem">Reset Scope</div>
+    <div class="menuSep"></div>
+    <div class="menuAction" id="file_preferences" role="menuitem">Preferences</div>
+  </div>
+  <input id="filePicker" type="file" accept="application/json,.json,.nova" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0;" />
   <div id="dbTagPicker" class="dbTagPicker" aria-hidden="true">
     <div class="dbTagPickerSearch">
       <input id="dbTagPickerSearch" class="searchInput" type="text" placeholder="Search tags..." spellcheck="false" />
@@ -3084,7 +3089,8 @@
     function ensurePlotlyHost(plotId){
       return getPlotDiv(plotId);
     }
-    const NOVA_PLOTLY_VERSION="2.35.2";
+    const NOVA_APP_VERSION="0.1.0";
+    const NOVA_GITHUB_URL="https://github.com/tysocks/NOVA";
     let drawingPlotId=null;
     function getPlotDiv(plotId){
       const id=plotId || drawingPlotId || activePlotId;
@@ -3132,47 +3138,15 @@
       host._novaResizeObs=ro;
       ro.observe(host);
     }
-    function collectVersionInfo(){
-      let plotlyHasChart=false;
+    async function refreshAboutAppVersion(root){
+      const el=root?.querySelector("#m_pref_app_version");
+      if(!el) return;
       try{
-        const gd=plotlyGraphDiv();
-        plotlyHasChart=Boolean(gd&&(gd.layout||gd._fullLayout));
+        const r=await fetch("/api/version");
+        if(!r.ok) return;
+        const j=await r.json();
+        if(j?.version) el.textContent=String(j.version);
       }catch{}
-      const plotlyLoaded=Boolean(window.Plotly);
-      const plotlyVersion=window.Plotly?.version||"—";
-      const versionOk=plotlyLoaded&&plotlyVersion===NOVA_PLOTLY_VERSION;
-      return {
-        plotlyVersion,
-        plotlyLoaded,
-        plotlyHasChart,
-        versionOk,
-        rendererLabel:plotlyHasChart?"Plotly (active)":"Plotly — draw a plot",
-      };
-    }
-    function versionCheckRow(label, value, status){
-      const statusHtml=status
-        ? `<span class="versionCheckStatus ${status}">${status==="ok"?"OK":"Check"}</span>`
-        : "";
-      return `<tr><th>${label}</th><td>${value}${statusHtml?` ${statusHtml}`:""}</td></tr>`;
-    }
-    function openVersionCheckModal(){
-      const v=collectVersionInfo();
-      const summaryClass=v.versionOk?"ok":"warn";
-      const summaryText=v.versionOk
-        ? "Plotly chart library matches the expected version."
-        : "Plotly may be missing or cached — quit the app, clear browser cache if needed, and restart.";
-      const body=`
-        <div class="versionCheckPanel">
-          <p class="versionCheckSummary ${summaryClass}">${summaryText}</p>
-          <table class="versionCheckTable">
-            ${versionCheckRow("Expected Plotly", NOVA_PLOTLY_VERSION, v.versionOk?"ok":"warn")}
-            ${versionCheckRow("Loaded Plotly", v.plotlyLoaded?v.plotlyVersion:"missing", v.versionOk?"ok":"warn")}
-            ${versionCheckRow("Active renderer", v.rendererLabel, null)}
-          </table>
-          <p class="itemMeta" style="margin-top:10px;">Run <code>Plotly.version</code> in DevTools to verify the loaded library.</p>
-        </div>
-        <div class="modalActions"><button id="modalCancelBtn" type="button">Close</button></div>`;
-      openModal("Version check", body, async()=>true);
     }
     function plotlyGraphDiv(preferred){
       // When an explicit host is passed, never fall back to the active plot —
@@ -3188,7 +3162,6 @@
         autosize:layout.autosize,
         margin:layout.margin,
         legend:layout.legend,
-        xaxis:layout.xaxis,
         paper_bgcolor:layout.paper_bgcolor,
         plot_bgcolor:layout.plot_bgcolor,
         font:layout.font,
@@ -3196,8 +3169,8 @@
         showlegend:layout.showlegend,
         title:layout.title,
       };
-      Object.keys(layout).forEach((k)=>{
-        if(/^yaxis\d*$/.test(k)&&layout[k]) out[k]=layout[k];
+      Object.keys(layout||{}).forEach((k)=>{
+        if(/^(xaxis|yaxis)\d*$/.test(k)&&layout[k]) out[k]=layout[k];
       });
       return out;
     }
@@ -3271,6 +3244,47 @@
         yo.push(yv);
       }
       return { x:xo, y:yo };
+    }
+    function layoutUsesSubplots(layout){
+      const keys=Object.keys(layout||{});
+      const xKeys=keys.filter((k)=>/^xaxis\d*$/.test(k));
+      if(xKeys.length>1) return true;
+      const yKeys=keys.filter((k)=>/^yaxis\d*$/.test(k));
+      if(yKeys.length<=1) return false;
+      return yKeys.some((k)=>{
+        const ax=layout[k];
+        return ax && !ax.overlaying && Array.isArray(ax.domain);
+      });
+    }
+    function isPlotXAxisKey(axisKey){
+      return /^xaxis\d*$/.test(String(axisKey||""));
+    }
+    function xrefForAxisKey(axisKey){
+      const k=String(axisKey||"xaxis");
+      if(k==="x" || k==="xaxis") return "x";
+      const n=Number(k.replace(/^xaxis/,"").replace(/^x/,""));
+      return Number.isFinite(n) && n>1 ? `x${n}` : "x";
+    }
+    function axisKeyFromXRef(ref){
+      const r=String(ref||"x").replace(/\s+domain$/,"");
+      if(!r || r==="x") return "xaxis";
+      const n=Number(r.replace(/^x/,""));
+      return Number.isFinite(n) && n>1 ? `xaxis${n}` : "xaxis";
+    }
+    function tracesForLayout(traces, layout){
+      if(!layoutUsesSubplots(layout)) return traces;
+      return (traces||[]).map((t)=>{
+        if(!t || t.type!=="scattergl") return t;
+        return Object.assign({}, t, { type:"scatter" });
+      });
+    }
+    async function waitForPlotHostSize(plotEl){
+      if(!plotEl) return plotEl;
+      for(let i=0;i<12;i+=1){
+        if(plotEl.isConnected && plotEl.clientWidth>=8 && plotEl.clientHeight>=8) return plotEl;
+        await nextPaint();
+      }
+      return plotEl;
     }
     function stripLayoutForPlotly(layout){
       const margin=layout.margin?{
@@ -3467,8 +3481,13 @@
       if(Array.isArray(layout.shapes)) patch.shapes=layout.shapes;
       if(Array.isArray(layout.annotations)) patch.annotations=layout.annotations;
       Object.keys(layout).forEach((k)=>{
-        if(!/^yaxis\d*$/.test(k)||!layout[k]) return;
+        if(!/^(xaxis|yaxis)\d*$/.test(k)||!layout[k]) return;
         const ax=layout[k];
+        if(k.startsWith("xaxis")){
+          if(ax.type) patch[`${k}.type`]=ax.type;
+          if(ax.domain) patch[`${k}.domain`]=ax.domain;
+          if(ax.anchor) patch[`${k}.anchor`]=ax.anchor;
+        }
         if(ax.title) patch[`${k}.title`]=ax.title;
         if(ax.visible!==undefined) patch[`${k}.visible`]=ax.visible;
         if(ax.showgrid!==undefined) patch[`${k}.showgrid`]=ax.showgrid;
@@ -3477,6 +3496,8 @@
         if(ax.shift!==undefined) patch[`${k}.shift`]=ax.shift;
         if(ax.overlaying) patch[`${k}.overlaying`]=ax.overlaying;
         if(ax.side) patch[`${k}.side`]=ax.side;
+        if(ax.domain) patch[`${k}.domain`]=ax.domain;
+        if(ax.anchor) patch[`${k}.anchor`]=ax.anchor;
       });
       return patch;
     }
@@ -3494,11 +3515,12 @@
 
     // Plot renderer + custom interaction layer (Plotly-only).
     const PlotRenderer = (() => {
-      let lastConfig = null;
+      const lastConfigByHost = new WeakMap();
       let axisRegistry = {
         unitToAxis: new Map(),
         axisKeyToUnit: new Map(),
         axisHitZones: new Map(),
+        subplotZones: [],
         plotArea: null,
         xAxisHitZone: null,
         rightMargin: null,
@@ -3532,14 +3554,10 @@
           JSON.stringify(layout.colorway||[]),
           JSON.stringify(layout.title||{}),
         ];
-        if(layout.xaxis){
-          const xa=layout.xaxis;
-          parts.push(`x:${xa.type}:${xa.visible}:${xa.showgrid}`);
-        }
-        Object.keys(layout).filter((k)=>/^yaxis\d*$/.test(k)).sort().forEach((k)=>{
+        Object.keys(layout).filter((k)=>/^(xaxis|yaxis)\d*$/.test(k)).sort().forEach((k)=>{
           const ax=layout[k]||{};
           const title=typeof ax.title==="object" ? ax.title?.text : ax.title;
-          parts.push(`${k}:${title}:${ax.visible}:${ax.showgrid}:${ax.shift}:${ax.side}`);
+          parts.push(`${k}:${title}:${ax.visible}:${ax.showgrid}:${ax.shift}:${ax.side}:${JSON.stringify(ax.domain||[])}:${ax.anchor||""}:${ax.overlaying||""}:${ax.type||""}`);
         });
         return parts.join("\n");
       }
@@ -3564,6 +3582,7 @@
         axisRegistry.unitToAxis = new Map();
         axisRegistry.axisKeyToUnit = new Map();
         axisRegistry.axisHitZones = new Map();
+        axisRegistry.subplotZones = [];
         axisRegistry.plotArea = null;
         axisRegistry.xAxisHitZone = null;
         axisRegistry.rightMargin = null;
@@ -3612,6 +3631,18 @@
           });
       }
 
+      function resolvePrimaryYAxisKey(layout, axisKey){
+        let key = String(axisKey || "yaxis");
+        for(let i=0;i<8;i+=1){
+          const overlay = layout?.[key]?.overlaying;
+          if(!overlay) return key;
+          const parent = String(overlay);
+          key = parent === "y" ? "yaxis" : (/^y\d+$/.test(parent) ? `yaxis${parent.slice(1)}` : key);
+          if(key === axisKey) return key;
+        }
+        return key;
+      }
+
       function captureAxisHitZones(plotEl){
         const gd = plotlyGraphDiv(plotEl);
         const full = gd?._fullLayout;
@@ -3634,6 +3665,7 @@
           bottom: plotTop + plotH + 52,
         };
         axisRegistry.axisHitZones = new Map();
+        axisRegistry.subplotZones = [];
         const Z = 40;
         const layout = gd.layout || {};
         const yKeys = listYAxisKeys(full);
@@ -3646,7 +3678,10 @@
           axisRegistry.axisKeyToUnit.set(axisKey, unit);
           let top = plotTop;
           let bottom = plotTop + plotH;
-          const domain = fullAx.domain || layoutAx.domain;
+          const primaryKey = resolvePrimaryYAxisKey(layout, axisKey);
+          const primaryFull = full[primaryKey] || fullAx;
+          const primaryLay = layout[primaryKey] || layoutAx;
+          const domain = primaryFull.domain || primaryLay.domain || fullAx.domain || layoutAx.domain;
           if(Array.isArray(domain) && domain.length===2 && Number.isFinite(domain[0]) && Number.isFinite(domain[1])){
             const lo = Math.min(domain[0], domain[1]);
             const hi = Math.max(domain[0], domain[1]);
@@ -3659,6 +3694,29 @@
             centerX: x,
             left: x - Z,
             right: x + Z,
+            top,
+            bottom,
+          });
+          const xAnchor = primaryLay.anchor || primaryFull.anchor || layoutAx.anchor || "x";
+          const xAxisKey = typeof axisKeyFromXRef === "function" ? axisKeyFromXRef(xAnchor) : "xaxis";
+          const xFull = full[xAxisKey] || {};
+          const xLay = layout[xAxisKey] || {};
+          const xDomain = xFull.domain || xLay.domain;
+          let left = plotLeft;
+          let right = plotRight;
+          if(Array.isArray(xDomain) && xDomain.length===2 && Number.isFinite(xDomain[0]) && Number.isFinite(xDomain[1])){
+            const xLo = Math.min(xDomain[0], xDomain[1]);
+            const xHi = Math.max(xDomain[0], xDomain[1]);
+            left = plotLeft + xLo * plotW;
+            right = plotLeft + xHi * plotW;
+          }
+          axisRegistry.subplotZones.push({
+            xAxisKey,
+            yAxisKey: axisKey,
+            overlaying: Boolean(layoutAx.overlaying),
+            unit,
+            left,
+            right,
             top,
             bottom,
           });
@@ -3688,6 +3746,32 @@
         });
       }
 
+      function pickSubplotAt(px, py){
+        const zones = axisRegistry.subplotZones || [];
+        const hits = zones.filter((z)=> px >= z.left && px <= z.right && py >= z.top && py <= z.bottom);
+        const pick = (list)=>{
+          if(!list.length) return null;
+          return list.find((z)=>!z.overlaying) || list[0];
+        };
+        let chosen = pick(hits);
+        if(!chosen && zones.length){
+          let best = null;
+          let bestDist = Infinity;
+          for(const z of zones){
+            const cx = (z.left + z.right) / 2;
+            const cy = (z.top + z.bottom) / 2;
+            const dist = Math.hypot(px - cx, py - cy);
+            if(dist < bestDist){ bestDist = dist; best = z; }
+          }
+          chosen = best;
+        }
+        return {
+          xAxisKey: chosen?.xAxisKey || "xaxis",
+          yAxisKey: chosen?.yAxisKey || "yaxis",
+          unit: chosen?.unit || "",
+        };
+      }
+
       function defaultPlotlyConfig(){
         return {
           responsive:true,
@@ -3713,6 +3797,7 @@
 
       function needsFullRebuild(plotEl, traces, nextSig, unitCount){
         const gd = plotlyGraphDiv(plotEl);
+        const lastConfig = lastConfigByHost.get(plotEl);
         if(!gd?.data?.length) return true;
         if(gd.data.length !== traces.length) return true;
         if(lastConfig?.sig !== nextSig) return true;
@@ -3730,19 +3815,27 @@
         try{
           await Plotly.newPlot(plotEl, traces, layoutOut, cfg);
         }catch(primaryErr){
-          console.warn("[NOVA] Plotly.react failed, retrying minimal layout", primaryErr);
-          const minimalTraces=sanitizePlotlyTraces(traces, 1200);
-          if(!minimalTraces.length) throw primaryErr;
+          console.warn("[NOVA] Plotly.newPlot failed, retrying", primaryErr);
+          const svgTraces=(traces||[]).map((t)=>t && t.type==="scattergl" ? Object.assign({}, t, { type:"scatter" }) : t);
           try{ Plotly.purge(plotEl); }catch{}
           delete plotEl._novaRelayoutBound;
-          await Plotly.newPlot(plotEl, minimalTraces, buildEmergencyPlotLayout(layoutOut||{}), {
-            responsive:true,
-            displaylogo:false,
-            displayModeBar:false,
-            scrollZoom:false,
-            doubleClick:false,
-            showTips:false,
-          });
+          try{
+            await Plotly.newPlot(plotEl, svgTraces, layoutOut, cfg);
+          }catch(retryErr){
+            if(layoutUsesSubplots(layoutOut)) throw retryErr;
+            const minimalTraces=sanitizePlotlyTraces(svgTraces, 1200);
+            if(!minimalTraces.length) throw primaryErr;
+            try{ Plotly.purge(plotEl); }catch{}
+            delete plotEl._novaRelayoutBound;
+            await Plotly.newPlot(plotEl, minimalTraces, buildEmergencyPlotLayout(layoutOut||{}), {
+              responsive:true,
+              displaylogo:false,
+              displayModeBar:false,
+              scrollZoom:false,
+              doubleClick:false,
+              showTips:false,
+            });
+          }
         }finally{
           setTimeout(()=>{ suppressZoomRelayout=Math.max(0,suppressZoomRelayout-4); }, 300);
         }
@@ -3784,9 +3877,12 @@
 
       async function draw({ plotEl, traces, layoutOut, unitCount, drawGen, dataOnly, applyAxisLocks, forceFullRebuild }){
         if(drawGen !== undefined && drawGen !== plotDrawGeneration) return plotEl;
+        await waitForPlotHostSize(plotEl);
         await nextPaint();
         if(drawGen !== undefined && drawGen !== plotDrawGeneration) return plotEl;
+        if(!plotEl?.isConnected) throw new Error("Plot container is missing or detached from the document");
 
+        const lastConfig = lastConfigByHost.get(plotEl);
         rebuildUnitAxisRegistryFromTraces(traces);
         const cfg = defaultPlotlyConfig();
         const nextSig = computeTraceSig(traces);
@@ -3795,8 +3891,10 @@
         const layoutChanged = lastConfig?.layoutSig !== layoutSig;
         const forceDataOnly = dataOnly === true;
         const skipAxisRelayout = forceDataOnly || (dataOnly !== false && !applyAxisLocks);
+        const subplotLayout = layoutUsesSubplots(layoutWithDrag);
+        const mustRebuild = forceFullRebuild || subplotLayout || needsFullRebuild(plotEl, traces, nextSig, unitCount);
 
-        if(forceFullRebuild || needsFullRebuild(plotEl, traces, nextSig, unitCount)){
+        if(mustRebuild){
           await fullDraw(plotEl, traces, layoutWithDrag, cfg);
         }else if(!layoutChanged && (forceDataOnly || skipAxisRelayout)){
           // Pure data refresh — keep zoom/pan and skip layout.
@@ -3813,12 +3911,15 @@
 
         if(drawGen !== undefined && drawGen !== plotDrawGeneration) return plotEl;
 
-        lastConfig = {
+        lastConfigByHost.set(plotEl, {
           sig: nextSig,
           unitCount,
           layoutSig,
           traceIndex: buildTraceIndexMap(traces),
-        };
+        });
+        try{
+          if(plotEl.clientWidth>=8 && plotEl.clientHeight>=8) Plotly.Plots.resize(plotEl);
+        }catch{}
         bindPlotlyRelayoutListener(plotEl);
         captureAxisHitZones(plotEl);
         scheduleAxisHitZoneCapture(plotEl);
@@ -3832,6 +3933,9 @@
           PlotInteractions.refresh();
         }
         requestAnimationFrame(()=>{
+          try{
+            if(plotEl.isConnected && plotEl.clientWidth>=8 && plotEl.clientHeight>=8) Plotly.Plots.resize(plotEl);
+          }catch{}
           PlotAnalysisTools.restoreAfterDraw();
           if(isActiveHost && typeof renderObjectsList==="function") renderObjectsList();
         });
@@ -3840,9 +3944,10 @@
 
       return {
         draw,
-        _getLastConfig: () => lastConfig,
+        _getLastConfig: (plotEl) => lastConfigByHost.get(plotEl || getPlotDiv()) || null,
         computeTraceSig,
         getAxisRegistry: () => axisRegistry,
+        pickSubplotAt,
         refreshAxisHitZones: (plotEl)=>{
           const el = plotEl || getPlotDiv();
           captureAxisHitZones(el);
@@ -3989,9 +4094,10 @@
         return { kind:"linear", min:a, max:b };
       }
 
-      function xAxisType(gd){
-        const lay = gd._fullLayout?.xaxis || gd.layout?.xaxis;
-        return lay?.type || gd.layout?.xaxis?.type || "linear";
+      function xAxisType(gd, axisKey){
+        const key = (typeof isPlotXAxisKey === "function" && isPlotXAxisKey(axisKey)) ? axisKey : "xaxis";
+        const lay = gd._fullLayout?.[key] || gd.layout?.[key];
+        return lay?.type || gd.layout?.[key]?.type || "linear";
       }
 
       function plotAreaLeft(gd){
@@ -4008,7 +4114,18 @@
         if(ax && Number.isFinite(ax._offset)) return ax._offset;
         const size = gd?._fullLayout?._size;
         if(!size) return 0;
-        if(axisKey === "xaxis") return size.l ?? 0;
+        const domain = ax?.domain || gd?.layout?.[axisKey]?.domain;
+        const isX = typeof isPlotXAxisKey === "function" ? isPlotXAxisKey(axisKey) : axisKey === "xaxis";
+        if(isX){
+          if(Array.isArray(domain) && Number.isFinite(domain[0]) && Number.isFinite(domain[1])){
+            return size.l + Math.min(domain[0], domain[1]) * (size.w ?? 0);
+          }
+          return size.l ?? 0;
+        }
+        if(Array.isArray(domain) && Number.isFinite(domain[0]) && Number.isFinite(domain[1])){
+          const hi = Math.max(domain[0], domain[1]);
+          return size.t + (1 - hi) * (size.h ?? 0);
+        }
         return size.t ?? 0;
       }
 
@@ -4017,7 +4134,7 @@
       }
 
       function coerceAxisDataVal(gd, axisKey, v){
-        if(axisKey === "xaxis" && xAxisType(gd) === "date"){
+        if(isPlotXAxisKey(axisKey) && xAxisType(gd, axisKey) === "date"){
           if(typeof v === "number") return new Date(v);
           if(typeof v === "string") return new Date(coerceAxisMs(v));
         }
@@ -4028,11 +4145,12 @@
         const ax = gd?._fullLayout?.[axisKey];
         if(!ax) return null;
         const offset = axisPixelOffset(gd, axisKey);
-        const target = axisKey === "xaxis" ? (px - offset) : (py - offset);
+        const isX = isPlotXAxisKey(axisKey);
+        const target = isX ? (px - offset) : (py - offset);
         if(typeof ax.p2d === "function"){
           let v = ax.p2d(target);
           if(v instanceof Date) v = v.getTime();
-          else if(typeof v === "string" && axisKey === "xaxis" && xAxisType(gd) === "date") v = coerceAxisMs(v);
+          else if(typeof v === "string" && isX && xAxisType(gd, axisKey) === "date") v = coerceAxisMs(v);
           const n = Number(v);
           if(Number.isFinite(n)) return n;
         }
@@ -4040,7 +4158,7 @@
         const range = ax.range || ax._rl;
         if(!range || range.length !== 2) return null;
         let lo = range[0], hi = range[1];
-        if(axisKey === "xaxis" && xAxisType(gd) === "date"){
+        if(isX && xAxisType(gd, axisKey) === "date"){
           lo = coerceAxisMs(lo);
           hi = coerceAxisMs(hi);
         } else {
@@ -4068,7 +4186,7 @@
         const ax = gd?._fullLayout?.[axisKey];
         if(!ax) return null;
         let v = dataVal;
-        if(axisKey === "xaxis" && xAxisType(gd) === "date"){
+        if(isPlotXAxisKey(axisKey) && xAxisType(gd, axisKey) === "date"){
           if(typeof v === "number") v = new Date(v);
           else if(typeof v === "string") v = new Date(coerceAxisMs(v));
         }
@@ -4082,8 +4200,8 @@
         return p + axisPixelOffset(gd, axisKey);
       }
 
-      function dataToPixel(gd, x, y, yAxisKey){
-        const xp = axisDataToPixel(gd, "xaxis", x);
+      function dataToPixel(gd, x, y, yAxisKey, xAxisKey){
+        const xp = axisDataToPixel(gd, xAxisKey || "xaxis", x);
         const yp = axisDataToPixel(gd, yAxisKey || "yaxis", y);
         if(xp == null || yp == null) return null;
         return { x: xp, y: yp };
@@ -4598,12 +4716,12 @@
             if(kind==="vertical"){
               if(!Number.isFinite(d.x0)){ setMode(null); applyOverlays(null,{force:true}); return; }
               const state=analysisState(); if(!state){ setMode(null); return; }
-              state.overlays.push({ id:newId(), type:"line", kind:"vertical", x:d.x0 });
+              state.overlays.push({ id:newId(), type:"line", kind:"vertical", x:d.x0, xAxisKey:d.xAxisKey, yAxisKey:d.yAxisKey });
               setMode(null); applyOverlays(); setStatus("Line added.");
             }else{
               if(!Number.isFinite(d.y0)){ setMode(null); applyOverlays(null,{force:true}); return; }
               const state=analysisState(); if(!state){ setMode(null); return; }
-              state.overlays.push({ id:newId(), type:"line", kind:"horizontal", y:d.y0, yAxisKey:d.yAxisKey });
+              state.overlays.push({ id:newId(), type:"line", kind:"horizontal", y:d.y0, yAxisKey:d.yAxisKey, xAxisKey:d.xAxisKey });
               setMode(null); applyOverlays(); setStatus("Line added.");
             }
           }else{
@@ -4624,7 +4742,7 @@
         const chart = gd(); if(!chart) return;
         const c = C().localCoords(e);
         drag.endPx=c.x; drag.endPy=c.y;
-        const pt = dataAt(chart, c.x, c.y, drag.yAxisKey);
+        const pt = dataAt(chart, c.x, c.y, drag.yAxisKey, drag.xAxisKey);
         if(mode==="region" || mode==="define-range"){
           if(Number.isFinite(pt.x)) drag.x1 = pt.x;
         }else if(mode==="line"){
@@ -4646,12 +4764,12 @@
           const kind=drag.kind==="horizontal" ? "horizontal" : "vertical";
           const distPx=Math.hypot((drag.endPx??drag.startPx)-drag.startPx, (drag.endPy??drag.startPy)-drag.startPy);
           if(distPx < 8){
-            if(kind==="vertical") applyOverlays({ type:"line", kind:"vertical", x:drag.x0 }, { save:false });
-            else applyOverlays({ type:"line", kind:"horizontal", y:drag.y0, yAxisKey:drag.yAxisKey }, { save:false });
+            if(kind==="vertical") applyOverlays({ type:"line", kind:"vertical", x:drag.x0, xAxisKey:drag.xAxisKey, yAxisKey:drag.yAxisKey }, { save:false });
+            else applyOverlays({ type:"line", kind:"horizontal", y:drag.y0, yAxisKey:drag.yAxisKey, xAxisKey:drag.xAxisKey }, { save:false });
           }else if(kind==="vertical"){
-            applyOverlays({ type:"band", kind:"vertical", x0:drag.x0, x1:drag.x1 }, { save:false });
+            applyOverlays({ type:"band", kind:"vertical", x0:drag.x0, x1:drag.x1, xAxisKey:drag.xAxisKey, yAxisKey:drag.yAxisKey }, { save:false });
           }else{
-            applyOverlays({ type:"band", kind:"horizontal", y0:drag.y0, y1:drag.y1, yAxisKey:drag.yAxisKey }, { save:false });
+            applyOverlays({ type:"band", kind:"horizontal", y0:drag.y0, y1:drag.y1, yAxisKey:drag.yAxisKey, xAxisKey:drag.xAxisKey }, { save:false });
           }
         }
       }
@@ -4810,6 +4928,49 @@
         const n = Number(axisKey.replace("yaxis",""));
         return Number.isFinite(n) && n > 1 ? `y${n}` : "y";
       }
+      function drawingViewType(){
+        const plot = (typeof getDrawingPlot === "function" ? getDrawingPlot() : null)
+          || (typeof getActivePlot === "function" ? getActivePlot() : null);
+        return typeof normalizeViewType === "function" ? normalizeViewType(plot?.viewType) : "time";
+      }
+      function overlayXAxisKey(o){ return o?.xAxisKey || "xaxis"; }
+      function overlayYAxisKey(o){ return o?.yAxisKey || "yaxis"; }
+      function overlayClipToSubplot(o){
+        const vt = drawingViewType();
+        if(vt === "grid") return true;
+        if(vt === "strips" && o && o.kind !== "vertical") return true;
+        return false;
+      }
+      function overlayXRef(o){
+        return typeof xrefForAxisKey === "function" ? xrefForAxisKey(overlayXAxisKey(o)) : "x";
+      }
+      function overlayYRef(o){ return yrefForAxisKey(overlayYAxisKey(o)); }
+      function viewUsesClickToPickAxis(){
+        const vt = drawingViewType();
+        return vt === "strips" || vt === "grid";
+      }
+      function pickSubplotAtClick(px, py){
+        PlotRenderer.refreshAxisHitZones(plotEl);
+        const sub = (typeof PlotRenderer.pickSubplotAt === "function" && PlotRenderer.pickSubplotAt(px, py))
+          || { xAxisKey:"xaxis", yAxisKey:"yaxis" };
+        const nearY = C().nearestYAxis(px, py);
+        if(nearY){
+          const zones = PlotRenderer.getAxisRegistry().subplotZones || [];
+          const match = zones.find((z)=> z.yAxisKey === nearY && px >= z.left - 8 && px <= z.right + 8 && py >= z.top && py <= z.bottom);
+          if(match) return { xAxisKey: match.xAxisKey, yAxisKey: nearY, unit: match.unit };
+        }
+        return sub;
+      }
+      function overlaySubplotRect(o){
+        const zones = PlotRenderer.getAxisRegistry().subplotZones || [];
+        if(!zones.length) return null;
+        const xKey = overlayXAxisKey(o);
+        const yKey = overlayYAxisKey(o);
+        return zones.find((z)=> z.xAxisKey === xKey && z.yAxisKey === yKey)
+          || zones.find((z)=> z.xAxisKey === xKey && !z.overlaying)
+          || zones.find((z)=> z.yAxisKey === yKey)
+          || null;
+      }
       function axisUnit(axisKey){ return PlotRenderer.getAxisRegistry().axisKeyToUnit.get(axisKey) || ""; }
       function listYAxisChoices(){
         const reg=PlotRenderer.getAxisRegistry();
@@ -4875,11 +5036,14 @@
         return distBottom <= distY ? "vertical" : "horizontal";
       }
 
-      function dataAt(chart, px, py, yAxisKey){
+      function dataAt(chart, px, py, yAxisKey, xAxisKey){
+        const xKey = xAxisKey || "xaxis";
+        const yKey = yAxisKey || "yaxis";
         return {
-          x: C().axisDataFromPixel(chart, "xaxis", px, py),
-          y: C().axisDataFromPixel(chart, yAxisKey || "yaxis", px, py),
-          yAxisKey: yAxisKey || "yaxis",
+          x: C().axisDataFromPixel(chart, xKey, px, py),
+          y: C().axisDataFromPixel(chart, yKey, px, py),
+          yAxisKey: yKey,
+          xAxisKey: xKey,
         };
       }
 
@@ -4888,7 +5052,8 @@
         const o=findOverlay(editDrag.id);
         if(!o) return;
         const yAxisKey=o.yAxisKey||pickYAxisKey(c.x,c.y);
-        const pt=dataAt(chart,c.x,c.y,yAxisKey);
+        const xAxisKey=o.xAxisKey||"xaxis";
+        const pt=dataAt(chart,c.x,c.y,yAxisKey,xAxisKey);
         if(editDrag.handle==="ruler:p0" && Number.isFinite(pt.x)&&Number.isFinite(pt.y)){ o.x0=pt.x; o.y0=pt.y; }
         else if(editDrag.handle==="ruler:p1" && Number.isFinite(pt.x)&&Number.isFinite(pt.y)){ o.x1=pt.x; o.y1=pt.y; }
         else if(editDrag.handle==="arrow:p0" && Number.isFinite(pt.x)&&Number.isFinite(pt.y)){ o.x0=pt.x; o.y0=pt.y; }
@@ -4937,13 +5102,13 @@
         else if(editDrag.handle==="region:x1" && Number.isFinite(pt.x)) o.x1=pt.x;
         else if(editDrag.handle==="line:move"){
           if(o.kind==="vertical"&&Number.isFinite(pt.x)) o.x=pt.x;
-          else if(Number.isFinite(pt.y)){ o.y=pt.y; o.yAxisKey=yAxisKey; }
+          else if(Number.isFinite(pt.y)){ o.y=pt.y; }
         }else if(editDrag.handle==="band:a"){
           if(o.kind==="vertical"&&Number.isFinite(pt.x)) o.x0=pt.x;
-          else if(Number.isFinite(pt.y)){ o.y0=pt.y; o.yAxisKey=yAxisKey; }
+          else if(Number.isFinite(pt.y)){ o.y0=pt.y; }
         }else if(editDrag.handle==="band:b"){
           if(o.kind==="vertical"&&Number.isFinite(pt.x)) o.x1=pt.x;
-          else if(Number.isFinite(pt.y)){ o.y1=pt.y; o.yAxisKey=yAxisKey; }
+          else if(Number.isFinite(pt.y)){ o.y1=pt.y; }
         }else if(editDrag.handle.startsWith("plotline:pt:") || editDrag.handle.startsWith("shape:pt:")){
           const pi=Number(editDrag.handle.split(":")[2]);
           if(Number.isFinite(pt.x)&&Number.isFinite(pt.y)&&o.points[pi]){ o.points[pi].x=pt.x; o.points[pi].y=pt.y; }
@@ -4953,10 +5118,10 @@
         applyOverlays(null, { save:false });
       }
 
-      function dataToPx(chart, x, y, yAxisKey){
-        return C().dataToPixel(chart, x, y, yAxisKey || "yaxis");
+      function dataToPx(chart, x, y, yAxisKey, xAxisKey){
+        return C().dataToPixel(chart, x, y, yAxisKey || "yaxis", xAxisKey || "xaxis");
       }
-      function xToPx(chart, x){ return C().axisDataToPixel(chart, "xaxis", x); }
+      function xToPx(chart, x, xAxisKey){ return C().axisDataToPixel(chart, xAxisKey || "xaxis", x); }
       function yToPx(chart, y, yAxisKey){ return C().axisDataToPixel(chart, yAxisKey || "yaxis", y); }
 
       function distToSegment(px, py, x1, y1, x2, y2){
@@ -5006,9 +5171,9 @@
         return `m ${formatMeasureValue(scaled)}${u}`;
       }
 
-      function formatLineX(chart, x){
+      function formatLineX(chart, x, xAxisKey){
         if(!Number.isFinite(x)) return "x = —";
-        if(C().xAxisType(chart) === "date"){
+        if(C().xAxisType(chart, xAxisKey) === "date"){
           const d = new Date(x);
           if(Number.isFinite(d.getTime())) return `x = ${d.toISOString().slice(0, 19).replace("T", " ")} UTC`;
         }
@@ -5415,42 +5580,47 @@
         const ln=overlayLine(o, LINE_MAIN);
         const showValue=o.showValueLabel!==false;
         const customLabel=String(o.label||"").trim();
+        const xref=overlayXRef(o);
+        const yref=overlayYRef(o);
+        const clip=overlayClipToSubplot(o);
         if(o.kind === "vertical"){
           const pos=o.labelPosition==="bottom" ? "bottom" : "top";
-          const yPaper=pos==="bottom" ? 0.02 : 0.98;
+          const yFrac=pos==="bottom" ? 0.02 : 0.98;
           const yanchor=pos==="bottom" ? "top" : "bottom";
-          const caption=composeOverlayCaption(customLabel, formatLineX(chart, o.x), showValue, { stacked:true });
+          const ySpanRef = clip ? `${yref} domain` : "paper";
+          const xRef = clip ? xref : "x";
+          const caption=composeOverlayCaption(customLabel, formatLineX(chart, o.x, overlayXAxisKey(o)), showValue, { stacked:true });
           const annotations=[];
           if(caption){
             annotations.push({
               ...plainLabel(caption, o),
-              x:o.x, y:yPaper, xref:"x", yref:"paper",
+              x:o.x, y:yFrac, xref:xRef, yref:ySpanRef,
               xanchor:"left", yanchor, xshift:10,
               align:"left",
             });
           }
           return {
-            shapes:[{ type:"line", xref:"x", yref:"paper", x0:o.x, x1:o.x, y0:0, y1:1, line:ln }],
+            shapes:[{ type:"line", xref:xRef, yref:ySpanRef, x0:o.x, x1:o.x, y0:0, y1:1, line:ln }],
             annotations,
           };
         }
-        const yref = yrefForAxisKey(o.yAxisKey);
         const unit = axisUnit(o.yAxisKey);
         const pos=(o.labelPosition==="left" || o.labelPosition==="bottom") ? "left" : "right";
-        const xPaper=pos==="left" ? 0.006 : 0.994;
+        const xFrac=pos==="left" ? 0.006 : 0.994;
         const xanchor=pos==="left" ? "left" : "right";
+        const xSpanRef = clip ? `${xref} domain` : "paper";
         const caption=composeOverlayCaption(customLabel, formatLineY(o.y, unit), showValue, { stacked:true });
         const annotations=[];
         if(caption){
           annotations.push({
             ...plainLabel(caption, o),
-            x:xPaper, y:o.y, xref:"paper", yref,
+            x:xFrac, y:o.y, xref:xSpanRef, yref,
             xanchor, yanchor:"bottom", yshift:8,
             align: pos==="left" ? "left" : "right",
           });
         }
         return {
-          shapes:[{ type:"line", xref:"paper", yref, x0:0, x1:1, y0:o.y, y1:o.y, line:ln }],
+          shapes:[{ type:"line", xref:xSpanRef, yref, x0:0, x1:1, y0:o.y, y1:o.y, line:ln }],
           annotations,
         };
       }
@@ -5463,48 +5633,51 @@
         const hatchLn=overlayHatchLine(o, YELLOW, Math.max(0.6, (ln.width||1)*0.55));
         const annotations=[];
         const customLabel=String(o.label||"").trim();
+        const xref=overlayXRef(o);
+        const yref=overlayYRef(o);
+        const clip=overlayClipToSubplot(o);
         if(o.kind==="vertical"){
           const x0=Math.min(o.x0, o.x1), x1=Math.max(o.x0, o.x1);
+          const ySpanRef = clip ? `${yref} domain` : "paper";
+          const xRef = clip ? xref : "x";
           const shapes=[
-            { type:"rect", xref:"x", yref:"paper", x0, x1, y0:0, y1:1, fillcolor, line:{ width:0 }, layer:"below" },
-            { type:"line", xref:"x", yref:"paper", x0, x1:x0, y0:0, y1:1, line:ln },
-            { type:"line", xref:"x", yref:"paper", x0:x1, x1, y0:0, y1:1, line:ln },
+            { type:"rect", xref:xRef, yref:ySpanRef, x0, x1, y0:0, y1:1, fillcolor, line:{ width:0 }, layer:"below" },
+            { type:"line", xref:xRef, yref:ySpanRef, x0, x1:x0, y0:0, y1:1, line:ln },
+            { type:"line", xref:xRef, yref:ySpanRef, x0:x1, x1, y0:0, y1:1, line:ln },
           ];
           if(fillStyle==="hatched"){
             shapes.push(...bandHatchShapes(o, hatchLn));
           }
           if(customLabel){
-            // Place to the right of the right edge, like a vertical line label.
             const pos=o.labelPosition==="bottom" ? "bottom" : "top";
-            const yPaper=pos==="bottom" ? 0.02 : 0.98;
+            const yFrac=pos==="bottom" ? 0.02 : 0.98;
             const yanchor=pos==="bottom" ? "top" : "bottom";
             annotations.push({
               ...plainLabel(customLabel, o),
-              x:x1, y:yPaper, xref:"x", yref:"paper",
+              x:x1, y:yFrac, xref:xRef, yref:ySpanRef,
               xanchor:"left", yanchor, xshift:10,
               align:"left",
             });
           }
           return { shapes, annotations };
         }
-        const yref=yrefForAxisKey(o.yAxisKey);
         const y0=Math.min(o.y0, o.y1), y1=Math.max(o.y0, o.y1);
+        const xSpanRef = clip ? `${xref} domain` : "paper";
         const shapes=[
-          { type:"rect", xref:"paper", yref, x0:0, x1:1, y0, y1, fillcolor, line:{ width:0 }, layer:"below" },
-          { type:"line", xref:"paper", yref, x0:0, x1:1, y0, y1:y0, line:ln },
-          { type:"line", xref:"paper", yref, x0:0, x1:1, y0:y1, y1, line:ln },
+          { type:"rect", xref:xSpanRef, yref, x0:0, x1:1, y0, y1, fillcolor, line:{ width:0 }, layer:"below" },
+          { type:"line", xref:xSpanRef, yref, x0:0, x1:1, y0, y1:y0, line:ln },
+          { type:"line", xref:xSpanRef, yref, x0:0, x1:1, y0:y1, y1, line:ln },
         ];
         if(fillStyle==="hatched"){
           shapes.push(...bandHatchShapes(o, hatchLn));
         }
         if(customLabel){
-          // Place above the upper edge, like a horizontal line label.
           const pos=(o.labelPosition==="left" || o.labelPosition==="bottom") ? "left" : "right";
-          const xPaper=pos==="left" ? 0.006 : 0.994;
+          const xFrac=pos==="left" ? 0.006 : 0.994;
           const xanchor=pos==="left" ? "left" : "right";
           annotations.push({
             ...plainLabel(customLabel, o),
-            x:xPaper, y:y1, xref:"paper", yref,
+            x:xFrac, y:y1, xref:xSpanRef, yref,
             xanchor, yanchor:"bottom", yshift:8,
             align: pos==="left" ? "left" : "right",
           });
@@ -5670,41 +5843,58 @@
         const frame=plotAreaSize();
         if(!chart || !frame) return [];
         const out=[];
+        const xKey=overlayXAxisKey(o);
+        const yKey=overlayYAxisKey(o);
+        const clip=overlayClipToSubplot(o);
+        const xref=overlayXRef(o);
+        const yref=overlayYRef(o);
+        const cell=clip ? overlaySubplotRect(o) : null;
+        const hatchLeft = cell ? cell.left - frame.left : 0;
+        const hatchRight = cell ? cell.right - frame.left : frame.width;
+        const hatchTop = cell ? cell.top - frame.top : 0;
+        const hatchBottom = cell ? cell.bottom - frame.top : frame.height;
+        const hatchW = Math.max(1, hatchRight - hatchLeft);
+        const hatchH = Math.max(1, hatchBottom - hatchTop);
         if(o.kind==="vertical"){
-          const lx0=xPlotLocalPx(chart, o.x0), lx1=xPlotLocalPx(chart, o.x1);
+          const lx0=xPlotLocalPx(chart, o.x0, xKey), lx1=xPlotLocalPx(chart, o.x1, xKey);
           if(lx0==null || lx1==null) return [];
           const L=Math.min(lx0, lx1), R=Math.max(lx0, lx1);
-          hatchLinesInLocalRect(L, 0, R, frame.height, 12).forEach((seg)=>{
+          hatchLinesInLocalRect(L, hatchTop, R, hatchBottom, 12).forEach((seg)=>{
             const abs0={ x:seg.x0+frame.left, y:seg.y0+frame.top };
             const abs1={ x:seg.x1+frame.left, y:seg.y1+frame.top };
-            const xA=C().pixelToAxisData(chart, "xaxis", abs0.x, abs0.y);
-            const xB=C().pixelToAxisData(chart, "xaxis", abs1.x, abs1.y);
+            const xA=C().pixelToAxisData(chart, xKey, abs0.x, abs0.y);
+            const xB=C().pixelToAxisData(chart, xKey, abs1.x, abs1.y);
             if(!Number.isFinite(xA)||!Number.isFinite(xB)) return;
-            // Plotly paper y is bottom-origin; local y is top-origin.
-            const yP0=1-(seg.y0/frame.height);
-            const yP1=1-(seg.y1/frame.height);
+            const y0=clip ? Math.max(0, Math.min(1, (seg.y0 - hatchTop)/hatchH)) : 1-(seg.y0/frame.height);
+            const y1=clip ? Math.max(0, Math.min(1, (seg.y1 - hatchTop)/hatchH)) : 1-(seg.y1/frame.height);
             out.push({
-              type:"line", xref:"x", yref:"paper",
-              x0:xA, x1:xB, y0:yP0, y1:yP1, line:hatchLn,
+              type:"line",
+              xref: clip ? xref : "x",
+              yref: clip ? `${yref} domain` : "paper",
+              x0:xA, x1:xB,
+              y0: clip ? 1-y0 : y0,
+              y1: clip ? 1-y1 : y1,
+              line:hatchLn,
             });
           });
           return out;
         }
-        const yKey=o.yAxisKey || "yaxis";
         const ly0=yPlotLocalPx(chart, o.y0, yKey), ly1=yPlotLocalPx(chart, o.y1, yKey);
         if(ly0==null || ly1==null) return [];
         const T=Math.min(ly0, ly1), B=Math.max(ly0, ly1);
-        hatchLinesInLocalRect(0, T, frame.width, B, 12).forEach((seg)=>{
+        hatchLinesInLocalRect(hatchLeft, T, hatchRight, B, 12).forEach((seg)=>{
           const abs0={ x:seg.x0+frame.left, y:seg.y0+frame.top };
           const abs1={ x:seg.x1+frame.left, y:seg.y1+frame.top };
-          const d0=dataAt(chart, abs0.x, abs0.y, yKey);
-          const d1=dataAt(chart, abs1.x, abs1.y, yKey);
+          const d0=dataAt(chart, abs0.x, abs0.y, yKey, xKey);
+          const d1=dataAt(chart, abs1.x, abs1.y, yKey, xKey);
           if(!Number.isFinite(d0.y)||!Number.isFinite(d1.y)) return;
-          const xP0=Math.max(0, Math.min(1, seg.x0/frame.width));
-          const xP1=Math.max(0, Math.min(1, seg.x1/frame.width));
+          const x0=clip ? Math.max(0, Math.min(1, (seg.x0 - hatchLeft)/hatchW)) : Math.max(0, Math.min(1, seg.x0/frame.width));
+          const x1=clip ? Math.max(0, Math.min(1, (seg.x1 - hatchLeft)/hatchW)) : Math.max(0, Math.min(1, seg.x1/frame.width));
           out.push({
-            type:"line", xref:"paper", yref:yrefForAxisKey(yKey),
-            x0:xP0, x1:xP1, y0:d0.y, y1:d1.y, line:hatchLn,
+            type:"line",
+            xref: clip ? `${xref} domain` : "paper",
+            yref,
+            x0, x1, y0:d0.y, y1:d1.y, line:hatchLn,
           });
         });
         return out;
@@ -5802,8 +5992,8 @@
         return { x: pt.x - frame.left, y: pt.y - frame.top };
       }
 
-      function xPlotLocalPx(chart, x){
-        const px = xToPx(chart, x);
+      function xPlotLocalPx(chart, x, xAxisKey){
+        const px = xToPx(chart, x, xAxisKey);
         const frame = plotAreaSize();
         if(px == null || !frame) return null;
         return px - frame.left;
@@ -5867,44 +6057,59 @@
         svg.appendChild(svgEl("line", { x1:x1, y1:0, x2:x1, y2:frame.height, stroke:SIDE_LINE.color, "stroke-width":1 }));
       }
 
+      function overlayPreviewClip(o, frame){
+        if(!frame) return { x:0, y:0, w:0, h:0 };
+        if(!overlayClipToSubplot(o)) return { x:0, y:0, w:frame.width, h:frame.height };
+        const cell = overlaySubplotRect(o);
+        if(!cell) return { x:0, y:0, w:frame.width, h:frame.height };
+        return {
+          x: cell.left - frame.left,
+          y: cell.top - frame.top,
+          w: Math.max(0, cell.right - cell.left),
+          h: Math.max(0, cell.bottom - cell.top),
+        };
+      }
+
       function drawPreviewLine(svg, chart, o){
         const frame = plotAreaSize();
         if(!frame) return;
+        const clip = overlayPreviewClip(o, frame);
         if(o.kind === "vertical"){
-          const lx = xPlotLocalPx(chart, o.x);
+          const lx = xPlotLocalPx(chart, o.x, overlayXAxisKey(o));
           if(lx == null) return;
-          svg.appendChild(svgEl("line", { x1:lx, y1:0, x2:lx, y2:frame.height, stroke:YELLOW, "stroke-width":1 }));
+          svg.appendChild(svgEl("line", { x1:lx, y1:clip.y, x2:lx, y2:clip.y+clip.h, stroke:YELLOW, "stroke-width":1 }));
         }else{
           const ly = yPlotLocalPx(chart, o.y, o.yAxisKey);
           if(ly == null) return;
-          svg.appendChild(svgEl("line", { x1:0, y1:ly, x2:frame.width, y2:ly, stroke:YELLOW, "stroke-width":1 }));
+          svg.appendChild(svgEl("line", { x1:clip.x, y1:ly, x2:clip.x+clip.w, y2:ly, stroke:YELLOW, "stroke-width":1 }));
         }
       }
 
       function drawPreviewBand(svg, chart, o){
         const frame = plotAreaSize();
         if(!frame) return;
+        const clip = overlayPreviewClip(o, frame);
         const fillStyle=o.fillStyle==="hatched" || o.fillStyle==="empty" ? o.fillStyle : "fill";
         if(o.kind === "vertical"){
-          const lx0 = xPlotLocalPx(chart, o.x0);
-          const lx1 = xPlotLocalPx(chart, o.x1);
+          const lx0 = xPlotLocalPx(chart, o.x0, overlayXAxisKey(o));
+          const lx1 = xPlotLocalPx(chart, o.x1, overlayXAxisKey(o));
           if(lx0 == null || lx1 == null) return;
           const x=Math.min(lx0, lx1), w=Math.abs(lx1-lx0);
           if(fillStyle==="fill"){
             svg.appendChild(svgEl("rect", {
-              x, y:0, width:w, height:frame.height,
+              x, y:clip.y, width:w, height:clip.h,
               fill:YELLOW, "fill-opacity":String(overlayOpacity(o)), stroke:"none",
             }));
           }else if(fillStyle==="hatched"){
-            hatchLinesInLocalRect(x, 0, x+w, frame.height, 12).forEach((seg)=>{
+            hatchLinesInLocalRect(x, clip.y, x+w, clip.y+clip.h, 12).forEach((seg)=>{
               svg.appendChild(svgEl("line", {
                 x1:seg.x0, y1:seg.y0, x2:seg.x1, y2:seg.y1,
                 stroke:YELLOW, "stroke-width":1, "stroke-opacity":String(overlayOpacity(o)),
               }));
             });
           }
-          svg.appendChild(svgEl("line", { x1:lx0, y1:0, x2:lx0, y2:frame.height, stroke:YELLOW, "stroke-width":1 }));
-          svg.appendChild(svgEl("line", { x1:lx1, y1:0, x2:lx1, y2:frame.height, stroke:YELLOW, "stroke-width":1 }));
+          svg.appendChild(svgEl("line", { x1:lx0, y1:clip.y, x2:lx0, y2:clip.y+clip.h, stroke:YELLOW, "stroke-width":1 }));
+          svg.appendChild(svgEl("line", { x1:lx1, y1:clip.y, x2:lx1, y2:clip.y+clip.h, stroke:YELLOW, "stroke-width":1 }));
         }else{
           const ly0 = yPlotLocalPx(chart, o.y0, o.yAxisKey);
           const ly1 = yPlotLocalPx(chart, o.y1, o.yAxisKey);
@@ -5912,19 +6117,19 @@
           const y=Math.min(ly0, ly1), h=Math.abs(ly1-ly0);
           if(fillStyle==="fill"){
             svg.appendChild(svgEl("rect", {
-              x:0, y, width:frame.width, height:h,
+              x:clip.x, y, width:clip.w, height:h,
               fill:YELLOW, "fill-opacity":String(overlayOpacity(o)), stroke:"none",
             }));
           }else if(fillStyle==="hatched"){
-            hatchLinesInLocalRect(0, y, frame.width, y+h, 12).forEach((seg)=>{
+            hatchLinesInLocalRect(clip.x, y, clip.x+clip.w, y+h, 12).forEach((seg)=>{
               svg.appendChild(svgEl("line", {
                 x1:seg.x0, y1:seg.y0, x2:seg.x1, y2:seg.y1,
                 stroke:YELLOW, "stroke-width":1, "stroke-opacity":String(overlayOpacity(o)),
               }));
             });
           }
-          svg.appendChild(svgEl("line", { x1:0, y1:ly0, x2:frame.width, y2:ly0, stroke:YELLOW, "stroke-width":1 }));
-          svg.appendChild(svgEl("line", { x1:0, y1:ly1, x2:frame.width, y2:ly1, stroke:YELLOW, "stroke-width":1 }));
+          svg.appendChild(svgEl("line", { x1:clip.x, y1:ly0, x2:clip.x+clip.w, y2:ly0, stroke:YELLOW, "stroke-width":1 }));
+          svg.appendChild(svgEl("line", { x1:clip.x, y1:ly1, x2:clip.x+clip.w, y2:ly1, stroke:YELLOW, "stroke-width":1 }));
         }
       }
 
@@ -6305,24 +6510,34 @@
             }
           }else if(o.type === "region"){
             const x0=Math.min(o.x0,o.x1), x1=Math.max(o.x0,o.x1);
-            const lx0=xToPx(chart,x0), lx1=xToPx(chart,x1);
+            const lx0=xToPx(chart,x0,o.xAxisKey), lx1=xToPx(chart,x1,o.xAxisKey);
             if(lx0!=null && Math.abs(px-lx0)<=HIT_PX) return { id:o.id, handle:"region:x0" };
             if(lx1!=null && Math.abs(px-lx1)<=HIT_PX) return { id:o.id, handle:"region:x1" };
           }else if(o.type === "line"){
+            const clip=overlayClipToSubplot(o);
+            const cell=clip ? overlaySubplotRect(o) : null;
             if(o.kind === "vertical"){
-              const lx=xToPx(chart,o.x);
-              if(lx!=null && Math.abs(px-lx)<=HIT_PX) return { id:o.id, handle:"line:move" };
+              const lx=xToPx(chart,o.x,overlayXAxisKey(o));
+              if(lx==null || Math.abs(px-lx)>HIT_PX) continue;
+              if(cell && (py < cell.top || py > cell.bottom)) continue;
+              return { id:o.id, handle:"line:move" };
             }else{
               const ly=yToPx(chart,o.y,o.yAxisKey);
-              if(ly!=null && Math.abs(py-ly)<=HIT_PX) return { id:o.id, handle:"line:move" };
+              if(ly==null || Math.abs(py-ly)>HIT_PX) continue;
+              if(cell && (px < cell.left || px > cell.right)) continue;
+              return { id:o.id, handle:"line:move" };
             }
           }else if(o.type === "band"){
+            const clip=overlayClipToSubplot(o);
+            const cell=clip ? overlaySubplotRect(o) : null;
             if(o.kind === "vertical"){
-              const lx0=xToPx(chart,o.x0), lx1=xToPx(chart,o.x1);
+              const lx0=xToPx(chart,o.x0,overlayXAxisKey(o)), lx1=xToPx(chart,o.x1,overlayXAxisKey(o));
+              if(cell && (py < cell.top || py > cell.bottom)) continue;
               if(lx0!=null && Math.abs(px-lx0)<=HIT_PX) return { id:o.id, handle:"band:a" };
               if(lx1!=null && Math.abs(px-lx1)<=HIT_PX) return { id:o.id, handle:"band:b" };
             }else{
               const ly0=yToPx(chart,o.y0,o.yAxisKey), ly1=yToPx(chart,o.y1,o.yAxisKey);
+              if(cell && (px < cell.left || px > cell.right)) continue;
               if(ly0!=null && Math.abs(py-ly0)<=HIT_PX) return { id:o.id, handle:"band:a" };
               if(ly1!=null && Math.abs(py-ly1)<=HIT_PX) return { id:o.id, handle:"band:b" };
             }
@@ -6488,15 +6703,17 @@
       function commitLine(chart, px, py, forcedYAxisKey=null, forcedKind=null){
         const kind=forcedKind || lineKindAt(px,py);
         const state=analysisState(); if(!state) return false;
+        const sub=pickSubplotAtClick(px, py);
+        const xAxisKey=sub.xAxisKey || "xaxis";
         if(kind==="vertical"){
-          const x=C().pixelToAxisData(chart,"xaxis",px,py);
+          const x=C().pixelToAxisData(chart,xAxisKey,px,py);
           if(!Number.isFinite(x)) return false;
-          state.overlays.push({ id:newId(), type:"line", kind:"vertical", x });
+          state.overlays.push({ id:newId(), type:"line", kind:"vertical", x, xAxisKey, yAxisKey:sub.yAxisKey });
         }else{
-          const yAxisKey=forcedYAxisKey || pickYAxisKey(px,py);
+          const yAxisKey=forcedYAxisKey || sub.yAxisKey || pickYAxisKey(px,py);
           const y=C().pixelToAxisData(chart,yAxisKey,px,py);
           if(!Number.isFinite(y)) return false;
-          state.overlays.push({ id:newId(), type:"line", kind:"horizontal", y, yAxisKey });
+          state.overlays.push({ id:newId(), type:"line", kind:"horizontal", y, yAxisKey, xAxisKey });
         }
         applyOverlays();
         setStatus("Line added.");
@@ -6507,12 +6724,12 @@
         const kind=d.kind==="horizontal" ? "horizontal" : "vertical";
         if(kind==="vertical"){
           if(!Number.isFinite(d.x0)||!Number.isFinite(d.x1)||Math.abs(d.x1-d.x0)<1e-12) return false;
-          state.overlays.push({ id:newId(), type:"band", kind:"vertical", x0:d.x0, x1:d.x1, fillStyle:"fill", opacity:20 });
+          state.overlays.push({ id:newId(), type:"band", kind:"vertical", x0:d.x0, x1:d.x1, xAxisKey:d.xAxisKey, yAxisKey:d.yAxisKey, fillStyle:"fill", opacity:20 });
         }else{
           if(!Number.isFinite(d.y0)||!Number.isFinite(d.y1)||Math.abs(d.y1-d.y0)<1e-12) return false;
           state.overlays.push({
             id:newId(), type:"band", kind:"horizontal",
-            y0:d.y0, y1:d.y1, yAxisKey:d.yAxisKey, fillStyle:"fill", opacity:20,
+            y0:d.y0, y1:d.y1, yAxisKey:d.yAxisKey, xAxisKey:d.xAxisKey, fillStyle:"fill", opacity:20,
           });
         }
         applyOverlays();
@@ -6620,11 +6837,15 @@
         if(!gd()) return;
         const c=C().localCoords({ clientX, clientY, target:plotEl });
         if(!C().inPlotArea(c.x,c.y) && !hitAxisAt(c.x,c.y)) return;
+        const clickPick=viewUsesClickToPickAxis();
+        const hlineItem=clickPick
+          ? { label:"Horizontal Line", action:()=>{ pendingLineKind="horizontal"; pendingLineAxisKey=null; setMode("line"); setStatus("Click a plot to place a horizontal line, or drag for a band."); } }
+          : { label:"Horizontal Line", submenu:unitMenuFor("hline") };
         showContextMenu(clientX, clientY, [
           { label:"Add", submenu:[
             { label:"Ruler", submenu:unitMenuFor("ruler") },
             { label:"Vertical Line", action:()=>{ pendingLineKind="vertical"; pendingLineAxisKey=null; setMode("line"); setStatus("Click to place vertical line, or drag for a band."); } },
-            { label:"Horizontal Line", submenu:unitMenuFor("hline") },
+            hlineItem,
             { label:"Polyline", submenu:unitMenuFor("plotline") },
             { label:"Shape", submenu:unitMenuFor("shape") },
             { label:"Datanote", action:()=>{ setMode("datanote"); setStatus("Click near a datapoint to place a datanote."); } },
@@ -6643,7 +6864,7 @@
           ]},
           { label:"Define Range", action:()=>armTool("define-range") },
           { label:"Alignment", submenu:[
-            { label:"Align Ranges", action:()=>{ if(typeof alignSelectedRangesOnPlot === "function") void alignSelectedRangesOnPlot(); } },
+            { label:"Align Sources", action:()=>{ if(typeof alignSelectedRangesOnPlot === "function") void alignSelectedRangesOnPlot(); } },
             { label:"Stitch Ranges", action:()=>{ if(typeof stitchSelectedRangesOnPlot === "function") void stitchSelectedRangesOnPlot(); } },
             { label:"Toggle Mode", action:()=>{ if(typeof togglePlotTimeMode === "function") void togglePlotTimeMode(); } },
           ]},
@@ -6697,32 +6918,32 @@
         e.preventDefault(); e.stopImmediatePropagation();
         if(mode==="line"){
           const kind=pendingLineKind || lineKindAt(c.x,c.y);
-          let yAxisKey=kind==="horizontal" ? (pendingLineAxisKey || pickYAxisKey(c.x,c.y)) : "yaxis";
-          if(kind==="horizontal" && !pendingLineAxisKey && !yAxisKey){
-            setStatus("Select unit first: Add > Horizontal Line > Unit.", true);
-            return;
-          }
+          const sub=pickSubplotAtClick(c.x,c.y);
+          const xAxisKey=sub.xAxisKey || "xaxis";
+          let yAxisKey=kind==="horizontal"
+            ? (pendingLineAxisKey || sub.yAxisKey || pickYAxisKey(c.x,c.y))
+            : (sub.yAxisKey || "yaxis");
           if(kind==="horizontal" && pendingLineAxisKey) yAxisKey=pendingLineAxisKey;
-          const pt=dataAt(chart,c.x,c.y,yAxisKey);
+          const pt=dataAt(chart,c.x,c.y,yAxisKey,xAxisKey);
           if(kind==="vertical"){
             if(!Number.isFinite(pt.x)) return;
             drag={
               mode:"line", kind:"vertical",
-              x0:pt.x, x1:pt.x, y0:pt.y, y1:pt.y, yAxisKey,
+              x0:pt.x, x1:pt.x, y0:pt.y, y1:pt.y, yAxisKey, xAxisKey,
               startPx:c.x, startPy:c.y, endPx:c.x, endPy:c.y,
             };
           }else{
             if(!Number.isFinite(pt.y)) return;
             drag={
               mode:"line", kind:"horizontal",
-              x0:pt.x, x1:pt.x, y0:pt.y, y1:pt.y, yAxisKey,
+              x0:pt.x, x1:pt.x, y0:pt.y, y1:pt.y, yAxisKey, xAxisKey,
               startPx:c.x, startPy:c.y, endPx:c.x, endPy:c.y,
             };
           }
           applyOverlays(
             kind==="vertical"
-              ? { type:"line", kind:"vertical", x:pt.x }
-              : { type:"line", kind:"horizontal", y:pt.y, yAxisKey },
+              ? { type:"line", kind:"vertical", x:pt.x, xAxisKey, yAxisKey }
+              : { type:"line", kind:"horizontal", y:pt.y, yAxisKey, xAxisKey },
             { save:false }
           );
           startCreateSession(e);
@@ -6929,14 +7150,19 @@
 
     async function plotlyReactDraw(traces, layout, plotOpts={}){
       const drawGen=plotOpts.drawGen ?? plotDrawGeneration;
-      const plotEl=ensurePlotlyHost();
+      const plotEl=ensurePlotlyHost(plotOpts.plotId || drawingPlotId);
       if(!plotEl||!plotEl.isConnected) throw new Error("Plot container is missing or detached from the document");
+      await waitForPlotHostSize(plotEl);
+      if(!plotEl.isConnected) throw new Error("Plot container is missing or detached from the document");
       if(drawGen !== plotDrawGeneration) return plotEl;
       const plotW=Math.max(320, Number(plotEl.clientWidth||1200));
       const useDateAxis=plotOpts.useDateAxis===true;
-      const clean=sanitizePlotlyTraces(tracesXToPlotlyMs(traces, useDateAxis), plotPointCap(plotW));
-      if(!clean.length) throw new Error("No plottable points after sanitizing traces");
       const layoutOut=stripLayoutForPlotly(layout);
+      const clean=tracesForLayout(
+        sanitizePlotlyTraces(tracesXToPlotlyMs(traces, useDateAxis), plotPointCap(plotW)),
+        layoutOut,
+      );
+      if(!clean.length) throw new Error("No plottable points after sanitizing traces");
       const unitCount=Math.max(1, Number(plotOpts.unitCount||1));
       lastChartTraces=clean;
       lastChartLayout=layout;
@@ -6948,12 +7174,13 @@
         drawGen,
         dataOnly: plotOpts.dataOnly,
         applyAxisLocks: plotOpts.applyAxisLocks,
-        forceFullRebuild: plotOpts.forceFullRebuild===true,
+        forceFullRebuild: plotOpts.forceFullRebuild===true || layoutUsesSubplots(layoutOut),
       });
     }
     async function plotlyDraw(plotDiv, traces, layout, config){
       const unitCount=Object.keys(layout||{}).filter((k)=>/^yaxis\d*$/.test(k)).length||1;
-      return plotlyReactDraw(traces, layout, { unitCount, ...config });
+      const plotId=plotDiv?.dataset?.plotId || String(plotDiv?.id||"").replace(/^plot-/,"") || undefined;
+      return plotlyReactDraw(traces, layout, { unitCount, plotId, ...config });
     }
     function rowsNeedSort(pts){
       if(pts.length<2) return false;
@@ -7520,7 +7747,9 @@
     }
     function plotUiRevision(plotId){
       const id=plotId || drawingPlotId || activePlotId || "plot";
-      return `${id}:${plotSessionRevision}:${plotLayoutRevision()}`;
+      const p=plots.find((x)=>x.id===id);
+      const vt=normalizeViewType(p?.viewType);
+      return `${id}:${vt}:${plotSessionRevision}:${plotLayoutRevision()}`;
     }
     function overviewNeedsDetailRefetch(meta){
       const fs=String(meta?.fetch_strategy||"").toLowerCase();
@@ -8761,6 +8990,73 @@
       else sourceTreeExpanded.delete(k);
       state.sourceTreeExpanded=[...sourceTreeExpanded];
     }
+    function isDbGroupRow(row){
+      return row && (row.rowKind==="db_conn" || row.rowKind==="db_name");
+    }
+    async function toggleSourceTreeRowExpanded(it){
+      if(!it?.expandable) return;
+      const opening=!isSourceTreeExpanded(it.treeKey);
+      toggleSourceTreeExpanded(it.treeKey);
+      saveStateDeferred();
+      if(opening && it.rowKind==="db_conn") await ensureDbConnBrowsed(it.profileId);
+      else if(opening && it.rowKind==="db_name") await ensureDbTestsBrowsed(it.profileId, it.dbName);
+      renderAll();
+    }
+    function dbTestRowFromCache(profile, t, { dbName, testTable, parentSrc=null }={}){
+      const profileId=String(profile?.id||"");
+      const isDuck=isDuckdbProfile(profile);
+      const table=testTable || (isDuck ? "tests" : "test_runs");
+      let leaf=null;
+      if(isDuck){
+        leaf=state.sources.find((s)=>isCatalogSource(s)&&String(s.catalog_id||"")===profileId&&String(s.test_id)===String(t.test_run_id));
+      }else{
+        leaf=state.sources.find((s)=>isPostgresTestLeaf(s)&&(!parentSrc || s.parent_source_id===parentSrc.id)&&s.db_name===dbName&&String(s.test_run_id)===String(t.test_run_id)&&s.test_table===table);
+      }
+      const leafId=leaf ? leaf.id : `dbtest:${profileId}|${dbName}|${table}|${t.test_run_id}`;
+      return {
+        id:leafId,
+        treeKey:leafId,
+        primary:leaf?.name || t.primary,
+        rowKind:"db_test",
+        expandable:false,
+        selectable:true,
+        icon:normalizeSourceIcon(leaf?.icon || t.icon || profile?.icon, "test"),
+        profileId,
+        dbName,
+        testTable:table,
+        testRunId:String(t.test_run_id),
+        runCode:t.runCode,
+        filePath:t.filePath||"",
+        sourceType:t.sourceType||"",
+        provisional:!leaf,
+      };
+    }
+    function dbDescendantTestRows(row){
+      if(!isDbGroupRow(row)) return [];
+      const profileId=String(row.profileId||"");
+      const profile=(databaseLibrary||[]).find((p)=>String(p.id)===profileId);
+      if(!profile) return [];
+      const cache=dbBrowseCache.get(profileId);
+      if(!cache || cache.loading || cache.accessible===false) return [];
+      const out=[];
+      if(isDuckdbProfile(profile) || cache.kind==="duckdb"){
+        if(row.rowKind==="db_name" && row.dbName && row.dbName!=="catalog") return [];
+        const testCache=cache.tests && (cache.tests.catalog || cache.tests[cache.databases?.[0]]);
+        (testCache?.rows||[]).forEach((t)=>out.push(dbTestRowFromCache(profile, t, { dbName:"catalog", testTable:"tests" })));
+        return out;
+      }
+      const dbNames=row.rowKind==="db_name" ? [row.dbName].filter(Boolean) : (cache.databases||[]);
+      const parentSrc=state.sources.find((s)=>s.library_id===profileId || (isPostgresConnSource(s)&&s.id===profileId));
+      dbNames.forEach((dbName)=>{
+        const testCache=cache.tests && cache.tests[dbName];
+        (testCache?.rows||[]).forEach((t)=>out.push(dbTestRowFromCache(profile, t, {
+          dbName,
+          testTable:testCache.table||"test_runs",
+          parentSrc,
+        })));
+      });
+      return out;
+    }
     function folderDirectChildren(folderId){
       return state.sources.filter((s)=>(s.parent_folder_id||null)===folderId);
     }
@@ -9035,7 +9331,7 @@
           rowKind:"db_conn",
           expandable:true,
           expanded,
-          selectable:false,
+          selectable:true,
           profileId,
           icon:normalizeSourceIcon(profile.icon, "database"),
         });
@@ -9099,6 +9395,8 @@
               testTable:"tests",
               testRunId:String(t.test_run_id),
               runCode:t.runCode,
+              filePath:t.filePath||"",
+              sourceType:t.sourceType||"",
               provisional:!leaf,
             });
           });
@@ -9119,7 +9417,7 @@
             rowKind:"db_name",
             expandable:true,
             expanded:dbExpanded,
-            selectable:false,
+            selectable:true,
             icon:"folder",
             profileId,
             dbName,
@@ -9225,13 +9523,46 @@
       return { db, src, connSrc:postgresConnForSource(src) };
     }
     const DEFAULT_TIME_REF="absolute";
-    let plotTimeMode=DEFAULT_TIME_REF; // plot-level: "absolute" (UTC) | "t0_relative"
+    let plotTimeMode=DEFAULT_TIME_REF; // mirrors the active plot; drawing uses timeModeForPlot()
     function normalizeTimeRef(mode){
       if(mode==="raw") return "absolute";
       if(mode==="first_sample") return "first_index";
       if(mode==="utc") return "absolute";
       if(mode==="t0") return "t0_relative";
       return mode||DEFAULT_TIME_REF;
+    }
+    function viewDefaultsToT0(viewType){
+      const vt=normalizeViewType(viewType);
+      return vt==="strips" || vt==="grid";
+    }
+    function defaultTimeModeForView(viewType){
+      return viewDefaultsToT0(viewType) ? "t0_relative" : DEFAULT_TIME_REF;
+    }
+    function timeModeForPlot(plot){
+      const raw=plot?.timeMode;
+      if(raw==="absolute" || raw==="t0_relative") return raw;
+      return defaultTimeModeForView(plot?.viewType);
+    }
+    function syncGlobalPlotTimeMode(plot){
+      plotTimeMode=timeModeForPlot(plot || getActivePlot());
+    }
+    function applyDefaultSourceRangeT0(){
+      // Stacked/Grid default: each source's t0 is its source-range start, until Align Sources.
+      let applied=0;
+      (typeof rangeCapableSources==="function" ? rangeCapableSources() : []).forEach((src)=>{
+        if(!src || src.t0Aligned) return;
+        const sr=typeof findSourceRangeForSource==="function" ? findSourceRangeForSource(src) : null;
+        if(!sr) return;
+        const startMs=typeof parseRangeTimeMs==="function"
+          ? parseRangeTimeMs(sr.start_time)
+          : Date.parse(String(sr.start_time||""));
+        if(!Number.isFinite(startMs)) return;
+        const iso=new Date(startMs).toISOString();
+        if(src.t0_utc===iso) return;
+        src.t0_utc=iso;
+        applied+=1;
+      });
+      return applied;
     }
     function timeRefLabel(ref){
       if(ref==="absolute") return "UTC";
@@ -9243,13 +9574,13 @@
       return normalizeTimeRef(src?.timeRef);
     }
     function effectiveTimeRefForDbId(dbId, rows){
-      // Plot-level mode wins. UTC unless the user Aligns sources or toggles t0.
-      const mode=normalizeTimeRef(plotTimeMode);
+      // Per-plot mode wins. Stacked/Grid default to t0; Time Scope stays UTC until toggled.
+      const mode=timeModeForPlot(getDrawingPlot());
       if(mode==="absolute") return "absolute";
       if(mode==="t0_relative"){
         const { src }=resolveDbSource(dbId);
         if(src?.t0_utc) return "t0_relative";
-        // t0 view without an Align anchor: fall back to first sample of each source
+        // t0 view without a source-range or Align anchor: fall back to first sample
         return "first_index";
       }
       return timeRefForDbId(dbId);
@@ -9268,12 +9599,13 @@
         if(!silent) setStatus(`Unsupported time mode: ${mode}`, true);
         return false;
       }
-      plotTimeMode=next;
       const active=getActivePlot();
       if(active){
+        active.timeMode=next;
         active.stitchActive=false;
         active.eventOverlayActive=false;
       }
+      plotTimeMode=next;
       // Keep per-source timeRef in sync with the active plot mode so saved state
       // cannot resurrect a sticky t0 view after reload.
       (state.sources||[]).forEach((src)=>{
@@ -9288,7 +9620,7 @@
       return true;
     }
     async function togglePlotTimeMode(){
-      const next=normalizeTimeRef(plotTimeMode)==="t0_relative" ? "absolute" : "t0_relative";
+      const next=timeModeForPlot(getActivePlot())==="t0_relative" ? "absolute" : "t0_relative";
       return setPlotTimeMode(next);
     }
     function anySourceUsesAbsoluteTime(rows){
@@ -9761,14 +10093,55 @@
       bringAppWindowToFront(el);
       layer.appendChild(el);
       lockSelectGeometry(el);
-      if(autoFit){
-        requestAnimationFrame(()=>{
+      kickAppWindowPaint(el);
+      requestAnimationFrame(()=>{
+        if(!el.isConnected) return;
+        kickAppWindowPaint(el);
+        if(autoFit){
           fitAppWindowInViewport(el, { cascade, recenter:true });
-          // Second pass only clamps size/position — do not yank back to center.
-          requestAnimationFrame(()=>fitAppWindowInViewport(el, { cascade, recenter:false }));
-        });
-      }
+          requestAnimationFrame(()=>{
+            if(!el.isConnected) return;
+            fitAppWindowInViewport(el, { cascade, recenter:false });
+            kickAppWindowPaint(el);
+          });
+        }
+      });
+      setTimeout(()=>{ if(el.isConnected) kickAppWindowPaint(el); }, 0);
+      setTimeout(()=>{ if(el.isConnected) kickAppWindowPaint(el); }, 50);
       return entry;
+    }
+    function kickWebEngineComposite(){
+      const host=document.body;
+      if(!host) return;
+      host.classList.add("nova-composite-kick");
+      void host.offsetWidth;
+      requestAnimationFrame(()=>host.classList.remove("nova-composite-kick"));
+    }
+    function kickAppWindowPaint(el){
+      if(!el?.isConnected) return;
+      void el.offsetWidth;
+      kickWebEngineComposite();
+      const left=el.style.left;
+      el.style.left=`${(parseFloat(left)||0)+0.01}px`;
+      requestAnimationFrame(()=>{
+        if(!el.isConnected) return;
+        el.style.left=left;
+        void el.offsetHeight;
+        bringAppWindowToFront(el);
+      });
+    }
+    function wireAppWindowSearch(root, inputId, onChange){
+      const el=root?.querySelector?.(`#${inputId}`);
+      if(!el) return null;
+      const run=()=>{
+        onChange(el);
+        kickWebEngineComposite();
+      };
+      el.addEventListener("input", run);
+      el.addEventListener("keyup", run);
+      el.addEventListener("change", run);
+      el.addEventListener("search", run);
+      return el;
     }
     function setModalLayout(sizeClass, compact, modalEl){
       const target=modalEl||byId("modalBackdrop")?.querySelector(".modal");
@@ -10155,6 +10528,8 @@
             runCode:String(t.run_code||t.test_run_id),
             primary:String(t.run_code||t.test_run_id),
             icon:t.icon||null,
+            filePath:t.source_uri||"",
+            sourceType:t.source_type||"",
           }));
           dbBrowseCache.set(profileId, {
             loading:false,
@@ -10309,6 +10684,10 @@
         const key=String(id);
         if(key.startsWith("dbconn:")){
           addProfile(key.slice("dbconn:".length));
+          return;
+        }
+        if(key.startsWith("dbdb:")){
+          addProfile(key.slice("dbdb:".length).split("|")[0]);
           return;
         }
         if(key.startsWith("dbtest:")){
@@ -11034,6 +11413,7 @@
       const profileById = (id) => library.find((r) => String(r.id) === String(id)) || null;
 
       const selectedTagFilters = new Set();
+      let searchEl=null;
 
       const allLibraryTags = () => {
         const seen = new Set();
@@ -11050,7 +11430,7 @@
       };
 
       const filterList = (list) => {
-        const q = (byId("m_db_search")?.value || "").trim().toLowerCase();
+        const q = (searchEl?.value || "").trim().toLowerCase();
         const activeTags = [...selectedTagFilters];
         return list.filter((r) => {
           if (activeTags.length) {
@@ -11180,7 +11560,7 @@
       };
 
       const filterIcon = `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.5 3.25h13v1.5h-13v-1.5zm2.75 4h7.5v1.5h-7.5v-1.5zM6 11.25h4v1.5H6v-1.5z"/></svg>`;
-      openModal(
+      const dbWin=openModal(
         "Databases > Manager",
         `<div class="maskSearchPad dbManagerToolbar">
             <button id="m_db_filter_btn" type="button" class="addBtn dbFilterBtn" aria-label="Filter by tags">${filterIcon}</button>
@@ -11195,8 +11575,9 @@
         { ...WF_CFG, closable:true, titleHtml:databasesWindowTitleHtml("Manager") }
       );
 
-      byId("m_db_search").oninput = () => renderList();
-      byId("m_db_filter_btn").onclick = (ev) => {
+      searchEl=wireAppWindowSearch(dbWin?.root, "m_db_search", ()=>renderList());
+      const dbFilterBtn=dbWin?.root?.querySelector("#m_db_filter_btn") || byId("m_db_filter_btn");
+      if(dbFilterBtn) dbFilterBtn.onclick = (ev) => {
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
         const btn = ev.currentTarget;
         const picker = byId("dbTagPicker");
@@ -11391,7 +11772,6 @@
               <button type="button" class="addBtn" id="m_unit_add_tr" title="Add translation" aria-label="Add translation">+</button>
             </div>
             <div id="m_unit_translations" class="unitTranslationList"></div>
-            <div class="itemMeta" style="margin-top:4px;">Formulas convert channel values (<code>x</code>) into the preferred unit.</div>
           </div>
         </div>
         <div class="modalActions modalActionsIconOnly">
@@ -11497,8 +11877,10 @@
       library=library.map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
 
       const categoryById=(id)=>library.find((x)=>String(x.id)===String(id))||null;
+      let searchEl=null;
+      let listEl=null;
       const filterList=(rows)=>{
-        const q=(byId("m_unit_search")?.value||"").trim().toLowerCase();
+        const q=(searchEl?.value||"").trim().toLowerCase();
         if(!q) return rows;
         return rows.filter((r)=>{
           const blob=`${r.name||""} ${r.preferred||""} ${(r.units||[]).map((u)=>`${u.symbol||""} ${u.to_preferred||""}`).join(" ")}`.toLowerCase();
@@ -11588,7 +11970,7 @@
       };
 
       const renderList=()=>{
-        const el=byId("m_unit_list");
+        const el=listEl||byId("m_unit_list");
         if(!el) return;
         const filtered=filterList(library);
         el.innerHTML=filtered.length
@@ -11640,7 +12022,7 @@
         });
       };
 
-      openModal(
+      const unitWin=openModal(
         "Units > Manager",
         `<div class="maskSearchPad dbManagerToolbar">
             <input id="m_unit_search" class="searchInput" type="text" placeholder="Search..." />
@@ -11654,8 +12036,10 @@
         { ...WF_CFG, closable:true, titleHtml:unitsWindowTitleHtml("Manager") }
       );
 
-      byId("m_unit_search").oninput=()=>renderList();
-      byId("m_unit_add_btn").onclick=(ev)=>{
+      searchEl=wireAppWindowSearch(unitWin?.root, "m_unit_search", ()=>renderList());
+      listEl=unitWin?.root?.querySelector("#m_unit_list") || byId("m_unit_list");
+      const unitAddBtn=unitWin?.root?.querySelector("#m_unit_add_btn") || byId("m_unit_add_btn");
+      if(unitAddBtn) unitAddBtn.onclick=(ev)=>{
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
         openUnitCategoryForm({
           mode:"create",
@@ -11727,6 +12111,7 @@
       if(listPicker&&listPicker.contains(e.target)) return;
       if(e.target.closest&&e.target.closest("#m_db_tag_add")) return;
       if(e.target.closest&&e.target.closest("#ing_range_add")) return;
+      if(e.target.closest&&e.target.closest("#ing_catalog_btn")) return;
       if(e.target.closest&&e.target.closest("#ing_calc_add_ch")) return;
       if(e.target.closest&&e.target.closest("#m_db_filter_btn")) return;
       if(e.target.closest&&e.target.closest("[data-summary-limit-pick]")) return;
@@ -12307,6 +12692,11 @@
         cursorHiddenKeys:[],
       };
     }
+    function persistPlotTimeMode(plot){
+      const raw=plot?.timeMode;
+      if(raw==="absolute" || raw==="t0_relative") return raw;
+      return undefined;
+    }
     function newPlotInstance(){
       return blankPlotInstance(`View ${plots.length+1}`);
     }
@@ -12341,6 +12731,7 @@
           cursorHiddenKeys:Array.isArray(p.cursorHiddenKeys) ? p.cursorHiddenKeys.map(String) : [],
           stitchActive:p.stitchActive===true,
           eventOverlayActive:p.eventOverlayActive===true,
+          timeMode:persistPlotTimeMode(p),
         };
       });
     }
@@ -12445,6 +12836,7 @@
         selectedMaskIds=new Set(Array.isArray(next?.selections?.selectedMaskIds)?next.selections.selectedMaskIds:[]);
         selectedRangeKeys=new Set(Array.isArray(next?.selections?.selectedRangeKeys)?next.selections.selectedRangeKeys:[]);
       }
+      syncGlobalPlotTimeMode(next);
     }
     function defaultSpectralConfig(){
       return {
@@ -12771,8 +13163,124 @@
       savePlots();
     }
     let channelClipboard=[];
+    const channelClipboardTargets=[];
     function normalizeChannelClipboardKey(id){
       return channelKeyFromId(id) || String(id||"").trim();
+    }
+    function channelPickerRowForKey(id){
+      const key=normalizeChannelClipboardKey(id);
+      if(!key) return null;
+      const calc=findCalculatedByKey(key);
+      if(calc) return { id:key, primary:key, meta:`calculated (${calc.kind||"calc"})` };
+      const alias=findAliasByKey(key);
+      if(alias) return { id:key, primary:key, meta:`alias (${aliasMemberNames(alias).length})` };
+      return { id:key, primary:key, meta:"" };
+    }
+    function selectedChannelsForCalcInputs({ allowAliases=true }={}){
+      const keys=[];
+      const seen=new Set();
+      const add=(id)=>{
+        const key=channelKeyFromId(id);
+        if(!key || seen.has(key) || isCalculatedChannelKey(key)) return;
+        if(!allowAliases && isAliasChannelKey(key)) return;
+        seen.add(key);
+        keys.push(key);
+      };
+      [...addedChannelIds].forEach((id)=>{
+        if(selectedChannelIds.has(id)) add(id);
+      });
+      selectedChannelIds.forEach(add);
+      return keys;
+    }
+    function activeChannelClipboardTarget(){
+      return channelClipboardTargets.length ? channelClipboardTargets[channelClipboardTargets.length-1] : null;
+    }
+    function registerChannelClipboardTarget(target, entry){
+      if(!target) return ()=>{};
+      channelClipboardTargets.push(target);
+      const pop=()=>{
+        const i=channelClipboardTargets.lastIndexOf(target);
+        if(i>=0) channelClipboardTargets.splice(i,1);
+      };
+      if(entry?.close){
+        const prev=entry.close;
+        entry.close=()=>{ pop(); prev(); };
+        const stackEntry=dialogCloseStack.find((e)=>e.close===prev);
+        if(stackEntry) stackEntry.close=entry.close;
+      }
+      return pop;
+    }
+    function pickerContextMenuZ(){
+      return Math.max(400, (appWindowZ||110)+20);
+    }
+    function acceptClipboardChannel(key, target){
+      if(!key) return false;
+      if(typeof target.accept==="function") return target.accept(key);
+      if(isCalculatedChannelKey(key) && target.allowCalculated!==true) return false;
+      if(isAliasChannelKey(key) && target.allowAliases!==true) return false;
+      if(target.blockCollapsedAlias && isChannelCollapsedUnderListedAlias(key)) return false;
+      return true;
+    }
+    function copyChannelsFromTarget(target){
+      if(!target?.selected) return false;
+      const fromActive=target.selActive && target.selActive.size ? [...target.selActive] : [...target.selected];
+      const keys=fromActive.map(normalizeChannelClipboardKey).filter(Boolean);
+      if(!keys.length){
+        setStatus("No channels selected to copy.", true);
+        return false;
+      }
+      channelClipboard=keys.slice();
+      setStatus(`Copied ${keys.length} channel${keys.length===1?"":"s"}.`);
+      return true;
+    }
+    function pasteChannelsIntoTarget(target){
+      if(!target?.selected) return false;
+      if(!channelClipboard.length){
+        setStatus("Channel clipboard is empty.", true);
+        return false;
+      }
+      const keys=channelClipboard.map(normalizeChannelClipboardKey).filter(Boolean);
+      const accept=(key)=>acceptClipboardChannel(key, target);
+      const addOne=(key)=>{
+        if(!accept(key) || target.selected.has(key)) return false;
+        target.selected.add(key);
+        if(target.rowCache && !target.rowCache.has(key)){
+          const allRows=typeof target.getAllRows==="function" ? target.getAllRows() : null;
+          const cached=Array.isArray(allRows) ? allRows.find((r)=>r.id===key) : null;
+          target.rowCache.set(key, cached || channelPickerRowForKey(key));
+        }
+        return true;
+      };
+      let added=0;
+      if(target.singlePick){
+        const key=keys.find(accept);
+        if(!key){
+          setStatus("Clipboard has no channels that can be added here.", true);
+          return false;
+        }
+        target.selected.clear();
+        if(addOne(key)) added=1;
+      }else{
+        keys.forEach((key)=>{ if(addOne(key)) added+=1; });
+      }
+      if(typeof target.refresh==="function") target.refresh();
+      if(!added){
+        setStatus("Channels already in the selected list.");
+        return true;
+      }
+      setStatus(`Pasted ${added} channel${added===1?"":"s"} into the selected list.`);
+      return true;
+    }
+    function bindChannelListClipboardMenu(host, target){
+      if(!host || !target) return;
+      host.oncontextmenu=(ev)=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        showContextMenu(ev.clientX, ev.clientY, [
+          { label:"Copy", action:()=>copyChannelsFromTarget(target) },
+          { label:"Paste", action:()=>pasteChannelsIntoTarget(target) },
+        ], { zIndex: pickerContextMenuZ() });
+      };
     }
     function channelsForClipboard(seedId){
       const keys=[];
@@ -12789,6 +13297,8 @@
       return keys;
     }
     function copySelectedChannels(seedId){
+      const target=activeChannelClipboardTarget();
+      if(target) return copyChannelsFromTarget(target);
       const keys=channelsForClipboard(seedId);
       if(!keys.length){
         setStatus("No channels selected to copy.", true);
@@ -12819,6 +13329,11 @@
         ? `Pasted ${added} channel${added===1?"":"s"} into the active view.`
         : "Channels already in the active view.");
       return true;
+    }
+    function pasteCopiedChannels(){
+      const target=activeChannelClipboardTarget();
+      if(target) return pasteChannelsIntoTarget(target);
+      return pasteChannelsToActiveView();
     }
     function getActivePlot(){ return plots.find((p)=>p.id===activePlotId) || null; }
     function persistActivePlotLocalState(){
@@ -12879,6 +13394,7 @@
         cursorHiddenKeys: Array.isArray(p.cursorHiddenKeys) ? p.cursorHiddenKeys.map(String) : [],
         stitchActive: p.stitchActive===true,
         eventOverlayActive: p.eventOverlayActive===true,
+        timeMode: persistPlotTimeMode(p),
       };
     }
     function buildConfigPayload(){
@@ -13741,8 +14257,10 @@
       library=(library||[]).map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
 
       const configById=(id)=>library.find((x)=>String(x.id)===String(id))||null;
+      let searchEl=null;
+      let listEl=null;
       const filterList=(rows)=>{
-        const q=(byId("m_cfg_search")?.value||"").trim().toLowerCase();
+        const q=(searchEl?.value||"").trim().toLowerCase();
         if(!q) return rows;
         return rows.filter((r)=>{
           const blob=`${r.name||""} ${(r.channels||[]).join(" ")}`.toLowerCase();
@@ -13849,7 +14367,7 @@
         if(!result.ok&&result.cancelled) setStatus("Configuration export cancelled.");
       };
       const renderList=()=>{
-        const el=byId("m_cfg_list");
+        const el=listEl||byId("m_cfg_list");
         if(!el) return;
         const filtered=filterList(library);
         el.innerHTML=filtered.length
@@ -13877,7 +14395,7 @@
         });
       };
 
-      openModal(
+      const cfgWin=openModal(
         "Configurations > Manager",
         `<div class="maskSearchPad dbManagerToolbar">
             <input id="m_cfg_search" class="searchInput" type="text" placeholder="Search..." />
@@ -13891,8 +14409,10 @@
         { ...WF_CFG, closable:true, titleHtml:configsWindowTitleHtml("Manager") }
       );
 
-      byId("m_cfg_search").oninput=()=>renderList();
-      byId("m_cfg_add_btn").onclick=(ev)=>{
+      searchEl=wireAppWindowSearch(cfgWin?.root, "m_cfg_search", ()=>renderList());
+      listEl=cfgWin?.root?.querySelector("#m_cfg_list") || byId("m_cfg_list");
+      const cfgAddBtn=cfgWin?.root?.querySelector("#m_cfg_add_btn") || byId("m_cfg_add_btn");
+      if(cfgAddBtn) cfgAddBtn.onclick=(ev)=>{
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
         openConfigForm({ mode:"create", onSaved:(saved)=>{ void refreshFromServer(saved); } });
       };
@@ -14098,19 +14618,19 @@
     function parseNameList(text){
       return String(text||"").split(/[\n,;]+/).map((s)=>s.trim()).filter(Boolean);
     }
-    async function projectCatalogOptionsHtml(selectedId=""){
+    async function loadProjectCatalogRows(){
       let rows=[];
       try{
         const data=await getJson("/api/database-library");
         rows=(Array.isArray(data?.databases)?data.databases:[]).filter((d)=>
           String(d?.type||"duckdb")==="duckdb" && String(d?.id||"")!=="local"
-        );
+        ).map((d)=>({
+          id:String(d.id||""),
+          label:d.name||d.id,
+          meta:d.catalog_path||"",
+        }));
       }catch{ rows=[]; }
-      if(!rows.length) return `<option value="">No project databases — create one in File → Databases</option>`;
-      return rows.map((d)=>{
-        const id=String(d.id||"");
-        return `<option value="${escAttr(id)}" ${id===String(selectedId||"")?"selected":""}>${escapeHtml(d.name||id)}</option>`;
-      }).join("");
+      return rows.filter((r)=>r.id);
     }
     function ingestionWindowTitleHtml(...leaves){
       const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg></span>`;
@@ -14124,8 +14644,10 @@
       let library=structuredClone(ingestionLibrary||[]);
       library=library.map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
       const byIdRow=(id)=>library.find((x)=>String(x.id)===String(id))||null;
+      let searchEl=null;
+      let listEl=null;
       const filterList=(rows)=>{
-        const q=(byId("m_ing_search")?.value||"").trim().toLowerCase();
+        const q=(searchEl?.value||"").trim().toLowerCase();
         if(!q) return rows;
         return rows.filter((r)=>{
           const blob=`${r.name||""} ${r.note||""} ${r.target_catalog_id||""}`.toLowerCase();
@@ -14215,7 +14737,7 @@
         if(!result.ok&&result.cancelled) setStatus("Export cancelled.");
       };
       const renderList=()=>{
-        const el=byId("m_ing_list");
+        const el=listEl||byId("m_ing_list");
         if(!el) return;
         const filtered=filterList(library);
         el.innerHTML=filtered.length
@@ -14231,7 +14753,8 @@
             const z=Math.max(200, appWindowZ+15);
             showContextMenu(ev.clientX, ev.clientY, [
               { label:"Edit", action:()=>openIngestionRuleForm({ mode:"edit", rule, onSaved:()=>{ void refreshFromServer(); } }) },
-              { label:"Run on file…", action:()=>{ void runIngestionRuleOnFile(rule); } },
+              { label:"Run on files…", action:()=>{ void runIngestionRuleOnFiles(rule); } },
+              { label:"Run on selected sources…", action:()=>{ void runIngestionRuleOnSelected(rule); } },
               { label:"Duplicate", action:()=>{ void duplicateRule(id); } },
               { label:"Delete", action:()=>{ void deleteRule(id); } },
               { sep:true },
@@ -14245,7 +14768,7 @@
           };
         });
       };
-      openModal(
+      const ingWin=openModal(
         "Ingestion > Manager",
         `<div class="maskSearchPad dbManagerToolbar">
             <input id="m_ing_search" class="searchInput" type="text" placeholder="Search..." />
@@ -14258,8 +14781,10 @@
         async()=>true,
         { ...WF_CFG, closable:true, titleHtml:ingestionWindowTitleHtml("Manager") }
       );
-      byId("m_ing_search").oninput=()=>renderList();
-      byId("m_ing_add_btn").onclick=(ev)=>{
+      searchEl=wireAppWindowSearch(ingWin?.root, "m_ing_search", ()=>renderList());
+      listEl=ingWin?.root?.querySelector("#m_ing_list") || byId("m_ing_list");
+      const ingAddBtn=ingWin?.root?.querySelector("#m_ing_add_btn") || byId("m_ing_add_btn");
+      if(ingAddBtn) ingAddBtn.onclick=(ev)=>{
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
         const seed=ingestionSourceIdsForRule();
         const onSaved=()=>{ void refreshFromServer(); };
@@ -14301,7 +14826,16 @@
           refChannels=[];
         }
       }
-      const catalogOpts=await projectCatalogOptionsHtml(draft.target_catalog_id);
+      const catalogRows=await loadProjectCatalogRows();
+      let targetCatalogId=String(draft.target_catalog_id||"");
+      const catalogLabel=()=>{
+        const hit=catalogRows.find((r)=>r.id===String(targetCatalogId));
+        if(hit) return hit.label;
+        if(targetCatalogId) return targetCatalogId;
+        if(!catalogRows.length) return "No project databases";
+        return "Select database…";
+      };
+      const catalogEmpty=()=>!catalogRows.some((r)=>r.id===String(targetCatalogId));
       const ch=draft.channels||{ mode:"all", include:[], exclude:[], rename:{}, require:[] };
       let includeEntries=ingestionIncludeEntriesFromChannels(ch);
       let calculatedChannels=Array.isArray(draft.calculated_channels)
@@ -14334,7 +14868,7 @@
             <div class="rangeMetaHeader"><label>Properties</label></div>
             <div class="rangeMetaDivider"></div>
             <div class="rangeMetaTable" id="ing_props">
-              ${propRow("Target Database", `<select id="ing_catalog" class="objPropControl">${catalogOpts}</select>`)}
+              ${propRow("Target Database", `<button type="button" id="ing_catalog_btn" class="channelPickField objPropControl${catalogEmpty()?" channelPickField--empty":""}">${escapeHtml(catalogLabel())}</button>`)}
               ${propRow("Channel Mode", `<select id="ing_mode" class="objPropControl">
                 <option value="all" ${ch.mode!=="include"?"selected":""}>All channels</option>
                 <option value="include" ${ch.mode==="include"?"selected":""}>Only listed channels</option>
@@ -14368,7 +14902,7 @@
       `, { ...WF_ALIAS_FORM, titleHtml:ingestionWindowTitleHtml(...titleParts) }, async()=>{
         const name=(byId("ing_name")?.value||"").trim();
         if(!name){ setStatus("Rule name is required.", true); return false; }
-        const target=(byId("ing_catalog")?.value||"").trim();
+        const target=String(targetCatalogId||"").trim();
         if(!target){ setStatus("Select a project database.", true); return false; }
         const channelMode=(byId("ing_mode")?.value||"all");
         const includedCount=includeEntries.filter((e)=>!e.excluded).length;
@@ -14403,6 +14937,42 @@
       };
 
       wireNameWithIconField("ing_icon");
+
+      const catalogBtn=formEntry?.root?.querySelector("#ing_catalog_btn") || byId("ing_catalog_btn");
+      const syncCatalogBtn=()=>{
+        if(!catalogBtn) return;
+        catalogBtn.textContent=catalogLabel();
+        catalogBtn.classList.toggle("channelPickField--empty", catalogEmpty());
+      };
+      if(catalogBtn){
+        catalogBtn.onclick=(ev)=>{
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          if(!catalogRows.length){
+            setStatus("No project databases — create one in File → Databases.", true);
+            return;
+          }
+          const picker=byId("listSearchPicker");
+          if(picker?.classList.contains("show")){
+            hideListSearchPicker();
+            return;
+          }
+          showListSearchPicker(
+            catalogBtn,
+            catalogRows,
+            (item)=>{
+              if(!item?.id) return;
+              targetCatalogId=String(item.id);
+              syncCatalogBtn();
+            },
+            {
+              placeholder:"Search databases...",
+              empty:"No project databases.",
+              emptyMatch:"No matching databases.",
+              closeOnPick:true,
+            }
+          );
+        };
+      }
 
       const channelListEl=byId("ing_channels");
       const rangeListEl=byId("ing_ranges");
@@ -14668,6 +15238,7 @@
 
       renderChannelList();
       renderRangeList();
+      if(formEntry?.el) kickAppWindowPaint(formEntry.el);
     }
     function openIngestionIncludeChannelForm({ mode="create", entry=null, titleParts=[], onSaved=null }={}){
       const isEdit=mode==="edit" && entry;
@@ -14697,12 +15268,14 @@
     function openIngestionCalculatedChannelForm({ mode="create", calc=null, titleParts=[], referenceChannels=null, onSaved=null }={}){
       const isEdit=mode==="edit" && calc;
       const leaf="Calculated Channel";
-      const deps=isEdit ? (Array.isArray(calc.channels) ? calc.channels.slice() : []) : [];
+      const deps=isEdit
+        ? (Array.isArray(calc.channels) ? calc.channels.slice() : [])
+        : selectedChannelsForCalcInputs({ allowAliases:false });
       const chosen=new Set(deps);
       const defaultName=isEdit ? (calc?.name||"channel_formula") : "channel_formula";
       const unitCurrent=isEdit ? String(calc?.unit||"") : "";
       const formulaCurrent=isEdit ? String(calc?.formula||"") : "";
-      openModal(`Ingestion > ${leaf}`, `
+      const ingCalcEntry=openModal(`Ingestion > ${leaf}`, `
         <div class="channelEditorForm">
         <div class="formStack">
           <div class="formField">
@@ -14761,48 +15334,123 @@
           allowAliases:false,
         });
       }
+      const ingClipTarget={
+        selected: chosen,
+        allowAliases: false,
+        allowCalculated: false,
+        refresh: renderMembers,
+      };
+      bindChannelListClipboardMenu(listEl, ingClipTarget);
+      registerChannelClipboardTarget(ingClipTarget, ingCalcEntry);
+    }
+    function fileStemFromPath(p){
+      const base=String(p||"").split(/[/\\]/).pop()||"";
+      const cut=base.lastIndexOf(".");
+      return (cut>0 ? base.slice(0, cut) : base).trim();
+    }
+    function catalogTestFilePath(srcOrRow){
+      if(!srcOrRow) return "";
+      const direct=String(srcOrRow.file_path||srcOrRow.filePath||"").trim();
+      if(direct) return direct;
+      const testId=String(srcOrRow.test_id||srcOrRow.testRunId||"");
+      const catalogId=String(srcOrRow.catalog_id||srcOrRow.profileId||"");
+      const cache=dbBrowseCache.get(catalogId);
+      const rows=cache?.tests?.catalog?.rows||[];
+      const row=rows.find((t)=>String(t.test_run_id)===testId);
+      if(row?.filePath) return String(row.filePath);
+      const runCode=String(srcOrRow.run_code||srcOrRow.runCode||srcOrRow.name||"").trim();
+      if(!runCode) return "";
+      const file=(state.sources||[]).find((s)=>isFileSource(s) && (
+        String(s.name||"")===runCode || fileStemFromPath(s.file_path)===runCode
+      ));
+      return file?.file_path||"";
     }
     function fileSourcesForIngest(seedIds){
       const ids=(Array.isArray(seedIds) && seedIds.length)
         ? seedIds.map(String)
         : [...selectedSourceIds].map(String);
       const out=[];
-      const seen=new Set();
+      const seenIds=new Set();
+      const seenPaths=new Set();
+      const addFile=(fileSrc, explicitPath)=>{
+        const path=String(explicitPath||fileSrc?.file_path||"").trim();
+        if(!path) return;
+        const pathKey=normalizeFilePath(path);
+        if(seenPaths.has(pathKey)) return;
+        if(fileSrc?.id && seenIds.has(fileSrc.id)) return;
+        if(fileSrc?.id) seenIds.add(fileSrc.id);
+        seenPaths.add(pathKey);
+        out.push({ ...fileSrc, file_path:path, id:fileSrc?.id||path });
+      };
       ids.forEach((id)=>{
         const src=(state.sources||[]).find((s)=>String(s.id)===String(id));
-        if(!src) return;
-        const add=(fileSrc)=>{
-          if(!fileSrc?.file_path || seen.has(fileSrc.id)) return;
-          seen.add(fileSrc.id);
-          out.push(fileSrc);
-        };
-        if(typeof isFolderSource==="function" && isFolderSource(src)){
-          folderDescendantFileSources(id).forEach(add);
-        }else if(isFileSource(src)){
-          add(src);
+        const treeRow=(!src) ? (typeof sourcesListItems==="function" ? sourcesListItems().find((it)=>String(it.id)===String(id)) : null) : null;
+        if(src){
+          if(typeof isFolderSource==="function" && isFolderSource(src)){
+            folderDescendantFileSources(id).forEach((f)=>addFile(f));
+            return;
+          }
+          if(isFileSource(src)){
+            addFile(src);
+            return;
+          }
+          if(isCatalogSource(src)){
+            const path=catalogTestFilePath(src);
+            if(path) addFile(src, path);
+            return;
+          }
+        }
+        if(treeRow?.rowKind==="db_test"){
+          const path=catalogTestFilePath(treeRow);
+          if(path) addFile({ id:treeRow.id, name:treeRow.primary||treeRow.runCode, type:treeRow.sourceType||"tdms" }, path);
+        }else if(isDbGroupRow(treeRow)){
+          dbDescendantTestRows(treeRow).forEach((testRow)=>{
+            const path=catalogTestFilePath(testRow);
+            if(path) addFile({ id:testRow.id, name:testRow.primary||testRow.runCode, type:testRow.sourceType||"tdms" }, path);
+          });
         }
       });
       return out;
     }
+    function ingestSeedIdsForTreeRow(it){
+      const selected=fileSourcesForIngest();
+      if(it && isSourceTreeRowActive(it) && selected.length>1){
+        return selected.map((s)=>s.id);
+      }
+      if(it?.rowKind==="folder") return folderDescendantFileSources(it.id).map((f)=>f.id);
+      if(isDbGroupRow(it)){
+        return dbDescendantTestRows(it).map((t)=>t.id).filter(Boolean);
+      }
+      return it?.id ? [it.id] : [];
+    }
     async function ingestFilePathsWithRule(filePaths, rule){
-      const paths=(filePaths||[]).map((p)=>String(p||"").trim()).filter(Boolean);
+      const paths=[...new Set((filePaths||[]).map((p)=>String(p||"").trim()).filter(Boolean))];
       if(!paths.length) throw new Error("No file to ingest.");
       if(!rule?.id) throw new Error("Select an ingestion rule.");
+      const ok=[];
+      const failed=[];
       let last=null;
-      for(const filePath of paths){
-        setStatus(`Ingesting ${filePath} with rule '${rule.name}'…`);
+      for(let i=0;i<paths.length;i+=1){
+        const filePath=paths[i];
+        const label=String(filePath).split(/[/\\]/).pop()||filePath;
+        setStatus(`Ingesting ${i+1}/${paths.length}: ${label}…`);
         await nextPaint();
-        const r=await fetch("/api/v3/ingest/rule", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify({ file_path:filePath, rule_id:rule.id }),
-        });
-        if(!r.ok){
-          let msg=`Ingest failed (${r.status})`;
-          try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
-          throw new Error(msg);
+        try{
+          const r=await fetch("/api/v3/ingest/rule", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body:JSON.stringify({ file_path:filePath, rule_id:rule.id }),
+          });
+          if(!r.ok){
+            let msg=`Ingest failed (${r.status})`;
+            try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail);}catch{}
+            throw new Error(msg);
+          }
+          last=await r.json();
+          ok.push(filePath);
+        }catch(err){
+          failed.push({ filePath, error:String(err?.message||err) });
         }
-        last=await r.json();
       }
       try{
         if(typeof syncDatabaseLibrarySources==="function") syncDatabaseLibrarySources();
@@ -14814,14 +15462,26 @@
         }
         renderAll();
       }catch{}
+      if(!ok.length){
+        const first=failed[0]?.error || "Ingest failed.";
+        throw new Error(paths.length>1
+          ? `Ingest failed for all ${paths.length} files. First error: ${first}`
+          : first);
+      }
       const n=paths.length;
       const extra=last?.run_code ? ` · ${last.run_code}` : "";
-      setStatus(`Ingested ${n} source${n===1?"":"s"} with '${rule.name}'${extra}.`);
+      if(failed.length){
+        const sample=failed.slice(0,3).map((f)=>String(f.filePath).split(/[/\\]/).pop()||f.filePath).join(", ");
+        setStatus(`Ingested ${ok.length}/${n} with '${rule.name}'${extra}. Failed: ${sample}${failed.length>3?` (+${failed.length-3})`:""}.`, true);
+      }else{
+        setStatus(`Ingested ${n} source${n===1?"":"s"} with '${rule.name}'${extra}.`);
+      }
+      return { ok, failed, last };
     }
     async function openIngestSourcePicker(seedIds){
       const files=fileSourcesForIngest(seedIds);
       if(!files.length){
-        setStatus("Select a file source to ingest.", true);
+        setStatus("Select a file or folder source to ingest.", true);
         return;
       }
       await loadIngestionLibrary();
@@ -14832,6 +15492,7 @@
       }
       const opts=rules.map((r)=>`<option value="${escAttr(r.id)}">${escAttr(r.name||"Untitled")}</option>`).join("");
       const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg></span>`;
+      const fileCount=files.length;
       openModal(
         "Ingest",
         `<div class="formStack">
@@ -14839,6 +15500,10 @@
             <div class="rangeMetaHeader"><label>Properties</label></div>
             <div class="rangeMetaDivider"></div>
             <div class="rangeMetaTable" id="ingest_props">
+              <div class="rangeMetaRow">
+                <div class="rangeMetaCell">Sources</div>
+                <div class="rangeMetaCell">${fileCount} file${fileCount===1?"":"s"}</div>
+              </div>
               <div class="rangeMetaRow">
                 <div class="rangeMetaCell">Rule</div>
                 <select id="ingest_rule" class="objPropControl">${opts}</select>
@@ -14864,12 +15529,141 @@
         }
       );
     }
-    async function runIngestionRuleOnFile(rule){
+    async function openIngestFilesWindow(){
+      await loadIngestionLibrary();
+      const rules=ingestionLibrary||[];
+      if(!rules.length){
+        setStatus("No ingestion rules. Create one in File → Ingestion Rules.", true);
+        return;
+      }
+      const opts=rules.map((r)=>`<option value="${escAttr(r.id)}">${escAttr(r.name||"Untitled")}</option>`).join("");
+      const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg></span>`;
+      const files=[];
+      openModal(
+        "Ingest",
+        `<div class="formStack">
+          <div class="rangeMetaSection">
+            <div class="rangeMetaHeader"><label>Properties</label></div>
+            <div class="rangeMetaDivider"></div>
+            <div class="rangeMetaTable" id="ingest_files_props">
+              <div class="rangeMetaRow">
+                <div class="rangeMetaCell">Rule</div>
+                <select id="ingest_files_rule" class="objPropControl">${opts}</select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="aliasMembersBlock">
+          <div class="aliasMembersHeader">
+            <label>Files</label>
+            <button type="button" class="addBtn" id="ingest_files_add" title="Add files" aria-label="Add files">+</button>
+          </div>
+          <div id="ingest_files_list" class="aliasMemberList"></div>
+        </div>
+        <div class="modalActions modalActionsIconOnly">
+          <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Ingest">${modalSaveIconHtml()}</button>
+        </div>`,
+        { ...WF_ALIAS_FORM, titleHtml:`${icon}<span>Ingest</span>` },
+        async()=>{
+          const ruleId=byId("ingest_files_rule")?.value||"";
+          const rule=rules.find((r)=>String(r.id)===String(ruleId));
+          if(!rule){ setStatus("Select an ingestion rule.", true); return false; }
+          if(!files.length){ setStatus("Add at least one file to ingest.", true); return false; }
+          try{
+            await ingestFilePathsWithRule(files.slice(), rule);
+          }catch(err){
+            setStatus(String(err?.message||err), true);
+            return false;
+          }
+          return true;
+        }
+      );
+      const listEl=byId("ingest_files_list");
+      const renderFiles=()=>{
+        if(!listEl) return;
+        if(!files.length){
+          listEl.innerHTML=`<div class="empty">No files selected.</div>`;
+          fitAliasEditorWindow(listEl);
+          return;
+        }
+        listEl.innerHTML=files.map((filePath, idx)=>{
+          const name=String(filePath).split(/[/\\]/).pop()||filePath;
+          const kind=(detectFileTypeFromPath(filePath)||"").toUpperCase();
+          return `
+            <div class="selectRow" data-idx="${idx}" title="${escAttr(filePath)}">
+              <div class="itemPrimary">${escapeHtml(name)}${kind?` <span class="itemMeta">${escapeHtml(kind)}</span>`:""}</div>
+              <button type="button" class="aliasMemberRemove" data-idx="${idx}" aria-label="Remove">&#10005;</button>
+            </div>`;
+        }).join("");
+        listEl.querySelectorAll(".aliasMemberRemove").forEach((btn)=>{
+          btn.onclick=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const i=Number(btn.getAttribute("data-idx"));
+            if(Number.isInteger(i) && i>=0) files.splice(i,1);
+            renderFiles();
+          };
+        });
+        listEl.querySelectorAll(".selectRow").forEach((row)=>{
+          row.oncontextmenu=(ev)=>{
+            ev.preventDefault();
+            ev.stopPropagation();
+            const i=Number(row.getAttribute("data-idx"));
+            const z=Math.max(200, (typeof appWindowZ==="number"?appWindowZ:0)+15);
+            showContextMenu(ev.clientX, ev.clientY, [
+              { label:"Remove", action:()=>{
+                if(Number.isInteger(i) && i>=0) files.splice(i,1);
+                renderFiles();
+              } },
+            ], { zIndex:z });
+          };
+        });
+        fitAliasEditorWindow(listEl);
+      };
+      renderFiles();
+      bindAliasEditorManualResize(listEl);
+      const addBtn=byId("ingest_files_add");
+      if(addBtn) addBtn.onclick=async()=>{
+        try{
+          const picked=await postJson("/api/desktop/pick-files", { multiple:true });
+          const paths=Array.isArray(picked?.paths) ? picked.paths : (picked?.path ? [picked.path] : []);
+          if(!paths.length) return;
+          const seen=new Set(files.map((p)=>normalizeFilePath(p)));
+          let skipped=0;
+          for(const p of paths){
+            const path=String(p||"").trim();
+            if(!path) continue;
+            if(!detectFileTypeFromPath(path)){ skipped+=1; continue; }
+            const key=normalizeFilePath(path);
+            if(seen.has(key)) continue;
+            seen.add(key);
+            files.push(path);
+          }
+          renderFiles();
+          if(skipped) setStatus(`Skipped ${skipped} unsupported file${skipped===1?"":"s"}.`);
+        }catch(err){
+          setStatus(String(err?.message||err), true);
+        }
+      };
+    }
+    async function runIngestionRuleOnFiles(rule){
       try{
-        const picked=await postJson("/api/desktop/pick-files", { multiple:false });
+        const picked=await postJson("/api/desktop/pick-files", { multiple:true });
         const paths=Array.isArray(picked?.paths) ? picked.paths : (picked?.path ? [picked.path] : []);
-        if(!paths.length){ setStatus("No file selected."); return; }
+        if(!paths.length){ setStatus("No files selected."); return; }
         await ingestFilePathsWithRule(paths, rule);
+      }catch(err){
+        setStatus(String(err?.message||err), true);
+      }
+    }
+    async function runIngestionRuleOnSelected(rule){
+      try{
+        const files=fileSourcesForIngest();
+        if(!files.length){
+          setStatus("Select file or folder sources in the Sources panel first.", true);
+          return;
+        }
+        await ingestFilePathsWithRule(files.map((s)=>s.file_path), rule);
       }catch(err){
         setStatus(String(err?.message||err), true);
       }
@@ -15857,8 +16651,10 @@
       let library=structuredClone(rangeDefinitionLibrary||[]);
       library=library.map((r)=>({ ...r, id:String(r.id||crypto.randomUUID()) }));
       const byIdRow=(id)=>library.find((x)=>String(x.id)===String(id))||null;
+      let searchEl=null;
+      let listEl=null;
       const filterList=(rows)=>{
-        const q=(byId("m_rdef_search")?.value||"").trim().toLowerCase();
+        const q=(searchEl?.value||"").trim().toLowerCase();
         if(!q) return rows;
         return rows.filter((r)=>{
           const blob=`${r.name||""} ${r.description||""} ${(r.nodes||[]).map((n)=>n.name).join(" ")}`.toLowerCase();
@@ -15935,7 +16731,7 @@
         if(!result.ok&&result.cancelled) setStatus("Export cancelled.");
       };
       const renderList=()=>{
-        const el=byId("m_rdef_list");
+        const el=listEl||byId("m_rdef_list");
         if(!el) return;
         const filtered=filterList(library);
         el.innerHTML=filtered.length
@@ -15964,7 +16760,7 @@
           };
         });
       };
-      openModal(
+      const rdefWin=openModal(
         "Ranges > Definitions",
         `<div class="maskSearchPad dbManagerToolbar">
             <input id="m_rdef_search" class="searchInput" type="text" placeholder="Search..." />
@@ -15977,8 +16773,10 @@
         async()=>true,
         { ...WF_CFG, closable:true, titleHtml:rangeDefsWindowTitleHtml() }
       );
-      byId("m_rdef_search").oninput=()=>renderList();
-      byId("m_rdef_add_btn").onclick=(ev)=>{
+      searchEl=wireAppWindowSearch(rdefWin?.root, "m_rdef_search", ()=>renderList());
+      listEl=rdefWin?.root?.querySelector("#m_rdef_list") || byId("m_rdef_list");
+      const rdefAddBtn=rdefWin?.root?.querySelector("#m_rdef_add_btn") || byId("m_rdef_add_btn");
+      if(rdefAddBtn) rdefAddBtn.onclick=(ev)=>{
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
         openRangeDefinitionForm({ mode:"create", onSaved:()=>{ void refreshFromServer(); } });
       };
@@ -16184,8 +16982,9 @@
       loadLimitLibrary();
       let library=structuredClone(limitLibrary||[]);
       const byIdRow=(id)=>library.find((x)=>String(x.id)===String(id))||null;
+      let searchEl=null;
       const filterList=(rows)=>{
-        const q=(byId("m_lim_search")?.value||"").trim().toLowerCase();
+        const q=(searchEl?.value||"").trim().toLowerCase();
         if(!q) return rows;
         return rows.filter((r)=>{
           const thBlob=(r.thresholds||[]).map((t)=>`${t.type} ${t.direction} ${t.value}`).join(" ");
@@ -16267,7 +17066,7 @@
           };
         });
       };
-      openModal(
+      const limWin=openModal(
         "Limits",
         `<div class="maskSearchPad dbManagerToolbar">
             <input id="m_lim_search" class="searchInput" type="text" placeholder="Search..." />
@@ -16280,8 +17079,9 @@
         async()=>true,
         { ...WF_CFG, closable:true, titleHtml:limitsWindowTitleHtml("Manager") }
       );
-      byId("m_lim_search").oninput=()=>renderList();
-      byId("m_lim_add_btn").onclick=(ev)=>{
+      searchEl=wireAppWindowSearch(limWin?.root, "m_lim_search", ()=>renderList());
+      const limAddBtn=limWin?.root?.querySelector("#m_lim_add_btn") || byId("m_lim_add_btn");
+      if(limAddBtn) limAddBtn.onclick=(ev)=>{
         if(ev){ ev.preventDefault(); ev.stopPropagation(); }
         setTimeout(()=>openLimitForm({ mode:"create", onSaved:()=>{ library=structuredClone(limitLibrary||[]); renderList(); } }), 0);
       };
@@ -16800,6 +17600,7 @@
     }
     function setPlotViewType(id, viewType){
       const p=plots.find((x)=>x.id===id); if(!p) return;
+      const prevVt=normalizeViewType(p.viewType);
       p.viewType=normalizeViewType(viewType);
       const vt=normalizeViewType(p.viewType);
       if(vt==="grid"){
@@ -16809,6 +17610,14 @@
           p.options=normalizePlotOptions(opts);
         }
       }
+      if(viewDefaultsToT0(vt)){
+        p.timeMode="t0_relative";
+        applyDefaultSourceRangeT0();
+      }else if(viewDefaultsToT0(prevVt) && vt==="time"){
+        p.timeMode="absolute";
+      }
+      if(id===activePlotId) syncGlobalPlotTimeMode(p);
+      plotSessionRevision+=1;
       // Destroy Plotly only when switching to a non-chart stub view.
       if(id===activePlotId && isStubViewType(p.viewType)){
         try{ destroyChartHost(getPlotDiv(id)); }catch{}
@@ -16843,6 +17652,7 @@
         cursorHiddenKeys:Array.isArray(p.cursorHiddenKeys) ? p.cursorHiddenKeys.map(String) : [],
         stitchActive:p.stitchActive===true,
         eventOverlayActive:p.eventOverlayActive===true,
+        timeMode:persistPlotTimeMode(p),
       };
       plots.push(copy);
       const leaf=findLeafContainingPlot(plotLayout, id) || findFocusedLeaf();
@@ -16860,6 +17670,7 @@
       latestRows=copy.latestRows||[]; metadataRows=copy.metadataRows||[];
       restoreSelections(copy.selections);
       applyPlotMasksToState(copy);
+      syncGlobalPlotTimeMode(copy);
       refreshCatalogsForSelections().then(()=>{
         void rebuildPlotMosaicAndCharts();
         renderAll();
@@ -16896,6 +17707,7 @@
         addedChannelIds=migrateChannelKeySet((next?.selections?.addedChannelIds)||[]);
         selectedMaskIds=new Set(Array.isArray(next?.selections?.selectedMaskIds)?next.selections.selectedMaskIds:[]);
         selectedRangeKeys=new Set(Array.isArray(next?.selections?.selectedRangeKeys)?next.selections.selectedRangeKeys:[]);
+        syncGlobalPlotTimeMode(next);
       }
       savePlots();
       if(closingActive){
@@ -17536,12 +18348,9 @@
         b.oncontextmenu=(e)=>{
           e.preventDefault();
           e.stopPropagation();
-          const opts=getPlotOptions(p);
           showContextMenu(e.clientX,e.clientY,[
             {label:"Rename...", action:()=>renamePlot(p.id)},
             {label:"Duplicate", action:()=>duplicatePlot(p.id)},
-            {label:"Link X", checked:opts.linkX===true, action:()=>togglePlotAxisLink(p.id, "x")},
-            {label:"Link Y", checked:opts.linkY===true, action:()=>togglePlotAxisLink(p.id, "y")},
             {label:"Close", action:()=>closePlot(p.id)},
           ]);
         };
@@ -17766,6 +18575,7 @@
       addedChannelIds=migrateChannelKeySet((next?.selections?.addedChannelIds)||[]);
       selectedMaskIds=new Set(Array.isArray(next?.selections?.selectedMaskIds)?next.selections.selectedMaskIds:[]);
       selectedRangeKeys=new Set(Array.isArray(next?.selections?.selectedRangeKeys)?next.selections.selectedRangeKeys:[]);
+      syncGlobalPlotTimeMode(next);
 
       const needRebuild=!hostAlready || leafTabChange || (prevLeaf && nextLeaf && prevLeaf.leafId===nextLeaf.leafId && !sameFocus);
       if(needRebuild){
@@ -17812,6 +18622,7 @@
       state.masks=[];
       p.masks=[];
       p.selections=snapshotSelections();
+      syncGlobalPlotTimeMode(p);
       renderRows([]);
       setStatus(`Active: ${p.name}`);
       savePlots();
@@ -17928,11 +18739,6 @@
     function applySourceTreeSelection(items, clickIndex, ev){
       const it=items[clickIndex];
       if(!it || it.selectable===false) return;
-      // Drop legacy connection/folder browse keys that used to be selectable.
-      [...selectedSourceIds].forEach((id)=>{
-        const key=String(id);
-        if(key.startsWith("dbconn:") || key.startsWith("dbdb:")) selectedSourceIds.delete(key);
-      });
       const selectableIdxs=[];
       items.forEach((row,i)=>{ if(row.selectable!==false) selectableIdxs.push(i); });
       const selPos=selectableIdxs.indexOf(clickIndex);
@@ -17982,27 +18788,19 @@
           walk(id);
           return ids;
         }
+        if(isDbGroupRow(row)){
+          const ids=[id];
+          dbDescendantTestRows(row).forEach((testRow)=>{
+            const testId=resolveId(testRow);
+            if(testId) ids.push(testId);
+          });
+          return ids;
+        }
         return [id];
       };
-      const addTargets=(row)=> selectionTargetsForRow(row).forEach((id)=>{ if(id) selectedSourceIds.add(id); });
-      const removeTargets=(row)=> selectionTargetsForRow(row).forEach((id)=>selectedSourceIds.delete(id));
-      const rowIsSelected=(row)=>{
-        if(!row) return false;
-        if(row.rowKind==="folder"){
-          if(selectedSourceIds.has(row.id)) return true;
-          const files=folderDescendantFileSources(row.id);
-          return files.length>0 && files.every((f)=>selectedSourceIds.has(f.id));
-        }
-        const id=String(row.id||"");
-        if(id && selectedSourceIds.has(id)) return true;
-        // Read-only: do not materialize while checking selection.
-        if(row.rowKind==="db_test"){
-          const leaf=findMaterializedDbTestLeaf(row);
-          if(leaf && selectedSourceIds.has(leaf.id)) return true;
-          if(id.startsWith("dbtest:") && selectedSourceIds.has(id)) return true;
-        }
-        return false;
-      };
+      const addTargets=(row)=> selectionTargetsForRow(row).forEach((sid)=>{ if(sid) selectedSourceIds.add(sid); });
+      const removeTargets=(row)=> selectionTargetsForRow(row).forEach((sid)=>selectedSourceIds.delete(sid));
+      const rowIsSelected=(row)=>sourceTreeRowIsSelected(row);
 
       if(shift && Number.isInteger(anchorIdx) && anchorIdx>=0 && anchorIdx<items.length){
         const aPos=selectableIdxs.indexOf(anchorIdx);
@@ -18026,20 +18824,34 @@
       addTargets(it);
       lastClickedByKind.source=clickIndex;
     }
-    function isSourceTreeRowActive(it){
-      if(!it || it.selectable===false) return false;
-      if(it.rowKind==="folder"){
-        if(selectedSourceIds.has(it.id)) return true;
-        const files=folderDescendantFileSources(it.id);
+    function sourceTreeRowIsSelected(row){
+      if(!row || row.selectable===false) return false;
+      if(row.rowKind==="folder"){
+        if(selectedSourceIds.has(row.id)) return true;
+        const files=folderDescendantFileSources(row.id);
         return files.length>0 && files.every((f)=>selectedSourceIds.has(f.id));
       }
-      const id=String(it.id||"");
+      if(isDbGroupRow(row)){
+        if(selectedSourceIds.has(row.id)) return true;
+        const tests=dbDescendantTestRows(row);
+        return tests.length>0 && tests.every((t)=>{
+          const id=String(t.id||"");
+          if(id && selectedSourceIds.has(id)) return true;
+          const leaf=findMaterializedDbTestLeaf(t);
+          return Boolean(leaf && selectedSourceIds.has(leaf.id));
+        });
+      }
+      const id=String(row.id||"");
       if(id && selectedSourceIds.has(id)) return true;
-      if(it.rowKind==="db_test"){
-        const leaf=findMaterializedDbTestLeaf(it);
+      if(row.rowKind==="db_test"){
+        const leaf=findMaterializedDbTestLeaf(row);
         if(leaf && selectedSourceIds.has(leaf.id)) return true;
+        if(id.startsWith("dbtest:") && selectedSourceIds.has(id)) return true;
       }
       return false;
+    }
+    function isSourceTreeRowActive(it){
+      return sourceTreeRowIsSelected(it);
     }
     function patchExplorerListSelection(listId, items, set, kind){
       const root=byId(listId);
@@ -18109,29 +18921,25 @@
         };
         const twist=row.querySelector("[data-twist]");
         if(twist && it.expandable){
+          twist.onmousedown=(ev)=>{
+            ev.stopPropagation();
+          };
           twist.onclick=async(ev)=>{
             ev.preventDefault();
             ev.stopPropagation();
-            const opening=!isSourceTreeExpanded(it.treeKey);
-            toggleSourceTreeExpanded(it.treeKey);
-            saveStateDeferred();
-            if(opening && it.rowKind==="db_conn") await ensureDbConnBrowsed(it.profileId);
-            else if(opening && it.rowKind==="db_name") await ensureDbTestsBrowsed(it.profileId, it.dbName);
-            else renderAll();
+            await toggleSourceTreeRowExpanded(it);
           };
         }
         row.onclick=async(ev)=>{
           if(ev.stopPropagation) ev.stopPropagation();
+          if(ev.target?.closest?.("[data-twist]")) return;
           if(it.rowKind==="hint") return;
+          if(isDbGroupRow(it)){
+            await ensureDbConnBrowsed(it.profileId);
+            if(it.rowKind==="db_name") await ensureDbTestsBrowsed(it.profileId, it.dbName);
+          }
           if(it.selectable===false){
-            if(it.expandable){
-              const opening=!isSourceTreeExpanded(it.treeKey);
-              toggleSourceTreeExpanded(it.treeKey);
-              saveStateDeferred();
-              if(opening && it.rowKind==="db_conn") await ensureDbConnBrowsed(it.profileId);
-              else if(opening && it.rowKind==="db_name") await ensureDbTestsBrowsed(it.profileId, it.dbName);
-              else renderAll();
-            }
+            if(it.expandable) await toggleSourceTreeRowExpanded(it);
             return;
           }
           applySourceTreeSelection(items, idx, ev);
@@ -18157,27 +18965,8 @@
           ev.preventDefault();
           if(ev.stopPropagation) ev.stopPropagation();
           if(it.rowKind==="hint") return;
-          if(it.rowKind==="db_conn"){
-            const profile=(databaseLibrary||[]).find((p)=>String(p.id)===String(it.profileId));
-            if(!profile){ setStatus("Database profile not found.", true); return; }
-            showContextMenu(ev.clientX,ev.clientY,[
-              {
-                label:"Edit",
-                action:()=>openDatabaseProfileForm({
-                  mode:"edit",
-                  profile,
-                  onSaved:()=>{
-                    syncDatabaseLibrarySources();
-                    browseProfileAccessible(profile, { force:true });
-                    renderAll();
-                  },
-                }),
-              },
-            ]);
-            return;
-          }
-          if(it.selectable===false) return;
-          if(!isSourceTreeRowActive(it)){
+          const selectRowIfNeeded=()=>{
+            if(isSourceTreeRowActive(it)) return;
             selectedSourceIds.clear();
             if(it.rowKind==="db_test" && it.provisional){
               const provisionalId=String(it.id||"");
@@ -18197,14 +18986,73 @@
                 });
               };
               walk(it.id);
+            }else if(isDbGroupRow(it)){
+              selectedSourceIds.add(it.id);
+              dbDescendantTestRows(it).forEach((testRow)=>{
+                const leaf=testRow.provisional ? materializeDbTestSelection(testRow) : findMaterializedDbTestLeaf(testRow);
+                const id=leaf?.id || testRow.id;
+                if(id) selectedSourceIds.add(id);
+              });
             }else{
               selectedSourceIds.add(it.id);
             }
+          };
+          if(it.rowKind==="db_conn"){
+            const profile=(databaseLibrary||[]).find((p)=>String(p.id)===String(it.profileId));
+            if(!profile){ setStatus("Database profile not found.", true); return; }
+            selectRowIfNeeded();
+            focusedItem={kind:"source",id:it.id};
+            const menu=[{
+              label:"Edit",
+              action:()=>openDatabaseProfileForm({
+                mode:"edit",
+                profile,
+                onSaved:()=>{
+                  syncDatabaseLibrarySources();
+                  browseProfileAccessible(profile, { force:true });
+                  renderAll();
+                },
+              }),
+            }];
+            const seedIds=ingestSeedIdsForTreeRow(it);
+            if(seedIds.length){
+              menu.push({
+                label:"Ingest Source",
+                action:()=>void openIngestSourcePicker(seedIds),
+              });
+            }
+            showContextMenu(ev.clientX,ev.clientY,menu);
+            renderAll();
+            return;
           }
+          if(it.rowKind==="db_name"){
+            selectRowIfNeeded();
+            focusedItem={kind:"source",id:it.id};
+            const menu=[];
+            const seedIds=ingestSeedIdsForTreeRow(it);
+            if(seedIds.length){
+              menu.push({
+                label:"Ingest Source",
+                action:()=>void openIngestSourcePicker(seedIds),
+              });
+            }
+            if(menu.length) showContextMenu(ev.clientX,ev.clientY,menu);
+            renderAll();
+            return;
+          }
+          if(it.selectable===false) return;
+          selectRowIfNeeded();
           focusedItem={kind:"source",id:it.id};
           const menu=[];
           if(it.rowKind==="db_test"){
             menu.push({label:"Edit",action:()=>editCatalogTestSource(it)});
+            const seedIds=ingestSeedIdsForTreeRow(it);
+            if(seedIds.length){
+              menu.push({
+                label:"Ingest Source",
+                action:()=>void openIngestSourcePicker(seedIds),
+              });
+            }
             menu.push({label:"Delete",action:()=>deleteCatalogTestRow(it)});
           } else {
             if(it.rowKind==="file" || it.rowKind==="folder"){
@@ -18212,9 +19060,7 @@
             }
             menu.push({label:"Delete",action:deleteFocused});
             if(it.rowKind==="file" || it.rowKind==="folder"){
-              const seedIds=it.rowKind==="folder"
-                ? folderDescendantFileSources(it.id).map((f)=>f.id)
-                : [it.id];
+              const seedIds=ingestSeedIdsForTreeRow(it);
               menu.push({
                 label:"Create Ingest",
                 action:()=>{
@@ -18368,7 +19214,7 @@
               }
             }
             menuItems.push({label:"Copy",action:()=>copySelectedChannels(it.id)});
-            menuItems.push({label:"Paste",action:()=>pasteChannelsToActiveView()});
+            menuItems.push({label:"Paste",action:()=>pasteCopiedChannels()});
             menuItems.push({label:"Delete",action:deleteFocused});
             showContextMenu(ev.clientX,ev.clientY,menuItems);
             return;
@@ -19097,6 +19943,7 @@
             dataOnly,
             applyAxisLocks,
             useDateAxis:false,
+            plotId: targetPlotId,
             forceFullRebuild: resetView,
           });
           if(hasAxisLocks(uiLocks) && !dataOnly){
@@ -19900,6 +20747,7 @@
           unitCount: showSpec && showPsd ? 2 : 1,
           dataOnly:false,
           applyAxisLocks:false,
+          plotId: plot.id,
           forceFullRebuild:true,
         });
         observePlotHostResize(host);
@@ -20335,6 +21183,9 @@
       const prevDrawing=drawingPlotId;
       drawingPlotId=targetPlotId;
       try{
+      if(viewDefaultsToT0(vt) && timeModeForPlot(targetPlot)==="t0_relative"){
+        applyDefaultSourceRangeT0();
+      }
       const resetView=plotOpts.resetView===true;
       if(resetView) plotSessionRevision+=1;
       const preserveUi=plotOpts.preserveUi!==false && !resetView;
@@ -20517,6 +21368,7 @@
           dataOnly,
           applyAxisLocks,
           useDateAxis,
+          plotId: targetPlotId,
           forceFullRebuild: resetView || useStrips || useGrid,
         });
         if(hasAxisLocks(uiLocks) && !dataOnly){
@@ -20918,16 +21770,19 @@
       bySource.forEach((range, sid)=>{
         const src=state.sources.find((s)=>String(s.id)===sid);
         if(!src) return;
-        const startMs=Date.parse(String(range.start_time||""));
+        const startMs=parseRangeTimeMs(range.start_time);
         if(!Number.isFinite(startMs)){
           setStatus(`Range "${range.name||range.range_id}" has an invalid From time.`, true);
           return;
         }
         src.t0_utc=new Date(startMs).toISOString();
+        src.t0Aligned=true;
         src.timeRef="absolute"; // plot-level mode controls the view; keep sources UTC by default
         applied+=1;
       });
       if(applied<2) return;
+      const active=getActivePlot();
+      if(active) active.timeMode="t0_relative";
       plotTimeMode="t0_relative";
       (state.sources||[]).forEach((src)=>{
         if(src?.t0_utc) src.timeRef="t0_relative";
@@ -21833,7 +22688,20 @@
       });
       persistFocusedViewSelections();
       renderRangesList();
+      const compareOpen=(plots||[]).some((p)=>viewDefaultsToT0(p?.viewType));
+      const t0Applied=compareOpen ? applyDefaultSourceRangeT0() : 0;
       void applyRangeOverlaysToPlot();
+      if(t0Applied){
+        const toRedraw=(plots||[]).filter((p)=>{
+          if(!viewDefaultsToT0(p?.viewType)) return false;
+          const rows=p.id===activePlotId ? latestRows : (p.latestRows||[]);
+          return rows.length>0;
+        });
+        for(const p of toRedraw){
+          const rows=p.id===activePlotId ? latestRows : (p.latestRows||[]);
+          await plotRowsForPlot(p.id, rows, { preserveUi:false, resetView:true });
+        }
+      }
     }
     function renderRangesList(){
       const list=byId("rangesList");
@@ -23234,11 +24102,9 @@
           ${propRow("Tick Font Size", `<input id="opt_axisTickSize" class="objPropControl" type="number" step="1" min="6" max="30" value="${opts.axisTickSize}" />`)}`
         : "";
 
-      const timeMode=normalizeTimeRef(plotTimeMode);
+      const timeMode=timeModeForPlot(plot);
       const timescopeRows=isTime ? `
-          ${propRow("Time Mode", `<select id="opt_time_mode" class="objPropControl">${selectOpts([["absolute","UTC"],["t0_relative","t0"]], timeMode)}</select>`)}
-          ${propRow("Link X", boolSelect("opt_linkX", opts.linkX===true))}
-          ${propRow("Link Y", boolSelect("opt_linkY", opts.linkY===true))}`
+          ${propRow("Time Mode", `<select id="opt_time_mode" class="objPropControl">${selectOpts([["absolute","UTC"],["t0_relative","t0"]], timeMode)}</select>`)}`
         : "";
 
       const parametricRows=isParametric ? `
@@ -23328,7 +24194,7 @@
       const applyTimeMode=()=>{
         if(!isTime) return;
         const next=normalizeTimeRef(byId("opt_time_mode")?.value||"absolute");
-        if(next===normalizeTimeRef(plotTimeMode)) return;
+        if(next===timeModeForPlot(plot)) return;
         void setPlotTimeMode(next);
       };
       const applyParametricIndex=(nextRaw)=>{
@@ -23422,7 +24288,7 @@
         ()=>plot.parametric.xChannelId||"",
         applyParametricIndex,
       );
-      ["opt_title","opt_showLegend","opt_showAxis","opt_showGrid","opt_showTabs","opt_axisTitleSize","opt_axisTickSize","opt_legendFontSize","opt_legendIconSize","opt_legendRowGap","opt_summaryFontSize","opt_summaryHeaderFontSize","opt_summaryRowHeight","opt_linkX","opt_linkY"].forEach((id)=>{
+      ["opt_title","opt_showLegend","opt_showAxis","opt_showGrid","opt_showTabs","opt_axisTitleSize","opt_axisTickSize","opt_legendFontSize","opt_legendIconSize","opt_legendRowGap","opt_summaryFontSize","opt_summaryHeaderFontSize","opt_summaryRowHeight"].forEach((id)=>{
         const el=byId(id);
         if(!el) return;
         el.addEventListener("change", applyOptionsFields);
@@ -24751,6 +25617,11 @@
       if(!focusedItem) return;
       const {kind,id}=focusedItem;
       if(kind==="source"){
+        const key=String(id||"");
+        if(key.startsWith("dbconn:") || key.startsWith("dbdb:")){
+          setStatus("Use File → Databases to edit or remove this database.", true);
+          return;
+        }
         const s=state.sources.find((x)=>x.id===id);
         if(isFolderSource(s)){
           const removeIds=new Set([id]);
@@ -25340,7 +26211,7 @@
             <div class="rangeMetaCell">${escapeHtml(label)}</div>
             ${controlHtml}
           </div>`;
-      openModal(`Masks > ${leaf}`,`
+      const maskEntry=openModal(`Masks > ${leaf}`,`
         <div class="channelEditorForm">
         <div class="formStack">
           <div class="formField">
@@ -25425,6 +26296,14 @@
       refresh();
       const addBtn=byId("m_mask_add_ch");
       if(addBtn) addBtn.onclick=()=>showAddAliasMembersModal(chosen, refresh, { leaf, titleHtml:masksWindowTitleHtml(leaf, "Add") });
+      const maskClipTarget={
+        selected: chosen,
+        allowAliases: false,
+        allowCalculated: false,
+        refresh,
+      };
+      bindChannelListClipboardMenu(listEl, maskClipTarget);
+      registerChannelClipboardTarget(maskClipTarget, maskEntry);
       bindMaskConditionRow(opCurrent);
       bindAliasEditorManualResize(listEl);
       requestAnimationFrame(()=>fitAliasEditorWindow(listEl));
@@ -25579,15 +26458,27 @@
         }
         targets.forEach((t)=>{
           t.timeRef=ref==="t0_relative" ? "t0_relative" : "absolute";
-          if(t0Iso) t.t0_utc=t0Iso;
-          else if(ref!=="t0_relative") delete t.t0_utc;
+          if(t0Iso){
+            t.t0_utc=t0Iso;
+            t.t0Aligned=true;
+          }else if(ref!=="t0_relative"){
+            delete t.t0_utc;
+            delete t.t0Aligned;
+          }
         });
         if(isFolderSource(src)){
           src.timeRef=ref==="t0_relative" ? "t0_relative" : "absolute";
-          if(t0Iso) src.t0_utc=t0Iso;
-          else if(ref!=="t0_relative") delete src.t0_utc;
+          if(t0Iso){
+            src.t0_utc=t0Iso;
+            src.t0Aligned=true;
+          }else if(ref!=="t0_relative"){
+            delete src.t0_utc;
+            delete src.t0Aligned;
+          }
         }
         if(ref==="t0_relative" || ref==="absolute"){
+          const active=getActivePlot();
+          if(active) active.timeMode=ref==="t0_relative" ? "t0_relative" : "absolute";
           plotTimeMode=ref==="t0_relative" ? "t0_relative" : "absolute";
         }
         if(latestRows.length) await plotRows(latestRows, { preserveUi:false, resetView:true });
@@ -25895,7 +26786,7 @@
       return name;
     }
     function varLetters(n){ return Array.from({length:n}, (_,i)=>String.fromCharCode(65+i)); }
-    const FORMULA_FUNC_NAMES=["ABS","SQRT","POW","EXP","LOG","LOG10","SIN","COS","TAN","ASIN","ACOS","ATAN","ROUND","FLOOR","CEIL","MIN","MAX","CLAMP","BAND_PASS_FILTER","SMOOTH","ROLLING_MEAN","ROLLING_SUM","ROLLING_MIN","ROLLING_MAX","ROLLING_STD","RMS","PEAK","TRAPZ"];
+    const FORMULA_FUNC_NAMES=["ABS","SQRT","POW","EXP","LOG","LOG10","SIN","COS","TAN","ASIN","ACOS","ATAN","ROUND","FLOOR","CEIL","MIN","MAX","CLAMP","BAND_PASS_FILTER","SMOOTH","ROLLING_MEAN","ROLLING_SUM","ROLLING_MIN","ROLLING_MAX","ROLLING_STD","RMS","PEAK","TRAPZ","RISE","FALL","SETTLING"];
     function compileFormula(exprRaw, variableCount){
       let expr=String(exprRaw||"").trim().toUpperCase();
       if(expr.startsWith("=")) expr=expr.slice(1).trim();
@@ -25982,6 +26873,33 @@
         st.prev=v;
         return st.sum;
       };
+      const stepCall=(kind)=>(x, a, b)=>{
+        const ctx=helper.__ctx||{};
+        const key=`${kind}${helper.__stepCallIndex=(helper.__stepCallIndex||0)+1}`;
+        const lo=a==null?0.1:Number(a);
+        const hi=b==null?0.9:Number(b);
+        const band=a==null?0.02:Number(a);
+        const hold=b==null?0:Number(b);
+        if(ctx.scan){
+          if(!ctx.__stepCalls) ctx.__stepCalls={};
+          const slot=ctx.__stepCalls[key]||(ctx.__stepCalls[key]={kind, xs:[], dts:[], lo, hi, band, hold_s:hold});
+          const v=Number(x);
+          slot.xs.push(Number.isFinite(v)?v:Number.NaN);
+          slot.dts.push(Math.max(0, Number(ctx.dt_s||0)));
+          return 0;
+        }
+        const arr=(ctx.__stepOut&&ctx.__stepOut[key])||[];
+        const idx=Number(ctx.rowIndex||0);
+        const val=arr[idx];
+        return Number.isFinite(val)?val:0;
+      };
+      helper.RISE=stepCall("rise");
+      helper.FALL=stepCall("fall");
+      helper.SETTLING=stepCall("settling");
+      helper.__resetPass=()=>{
+        Object.keys(trapzStates).forEach((k)=>delete trapzStates[k]);
+        trapzCallIndex=0;
+      };
       let jsExpr=expr;
       funcs.forEach((f)=>{ jsExpr=jsExpr.replace(new RegExp(`\\b${f}\\b`,"g"),`__f.${f}`); });
       try{
@@ -25993,6 +26911,13 @@
             helper.__ctx=ctx||{};
             helper.__bpCallIndex=0;
             helper.__rollCallIndex=0;
+            helper.__stepCallIndex=0;
+            if(ctx && ctx.__resetPass){
+              helper.__resetPass();
+              ctx.__bpStates={};
+              ctx.__rollStates={};
+              ctx.__resetPass=false;
+            }
             const args=Array.isArray(vals)?vals.slice():[];
             args.push(helper);
             return fn.apply(null,args);
@@ -26001,6 +26926,108 @@
       }catch{
         return {ok:false,error:"Formula could not be parsed."};
       }
+    }
+    function finalizeStepAnalysis(calls){
+      const finiteMinMax=(xs)=>{
+        const finite=(xs||[]).filter((x)=>Number.isFinite(x));
+        if(!finite.length) return null;
+        return [Math.min(...finite), Math.max(...finite)];
+      };
+      const thresholdPair=(lo, hi, xs)=>{
+        const span=finiteMinMax(xs);
+        if(!span) return null;
+        const ymin=span[0], ymax=span[1], width=ymax-ymin;
+        if(lo>=0 && lo<=1 && hi>=0 && hi<=1 && lo<hi){
+          if(width<=0) return null;
+          return [ymin+lo*width, ymin+hi*width];
+        }
+        if(lo<hi) return [Number(lo), Number(hi)];
+        return null;
+      };
+      const timesFromDts=(dts)=>{
+        let t=0;
+        return (dts||[]).map((dt)=>{ t+=Math.max(0, Number.isFinite(dt)?dt:0); return t; });
+      };
+      const riseSeries=(xs, dts, lo, hi)=>{
+        const n=xs.length, out=Array(n).fill(0);
+        const levels=thresholdPair(lo, hi, xs);
+        if(!levels || !n) return out;
+        const loAbs=levels[0], hiAbs=levels[1];
+        const times=timesFromDts(dts.length===n?dts:Array(n).fill(0));
+        let t0=null, last=0, prev=Number.NaN;
+        for(let i=0;i<n;i+=1){
+          const x=xs[i];
+          if(!Number.isFinite(x)){ out[i]=last; continue; }
+          const t=times[i];
+          if(t0==null){
+            if((!Number.isFinite(prev) || prev<loAbs) && x>=loAbs) t0=t;
+          }else if(x>=hiAbs){
+            last=Math.max(0, t-t0); t0=null;
+          }else if(x<loAbs){
+            t0=null;
+          }
+          out[i]=last; prev=x;
+        }
+        return out;
+      };
+      const fallSeries=(xs, dts, lo, hi)=>{
+        const n=xs.length, out=Array(n).fill(0);
+        const levels=thresholdPair(lo, hi, xs);
+        if(!levels || !n) return out;
+        const loAbs=levels[0], hiAbs=levels[1];
+        const times=timesFromDts(dts.length===n?dts:Array(n).fill(0));
+        let t0=null, last=0, prev=Number.NaN;
+        for(let i=0;i<n;i+=1){
+          const x=xs[i];
+          if(!Number.isFinite(x)){ out[i]=last; continue; }
+          const t=times[i];
+          if(t0==null){
+            if((!Number.isFinite(prev) || prev>hiAbs) && x<=hiAbs) t0=t;
+          }else if(x<=loAbs){
+            last=Math.max(0, t-t0); t0=null;
+          }else if(x>hiAbs){
+            t0=null;
+          }
+          out[i]=last; prev=x;
+        }
+        return out;
+      };
+      const settlingSeries=(xs, dts, band, holdS)=>{
+        const n=xs.length, out=Array(n).fill(0);
+        const span=finiteMinMax(xs);
+        if(!span || !n) return out;
+        const finite=xs.filter((x)=>Number.isFinite(x));
+        const initial=finite[0], final=finite[finite.length-1];
+        let width=Math.abs(final-initial);
+        if(width<=0) width=span[1]-span[0];
+        const bandAbs=(band>0 && band<=1) ? (width>0?band*width:0) : Math.abs(Number(band)||0);
+        const hold=Math.max(0, Number.isFinite(holdS)?holdS:0);
+        const times=timesFromDts(dts.length===n?dts:Array(n).fill(0));
+        let t0=null, inSince=null, last=0, settled=false;
+        for(let i=0;i<n;i+=1){
+          const x=xs[i];
+          if(!Number.isFinite(x)){ out[i]=last; continue; }
+          const t=times[i];
+          if(t0==null && Math.abs(x-initial)>bandAbs) t0=t;
+          if(t0!=null && !settled){
+            if(Math.abs(x-final)<=bandAbs){
+              if(inSince==null) inSince=t;
+              if((t-inSince)>=hold){ last=Math.max(0, t-t0); settled=true; }
+            }else inSince=null;
+          }else if(settled && Math.abs(x-final)>bandAbs){
+            settled=false; inSince=null;
+          }
+          out[i]=last;
+        }
+        return out;
+      };
+      const out={};
+      Object.entries(calls||{}).forEach(([key, slot])=>{
+        if(slot.kind==="rise") out[key]=riseSeries(slot.xs, slot.dts, slot.lo, slot.hi);
+        else if(slot.kind==="fall") out[key]=fallSeries(slot.xs, slot.dts, slot.lo, slot.hi);
+        else out[key]=settlingSeries(slot.xs, slot.dts, slot.band, slot.hold_s);
+      });
+      return out;
     }
     async function showAddChannelWiseModal(){
       openCalculatedChannelEditorModal({ mode:"create" });
@@ -26117,7 +27144,7 @@
     function openCalculatedChannelEditorModal({ mode, calc=null }){
       const isEdit=mode==="edit";
       const leaf="Calculated Channel";
-      const deps=isEdit ? calcDepNames(calc) : [];
+      const deps=isEdit ? calcDepNames(calc) : selectedChannelsForCalcInputs({ allowAliases:true });
       const chosen=new Set(deps);
       const defaultName=isEdit ? (calc?.name||"channel_formula") : "channel_formula";
       const calcKey=isEdit ? (calc?.name||"") : "";
@@ -26125,7 +27152,8 @@
       const freqOverride=isEdit ? channelOverrideValue(state.freqOverrides, calcKey) : "";
       const freqCurrent=freqOverride!=="" && freqOverride!=null ? String(freqOverride) : "";
       const formulaCurrent=isEdit ? String(calc?.formula||"") : "";
-      openModal(`Channels > ${leaf}`,`
+      const formulaPlaceholder=deps.length<=1 ? "A" : "A + B";
+      const calcEntry=openModal(`Channels > ${leaf}`,`
         <div class="channelEditorForm">
         <div class="formStack">
           <div class="formField">
@@ -26144,7 +27172,7 @@
         <div class="calcFormulaPad">
           <div class="formField">
             <label>Formula</label>
-            <input id="m_formula_expr" type="text" value="${escAttr(formulaCurrent)}" placeholder="A + B" spellcheck="false" />
+            <input id="m_formula_expr" type="text" value="${escAttr(formulaCurrent)}" placeholder="${escAttr(formulaPlaceholder)}" spellcheck="false" />
           </div>
         </div>
         </div>
@@ -26209,6 +27237,14 @@
       refresh();
       const addBtn=byId("m_calc_add_ch");
       if(addBtn) addBtn.onclick=()=>showAddAliasMembersModal(chosen, refresh, { leaf, allowAliases:true });
+      const calcClipTarget={
+        selected: chosen,
+        allowAliases: true,
+        allowCalculated: false,
+        refresh,
+      };
+      bindChannelListClipboardMenu(listEl, calcClipTarget);
+      registerChannelClipboardTarget(calcClipTarget, calcEntry);
       bindAliasEditorManualResize(listEl);
       requestAnimationFrame(()=>fitAliasEditorWindow(listEl));
     }
@@ -26604,6 +27640,19 @@
         if(stackEntry) stackEntry.close=entry.close;
       }
 
+      const pickerTarget={
+        selected,
+        selActive,
+        rowCache,
+        getAllRows:()=>allRows,
+        allowAliases,
+        allowCalculated:false,
+        singlePick,
+        refresh: renderAllTransfer,
+      };
+      bindChannelListClipboardMenu(byId("aam_sel"), pickerTarget);
+      registerChannelClipboardTarget(pickerTarget, entry);
+
       const srcSel=byId("aam_source_sel");
       if(srcSel){
         srcSel.onchange=async()=>{
@@ -26940,7 +27989,7 @@
 
       const sourceSelectHtml=`<div class="formField" id="cm_source_wrap" style="margin-bottom:8px;flex:0 0 auto;"><label>Source</label><div class="selectLock"><select id="cm_source_sel" class="formSelectStable">${sourceOptions.map((o)=>`<option value="${o.sourceId}" ${o.sourceId===activeSourceId?"selected":""}>${escAttr(o.label)}</option>`).join("")}</select></div></div>`;
 
-      openModal(modalTitle || "Channels > Add",`
+      const channelAddEntry=openModal(modalTitle || "Channels > Add",`
         <div class="modalBodyPad">
           ${sourceSelectHtml}
           <div class="channelTransferGrid">
@@ -26979,6 +28028,19 @@
         setStatus(`Selected ${[...next].filter((k)=>!isCalculatedChannelKey(k) && !isAliasChannelKey(k)).length} channel key(s).`);
         return true;
       }, { ...WF_CHANNELS, closable:true, titleHtml: titleHtml || channelsWindowTitleHtml("Add") });
+
+      const addChannelsTarget={
+        selected,
+        selActive,
+        rowCache,
+        getAllRows:()=>allRows,
+        allowAliases: true,
+        allowCalculated: !useExternal,
+        blockCollapsedAlias: !useExternal,
+        refresh: renderAllTransfer,
+      };
+      bindChannelListClipboardMenu(byId("cm_sel"), addChannelsTarget);
+      registerChannelClipboardTarget(addChannelsTarget, channelAddEntry);
 
       const srcSel=byId("cm_source_sel");
       if(srcSel){
@@ -27167,18 +28229,48 @@
               });
             });
             const sortedTimes=[...byTime.keys()].sort((a,b)=>(byTime.get(a).ts||0)-(byTime.get(b).ts||0));
-            let prevMs=null;
-            const ctx={ dt_s:0, __bpStates:{} };
-            for(const t of sortedTimes){
-              const slot=byTime.get(t);
-              if(slot.vals.some((v)=>!Number.isFinite(v))) continue;
-              const currMs=slot.ts;
-              ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000);
-              prevMs=currMs;
-              let v=null;
-              try{ v=compiled.evalFn(slot.vals, ctx); }catch{ v=null; }
-              if(v===null||!Number.isFinite(v)) continue;
-              out.push({ test_run_id:slot.sample.test_run_id, test_run_code:slot.sample.test_run_code, channel_name:calc.name, unit:calc.unit||null, time:t, value:Number(v), __dbId:dbId, __ts:slot.ts, __legendSource:calcLegend });
+            const needsStep=/\b(RISE|FALL|SETTLING)\b/.test(String(calc.formula||"").toUpperCase());
+            const runPass=(scan, stepCalls, stepOut, resetPass)=>{
+              let prevMs=null;
+              let rowIndex=0;
+              const produced=[];
+              const ctx={
+                dt_s:0,
+                scan:scan===true,
+                rowIndex:0,
+                __bpStates:{},
+                __rollStates:{},
+                __stepCalls:stepCalls||{},
+                __stepOut:stepOut||{},
+                __resetPass:resetPass===true,
+              };
+              for(const t of sortedTimes){
+                const slot=byTime.get(t);
+                if(slot.vals.some((v)=>!Number.isFinite(v))) continue;
+                const currMs=slot.ts;
+                ctx.dt_s=prevMs===null?0:Math.max(0,(currMs-prevMs)/1000);
+                prevMs=currMs;
+                ctx.rowIndex=rowIndex;
+                let v=null;
+                try{ v=compiled.evalFn(slot.vals, ctx); }catch{ v=null; }
+                rowIndex+=1;
+                if(v===null||!Number.isFinite(v)) continue;
+                produced.push({ t, slot, v:Number(v) });
+              }
+              return produced;
+            };
+            let produced;
+            if(needsStep){
+              const stepCalls={};
+              runPass(true, stepCalls, {}, true);
+              const stepOut=finalizeStepAnalysis(stepCalls);
+              produced=runPass(false, stepCalls, stepOut, true);
+            }else{
+              produced=runPass(false, {}, {}, false);
+            }
+            for(const item of produced){
+              const slot=item.slot;
+              out.push({ test_run_id:slot.sample.test_run_id, test_run_code:slot.sample.test_run_code, channel_name:calc.name, unit:calc.unit||null, time:item.t, value:item.v, __dbId:dbId, __ts:slot.ts, __legendSource:calcLegend });
               workCounter+=1;
               if(workCounter%2000===0) await nextPaint();
             }
@@ -27339,7 +28431,7 @@
         destroyChartHost(getPlotDiv());
       }else{
         try{
-          await plotRows(finalRows, { preserveUi:false, resetView:true });
+          await plotRows(finalRows, { plotId: activePlot?.id || activePlotId, preserveUi:false, resetView:true });
           plotRendered=true;
           clearStatusError();
         }catch(e){
@@ -27369,24 +28461,62 @@
       }
     }
     function initMenus(){
-      const hideAll=()=>{ document.querySelectorAll(".menuDropdown").forEach((d)=>d.classList.remove("show")); };
-      document.addEventListener("click",(e)=>{ if(!byId("menubar").contains(e.target)) hideAll(); });
-      document.querySelectorAll(".menuItem").forEach((mi)=>{ mi.onclick=(e)=>{ e.stopPropagation(); const id=mi.getAttribute("data-menu"); const dd=byId(`menu_${id}`); const shown=dd.classList.contains("show"); hideAll(); if(!shown) dd.classList.add("show"); }; });
-      byId("help_github").onclick=()=>window.open("https://github.com/tysocks/NOVA","_blank");
-      byId("help_sourceHelp").onclick=()=>setStatus("Sources: + adds a folder/files. Databases from File → Databases appear automatically. Expand a database to browse tests. Missing time index channels show in red — right-click → Edit. Selecting sources does not load data until Plot.");
-      byId("help_versionCheck").onclick=()=>{ hideAll(); openVersionCheckModal(); };
-      byId("edit_showMetadata").onclick=()=>showMetadataModal();
-      byId("file_preferences").onclick=()=>{ hideAll(); openPreferencesModal(); };
-      byId("file_configManager").onclick=()=>openConfigManagerModal();
-      byId("file_databaseManager").onclick=()=>openDatabaseManagerModal();
-      byId("file_unitManager").onclick=()=>openUnitManagerModal();
-      byId("file_rangeDefinitionManager").onclick=()=>openRangeDefinitionManagerModal();
-      byId("file_ingestionManager").onclick=()=>openIngestionManagerModal();
-      byId("file_limitManager").onclick=()=>openLimitManagerModal();
-      byId("file_export").onclick=()=>{ hideAll(); openExportModal(); };
-      byId("file_saveProject").onclick=()=>{ hideAll(); void saveNovaProject(); };
-      byId("file_openProject").onclick=()=>{ hideAll(); void openNovaProject(); };
-      byId("file_resetScope").onclick=()=>{ hideAll(); void resetActiveScope(); };
+      const btn=byId("appMenuBtn");
+      const dd=byId("menu_file");
+      const hideAll=()=>{
+        dd?.classList.remove("show");
+        btn?.classList.remove("menuOpen");
+        if(btn) btn.setAttribute("aria-expanded","false");
+      };
+      const placeFileMenu=()=>{
+        if(!btn || !dd) return;
+        const rect=btn.getBoundingClientRect();
+        dd.style.top=`${Math.max(8, rect.top)}px`;
+        dd.style.left=`${rect.right + 6}px`;
+        const box=dd.getBoundingClientRect();
+        if(box.bottom > window.innerHeight - 8){
+          dd.style.top=`${Math.max(8, window.innerHeight - box.height - 8)}px`;
+        }
+        if(box.right > window.innerWidth - 8){
+          dd.style.left=`${Math.max(8, rect.left - box.width - 6)}px`;
+        }
+      };
+      const toggleFileMenu=()=>{
+        const shown=dd?.classList.contains("show");
+        if(shown){ hideAll(); return; }
+        dd.classList.add("show");
+        btn.classList.add("menuOpen");
+        btn.setAttribute("aria-expanded","true");
+        placeFileMenu();
+      };
+      btn?.addEventListener("click",(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        toggleFileMenu();
+      });
+      document.addEventListener("click",(e)=>{
+        if(!dd?.classList.contains("show")) return;
+        if(dd.contains(e.target) || btn?.contains(e.target)) return;
+        hideAll();
+      });
+      document.addEventListener("keydown",(e)=>{
+        if(e.key==="Escape" && dd?.classList.contains("show")) hideAll();
+      });
+      window.addEventListener("resize", ()=>{ if(dd?.classList.contains("show")) placeFileMenu(); });
+      const bind=(id, fn)=>{
+        byId(id)?.addEventListener("click", ()=>{ hideAll(); fn(); });
+      };
+      bind("file_preferences", ()=>openPreferencesModal());
+      bind("file_configManager", ()=>openConfigManagerModal());
+      bind("file_databaseManager", ()=>openDatabaseManagerModal());
+      bind("file_unitManager", ()=>openUnitManagerModal());
+      bind("file_rangeDefinitionManager", ()=>openRangeDefinitionManagerModal());
+      bind("file_ingestionManager", ()=>openIngestionManagerModal());
+      bind("file_limitManager", ()=>openLimitManagerModal());
+      bind("file_export", ()=>openExportModal());
+      bind("file_saveProject", ()=>void saveNovaProject());
+      bind("file_openProject", ()=>void openNovaProject());
+      bind("file_resetScope", ()=>void resetActiveScope());
     }
 
     const APPEAR_KEY="nova.appearance.notion-v1";
@@ -27410,7 +28540,7 @@
       { id:"export", label:"Export", hint:"Open the export window" },
       { id:"copyView", label:"Copy", hint:"Copy the active view image to the clipboard" },
       { id:"copyChannels", label:"Copy Channels", hint:"Copy selected channels to the channel clipboard" },
-      { id:"pasteChannels", label:"Paste Channels", hint:"Paste copied channels into the active view" },
+      { id:"pasteChannels", label:"Paste Channels", hint:"Paste copied channels into the active view or Add Channel selected list" },
       { id:"resetZoom", label:"Reset Scope", hint:"Reset NOVA views, pages, channels, masks, and objects" },
       { id:"stitchRanges", label:"Stitch Ranges", hint:"Place selected ranges tip-to-tail on the active view" },
       { id:"linkAxes", label:"Toggle Link X", hint:"Toggle linked X on the active view" },
@@ -27604,7 +28734,15 @@
         });
       };
       navItems.forEach((btn)=>{
-        btn.onclick=()=>activateTab(btn.getAttribute("data-prefs-tab"));
+        btn.onclick=()=>{
+          const tabId=btn.getAttribute("data-prefs-tab");
+          activateTab(tabId);
+        };
+      });
+      void refreshAboutAppVersion(root);
+      root.querySelector(".prefsAboutLink")?.addEventListener("click",(e)=>{
+        e.preventDefault();
+        window.open(NOVA_GITHUB_URL, "_blank");
       });
       root.querySelectorAll(".prefsThemeCard").forEach((card)=>{
         card.onclick=()=>{
@@ -27678,6 +28816,7 @@
             <button type="button" class="prefsNavItem" data-prefs-tab="font">Font &amp; Text</button>
             <button type="button" class="prefsNavItem" data-prefs-tab="shortcuts">Keyboard Shortcuts</button>
             <button type="button" class="prefsNavItem" data-prefs-tab="features">Features</button>
+            <button type="button" class="prefsNavItem" data-prefs-tab="about">About</button>
           </nav>
           <div class="prefsPanels">
             <section class="prefsPanel active" data-prefs-panel="theme">
@@ -27740,6 +28879,27 @@
                     <div class="prefsRowHint">Fetch higher-resolution data when zooming into a time-series plot.</div>
                   </div>
                   <div class="prefsRowControl"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_pref_zoom_refetch" type="checkbox" style="width:auto;margin:0;" ${preferences.zoomDetailRefetch!==false?"checked":""}/></label></div>
+                </div>
+              </div>
+            </section>
+            <section class="prefsPanel" data-prefs-panel="about">
+              <h3 class="prefsPanelTitle">About</h3>
+              <p class="prefsPanelDesc">Application version.</p>
+              <div class="prefsGroup">
+                <div class="prefsGroupTitle">NOVA</div>
+                <div class="prefsRow">
+                  <div class="prefsRowCopy">
+                    <div class="prefsRowLabel">Version</div>
+                    <div class="prefsRowHint">Installed application version.</div>
+                  </div>
+                  <div class="prefsRowControl"><span class="prefsAboutValue" id="m_pref_app_version">${escapeHtml(NOVA_APP_VERSION)}</span></div>
+                </div>
+                <div class="prefsRow">
+                  <div class="prefsRowCopy">
+                    <div class="prefsRowLabel">Source</div>
+                    <div class="prefsRowHint">Project repository on GitHub.</div>
+                  </div>
+                  <div class="prefsRowControl"><a class="prefsAboutLink" href="${escAttr(NOVA_GITHUB_URL)}" target="_blank" rel="noopener noreferrer">github.com/tysocks/NOVA</a></div>
                 </div>
               </div>
             </section>
@@ -28245,6 +29405,16 @@
       e.stopPropagation();
       refreshSourcesPanel();
     };
+    byId("ingestFilesBtn")?.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    });
+    byId("ingestFilesBtn")?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      void openIngestFilesWindow();
+    });
     byId("addChannelBtn").addEventListener("mousedown", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -28333,7 +29503,7 @@
       }
       if(action==="pasteChannels"){
         e.preventDefault();
-        pasteChannelsToActiveView();
+        pasteCopiedChannels();
         return;
       }
       if(action==="resetZoom"){

@@ -185,6 +185,204 @@ class _TrapzState:
         return st["sum"]
 
 
+def _finite_minmax(xs: list[float]) -> tuple[float, float] | None:
+    finite = [x for x in xs if math.isfinite(x)]
+    if not finite:
+        return None
+    return min(finite), max(finite)
+
+
+def _threshold_pair(lo: float, hi: float, xs: list[float]) -> tuple[float, float] | None:
+    """Map (lo, hi) to absolute levels. Values in [0, 1] with lo < hi are span fractions."""
+    span = _finite_minmax(xs)
+    if span is None:
+        return None
+    ymin, ymax = span
+    width = ymax - ymin
+    if 0 <= lo <= 1 and 0 <= hi <= 1 and lo < hi:
+        if width <= 0:
+            return None
+        return ymin + lo * width, ymin + hi * width
+    if lo < hi:
+        return float(lo), float(hi)
+    return None
+
+
+def _times_from_dts(dts: list[float]) -> list[float]:
+    t = 0.0
+    out: list[float] = []
+    for dt in dts:
+        t += max(0.0, float(dt) if math.isfinite(dt) else 0.0)
+        out.append(t)
+    return out
+
+
+def rise_series(xs: list[float], dts: list[float], lo: float = 0.1, hi: float = 0.9) -> list[float]:
+    """Seconds from lo→hi crossing on each rising step; holds the last completed value."""
+    n = len(xs)
+    out = [0.0] * n
+    levels = _threshold_pair(lo, hi, xs)
+    if not levels or n == 0:
+        return out
+    lo_abs, hi_abs = levels
+    times = _times_from_dts(dts if len(dts) == n else [0.0] * n)
+    t0: float | None = None
+    last = 0.0
+    prev = float("nan")
+    for i, x in enumerate(xs):
+        if not math.isfinite(x):
+            out[i] = last
+            continue
+        t = times[i]
+        if t0 is None:
+            if (not math.isfinite(prev) or prev < lo_abs) and x >= lo_abs:
+                t0 = t
+        else:
+            if x >= hi_abs:
+                last = max(0.0, t - t0)
+                t0 = None
+            elif x < lo_abs:
+                t0 = None
+        out[i] = last
+        prev = x
+    return out
+
+
+def fall_series(xs: list[float], dts: list[float], lo: float = 0.1, hi: float = 0.9) -> list[float]:
+    """Seconds from hi→lo crossing on each falling step; holds the last completed value."""
+    n = len(xs)
+    out = [0.0] * n
+    levels = _threshold_pair(lo, hi, xs)
+    if not levels or n == 0:
+        return out
+    lo_abs, hi_abs = levels
+    times = _times_from_dts(dts if len(dts) == n else [0.0] * n)
+    t0: float | None = None
+    last = 0.0
+    prev = float("nan")
+    for i, x in enumerate(xs):
+        if not math.isfinite(x):
+            out[i] = last
+            continue
+        t = times[i]
+        if t0 is None:
+            if (not math.isfinite(prev) or prev > hi_abs) and x <= hi_abs:
+                t0 = t
+        else:
+            if x <= lo_abs:
+                last = max(0.0, t - t0)
+                t0 = None
+            elif x > hi_abs:
+                t0 = None
+        out[i] = last
+        prev = x
+    return out
+
+
+def settling_series(
+    xs: list[float],
+    dts: list[float],
+    band: float = 0.02,
+    hold_s: float = 0.0,
+) -> list[float]:
+    """Seconds from leaving the start band until staying within the final band."""
+    n = len(xs)
+    out = [0.0] * n
+    span = _finite_minmax(xs)
+    if not span or n == 0:
+        return out
+    finite = [x for x in xs if math.isfinite(x)]
+    initial, final = finite[0], finite[-1]
+    width = abs(final - initial)
+    if width <= 0:
+        width = span[1] - span[0]
+    if 0 < band <= 1:
+        band_abs = band * width if width > 0 else 0.0
+    else:
+        band_abs = abs(float(band))
+    hold = max(0.0, float(hold_s) if math.isfinite(hold_s) else 0.0)
+    times = _times_from_dts(dts if len(dts) == n else [0.0] * n)
+    t0: float | None = None
+    in_since: float | None = None
+    last = 0.0
+    settled = False
+    for i, x in enumerate(xs):
+        if not math.isfinite(x):
+            out[i] = last
+            continue
+        t = times[i]
+        if t0 is None and abs(x - initial) > band_abs:
+            t0 = t
+        if t0 is not None and not settled:
+            if abs(x - final) <= band_abs:
+                if in_since is None:
+                    in_since = t
+                if (t - in_since) >= hold:
+                    last = max(0.0, t - t0)
+                    settled = True
+            else:
+                in_since = None
+        elif settled and abs(x - final) > band_abs:
+            settled = False
+            in_since = None
+        out[i] = last
+    return out
+
+
+class _StepAnalysisState:
+    """Scan-then-apply state for RISE / FALL / SETTLING formula functions."""
+
+    def __init__(self) -> None:
+        self.calls: dict[str, dict[str, Any]] = {}
+        self.out: dict[str, list[float]] = {}
+
+    def record(
+        self,
+        key: str,
+        kind: str,
+        x: float,
+        dt_s: float,
+        lo: float,
+        hi: float,
+        band: float,
+        hold_s: float,
+    ) -> None:
+        slot = self.calls.setdefault(
+            key,
+            {
+                "kind": kind,
+                "xs": [],
+                "dts": [],
+                "lo": lo,
+                "hi": hi,
+                "band": band,
+                "hold_s": hold_s,
+            },
+        )
+        slot["xs"].append(float(x) if math.isfinite(x) else float("nan"))
+        slot["dts"].append(max(0.0, float(dt_s) if math.isfinite(dt_s) else 0.0))
+
+    def finalize(self) -> None:
+        self.out = {}
+        for key, slot in self.calls.items():
+            kind = slot["kind"]
+            xs = slot["xs"]
+            dts = slot["dts"]
+            if kind == "rise":
+                self.out[key] = rise_series(xs, dts, slot["lo"], slot["hi"])
+            elif kind == "fall":
+                self.out[key] = fall_series(xs, dts, slot["lo"], slot["hi"])
+            else:
+                self.out[key] = settling_series(xs, dts, slot["band"], slot["hold_s"])
+
+    def result(self, key: str, index: int) -> float:
+        arr = self.out.get(key) or []
+        if 0 <= index < len(arr):
+            val = arr[index]
+            return float(val) if math.isfinite(val) else 0.0
+        return 0.0
+
+
 class _FormulaEvaluator:
     ALLOWED_NAMES = {
         "ABS": abs,
@@ -218,6 +416,8 @@ class _FormulaEvaluator:
         "PEAK": "peak",
     }
 
+    STEP_FUNCS = ("RISE", "FALL", "SETTLING")
+
     def __init__(
         self,
         expr: str,
@@ -225,10 +425,14 @@ class _FormulaEvaluator:
         band_pass: _BandPassState,
         rolling: _RollingWindowState,
         trapz: _TrapzState,
+        step: _StepAnalysisState | None = None,
+        scan: bool = False,
     ) -> None:
         self.band_pass = band_pass
         self.rolling = rolling
         self.trapz = trapz
+        self.step = step
+        self.scan = scan
         self.vars = [chr(ord("A") + i) for i in range(var_count)]
         cleaned = expr.strip()
         if cleaned.startswith("="):
@@ -236,6 +440,9 @@ class _FormulaEvaluator:
         cleaned = cleaned.upper()
         cleaned = re.sub(r"\bBAND_PASS_FILTER\b", "band_pass_filter", cleaned)
         cleaned = re.sub(r"\bTRAPZ\b", "trapz", cleaned)
+        cleaned = re.sub(r"\bSETTLING\b", "settling", cleaned)
+        cleaned = re.sub(r"\bRISE\b", "rise", cleaned)
+        cleaned = re.sub(r"\bFALL\b", "fall", cleaned)
         # Longer rolling tokens first so ROLLING_MEAN is not partially mishandled.
         for name in sorted(self.ROLLING_FUNCS.keys(), key=len, reverse=True):
             cleaned = re.sub(rf"\b{name}\b", f"rolling_{self.ROLLING_FUNCS[name]}", cleaned)
@@ -259,6 +466,31 @@ class _FormulaEvaluator:
             call_i[0] += 1
             return self.trapz.integrate(float(x), dt_s, f"trapz{call_i[0]}")
 
+        def _step_fn(kind: str):
+            def fn(
+                x: float,
+                a: float | None = None,
+                b: float | None = None,
+            ) -> float:
+                call_i[0] += 1
+                key = f"{kind}{call_i[0]}"
+                if kind == "settling":
+                    band = 0.02 if a is None else float(a)
+                    hold_s = 0.0 if b is None else float(b)
+                    lo, hi = 0.1, 0.9
+                else:
+                    lo = 0.1 if a is None else float(a)
+                    hi = 0.9 if b is None else float(b)
+                    band, hold_s = 0.02, 0.0
+                if self.scan and self.step is not None:
+                    self.step.record(key, kind, float(x), dt_s, lo, hi, band, hold_s)
+                    return 0.0
+                if self.step is not None:
+                    return self.step.result(key, bp_index)
+                return 0.0
+
+            return fn
+
         def _rolling_fn(op: str):
             def fn(x: float, window: float = 1) -> float:
                 call_i[0] += 1
@@ -270,6 +502,9 @@ class _FormulaEvaluator:
             env[f"__{name.lower()}__"] = fn
         env["band_pass_filter"] = band_pass_filter
         env["trapz"] = trapz
+        env["rise"] = _step_fn("rise")
+        env["fall"] = _step_fn("fall")
+        env["settling"] = _step_fn("settling")
         for op in set(self.ROLLING_FUNCS.values()):
             env[f"rolling_{op}"] = _rolling_fn(op)
         try:
@@ -304,39 +539,58 @@ def _eval_formula(base: list[TimeSeriesPoint], spec: CalculatedChannelSpec) -> l
                 slot["sample"] = pt
                 slot["ts"] = ts
 
-    try:
-        evaluator = _FormulaEvaluator(
-            spec.formula, len(dep_names), _BandPassState(), _RollingWindowState(), _TrapzState()
-        )
-    except Exception as exc:
-        raise ValueError(f"Invalid formula: {exc}") from exc
+    formula_u = str(spec.formula or "").upper()
+    needs_step = any(re.search(rf"\b{name}\b", formula_u) for name in _FormulaEvaluator.STEP_FUNCS)
+    ordered_keys = sorted(by_time.keys(), key=lambda k: by_time[k]["ts"])
 
-    out: list[TimeSeriesPoint] = []
-    prev_ms: float | None = None
-    bp_i = 0
-    for t_key in sorted(by_time.keys(), key=lambda k: by_time[k]["ts"]):
-        slot = by_time[t_key]
-        if any(not math.isfinite(v) for v in slot["vals"]):
-            continue
-        curr_ms = slot["ts"] * 1000.0
-        dt_s = 0.0 if prev_ms is None else max(0.0, (curr_ms - prev_ms) / 1000.0)
-        prev_ms = curr_ms
-        v = evaluator.eval_row(slot["vals"], dt_s, bp_i)
-        bp_i += 1
-        if v is None:
-            continue
-        sample = slot["sample"]
-        out.append(
-            TimeSeriesPoint(
-                test_run_id=sample.test_run_id,
-                test_run_code=sample.test_run_code,
-                channel_name=spec.name,
-                unit=spec.unit,
-                time=sample.time,
-                value=float(v),
+    def _make_evaluator(*, scan: bool, step: _StepAnalysisState | None) -> _FormulaEvaluator:
+        try:
+            return _FormulaEvaluator(
+                spec.formula,
+                len(dep_names),
+                _BandPassState(),
+                _RollingWindowState(),
+                _TrapzState(),
+                step=step,
+                scan=scan,
             )
-        )
-    return out
+        except Exception as exc:
+            raise ValueError(f"Invalid formula: {exc}") from exc
+
+    def _run(evaluator: _FormulaEvaluator) -> list[TimeSeriesPoint]:
+        out: list[TimeSeriesPoint] = []
+        prev_ms: float | None = None
+        bp_i = 0
+        for t_key in ordered_keys:
+            slot = by_time[t_key]
+            if any(not math.isfinite(v) for v in slot["vals"]):
+                continue
+            curr_ms = slot["ts"] * 1000.0
+            dt_s = 0.0 if prev_ms is None else max(0.0, (curr_ms - prev_ms) / 1000.0)
+            prev_ms = curr_ms
+            v = evaluator.eval_row(slot["vals"], dt_s, bp_i)
+            bp_i += 1
+            if v is None:
+                continue
+            sample = slot["sample"]
+            out.append(
+                TimeSeriesPoint(
+                    test_run_id=sample.test_run_id,
+                    test_run_code=sample.test_run_code,
+                    channel_name=spec.name,
+                    unit=spec.unit,
+                    time=sample.time,
+                    value=float(v),
+                )
+            )
+        return out
+
+    if needs_step:
+        step = _StepAnalysisState()
+        _run(_make_evaluator(scan=True, step=step))
+        step.finalize()
+        return _run(_make_evaluator(scan=False, step=step))
+    return _run(_make_evaluator(scan=False, step=None))
 
 
 def apply_calculated_channels(

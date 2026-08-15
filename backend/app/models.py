@@ -17,6 +17,8 @@ class TestRunItem(BaseModel):
     duration_s: float | None = None
     t0_utc: datetime | None = None
     icon: str | None = None
+    source_uri: str | None = None
+    source_type: str | None = None
 
 
 class CatalogTestUpdateRequest(BaseModel):
