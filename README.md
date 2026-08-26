@@ -1,321 +1,268 @@
-# NOVA - Northern Operation Viewer and Analysis
+# NOVA
 
-NOVA is a desktop-first data viewer for test telemetry. It runs a local FastAPI backend and opens a native desktop window that renders the NOVA web UI.
+NOVA (Northern Operation Viewer and Analysis) is a desktop app for viewing and analyzing test telemetry. It runs a local backend and opens a native window. You add data files or catalogs, pick channels, and plot them.
 
-## Current Implementation
+Libraries (configurations, units, range definitions, ingestion rules, limits) live in your user folder by default, not next to the app. Set each folder in **Preferences → Directory**.
 
-NOVA supports multiple data source types in one session:
+## Quickstart
 
-- **PostgreSQL** — save connection profiles in **Database Manager**, then use **Sources `+` → Database** to pick **Connection → Database → Tests** in a 3-column picker. Each selected test appears in **Sources** as `database_name/run_code` (e.g. `hfr_test_data/HFR-0010`).
-- **Data Files** (CSV, H5, Parquet, Arrow) — pick a file, set name/path/units-in-headers (CSV), then add channels from the file catalog.
-- **TDMS** — file picker adds the source immediately (rename via double-click or right-click).
+From a fresh clone, this is enough to plot a file.
 
-The UI lets you:
+1. Install Python 3.11+ and clone the repo:
 
-- Manage PostgreSQL connections via **File → Database Manager...** (searchable list, inline edit, add via `⋯` menu).
-- Define unit preferences and conversions via **File → Unit Manager...** (preferred units per category, translation formulas).
-- Add database-backed sources from **Sources `+` → Database** (requires at least one saved profile).
-- Edit or rename sources (right-click or double-click on Sources).
-- Add channels via a two-column transfer dialog (available → selected).
-- Use explorer-style selection in Sources/Channels (click, Ctrl/Cmd toggle, Shift range; empty selection = all).
-- Use the `+` button in Channels with a dropdown:
-  - `Add channels from source`
-  - `Rolling channel calculations`
-  - `Channel wise calculations`
-- Plot in Plotly (toolbar hidden; scroll zoom on plot and axes).
-- **v3 data engine** (default): columnar queries, file ingest to Parquet, server-side calculated channels.
-- Use either `time` or a selected channel on the X axis.
-- Switch time reference between `Raw Time` and `t0 = First Point (per test)`.
-- Apply optional start/end time filtering for database-backed timeseries.
-- Downsample channels using per-channel frequency overrides.
-- Override or set channel units via right-click **Set Unit...** (applies to all selected channels in the Channels list).
-- Show/hide an in-app data preview drawer.
-- Use a simple ruler tool (`R` key + right-click after hover) for delta and slope checks.
+```bat
+git clone https://github.com/tysocks/NOVA.git
+cd NOVA
+```
 
-UI state is persisted in browser storage and restored on restart.
+2. Create a virtual environment and install dependencies:
 
-## Database Manager
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r backend/requirements.txt
+```
 
-PostgreSQL connection profiles are stored locally on the backend host in `backend/.nova_database_library.json` (not committed; contains passwords).
+3. Start NOVA from the repository root:
 
-### Workflow
+```powershell
+.\.venv\Scripts\python .\backend\desktop_app.py
+```
 
-1. **File → Database Manager...** — add or edit profiles (name, host, port, user, password, sslmode).
-2. Use **⚡ Test connection** on a profile row to verify credentials before saving.
-3. Use the `⋯` menu to **Add**, **Import**, or **Export** profiles (JSON).
-4. Click **Save** to persist profiles to disk.
-5. **Sources `+` → Database** — select a saved **Connection**, then a **Database**, then one or more **Tests** (use the Tests search box for long lists).
-6. Click **Add Selected Tests** — each test becomes a leaf source (`database_name/run_code`) in the Sources sidebar.
+4. In the window:
 
-The Add Source picker auto-discovers the test table (`test_runs` preferred) and lists tests from the selected database. See [docs/data-file-formats.md](docs/data-file-formats.md) for required PostgreSQL schema.
+   1. Click **Sources** in the left rail, then **+** and choose a folder that contains CSV, TDMS, HDF5, Parquet, or Arrow files (or use the ingest button to pick files).
+   2. Click **Channels**, then **+**, and move channels into the selected list. With multiple sources selected, switch **Source** in the picker to add channels from each.
+   3. Click **Plot** (bottom of the rail, or `F5`).
 
-On first run, if no library file exists, NOVA seeds **RedScale** and **BlueScale** profiles from `NOVA_REDSCALE_*` and `NOVA_BLUESCALE_*` environment variables.
+A sample CSV is at `examples/example_rocket_test.csv`.
 
-### API
+Closing the window stops the backend. Each launch starts a fresh backend on the first free port in **8000–8010** (any leftover process from a previous run is stopped first).
 
-- `GET /api/database-library` — list saved profiles (seeds from env when empty)
-- `POST /api/database-library` — replace saved profiles (`{ "databases": [ ... ] }`)
-- `POST /api/database-library/test` — verify a connection (`{ "host", "port", "user", "password", "sslmode" }`)
+---
 
-### Features
+## Window layout
 
-- Persistent profile library (CRUD via Database Manager UI)
-- Configuration Manager–style UI (search toolbar, list rows, inline edit, row actions)
-- Per-profile **Test connection** (⚡)
-- JSON **Import** / **Export** via `⋯` menu
-- 3-column Add Source flow wired to saved profiles
-- **Search** filter in the Tests column of the Add Source picker
-- Auto-seed from `NOVA_REDSCALE_*` / `NOVA_BLUESCALE_*` when the library file is empty
-- API tests in `backend/tests/test_database_library.py`
+| Area | What it does |
+|------|----------------|
+| **File menu** (top of the rail) | Managers, export, project save/open, reset, preferences |
+| **Toolbars** | Sources, Channels, Masks, Ranges, Objects, Options, Pages |
+| **Plot** (bottom of the rail) | Load the active view |
+| **Plot workspace** | One or more Plotly views; scroll to zoom |
 
-### Future work
+Click, Ctrl/Cmd-click, and Shift-click work in the sidebar lists. An empty selection means “all”.
 
-| Item | Notes |
-|------|--------|
-| **Credential storage** | Passwords are plaintext in `.nova_database_library.json`; OS keychain integration is a future improvement |
+---
 
-### Troubleshooting (database sources)
+## File menu
 
-- **“No saved databases” when adding a source** — open Database Manager, confirm profiles exist, and click **Save**.
-- **Connection column shows profiles but Database column is empty** — check host, port, password, and that PostgreSQL is reachable; status bar shows discovery errors.
-- **No tests listed** — confirm the database has a `public` test table with `id`, `run_code`, and `start_time` (default `test_runs`). See [docs/data-file-formats.md](docs/data-file-formats.md).
+**Configuration Manager** — Saved plot setups (channels, layout, options). Apply a configuration to the current session.
 
-## Unit Manager
+**Databases** — Local DuckDB catalogs and optional PostgreSQL connection profiles. Add, edit, test, import, and export profiles. Catalogs are how permanent ingest is stored.
 
-Unit categories and conversion formulas are stored locally on the backend host in `backend/.nova_unit_library.json` (not committed).
+**Units** — Unit categories, a preferred display unit, and conversion formulas (`x` is the value in the source unit). Example: `x + 273.15` for °C → K. Channels whose unit matches a translation are plotted in the preferred unit.
 
-### Workflow
+**Range Definitions** — Reusable rules for detecting ranges on a test (named windows on the time axis).
 
-1. **File → Unit Manager...** — add or edit categories (name, preferred unit, translations).
-2. For each translation, set the **source unit symbol** and a formula with `x` as the value in that unit, e.g. `x + 273` (C → K) or `x / 1000` (N → kN).
-3. Use the `⋯` menu to **Add**, **Import**, or **Export** categories (JSON).
-4. Click **Save** to persist the library to disk.
+**Ingestion Rules** — Permanent ingest recipes: target catalog, channel include/exclude/rename, calculated channels, range definitions, time index, units parsing. Apply a rule to files from the ingest window or the CLI.
 
-When a channel’s unit (from file metadata or a per-channel override) matches a translation symbol, NOVA plots and previews values in the **preferred unit** and labels the Y axis accordingly. Double-click the plot area to reset zoom to the converted scale.
+**Limits** — Named limit sets and thresholds used in summary views.
 
-On first run, if no library file exists, NOVA seeds a default **Temperature** category (preferred **K**, with **C** and **F** translations).
+**Export** — PNG or PDF of the view or page, or a CSV / Parquet file of the plotted series.
 
-### Channel unit overrides
+**Save Project / Open Project** — `.nova` project files restore sources, channels, and view layout.
 
-- Right-click a channel in the Channels list → **Set Unit...**
-- Multi-select with Ctrl/Cmd+click or Shift+click, then right-click → **Set Unit...** to apply the same override to all selected channels.
-- Overrides set the channel’s **source** unit; Unit Manager controls display unit and value conversion when a matching translation exists.
+**Reset Scope** — Clear views, pages, channels, masks, and objects for a clean slate.
 
-### API
+**Preferences** — Theme, font, keyboard shortcuts, plotting behavior, library directories, and About.
 
-- `GET /api/unit-library` — list saved categories (seeds defaults when empty)
-- `POST /api/unit-library` — replace saved categories (`{ "categories": [ ... ] }`)
+---
 
-Formulas are validated on save (numbers, `x`, `+ - * / ( )` only). API tests in `backend/tests/test_unit_library.py`.
+## Toolbars
 
-## Calculated Channels
+### Sources
 
-Calculated channels are available in the same channels list as regular channels. With **Preferences → Compute calculated channels on server** (default on), rolling and formula channels are evaluated in the v3 query engine. Turn that off to use the legacy client-side path (`computeCalculatedRows`).
+Add data to the session.
 
-### Rolling channel calculations
+- **+** — Native folder picker. NOVA scans for supported files and adds them.
+- **Ingest** — Pick files and optionally apply an ingestion rule into a catalog.
+- **↻** — Refresh the selection. For an ingested file (or files under a selected folder), this clears the session channel cache and **re-ingests** so schema/unit/time-index changes take effect. Permanent catalogs are not wiped.
 
-Create a new derived channel from one source channel using:
+Supported files: CSV, TDMS, HDF5 (`.h5` / `.hdf5`), Parquet, Arrow/Feather. Files are ingested to Parquet for fast queries. Session ingest lives under `backend/.nova_sessions/` (safe to delete; re-add files afterward).
 
-- `mean`
-- `sum`
-- `min`
-- `max`
-- `std`
+Right-click or double-click a source to rename or edit it. For CSV sources, **Edit → Properties** includes:
 
-You can configure:
-
-- calculated channel name
-- output units
-- source channel
-- rolling window size (samples)
-
-### Channel wise calculations
-
-Create a new derived channel from multiple source channels using a formula with letter variables:
-
-- selected channels are mapped by order to `A`, `B`, `C`, ...
-- formula examples: `A + B`, `A / B`, `(A - B) * 10`
-- band-pass syntax: `band_pass_filter(A, low_freq, high_freq)`
-
-Supported formula functions:
-
-- `ABS(x)`
-- `SQRT(x)`
-- `POW(x, y)`
-- `EXP(x)`
-- `LOG(x)`
-- `LOG10(x)`
-- `SIN(x)`, `COS(x)`, `TAN(x)`
-- `ASIN(x)`, `ACOS(x)`, `ATAN(x)`
-- `ROUND(x)`, `FLOOR(x)`, `CEIL(x)`
-- `MIN(...)`, `MAX(...)`
-- `CLAMP(x, lo, hi)`
-- `BAND_PASS_FILTER(A, low_freq, high_freq)`
-- `SMOOTH(A, N)`, `ROLLING_MEAN(A, N)`, `ROLLING_SUM(A, N)`, `ROLLING_MIN(A, N)`, `ROLLING_MAX(A, N)`, `ROLLING_STD(A, N)`
-- `RMS(A, N)`, `PEAK(A, N)` — trailing-window RMS and peak magnitude
-- `TRAPZ(A)` — cumulative trapezoidal integral (output in source-unit · seconds)
-- `RISE(A)` / `RISE(A, lo, hi)` — rise time in seconds, 10%→90% of the series span by default. Values in `[0, 1]` with `lo < hi` are span fractions; otherwise absolute levels (e.g. `RISE(A, 10, 90)`). Holds the last completed rise.
-- `FALL(A)` / `FALL(A, lo, hi)` — fall time in seconds, 90%→10% of the series span by default (same `lo`/`hi` rules as `RISE`)
-- `SETTLING(A)` / `SETTLING(A, band, hold_s)` — settling time in seconds from leaving the start value until staying within `band` of the final value. `band` in `(0, 1]` is a fraction of the start-to-final span (default `0.02`); otherwise an absolute band. `hold_s` is extra time the signal must remain in-band (default `0`)
+- **Parse Units from Header** — units in the header (`NAME (unit)`, `NAME[unit]`)
+- **Parse Units from Row** — second row is a units row (e.g. GFSSP-style `SECONDS,kPa,...`); enable this, save, then refresh
 
-You can configure:
+Folder sources can be expanded like a tree. See [docs/data-file-formats.md](docs/data-file-formats.md) for column names, units, and format rules.
 
-- calculated channel name
-- output units
-- channel selection order
-- formula expression
+### Channels
 
-### Editing calculated channels
+Channels from selected sources, plus calculated channels and aliases.
 
-Right-click a calculated channel in the Channels list and choose:
+- **+** — Add channels from source (two-column picker). Switch the **Source** dropdown to pick from each selected source in one session; channels keep a per-source identity when names overlap.
+- **Calculated channel** — A formula over other channels. Examples: `A + B`, `C/SQRT(2*810*(A-B))`, `RISE(A)`, `ROLLING_MEAN(A, 50)`, `BAND_PASS_FILTER(A, low, high)`. Other functions include `ABS`, `SQRT`, `SMOOTH`, `RMS`, `PEAK`, `TRAPZ`, `FALL`, and `SETTLING`.
 
-- `Edit calculated channel...`
+If a calculated channel produces no finite values (for example `SQRT` of a negative input), Plot shows a status error instead of failing silently.
 
-You can edit name, units, input channels, and formula/rolling settings. The existing right-click actions for frequency and delete still apply.
+Right-click a channel for edit, unit/frequency overrides, or alias actions. Multi-select applies Set Unit to all selected channels.
 
-## v3 migration (from v1/v2 row APIs)
+### Masks
 
-| Concern | Legacy | v3 (default) |
-|--------|--------|----------------|
-| Postgres Chooch | `GET /api/v2/timeseries` | `POST /api/v3/series/query` with SQL aggregation |
-| File Chooch | `GET /api/file/timeseries` (full file) | Ingest + `POST /api/v3/series/query` on Parquet |
-| Calculated channels | Browser main thread | Server (`calculated_channels` on query) |
-| Zoom detail | Postgres only | Postgres + indexed files when overview is downsampled (`aggregate` / `raw_lttb`) |
+Hide or keep data.
 
-**Zoom-in detail refetch** only runs when the overview response used downsampling (`fetch_strategy` is not plain `raw`). Turn off **Preferences → Compute calculated channels on server** to evaluate formulas in the browser (legacy path).
+- **Channel mask** — Keep/drop samples by channel value.
+- **Range mask** — Keep/drop by time window.
 
-Session artifacts live under `backend/.nova_sessions/` (safe to delete to reclaim disk; re-ingest files afterward).
+### Ranges
 
-## Project Structure
+Time windows on a test: add with **+**, detect from a range definition, or draw **Define Range** on a time-based plot (right-click). **Stitch** places selected ranges tip-to-tail (`Ctrl+Shift+S`). **Align Sources** and **Toggle Link X** (`Ctrl+Shift+L`) keep views aligned.
 
-- `backend/app/main.py`: FastAPI app and HTTP endpoints.
-- `backend/app/engine/`: v3 query planner, Postgres/Parquet sources, Arrow codec, calc engine.
-- `backend/app/services/timeseries.py`: PostgreSQL-backed query logic (v1/v2).
-- `backend/app/services/file_sources.py`: CSV/TDMS parsing; uses Parquet artifacts when indexed.
-- `backend/app/services/unit_library.py`: unit category validation and conversion formulas.
-- `backend/app/static/index.html`: single-page UI; `static/js/nova-v3.js` v3 query client.
-- `backend/desktop_app.py`: PySide6 desktop launcher with splash screen and backend lifecycle.
+### Objects
 
-Local runtime data (gitignored): `backend/.nova_database_library.json` (PostgreSQL profiles), `backend/.nova_unit_library.json` (unit categories), `backend/.nova_config_library.json`, `backend/.nova_sessions/`.
+Plot overlays. Right-click a plot → **Add** to place them; this list is for selecting and deleting.
 
-## Install (Fresh Clone)
+- **Ruler** — Distance / delta between two points
+- **Vertical / horizontal line** — Drag to make a band
+- **Polyline** and **Shape**
+- **Datanote** — Label a datapoint
+- **Text** and **Arrow**
 
-From a new machine/user account:
+### Options
 
-1. Clone the repo:
-   - `git clone https://github.com/tysocks/NOVA.git`
-   - `cd NOVA`
-2. Create and activate a virtual environment:
-   - `python -m venv .venv`
-   - `.\.venv\Scripts\Activate.ps1`
-3. Install dependencies:
-   - `python -m pip install -r backend/requirements.txt`
-4. Configure database environment (optional if only using file sources):
-   - copy your env file to `backend\.env`
-   - set:
-     - `NOVA_DB_HOST`
-     - `NOVA_DB_PORT`
-     - `NOVA_DB_NAME`
-     - `NOVA_DB_USER`
-     - `NOVA_DB_PASSWORD`
-     - `NOVA_DB_SSLMODE`
-   - optional PostgreSQL profile envs (seed Database Manager on first run when the library file is empty):
-     - `NOVA_REDSCALE_HOST`
-     - `NOVA_REDSCALE_PORT`
-     - `NOVA_REDSCALE_USER`
-     - `NOVA_REDSCALE_PASSWORD`
-     - `NOVA_REDSCALE_SSLMODE`
-     - `NOVA_BLUESCALE_HOST`
-     - `NOVA_BLUESCALE_PORT`
-     - `NOVA_BLUESCALE_USER`
-     - `NOVA_BLUESCALE_PASSWORD`
-     - `NOVA_BLUESCALE_SSLMODE`
-     - `NOVA_DB_NAME_REDSCALE` (optional, API abstraction use)
-     - `NOVA_DB_NAME_BLUESCALE` (optional, API abstraction use)
+Properties of the focused plot: axes, legend, colors, line width, time reference (`Raw Time` vs `t0 = First Point`), X axis (time or a channel), and zoom-detail refetch.
 
-PostgreSQL connection profiles are managed via **File → Database Manager...** and saved to `backend/.nova_database_library.json`.
+### Pages
 
-## Run NOVA
+A page is a named layout of one or more views. **+** adds a page. Each view can be:
 
-### Desktop mode (recommended)
+| View | Role |
+|------|------|
+| **Time Scope** | Standard time series |
+| **Stacked Scope** | One strip per channel |
+| **Grid Scope** | Channel tiles in a grid |
+| **Parametric** | Channel vs channel |
+| **Spectral** | Frequency-domain |
+| **Cursor** | A/B cursor table (values and Δ) |
+| **Summary** | Stats against limit sets |
+| **Legend** | Standalone legend tile |
 
-From repository root:
+---
 
-- `.\.venv\Scripts\python .\backend\desktop_app.py`
+## Plotting
 
-Or use the launcher scripts:
+- **Plot** / `F5` loads the active view from the current sources, channels, masks, and ranges.
+- **Shift+F5** plots every visible tile on the page.
+- Scroll-zoom on the plot and axes. Double-click the plot to reset zoom (including unit-converted scales).
+- Time reference can be raw timestamps or per-test `t0`.
+- Right-click a plot for overlays, **Define Range**, **Align Sources**, **Stitch Ranges**, and **Copy**.
+- Calculated channels run on the server when **Preferences → Features → Server-side calculated channels** is on (default).
+- **Zoom-in detail refetch** (same Features tab) reloads higher-resolution data after you zoom into a downsampled overview.
 
-- `Launch_NOVA.vbs` (silent launch)
-- `Launch_NOVA.bat` (terminal launch)
+Copy the active view image with **Ctrl+Shift+C**. Copy/paste channels with **Ctrl+C** / **Ctrl+V**.
 
-### Desktop/Start shortcuts
+---
 
-To create/update shortcuts with the NOVA icon:
+## Preferences → Directory
 
-- `powershell -ExecutionPolicy Bypass -File .\create_desktop_shortcut.ps1`
+Each library is a JSON file inside a folder you choose:
 
-This creates:
+| Library | Typical file name |
+|---------|-------------------|
+| Configurations | `.nova_config_library.json` |
+| Units | `.nova_unit_library.json` |
+| Range Definitions | `.nova_range_definition_library.json` |
+| Ingestion Rules | `.nova_ingestion_library.json` |
+| Limits | `.nova_limit_library.json` |
 
-- Desktop shortcut: `NOVA.lnk`
-- Start Menu shortcut: `NOVA.lnk`
+**Default folder (Windows):** `%LOCALAPPDATA%\NOVA\libraries`  
+Example: `C:\Users\<you>\AppData\Local\NOVA\libraries`
 
-### Backend-only mode
+On Linux the default is `~/.local/share/NOVA/libraries` (or `$XDG_DATA_HOME/NOVA/libraries`).
 
-- `.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000` (run from `backend`)
+That location stays writable after an installer puts NOVA in Program Files. Click the folder icon on a row to pick a directory. If the JSON file is missing in the new folder, NOVA copies the current library there. Older files under `backend/` are migrated into the user folder on first use.
 
-Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+Settings themselves are `%LOCALAPPDATA%\NOVA\.nova_user_settings.json` (or the Linux equivalent). Override the data root with `NOVA_USER_DATA_DIR` if needed. Native folder pickers require the desktop app, not a browser tab.
 
-The desktop launcher (`Launch_NOVA.bat` / `Launch_NOVA.vbs`) automatically uses the first free port in **8000–8010** if another app is already bound to 8000, and reuses an existing NOVA backend when `/health` reports `app: NOVA`.
+Other Preferences tabs: **Theme**, **Font & Text**, **Keyboard Shortcuts**, **Features** (server-side calcs, zoom detail refetch), **About**.
 
-## CSV Expectations
+---
 
-CSV files must include:
+## Keyboard shortcuts (defaults)
 
-- A time column named one of: `timestamp_utc`, `time`, `timestamp`, `datetime`
-- One or more numeric columns to be treated as channels
+| Action | Shortcut |
+|--------|----------|
+| Plot | `F5` |
+| Plot all visible views | `Shift+F5` |
+| Delete | `Delete` |
+| Preferences | `Ctrl+,` |
+| Export | `Ctrl+Shift+E` |
+| Copy view | `Ctrl+Shift+C` |
+| Copy / paste channels | `Ctrl+C` / `Ctrl+V` |
+| Reset scope | `Home` |
+| Stitch ranges | `Ctrl+Shift+S` |
+| Link X axes | `Ctrl+Shift+L` |
 
-NOVA parses timestamps as UTC, drops invalid time rows, and sorts by time.
+Rebind these under **Preferences → Keyboard Shortcuts**.
 
-Example template:
+---
 
-- `examples/example_input_template.csv`
+## Optional: PostgreSQL
 
-## API Endpoints
+File sources work with no database. PostgreSQL is off by default.
 
-- `GET /health`
-- `GET /api/databases`
-- `GET /api/tests`
-- `GET /api/channels`
-- `GET /api/available-channels`
-- `GET /api/timeseries` — **legacy**; prefer v3
-- `GET /api/v2/timeseries` — **legacy** envelope adapter (uses v3 postgres engine internally); prefer v3
-- `POST /api/v3/series/query` — **primary** (Arrow IPC default, or `?format=json`; optional `calculated_channels`)
-- `POST /api/v3/ingest/file` — index CSV/H5/TDMS to `.nova_sessions/` Parquet
-- `GET /api/v3/ingest/{artifact_id}/status` (and `/tests`, `/channels`)
-- Legacy v1/v2 postgres queries use the v3 engine by default. Set `NOVA_LEGACY_ROW_ENGINE=1` to restore the old row-oriented SQL path.
-- File sources: ingest on add; Chooch uses v3 query API
-- `GET /api/v3/ingest/by-path` — resolve existing artifact for a file path (restored sessions)
-- `GET /api/database-library` — saved PostgreSQL connection profiles
-- `POST /api/database-library`
-- `POST /api/database-library/test` — verify connection credentials
-- `GET /api/unit-library` — saved unit categories and conversion formulas
-- `POST /api/unit-library`
-- `GET /api/config-library`
-- `POST /api/config-library`
-- `GET /api/file/tests`
-- `GET /api/file/channels`
-- `GET /api/file/timeseries` — **legacy**; uses Parquet when indexed, otherwise slow full-file parse
-- `POST /api/desktop/pick-folder` — native folder dialog (absolute path, no copy)
-- `POST /api/desktop/pick-files` — native multi-file dialog (absolute paths, no copy)
-- `GET /api/file/scan-folder` — list supported data files under a folder path
+To use it, set `NOVA_ENABLE_POSTGRES=1` and put connection values in `backend/.env` (`NOVA_DB_*`). **File → Databases** still holds profiles. Empty libraries can seed RedScale / BlueScale from `NOVA_REDSCALE_*` and `NOVA_BLUESCALE_*`.
+
+---
+
+## Headless CLI
+
+From `backend/` with the venv active (or use `..\.venv\Scripts\python`):
+
+```powershell
+python -m app.cli ingest-rule --rule-name "My rule" path\to\a.csv path\to\b.csv
+python -m app.cli export-series --series series.json --format csv --out out.csv
+```
+
+Pass `--rule-id`, `--rule-name`, or `--rule-json`. `ingest-rule` reads the ingestion-rule library from **Preferences → Directory** unless you pass `--library`.
+
+---
+
+## Backend-only (browser)
+
+```powershell
+cd backend
+..\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Then open [http://127.0.0.1:8000](http://127.0.0.1:8000). Prefer the desktop app: it owns the backend, uses native folder pickers, and starts on the first free port in **8000–8010**.
+
+Primary query API: `POST /api/v3/series/query`. Health check: `GET /health`.
+
+---
+
+## Project layout
+
+- `backend/desktop_app.py` — Desktop window, splash, backend start/stop
+- `backend/app/main.py` — HTTP API
+- `backend/app/engine/` — v3 query, ingest, Parquet, calculated channels
+- `backend/app/services/` — libraries, file sources, settings, native dialogs
+- `backend/app/static/` — UI (`index.html`, `js/nova-v3.js`)
+- `examples/` — Sample CSV / Parquet / Arrow
+- `docs/data-file-formats.md` — File format rules
+
+Runtime data (not committed): `%LOCALAPPDATA%\NOVA\`, `backend/.nova_sessions/`, `backend/.nova_profile/` (desktop cache).
+
+---
 
 ## Troubleshooting
 
-- If desktop launch fails, run `backend/desktop_app.py` in terminal to see immediate errors.
-- If backend data is empty, verify DB credentials and that required tables exist.
-- If database sources fail to list databases, open **Database Manager**, verify the profile password, click **Save**, then retry **Sources `+` → Database**.
-- If file sources fail, confirm the original file path still exists and that CSV/TDMS format is compatible.
-- If Chooch is slow on large TDMS/CSV, confirm ingest completed (status bar) and that `.nova_sessions/` contains the artifact.
-- If zoom feels sluggish on fully loaded file data, overview is already at full resolution — detail refetch is skipped automatically; disable **Zoom-in detail refetch** to force-off LOD refetch.
-- To reclaim disk space, delete `backend/.nova_sessions/` (or individual artifact folders). Re-add file sources afterward so NOVA can re-ingest them.
-- Legacy endpoints (`/api/timeseries`, `/api/v2/timeseries`, `/api/file/timeseries`) return `Deprecation: true` headers; migrate integrations to `POST /api/v3/series/query`.
+- **Launch fails** — Run `.\.venv\Scripts\python .\backend\desktop_app.py` in a terminal and read the traceback. Also see `nova_backend.log`.
+- **UI changes do not appear** — Fully quit NOVA and start again from the command above. Desktop always starts a new backend; do not leave an old `uvicorn` running on port 8000.
+- **Folder picker does nothing** — Use the desktop app, not the browser. Native dialogs only exist in desktop mode.
+- **File plot is empty or slow** — Confirm ingest finished (status bar) and the original file path still exists. CSV needs a time column (`timestamp_utc`, `time`, `timestamp`, `datetime`, `time_s`, `TIME`, `SECONDS`, …) and numeric channels. After changing CSV unit/time options, use **↻** to re-ingest.
+- **CSV units wrong / missing** — Enable **Parse Units from Header** and/or **Parse Units from Row** on the source, save, refresh.
+- **Calculated channel missing from plot** — Check the status toast after Plot. Domain errors (e.g. `SQRT` of a negative) produce no finite points and now raise a visible alarm.
+- **Disk use** — Delete `backend/.nova_sessions/` and re-add files.
+- **No databases when adding a source** — Open **File → Databases**, add a catalog or profile, save, retry.
