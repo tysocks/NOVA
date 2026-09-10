@@ -27,6 +27,23 @@ def test_probe_csv_detects_header_units(tmp_path: Path):
     assert set(result.units_metadata.channels_with_units) == {"THRUST (N)", "P[psi]"}
 
 
+def test_probe_csv_units_in_row_gfssp(tmp_path: Path):
+    csv_path = tmp_path / "inputFN.CSV"
+    csv_path.write_text(
+        "TIME,P1        ,P2        \n"
+        "SECONDS,kPa,kPa\n"
+        "0.200000E-01,0.500000E+02,0.118733E+03\n"
+        "0.400000E-01,0.500000E+02,0.117487E+03\n",
+        encoding="utf-8",
+    )
+    result = probe_file(str(csv_path), units_in_row=True)
+    assert result.time_index_default == "TIME"
+    assert result.schema_validation is None
+    names = {c.channel_name: c.unit for c in result.channels}
+    assert names["P1"] == "kPa"
+    assert "TIME" not in names
+
+
 def test_probe_parquet_schema_units(tmp_path: Path):
     table = pa.table(
         {

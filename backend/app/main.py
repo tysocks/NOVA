@@ -83,6 +83,8 @@ from .services.range_definition_library import clean_range_definition_rows
 from .services.ingestion_rule_library import clean_ingestion_rule, clean_ingestion_rule_rows
 from .services.query_router import resolve_overlay_targets
 from .services import database_library as db_library
+from .services import native_dialogs
+from .services import user_settings as user_settings
 from .config import settings
 
 
@@ -91,6 +93,10 @@ async def _app_lifespan(_app: FastAPI):
     """Clear temporary file-open cache between app instances; pin process catalog to local."""
     from .engine.session_store import clear_local_catalog_db, clear_temporary_sessions
 
+    try:
+        user_settings.migrate_legacy_runtime_files()
+    except Exception:
+        pass
     try:
         clear_temporary_sessions()
         clear_local_catalog_db()
@@ -125,14 +131,29 @@ def _mark_legacy_timeseries(response: Response) -> None:
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
-APPEARANCE_FILE = Path(__file__).resolve().parents[1] / ".nova_appearance.json"
+from .paths import appearance_file, nova_libraries_dir, sources_workspace_file
+
+APPEARANCE_FILE = appearance_file()
 # Kept for test monkeypatch compatibility; library IO uses db_library.DATABASE_LIBRARY_FILE.
 DATABASE_LIBRARY_FILE = db_library.DATABASE_LIBRARY_FILE
-UNIT_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_unit_library.json"
-CONFIG_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_config_library.json"
-RANGE_DEFINITION_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_range_definition_library.json"
-INGESTION_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_ingestion_library.json"
-SOURCES_WORKSPACE_FILE = Path(__file__).resolve().parents[1] / ".nova_sources_workspace.json"
+UNIT_LIBRARY_FILE = nova_libraries_dir() / ".nova_unit_library.json"
+CONFIG_LIBRARY_FILE = nova_libraries_dir() / ".nova_config_library.json"
+RANGE_DEFINITION_LIBRARY_FILE = nova_libraries_dir() / ".nova_range_definition_library.json"
+INGESTION_LIBRARY_FILE = nova_libraries_dir() / ".nova_ingestion_library.json"
+LIMIT_LIBRARY_FILE = nova_libraries_dir() / ".nova_limit_library.json"
+SOURCES_WORKSPACE_FILE = sources_workspace_file()
+user_settings.register_library_fallback("units", lambda: UNIT_LIBRARY_FILE)
+user_settings.register_library_fallback("configurations", lambda: CONFIG_LIBRARY_FILE)
+user_settings.register_library_fallback("range_definitions", lambda: RANGE_DEFINITION_LIBRARY_FILE)
+user_settings.register_library_fallback("ingestion_rules", lambda: INGESTION_LIBRARY_FILE)
+user_settings.register_library_fallback("limits", lambda: LIMIT_LIBRARY_FILE)
+
+
+def _library_file(kind: str, fallback: Path) -> Path:
+    try:
+        return user_settings.library_path(kind)
+    except KeyError:
+        return fallback
 
 
 @contextmanager
@@ -153,9 +174,15 @@ except Exception:
     pass
 
 
+_NO_STORE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+    "Pragma": "no-cache",
+}
+
+
 @app.get("/", include_in_schema=False)
 def nova_app() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+    return FileResponse(STATIC_DIR / "index.html", headers=_NO_STORE_HEADERS)
 
 
 @app.get("/js/{file_path:path}", include_in_schema=False)
@@ -164,7 +191,7 @@ def static_js(file_path: str) -> FileResponse:
     root = (STATIC_DIR / "js").resolve()
     if not str(target).startswith(str(root)) or not target.is_file():
         raise HTTPException(status_code=404, detail="Not found")
-    return FileResponse(target)
+    return FileResponse(target, headers=_NO_STORE_HEADERS)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -301,10 +328,11 @@ def save_sources_workspace(payload: dict = Body(...)) -> dict:
 
 
 def _load_config_library_rows() -> list[dict]:
-    if not CONFIG_LIBRARY_FILE.exists():
+    path = _library_file("configurations", CONFIG_LIBRARY_FILE)
+    if not path.exists():
         return []
     try:
-        payload = json.loads(CONFIG_LIBRARY_FILE.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return []
     rows = payload.get("configs") if isinstance(payload, dict) else None
@@ -317,8 +345,9 @@ def _load_config_library_rows() -> list[dict]:
 
 
 def _write_config_library_rows(rows: list[dict]) -> None:
-    CONFIG_LIBRARY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CONFIG_LIBRARY_FILE.write_text(
+    path = _library_file("configurations", CONFIG_LIBRARY_FILE)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
         json.dumps({"configs": rows}, indent=2),
         encoding="utf-8",
     )
@@ -360,7 +389,7 @@ def _write_json_library_rows(path: Path, key: str, rows: list[dict]) -> None:
 
 @app.get("/api/range-definition-library")
 def get_range_definition_library() -> dict:
-    rows = _load_json_library_rows(RANGE_DEFINITION_LIBRARY_FILE, "definitions")
+    rows = _load_json_library_rows(_library_file("range_definitions", RANGE_DEFINITION_LIBRARY_FILE), "definitions")
     try:
         return {"definitions": clean_range_definition_rows(rows)}
     except Exception:
@@ -376,13 +405,13 @@ def save_range_definition_library(payload: dict = Body(...)) -> dict:
         cleaned = clean_range_definition_rows(rows)
     except (ValueError, TypeError) as exc:
         return {"ok": False, "error": str(exc)}
-    _write_json_library_rows(RANGE_DEFINITION_LIBRARY_FILE, "definitions", cleaned)
+    _write_json_library_rows(_library_file("range_definitions", RANGE_DEFINITION_LIBRARY_FILE), "definitions", cleaned)
     return {"ok": True, "count": len(cleaned)}
 
 
 @app.get("/api/ingestion-library")
 def get_ingestion_library() -> dict:
-    rows = _load_json_library_rows(INGESTION_LIBRARY_FILE, "rules")
+    rows = _load_json_library_rows(_library_file("ingestion_rules", INGESTION_LIBRARY_FILE), "rules")
     try:
         return {"rules": clean_ingestion_rule_rows(rows)}
     except Exception:
@@ -398,8 +427,48 @@ def save_ingestion_library(payload: dict = Body(...)) -> dict:
         cleaned = clean_ingestion_rule_rows(rows)
     except (ValueError, TypeError) as exc:
         return {"ok": False, "error": str(exc)}
-    _write_json_library_rows(INGESTION_LIBRARY_FILE, "rules", cleaned)
+    _write_json_library_rows(_library_file("ingestion_rules", INGESTION_LIBRARY_FILE), "rules", cleaned)
     return {"ok": True, "count": len(cleaned)}
+
+
+@app.get("/api/limit-library")
+def get_limit_library() -> dict:
+    rows = _load_json_library_rows(_library_file("limits", LIMIT_LIBRARY_FILE), "limits")
+    try:
+        return {"limits": user_settings.clean_limit_library_rows(rows)}
+    except Exception:
+        return {"limits": []}
+
+
+@app.post("/api/limit-library")
+def save_limit_library(payload: dict = Body(...)) -> dict:
+    rows = payload.get("limits") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return {"ok": False, "error": "limits must be a list"}
+    try:
+        cleaned = user_settings.clean_limit_library_rows(rows)
+    except (ValueError, TypeError) as exc:
+        return {"ok": False, "error": str(exc)}
+    _write_json_library_rows(_library_file("limits", LIMIT_LIBRARY_FILE), "limits", cleaned)
+    return {"ok": True, "count": len(cleaned)}
+
+
+@app.get("/api/library-paths")
+def get_library_paths() -> dict:
+    return {"libraries": user_settings.resolved_library_paths()}
+
+
+@app.post("/api/library-paths")
+def save_library_paths(payload: dict = Body(...)) -> dict:
+    updates = payload.get("libraries") if isinstance(payload, dict) else None
+    if not isinstance(updates, dict):
+        return {"ok": False, "error": "libraries must be an object of path strings"}
+    try:
+        cleaned = {str(k): str(v) for k, v in updates.items() if v is not None}
+        resolved = user_settings.set_library_paths(cleaned)
+    except (ValueError, OSError) as exc:
+        return {"ok": False, "error": str(exc)}
+    return {"ok": True, "libraries": resolved}
 
 
 def _require_postgres() -> None:
@@ -1015,6 +1084,7 @@ def probe_file_v3(body: FileProbeRequest) -> FileProbeResponse:
         return probe_file_with_validation(
             body.file_path,
             units_in_headers=body.units_in_headers,
+            units_in_row=body.units_in_row,
             time_index_channel=body.time_index_channel,
         )
     except ValueError as exc:
@@ -1027,7 +1097,7 @@ def ingest_file_v3(body: FileIngestRequest) -> FileIngestResponse:
     try:
         rule = None
         if body.ingestion_rule_id:
-            rows = _load_json_library_rows(INGESTION_LIBRARY_FILE, "rules")
+            rows = _load_json_library_rows(_library_file("ingestion_rules", INGESTION_LIBRARY_FILE), "rules")
             cleaned = clean_ingestion_rule_rows(rows)
             rule = next((r for r in cleaned if str(r.get("id")) == str(body.ingestion_rule_id)), None)
             if rule is None:
@@ -1036,6 +1106,7 @@ def ingest_file_v3(body: FileIngestRequest) -> FileIngestResponse:
             body.source_type,
             body.file_path,
             units_in_headers=body.units_in_headers,
+            units_in_row=body.units_in_row,
             time_index_channel=body.time_index_channel,
             ingest_mode=body.ingest_mode,
             parameters=body.parameters,
@@ -1049,6 +1120,7 @@ def ingest_file_v3(body: FileIngestRequest) -> FileIngestResponse:
             calculated_channels=[c.model_dump() for c in (body.calculated_channels or [])],
             range_definition_ids=body.range_definition_ids,
             ingestion_rule=rule,
+            force=bool(body.force),
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -1096,7 +1168,7 @@ def ingest_with_rule_v3(body: IngestWithRuleRequest) -> FileIngestResponse:
         if body.rule is not None:
             rule = clean_ingestion_rule(body.rule)
         elif body.rule_id:
-            rows = _load_json_library_rows(INGESTION_LIBRARY_FILE, "rules")
+            rows = _load_json_library_rows(_library_file("ingestion_rules", INGESTION_LIBRARY_FILE), "rules")
             cleaned = clean_ingestion_rule_rows(rows)
             rule = next((r for r in cleaned if str(r.get("id")) == str(body.rule_id)), None)
             if rule is None:
@@ -1257,6 +1329,7 @@ def file_channels_api(
     source_type: str = Query(..., description="csv or tdms or h5"),
     file_path: str = Query(..., description="Absolute file path."),
     units_in_headers: bool = Query(default=False, description="If true (CSV only), parse units from column headers."),
+    units_in_row: bool = Query(default=False, description="If true (CSV only), parse units from the second row."),
     time_index_channel: str | None = Query(default=None, description="Shared time column/dataset for tabular files."),
 ) -> list[ChannelItem]:
     try:
@@ -1265,6 +1338,7 @@ def file_channels_api(
             file_path=file_path,
             units_in_headers=units_in_headers,
             time_index_channel=time_index_channel,
+            units_in_row=units_in_row,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -1278,6 +1352,7 @@ def file_timeseries_api(
     channel_names: list[str] = Query(...),
     limit: int | None = Query(default=5000000, ge=1, le=5000000),
     units_in_headers: bool = Query(default=False, description="If true (CSV only), parse units from column headers."),
+    units_in_row: bool = Query(default=False, description="If true (CSV only), parse units from the second row."),
 ) -> list[TimeSeriesPoint]:
     _mark_legacy_timeseries(response)
     try:
@@ -1287,29 +1362,21 @@ def file_timeseries_api(
             channel_names=channel_names,
             limit=limit or 5000000,
             units_in_headers=units_in_headers,
+            units_in_row=units_in_row,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/desktop/pick-folder")
-def pick_folder_dialog() -> dict:
-    """Native folder dialog; returns the absolute folder path (no file copy)."""
+def pick_folder_dialog(payload: dict | None = Body(None)) -> dict:
+    """Native Explorer folder dialog; returns the absolute folder path (no file copy)."""
+    body = payload if isinstance(payload, dict) else {}
+    title = str(body.get("title") or "Select folder")
     try:
-        import tkinter as tk
-        from tkinter import filedialog
+        chosen = native_dialogs.pick_folder(title)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Folder picker unavailable: {exc}") from exc
-    root = tk.Tk()
-    root.withdraw()
-    try:
-        root.attributes("-topmost", True)
-    except Exception:
-        pass
-    try:
-        chosen = filedialog.askdirectory(title="Select data folder")
-    finally:
-        root.destroy()
     if not chosen:
         return {"path": None, "cancelled": True}
     return {"path": str(Path(chosen).resolve()), "cancelled": False}
@@ -1451,10 +1518,11 @@ def scan_folder_files(path: str = Query(..., description="Absolute folder path t
 
 
 def _load_unit_library_rows() -> list[dict]:
-    if not UNIT_LIBRARY_FILE.exists():
+    path = _library_file("units", UNIT_LIBRARY_FILE)
+    if not path.exists():
         return []
     try:
-        payload = json.loads(UNIT_LIBRARY_FILE.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return []
     rows = payload.get("categories") if isinstance(payload, dict) else None
@@ -1467,7 +1535,9 @@ def _load_unit_library_rows() -> list[dict]:
 
 
 def _write_unit_library_rows(rows: list[dict]) -> None:
-    UNIT_LIBRARY_FILE.write_text(
+    path = _library_file("units", UNIT_LIBRARY_FILE)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
         json.dumps({"categories": rows}, indent=2),
         encoding="utf-8",
     )

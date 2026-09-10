@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +19,10 @@ from .session_store import artifact_dir, load_manifest
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _ms_to_utc(ms: float) -> datetime:
+    return datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(milliseconds=float(ms))
 
 
 def _parse_dt(value: Any) -> datetime | None:
@@ -479,8 +483,8 @@ def ensure_source_range_from_manifest(
         artifact_id=artifact_id,
         file_path=str(source_path or manifest.get("file_path") or ""),
         name=name,
-        start_time=datetime.fromtimestamp(float(start_ms) / 1000.0, tz=timezone.utc),
-        end_time=datetime.fromtimestamp(float(end_ms) / 1000.0, tz=timezone.utc),
+        start_time=_ms_to_utc(float(start_ms)),
+        end_time=_ms_to_utc(float(end_ms)),
     )
 
 

@@ -14,14 +14,11 @@ from pathlib import Path
 from typing import Any
 
 
-def _repo_backend_root() -> Path:
-    return Path(__file__).resolve().parents[1]
-
-
 def _load_ingestion_rules(library_path: Path | None = None) -> list[dict[str, Any]]:
     from .services.ingestion_rule_library import clean_ingestion_rule_rows
+    from .services.user_settings import library_path as resolved_ingestion_library
 
-    path = library_path or (_repo_backend_root() / ".nova_ingestion_library.json")
+    path = library_path or resolved_ingestion_library("ingestion_rules")
     if not path.exists():
         return []
     payload = json.loads(path.read_text(encoding="utf-8"))

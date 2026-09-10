@@ -142,6 +142,7 @@ def clean_ingestion_rule(row: Any) -> dict[str, Any]:
             else None
         ),
         "units_in_headers": bool(row.get("units_in_headers") or False),
+        "units_in_row": bool(row.get("units_in_row") or False),
         "parameters": parameters,
         "updated_at": str(row.get("updated_at") or _now_iso()),
     }

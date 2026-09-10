@@ -6,25 +6,37 @@ __pycache__/
 *.pyd
 *.log
 .nova_backend_port
+.nova_profile/
 
 # Local environment secrets
 .env
 backend/.env
 
-# Sample runtime files
+# Sample / runtime files (live under %LOCALAPPDATA%\NOVA or NOVA_USER_DATA_DIR)
 backend/.nova_appearance.json
 backend/.nova_source_defaults.json
 backend/.nova_config_library.json
 backend/.nova_database_library.json
 backend/.nova_unit_library.json
 backend/.nova_range_definition_library.json
+backend/.nova_ingestion_library.json
+backend/.nova_limit_library.json
+backend/.nova_user_settings.json
 backend/.nova_sources_workspace.json
 backend/.nova_sessions/
+backend/.nova_parquet/
+backend/.nova_parquet_lake/
+backend/.nova_catalog.duckdb
+backend/app/.nova_database_library.json
+backend/app/.nova_*.json
+backend/.nova_*.json
+backend/.nova_*.duckdb
 
 # OS/editor noise
 .DS_Store
 Thumbs.db
 .claude/
+.superpowers/
 
 # Cursor / local IDE
 .cursor/

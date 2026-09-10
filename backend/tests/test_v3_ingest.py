@@ -120,6 +120,29 @@ def test_run_ingest_is_idempotent_for_same_path(sessions_tmp, tmp_path: Path):
     assert m2["status"] == "ready"
 
 
+def test_force_reingest_replaces_temporary_cache(sessions_tmp, tmp_path: Path):
+    csv_path = tmp_path / "sim.csv"
+    csv_path.write_text("time_s,value\n0.0,1\n1.0,2\n", encoding="utf-8")
+    first = run_ingest("csv", str(csv_path))
+    assert first["channels"][0]["point_count"] == 2
+
+    csv_path.write_text("time_s,value\n0.0,10\n0.5,20\n1.0,30\n", encoding="utf-8")
+    cached = run_ingest("csv", str(csv_path))
+    assert cached["channels"][0]["point_count"] == 2
+
+    refreshed = run_ingest("csv", str(csv_path), force=True)
+    assert refreshed["artifact_id"] == first["artifact_id"]
+    assert refreshed["status"] == "ready"
+    assert refreshed["channels"][0]["point_count"] == 3
+
+    response = client.post(
+        "/api/v3/ingest/file",
+        json={"source_type": "csv", "file_path": str(csv_path), "force": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["channels"][0]["point_count"] == 3
+
+
 def test_ingest_lookup_by_path_api(sessions_tmp, tmp_path: Path):
     csv_path = tmp_path / "lookup.csv"
     csv_path.write_text("time_s,value\n0.0,1\n", encoding="utf-8")

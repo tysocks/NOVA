@@ -77,7 +77,7 @@ def test_resolve_backend_port_waits_for_extended_health_timeout(tmp_path):
         },
     )()
 
-    with patch("desktop_app.find_existing_nova_port", return_value=None):
+    with patch("desktop_app.stop_existing_nova_backends"):
         with patch("desktop_app.ports_used_by_other_apps", return_value=[]):
             with patch("desktop_app.find_free_port", return_value=8000):
                 with patch("desktop_app.start_backend_process", return_value=fake_server):

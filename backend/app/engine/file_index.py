@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +18,7 @@ from ..services.file_sources import (
 from .session_store import (
     artifact_dir,
     artifact_id_for_path,
+    clear_session_channel_cache,
     data_dir,
     find_artifact_for_path,
     initial_manifest,
@@ -144,6 +145,11 @@ def _finalize_manifest(
     return manifest
 
 
+def _ms_to_utc(ms: float) -> datetime:
+    """UTC datetime from epoch milliseconds (Windows fromtimestamp drops sub-seconds)."""
+    return datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(milliseconds=float(ms))
+
+
 def _source_range_name(file_path: Path, manifest: dict[str, Any] | None = None) -> str:
     """Default source-range name is the file name (basename without extension)."""
     stem = str(file_path.stem or "").strip()
@@ -169,8 +175,10 @@ def _ensure_default_source_range(
     end_ms = bounds.get("end_ms")
     if start_ms is None or end_ms is None:
         return
-    start_time = datetime.fromtimestamp(float(start_ms) / 1000.0, tz=timezone.utc)
-    end_time = datetime.fromtimestamp(float(end_ms) / 1000.0, tz=timezone.utc)
+    start_time = _ms_to_utc(float(start_ms))
+    end_time = _ms_to_utc(float(end_ms))
+    if end_time <= start_time:
+        return
     name = _source_range_name(file_path, manifest)
     if mode == "temporary":
         from .range_store import ensure_temp_source_range
@@ -293,6 +301,7 @@ def ingest_csv(
     artifact_id: str,
     *,
     units_in_headers: bool = False,
+    units_in_row: bool = False,
     time_index_channel: str | None = None,
     out_dir: Path | None = None,
     include_columns: set[str] | None = None,
@@ -301,6 +310,7 @@ def ingest_csv(
     df, unit_map, time_col, t0_utc = normalize_csv_polars(
         file_path,
         units_in_headers=units_in_headers,
+        units_in_row=units_in_row,
         time_col=time_index_channel,
     )
     skip = {"__time__", time_col}
@@ -476,7 +486,7 @@ def ingest_tdms(
         raise ValueError("TDMS ingest produced no readable channels.")
 
     if tmin_ms is not None:
-        t0_utc = datetime.fromtimestamp(tmin_ms / 1000.0, tz=timezone.utc)
+        t0_utc = _ms_to_utc(tmin_ms)
 
     return {
         "run_code": run_code,
@@ -493,9 +503,12 @@ def _manifest_should_refresh(
     source_type: str,
     file_path: str,
     units_in_headers: bool,
+    units_in_row: bool,
     time_index_channel: str | None,
 ) -> bool:
     if manifest.get("units_in_headers") != units_in_headers:
+        return True
+    if bool(manifest.get("units_in_row")) != bool(units_in_row):
         return True
     if manifest.get("time_index_channel") != time_index_channel:
         return True
@@ -526,6 +539,7 @@ def run_ingest(
     file_path: str,
     *,
     units_in_headers: bool = False,
+    units_in_row: bool = False,
     time_index_channel: str | None = None,
     ingest_mode: str | None = None,
     parameters: dict[str, Any] | None = None,
@@ -539,6 +553,7 @@ def run_ingest(
     calculated_channels: list[dict[str, Any]] | None = None,
     range_definition_ids: list[str] | None = None,
     ingestion_rule: dict[str, Any] | None = None,
+    force: bool = False,
 ) -> dict[str, Any]:
     """Ingest a file into Parquet artifacts and register in the DuckDB catalog.
 
@@ -560,6 +575,7 @@ def run_ingest(
     rule = ingestion_rule if isinstance(ingestion_rule, dict) else None
     if rule:
         units_in_headers = bool(rule.get("units_in_headers") or units_in_headers)
+        units_in_row = bool(rule.get("units_in_row") or units_in_row)
         time_index_channel = rule.get("time_index_channel") or time_index_channel
         catalog_id = str(rule.get("target_catalog_id") or catalog_id or "")
         ingest_mode = "permanent"
@@ -606,12 +622,13 @@ def run_ingest(
         source_type=st,
         time_index_channel=time_index_channel,
         units_in_headers=units_in_headers,
+        units_in_row=units_in_row,
     )
     if not validation.valid:
         raise ValueError(validation.errors[0] if validation.errors else validation.summary)
     existing = find_artifact_for_path(resolved)
     artifact_id = existing or artifact_id_for_path(st, resolved)
-    if existing and mode == "temporary":
+    if existing and mode == "temporary" and not force:
         manifest = load_manifest(existing)
         if manifest and manifest.get("status") == "ready":
             if not _manifest_should_refresh(
@@ -619,9 +636,12 @@ def run_ingest(
                 source_type=st,
                 file_path=resolved,
                 units_in_headers=units_in_headers,
+                units_in_row=units_in_row,
                 time_index_channel=time_index_channel,
             ):
                 return manifest
+    if force and mode == "temporary":
+        clear_session_channel_cache(artifact_id)
 
     # Resolve channel selection against probed channel names.
     include_set: set[str] | None = None
@@ -639,6 +659,7 @@ def run_ingest(
         probed = probe_file(
             resolved,
             units_in_headers=units_in_headers,
+            units_in_row=units_in_row,
             time_index_channel=time_index_channel,
         )
         available = [str(c.channel_name) for c in (probed.channels or [])]
@@ -659,6 +680,7 @@ def run_ingest(
         source_type=st,
         file_path=str(path.resolve()),
         units_in_headers=units_in_headers,
+        units_in_row=units_in_row,
         time_index_channel=time_index_channel,
     )
     save_manifest(artifact_id, manifest)
@@ -683,6 +705,7 @@ def run_ingest(
                 str(path),
                 artifact_id,
                 units_in_headers=units_in_headers,
+                units_in_row=units_in_row,
                 time_index_channel=time_index_channel,
                 out_dir=out_dir,
                 **writer_kwargs,
@@ -768,8 +791,9 @@ def run_ingest(
 
             if range_definition_ids:
                 from ..services.range_definition_library import clean_range_definition_rows
+                from ..services.user_settings import library_path
 
-                def_path = Path(__file__).resolve().parents[1] / ".nova_range_definition_library.json"
+                def_path = library_path("range_definitions")
                 rows: list[Any] = []
                 if def_path.exists():
                     try:
@@ -853,8 +877,8 @@ def manifest_to_tests(manifest: dict[str, Any]) -> list[TestRunItem]:
                 t0_utc=now,
             )
         ]
-    t0 = datetime.fromtimestamp(start_ms / 1000.0, tz=timezone.utc)
-    t1 = datetime.fromtimestamp(end_ms / 1000.0, tz=timezone.utc)
+    t0 = _ms_to_utc(start_ms)
+    t1 = _ms_to_utc(end_ms)
     return [
         TestRunItem(
             test_run_id=int(manifest.get("test_run_id", 1)),

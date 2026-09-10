@@ -113,7 +113,7 @@ No shared time index column is configured in NOVA — the time index dropdown is
 NOVA’s primary analytical store is **DuckDB + Parquet**, not PostgreSQL.
 
 - **Catalog** — a DuckDB file (`.duckdb`) holds `tests`, `test_parameters`, `channels`, `ranges`, `range_rules`, and `results`.
-- **Hidden local catalog** — system cache at `backend/.nova_catalog.duckdb` used only for temporary file-open ingest. It is **not** listed in Sources or **Databases > Manager**. Cleared (with `.nova_sessions`) on each backend start.
+- **Hidden local catalog** — system cache at `%LOCALAPPDATA%\NOVA\.nova_catalog.duckdb` (or `$NOVA_USER_DATA_DIR`) used only for temporary file-open ingest. It is **not** listed in Sources or **Databases > Manager**. Cleared (with `.nova_sessions`) on each backend start.
 - **Project catalogs** — configure durable catalogs in **File → Databases** (`+` to create). Each profile has:
   - `catalog_path` — path to the `.duckdb` file (Filepath in the create/edit form)
   - `parquet_root` — permanent lake root (derived next to the catalog file when omitted)
@@ -123,7 +123,7 @@ NOVA’s primary analytical store is **DuckDB + Parquet**, not PostgreSQL.
 - **Permanent ingest** — requires a project `catalog_id`; writes under `{profile.parquet_root}/{run_code}/data/` with `durability=permanent`.
 - **Ingestion rules** (Ingestion sidebar) — reusable recipes for permanent ingest: channel include/exclude/rename, materialized calculated channels, range definitions. Run via `POST /api/v3/ingest/rule`. Each run writes per-channel Parquet plus `meta.json` beside `data/`. Rules are stored in `.nova_ingestion_library.json`. **Does not change** temporary folder/file Sources open.
 
-Profiles are stored in `backend/.nova_database_library.json` (also supports optional PostgreSQL profiles when `NOVA_ENABLE_POSTGRES=1`).
+Profiles are stored in `%LOCALAPPDATA%\NOVA\.nova_database_library.json` (also supports optional PostgreSQL profiles when `NOVA_ENABLE_POSTGRES=1`).
 
 ### APIs
 
@@ -145,7 +145,8 @@ Profiles are stored in `backend/.nova_database_library.json` (also supports opti
 
 | Variable | Default | Meaning |
 |----------|---------|---------|
-| `NOVA_PARQUET_ROOT` | `backend/.nova_parquet` | Fallback permanent lake root |
+| `NOVA_PARQUET_ROOT` | `%LOCALAPPDATA%\NOVA\.nova_parquet` | Fallback permanent lake root |
+| `NOVA_USER_DATA_DIR` | `%LOCALAPPDATA%\NOVA` | Root for settings, libraries, sessions, catalog cache |
 | `NOVA_DEFAULT_INGEST_MODE` | `temporary` | Legacy default (file open is always temporary into local) |
 | `NOVA_ENABLE_POSTGRES` | `false` | Re-enable legacy PostgreSQL sources/APIs |
 

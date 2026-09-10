@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import logging
 import warnings
 from datetime import datetime, timezone
@@ -11,7 +12,19 @@ from ..models import ChannelItem, TestRunItem, TimeSeriesPoint
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TIME_COLUMN_NAMES = ("timestamp_utc", "time", "timestamp", "datetime", "time_s", "x_ms", "TIME")
+DEFAULT_TIME_COLUMN_NAMES = (
+    "timestamp_utc",
+    "time",
+    "timestamp",
+    "datetime",
+    "time_s",
+    "x_ms",
+    "TIME",
+    "SECONDS",
+    "seconds",
+    "SEC",
+)
+_EMPTY_UNIT_TOKENS = {"", "-", "—", "na", "n/a", "none", "null", "nan"}
 FILE_SOURCE_TYPES = frozenset({"csv", "h5", "tdms", "parquet", "arrow"})
 
 
@@ -73,24 +86,65 @@ def _split_name_unit(raw: str) -> tuple[str, str | None]:
     return base, unit
 
 
+def _clean_csv_unit_cell(raw: str) -> str | None:
+    text = str(raw or "").strip()
+    if text.lower() in _EMPTY_UNIT_TOKENS:
+        return None
+    try:
+        float(text.replace("D", "E").replace("d", "e"))
+        return None
+    except ValueError:
+        pass
+    return text
+
+
+def csv_units_from_row(file_path: str, columns: list[str]) -> dict[str, str]:
+    """Read the second CSV line as per-column units (GFSSP inputFN.CSV)."""
+    try:
+        with Path(file_path).open(newline="", encoding="utf-8", errors="replace") as fh:
+            reader = csv.reader(fh)
+            next(reader, None)
+            cells = next(reader, None)
+    except Exception:
+        return {}
+    if not cells:
+        return {}
+    out: dict[str, str] = {}
+    for col, raw in zip(columns, cells):
+        name = str(col or "").strip()
+        if not name or name == "__time__":
+            continue
+        unit = _clean_csv_unit_cell(raw)
+        if unit:
+            out[name] = unit
+    return out
+
+
+def _strip_csv_columns(df: pd.DataFrame) -> pd.DataFrame:
+    rename = {c: str(c).strip() for c in df.columns if str(c).strip() != str(c)}
+    return df.rename(columns=rename) if rename else df
+
+
 def _csv_frame(
     file_path: str,
     units_in_headers: bool = False,
     *,
     time_col: str | None = None,
+    units_in_row: bool = False,
 ) -> tuple[pd.DataFrame, dict[str, str | None]]:
     try:
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, skiprows=[1] if units_in_row else None)
     except Exception as exc:
         raise ValueError(f"Unable to read CSV contents: {exc}") from exc
 
+    df = _strip_csv_columns(df)
     if df.empty:
         raise ValueError("CSV file has no data rows.")
 
     resolved_time_col = resolve_time_column_name(list(df.columns), time_col)
     if not resolved_time_col:
         raise ValueError(
-            "CSV requires a time column (timestamp_utc/time/timestamp/datetime/time_s) "
+            "CSV requires a time column (timestamp_utc/time/timestamp/datetime/time_s/TIME/SECONDS) "
             "or an explicit time_index_channel."
         )
     # Numeric time columns: infer unit (s/ms/ns) and drop padded zero slots.
@@ -106,8 +160,13 @@ def _csv_frame(
         raise ValueError(f"CSV time column '{resolved_time_col}' could not be parsed as timestamps.")
 
     unit_map: dict[str, str | None] = {}
+    if units_in_row:
+        unit_map.update(csv_units_from_row(file_path, list(df.columns)))
     if units_in_headers:
-        df, unit_map = _apply_units_in_headers(df, skip_columns={"__time__", resolved_time_col})
+        df, header_map = _apply_units_in_headers(df, skip_columns={"__time__", resolved_time_col})
+        for key, unit in header_map.items():
+            if unit:
+                unit_map[key] = unit
 
     return df, unit_map
 
@@ -527,12 +586,14 @@ def file_channels(
     units_in_headers: bool = False,
     *,
     time_index_channel: str | None = None,
+    units_in_row: bool = False,
 ) -> list[ChannelItem]:
     if source_type == "csv":
         df, unit_map = _csv_frame(
             file_path,
             units_in_headers=units_in_headers,
             time_col=time_index_channel,
+            units_in_row=units_in_row,
         )
         time_col = resolve_time_column_name(list(df.columns), time_index_channel)
         channels: list[ChannelItem] = []
@@ -612,6 +673,7 @@ def file_timeseries(
     channel_names: list[str],
     limit: int = 5_000_000,
     units_in_headers: bool = False,
+    units_in_row: bool = False,
 ) -> list[TimeSeriesPoint]:
     from ..engine.duckdb_source import fetch_artifact_timeseries
     from ..engine.session_store import find_artifact_for_path
@@ -635,7 +697,11 @@ def file_timeseries(
     logger.warning("Legacy file_timeseries for %s (no artifact index)", file_path)
 
     if source_type == "csv":
-        df, unit_map = _csv_frame(file_path, units_in_headers=units_in_headers)
+        df, unit_map = _csv_frame(
+            file_path,
+            units_in_headers=units_in_headers,
+            units_in_row=units_in_row,
+        )
         run_code = Path(file_path).stem
         rows: list[TimeSeriesPoint] = []
         for c in channel_names:

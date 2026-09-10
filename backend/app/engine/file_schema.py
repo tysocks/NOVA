@@ -68,7 +68,13 @@ def _result(
     )
 
 
-def _validate_csv(file_path: str, *, time_index_channel: str | None, units_in_headers: bool) -> FileSchemaValidation:
+def _validate_csv(
+    file_path: str,
+    *,
+    time_index_channel: str | None,
+    units_in_headers: bool,
+    units_in_row: bool = False,
+) -> FileSchemaValidation:
     errors: list[str] = []
     warnings: list[str] = []
     try:
@@ -76,7 +82,7 @@ def _validate_csv(file_path: str, *, time_index_channel: str | None, units_in_he
     except Exception as exc:
         return _result("csv", valid=False, errors=[f"Cannot read CSV header: {exc}"])
 
-    columns = list(header.columns)
+    columns = [str(c).strip() for c in header.columns]
     if not columns:
         return _result("csv", valid=False, errors=["CSV file has no header columns."])
 
@@ -90,7 +96,12 @@ def _validate_csv(file_path: str, *, time_index_channel: str | None, units_in_he
         )
 
     try:
-        df, _ = _csv_frame(file_path, units_in_headers=units_in_headers, time_col=time_index_channel)
+        df, _ = _csv_frame(
+            file_path,
+            units_in_headers=units_in_headers,
+            time_col=time_index_channel,
+            units_in_row=units_in_row,
+        )
     except Exception as exc:
         return _result("csv", valid=False, errors=[str(exc)])
 
@@ -209,6 +220,7 @@ def validate_file_schema(
     source_type: str | None = None,
     time_index_channel: str | None = None,
     units_in_headers: bool = False,
+    units_in_row: bool = False,
 ) -> FileSchemaValidation:
     path = Path(file_path)
     if not path.is_file():
@@ -222,7 +234,12 @@ def validate_file_schema(
     resolved = str(path.resolve())
 
     if st == "csv":
-        return _validate_csv(resolved, time_index_channel=time_index_channel, units_in_headers=units_in_headers)
+        return _validate_csv(
+            resolved,
+            time_index_channel=time_index_channel,
+            units_in_headers=units_in_headers,
+            units_in_row=units_in_row,
+        )
     if st == "parquet":
         return _validate_tabular(resolved, source_type="parquet", time_index_channel=time_index_channel)
     if st == "arrow":

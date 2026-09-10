@@ -1,12 +1,8 @@
 /**
- * NOVA v3 client — SeriesCache, unified query, IndexedDB config store.
+ * NOVA v3 client — SeriesCache and unified query.
  */
 (function (global) {
   "use strict";
-
-  const CONFIG_IDB_NAME = "nova-config-db";
-  const CONFIG_IDB_STORE = "configs";
-  const CONFIG_IDB_KEY = "library";
 
   function parseTimeMs(time) {
     if (typeof time === "number" && Number.isFinite(time)) {
@@ -101,53 +97,6 @@
     }
   }
 
-  async function openConfigDb() {
-    if (!global.indexedDB) return null;
-    return new Promise((resolve, reject) => {
-      const req = global.indexedDB.open(CONFIG_IDB_NAME, 1);
-      req.onerror = () => reject(req.error);
-      req.onsuccess = () => resolve(req.result);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains(CONFIG_IDB_STORE)) {
-          db.createObjectStore(CONFIG_IDB_STORE);
-        }
-      };
-    });
-  }
-
-  async function loadConfigLibrary() {
-    try {
-      const db = await openConfigDb();
-      if (!db) return null;
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(CONFIG_IDB_STORE, "readonly");
-        const store = tx.objectStore(CONFIG_IDB_STORE);
-        const req = store.get(CONFIG_IDB_KEY);
-        req.onsuccess = () => resolve(req.result ?? null);
-        req.onerror = () => reject(req.error);
-      });
-    } catch {
-      return null;
-    }
-  }
-
-  async function saveConfigLibrary(data) {
-    try {
-      const db = await openConfigDb();
-      if (!db) return false;
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(CONFIG_IDB_STORE, "readwrite");
-        const store = tx.objectStore(CONFIG_IDB_STORE);
-        const req = store.put(data, CONFIG_IDB_KEY);
-        req.onsuccess = () => resolve(true);
-        req.onerror = () => reject(req.error);
-      });
-    } catch {
-      return false;
-    }
-  }
-
   async function querySeries(body, { format = "series", signal = null } = {}) {
     const url = `/api/v3/series/query?format=${encodeURIComponent(format)}`;
     const r = await fetch(url, {
@@ -198,9 +147,6 @@
     querySeries,
     seriesToRows,
     seriesToPlotArrays,
-    loadConfigLibrary,
-    saveConfigLibrary,
-    CONFIG_IDB_KEY,
   };
 
   global.NovaV3 = NovaV3;

@@ -2,6 +2,8 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .paths import parquet_root as default_parquet_root
+
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 ENV_PATH = BASE_DIR / ".env"
@@ -27,8 +29,8 @@ class Settings(BaseSettings):
     bluescale_password: str = "test"
     bluescale_sslmode: str = "disable"
     default_limit: int = 5000
-    # DuckDB/Parquet lake settings
-    parquet_root: str = str(BASE_DIR / ".nova_parquet")
+    # DuckDB/Parquet lake settings (default under per-user data dir)
+    parquet_root: str = str(default_parquet_root())
     default_ingest_mode: str = "temporary"  # temporary | permanent
     enable_postgres: bool = False
 

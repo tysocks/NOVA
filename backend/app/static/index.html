@@ -1954,8 +1954,6 @@
     html.light-mode .iconActionBtn:hover{ background:rgba(55,53,47,0.14); }
     .iconActionBtn svg{ width:15px; height:15px; display:block; }
     /* Load dock (legacy; plot action lives on the rail) */
-    .choochDock{ display:none !important; }
-    .panel-legacy{ display:none !important; }
     .cfgManagerToolbar{ display:flex; align-items:center; gap:6px; padding:8px 10px 4px; }
     .cfgManagerToolbar input{ flex:1; min-width:0; }
     .cfgMenuBtn{ width:28px; height:28px; min-width:28px; font-size:1.1rem; letter-spacing:0.02em; }
@@ -2528,19 +2526,19 @@
     .appWindow.modalPreferences{ width:820px !important; height:560px !important; min-height:420px; }
     .appWindow.modalPreferences .appWindowBody{ display:flex; flex-direction:column; min-height:0; overflow:hidden; }
     .appWindow.modalPreferences .appWindowContent{ overflow:hidden; }
-    .prefsShell{ display:flex; flex:1 1 auto; min-height:0; height:100%; }
+    .prefsShell{ display:flex; flex:1 1 auto; min-width:0; min-height:0; height:100%; overflow:hidden; }
     .prefsNav{ width:196px; flex:0 0 196px; border-right:1px solid var(--nova-divider); padding:8px 0; overflow-y:auto; background:var(--nova-sidebar-bg); }
     .prefsNavItem{ display:block; width:100%; border:none; background:transparent; text-align:left; padding:7px 14px; font-size:0.8125rem; color:var(--nova-text-dim); cursor:pointer; border-radius:0; }
     .prefsNavItem:hover{ background:var(--nova-hover); color:var(--nova-text); }
     .prefsNavItem.active{ background:var(--nova-active); color:var(--nova-text); font-weight:500; }
-    .prefsPanels{ flex:1 1 auto; min-width:0; min-height:0; overflow-y:auto; padding:18px 22px 12px; }
-    .prefsPanel{ display:none; }
+    .prefsPanels{ flex:1 1 auto; min-width:0; min-height:0; overflow-x:hidden; overflow-y:auto; padding:18px 22px 12px; }
+    .prefsPanel{ display:none; min-width:0; max-width:100%; overflow-x:hidden; }
     .prefsPanel.active{ display:block; }
     .prefsPanelTitle{ margin:0 0 4px; font-size:1.05rem; font-weight:600; color:var(--nova-text); letter-spacing:-0.01em; }
     .prefsPanelDesc{ margin:0 0 18px; font-size:0.78rem; color:var(--nova-text-dim); line-height:1.45; }
-    .prefsGroup{ margin-bottom:22px; }
+    .prefsGroup{ margin-bottom:22px; min-width:0; }
     .prefsGroupTitle{ margin:0 0 10px; font-size:0.68rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--nova-text-dim); }
-    .prefsRow{ display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding:11px 0; border-bottom:1px solid var(--nova-divider); }
+    .prefsRow{ display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding:11px 0; border-bottom:1px solid var(--nova-divider); min-width:0; }
     .prefsRow:last-child{ border-bottom:none; }
     .prefsRowCopy{ flex:1 1 auto; min-width:0; }
     .prefsRowLabel{ font-size:0.875rem; color:var(--nova-text); font-weight:500; }
@@ -2571,6 +2569,47 @@
     .prefsAboutLink{ color:var(--nova-text); text-decoration:none; border-bottom:1px solid var(--nova-divider); font-size:0.8125rem; }
     .prefsAboutLink:hover{ border-bottom-color:var(--nova-text); }
     .prefsAboutValue{ font-size:0.8125rem; color:var(--nova-text); font-variant-numeric:tabular-nums; }
+    .prefsPathRow{ flex-direction:column; align-items:stretch; gap:8px; }
+    .prefsPathControl{
+      flex:0 0 auto;
+      display:block;
+      min-width:0 !important;
+      width:100%;
+      max-width:100%;
+    }
+    .prefsPathField{
+      display:grid;
+      grid-template-columns:minmax(0, 1fr) 34px;
+      align-items:stretch;
+      width:100%;
+      max-width:100%;
+      min-width:0;
+      box-sizing:border-box;
+    }
+    .prefsPathField input{
+      width:100%;
+      min-width:0;
+      max-width:none;
+      height:34px;
+      box-sizing:border-box;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:0.75rem;
+      color:var(--nova-text);
+      border-top-right-radius:0;
+      border-bottom-right-radius:0;
+    }
+    .prefsPathField > button{
+      width:34px !important;
+      min-width:34px;
+      max-width:34px;
+      height:34px;
+      padding:0;
+      box-sizing:border-box;
+      border-left:none;
+      border-radius:0 4px 4px 0;
+    }
   </style>
 </head>
 <body>
@@ -2612,7 +2651,7 @@
           <div class="toolbarSectionHeader">
             <h3>Sources</h3>
             <div class="headerBtns">
-              <button id="refreshSourcesBtn" class="addBtn" type="button" title="Reload selected folder or database">↻</button>
+              <button id="refreshSourcesBtn" class="addBtn" type="button" title="Reload selected sources and re-ingest temporary files">↻</button>
               <button id="ingestFilesBtn" class="addBtn" type="button" title="Ingest files" aria-label="Ingest files">
                 <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg>
               </button>
@@ -2843,6 +2882,33 @@
       const i=s.indexOf("|");
       return i>=0 ? s.slice(i+1) : s;
     }
+    function channelDbIdFromKey(id){
+      const s=String(id??"");
+      const i=s.indexOf("|");
+      return i>0 ? s.slice(0,i) : "";
+    }
+    function isKnownChannelDbId(dbId){
+      const id=String(dbId||"");
+      if(!id) return false;
+      if(id==="__calculated__") return true;
+      return (state.databases||[]).some((d)=>d.id===id);
+    }
+    function isSourceScopedChannelKey(id){
+      return isKnownChannelDbId(channelDbIdFromKey(id));
+    }
+    function scopedChannelRef(id){
+      const s=String(id??"").trim();
+      if(!s) return { dbId:"", name:"" };
+      if(isCalculatedChannelKey(s) || isAliasChannelKey(s)) return { dbId:"", name:s };
+      if(!isSourceScopedChannelKey(s)) return { dbId:"", name:channelKeyFromId(s)||s };
+      return { dbId:channelDbIdFromKey(s), name:channelKeyFromId(s) };
+    }
+    function channelListLabel(id){
+      const name=channelDisplayName(id);
+      if(!isSourceScopedChannelKey(id)) return name;
+      const src=sourceLabelForDbId(channelDbIdFromKey(id));
+      return src ? `${src} | ${name}` : name;
+    }
     function channelDisplayName(id){
       const key=channelKeyFromId(id);
       if(!key) return "";
@@ -2876,7 +2942,13 @@
     function migrateChannelKeySet(values){
       const out=new Set();
       (values||[]).forEach((v)=>{
-        const key=String(channelKeyFromId(v)||"").trim();
+        const raw=String(v??"").trim();
+        if(!raw) return;
+        if(isSourceScopedChannelKey(raw)){
+          out.add(raw);
+          return;
+        }
+        const key=String(channelKeyFromId(raw)||"").trim();
         if(key) out.add(key);
       });
       return out;
@@ -7918,6 +7990,7 @@
       p.append("source_type", fileSrc.type);
       p.append("file_path", fileSrc.file_path||"");
       if(supportsHeaderUnitParsing(fileSrc.type) && fileSrc.units_in_headers) p.append("units_in_headers","true");
+      if(supportsHeaderUnitParsing(fileSrc.type) && fileSrc.units_in_row) p.append("units_in_row","true");
       if(fileSrc.time_index_channel) p.append("time_index_channel", fileSrc.time_index_channel);
       return getJson(`/api/file/channels?${p.toString()}`);
     }
@@ -8737,7 +8810,7 @@
     async function refreshArtifactIdsForFileSources(){
       for(const s of state.sources.filter(isFileSource)) await linkArtifactForSource(s);
     }
-    async function addOrReuseFileSource({ type, name, filePath, unitsInHeaders=false, timeIndexChannel=null, probeSnapshot=null, deferUi=false, deferIngest=false, parentFolderId=null, needsTimeIndex=false, timeIndexCandidates=null, schemaOk=true, needsUnits=false, originPath=null }){
+    async function addOrReuseFileSource({ type, name, filePath, unitsInHeaders=false, unitsInRow=false, timeIndexChannel=null, probeSnapshot=null, deferUi=false, deferIngest=false, parentFolderId=null, needsTimeIndex=false, timeIndexCandidates=null, schemaOk=true, needsUnits=false, originPath=null }){
       const existing=findFileSourceByPath(filePath, type);
       if(existing){
         if(parentFolderId) existing.parent_folder_id=parentFolderId;
@@ -8748,7 +8821,7 @@
         existing.schema_ok=schemaOk!==false;
         existing.needs_units=Boolean(needsUnits);
         if(!deferIngest){
-          if(!existing.artifact_id) await attachArtifactToSource(existing, type, filePath, { unitsInHeaders, timeIndexChannel: existing.time_index_channel||timeIndexChannel });
+          if(!existing.artifact_id) await attachArtifactToSource(existing, type, filePath, { unitsInHeaders, unitsInRow, timeIndexChannel: existing.time_index_channel||timeIndexChannel });
           else await linkArtifactForSource(existing);
           ensureFileSourceCatalog(existing);
         }
@@ -8772,6 +8845,7 @@
         file_path:filePath,
         origin_path:originPath||"",
         units_in_headers:unitsInHeaders,
+        units_in_row:unitsInRow,
         time_index_channel:timeIndexChannel||"",
         time_index_candidates: Array.isArray(timeIndexCandidates)?timeIndexCandidates:[],
         needs_time_index:Boolean(needsTimeIndex),
@@ -8783,7 +8857,7 @@
       if(parentFolderId) entry.parent_folder_id=parentFolderId;
       state.sources.push(entry);
       if(!deferIngest){
-        await attachArtifactToSource(entry, type, filePath, { unitsInHeaders, timeIndexChannel });
+        await attachArtifactToSource(entry, type, filePath, { unitsInHeaders, unitsInRow, timeIndexChannel });
         ensureFileSourceCatalog(entry);
       }
       if(!deferUi){
@@ -9233,14 +9307,16 @@
         timeIndexCandidates: Array.isArray(probe.time_index_candidates)?probe.time_index_candidates:[],
       };
     }
-    async function resolveNeedsUnitsFlag(probe, fileType, filePath, unitsInHeaders){
+    async function resolveNeedsUnitsFlag(probe, fileType, filePath, unitsInHeaders, unitsInRow=false){
       // If units already present, OK (unitless siblings allowed).
       if(fileHasAnyUnits(probe?.units_metadata)) return false;
-      // For CSV, also check whether units exist in the header even if header parsing is off.
-      if(fileType==="csv" && filePath && !unitsInHeaders){
+      // For CSV, also check whether units exist in the header or unit row even if parsing is off.
+      if(fileType==="csv" && filePath && !unitsInHeaders && !unitsInRow){
         try{
           const headerProbe=await probeDataFile(filePath, { unitsInHeaders:true });
           if(fileHasAnyUnits(headerProbe?.units_metadata)) return false;
+          const rowProbe=await probeDataFile(filePath, { unitsInRow:true });
+          if(fileHasAnyUnits(rowProbe?.units_metadata)) return false;
           return fileNeedsUnitsFromProbe(headerProbe?.units_metadata, fileType);
         }catch{
           return fileNeedsUnitsFromProbe(probe?.units_metadata, fileType);
@@ -10624,12 +10700,13 @@
       try{
         const probe=await probeDataFile(src.file_path, {
           unitsInHeaders: !!src.units_in_headers,
+          unitsInRow: !!src.units_in_row,
           timeIndexChannel: src.time_index_channel || null,
         });
         const fields=fileProbeFieldsFromProbe(probe, src.type, { timeIndexChannel: src.time_index_channel||null });
         // Keep user-set time index if present
         if(src.time_index_channel) fields.needsTimeIndex=false;
-        fields.needsUnits=await resolveNeedsUnitsFlag(probe, src.type, src.file_path, !!src.units_in_headers);
+        fields.needsUnits=await resolveNeedsUnitsFlag(probe, src.type, src.file_path, !!src.units_in_headers, !!src.units_in_row);
         applyProbeFieldsToSource(src, fields);
       }catch{
         src.schema_ok=false;
@@ -10669,6 +10746,26 @@
       ids.forEach((id)=>{
         const chain=folderAncestorChain(id).slice(1);
         if(chain.some((anc)=>byIdMap.has(anc.id))) byIdMap.delete(id);
+      });
+      return [...byIdMap.values()];
+    }
+    function collectSelectedFileSourcesForReingest(){
+      const byIdMap=new Map();
+      const addFile=(src, { requireArtifact=false }={})=>{
+        if(!src || !isFileSource(src) || !String(src.file_path||"").trim()) return;
+        if(String(src.durability||"temporary")==="permanent") return;
+        if(requireArtifact && !src.artifact_id) return;
+        byIdMap.set(src.id, src);
+      };
+      selectedSourceIds.forEach((id)=>{
+        const key=String(id);
+        if(key.startsWith("dbconn:")||key.startsWith("dbdb:")||key.startsWith("dbtest:")) return;
+        const src=state.sources.find((s)=>s.id===id);
+        if(!src) return;
+        if(isFileSource(src)) addFile(src);
+        else if(isFolderSource(src)){
+          folderDescendantFileSources(src.id).forEach((child)=>addFile(child, { requireArtifact:true }));
+        }
       });
       return [...byIdMap.values()];
     }
@@ -10788,8 +10885,8 @@
       try{
         const folders=collectSelectedFoldersForReload();
         const profiles=collectSelectedDatabaseProfilesForReload();
-        if(!folders.length && !profiles.length){
-          setStatus("Select a folder or database in Sources, then reload.", true);
+        if(!folders.length && !profiles.length && !collectSelectedFileSourcesForReingest().length){
+          setStatus("Select a file, folder, or database in Sources, then reload.", true);
           return;
         }
         setStatus("Reloading selected sources…");
@@ -10812,6 +10909,21 @@
           await browseProfileAccessible(profile, { force:true });
         }
 
+        const files=collectSelectedFileSourcesForReingest();
+        for(let i=0;i<files.length;i+=1){
+          const src=files[i];
+          setStatus(`Re-indexing ${i+1}/${files.length}: ${src.name||src.file_path}`);
+          src.artifact_id="";
+          delete src.test_id;
+          await attachArtifactToSource(src, src.type, src.file_path, {
+            unitsInHeaders: !!src.units_in_headers,
+            unitsInRow: !!src.units_in_row,
+            timeIndexChannel: src.time_index_channel||null,
+            force:true,
+          });
+          ensureFileSourceCatalog(src);
+        }
+
         state.sources=state.sources.filter((s)=>!s.type || isFolderSource(s) || isFileSource(s) || isCatalogSource(s) || s.type==="duckdb_catalog" || s.type==="postgres");
         clearCatalogCache();
         renderAll();
@@ -10819,6 +10931,7 @@
         const bits=[];
         if(folders.length) bits.push(`${folders.length} folder(s) (+${folderAdded}/-${folderRemoved})`);
         if(profiles.length) bits.push(`${profiles.length} database(s)`);
+        if(files.length) bits.push(`${files.length} file(s) re-indexed`);
         setStatus(`Reloaded ${bits.join(", ")}.`);
       }catch(err){
         setStatus(`Source reload failed: ${err}`, true);
@@ -10826,10 +10939,11 @@
         if(btn) btn.disabled=false;
       }
     }
-    async function probeDataFile(filePath, { unitsInHeaders=false, timeIndexChannel=null }={}){
+    async function probeDataFile(filePath, { unitsInHeaders=false, unitsInRow=false, timeIndexChannel=null }={}){
       return postJson("/api/v3/file/probe", {
         file_path: filePath,
         units_in_headers: !!unitsInHeaders,
+        units_in_row: !!unitsInRow,
         time_index_channel: timeIndexChannel || null,
       });
     }
@@ -10979,6 +11093,10 @@
               <input id="m_df_units" type="checkbox" style="width:auto;margin:0;" />
               Parse Units from Header
             </label>
+            <label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:normal;font-size:0.72rem;color:var(--nova-text);margin-top:8px;">
+              <input id="m_df_units_row" type="checkbox" style="width:auto;margin:0;" />
+              Parse Units from Row
+            </label>
           </div>
         </div>
         <div class="modalActions">
@@ -11005,9 +11123,10 @@
           return true;
         }
         const unitsInHeaders=supportsHeaderUnitParsing(resolvedType) ? Boolean(byId("m_df_units")?.checked) : false;
+        const unitsInRow=supportsHeaderUnitParsing(resolvedType) ? Boolean(byId("m_df_units_row")?.checked) : false;
         let latestProbe=null;
         try{
-          latestProbe=await probeDataFile(path, { unitsInHeaders, timeIndexChannel: timeIndex });
+          latestProbe=await probeDataFile(path, { unitsInHeaders, unitsInRow, timeIndexChannel: timeIndex });
         }catch(err){
           setStatus(`Schema check failed: ${err}`, true);
           return false;
@@ -11021,6 +11140,7 @@
           name,
           filePath: path,
           unitsInHeaders,
+          unitsInRow,
           timeIndexChannel: timeIndex,
           probeSnapshot: latestProbe,
         });
@@ -11034,8 +11154,9 @@
         const unitsWrap=byId("m_df_units_wrap");
         if(unitsWrap) unitsWrap.style.display=supportsHeaderUnitParsing(probeType)?"block":"none";
         const unitsInHeaders=supportsHeaderUnitParsing(probeType) ? Boolean(byId("m_df_units")?.checked) : false;
+        const unitsInRow=supportsHeaderUnitParsing(probeType) ? Boolean(byId("m_df_units_row")?.checked) : false;
         try{
-          const next=await probeDataFile(path, { unitsInHeaders, timeIndexChannel: timeIndex });
+          const next=await probeDataFile(path, { unitsInHeaders, unitsInRow, timeIndexChannel: timeIndex });
           const flagEl=byId("m_df_probe_flag");
           if(flagEl) flagEl.innerHTML=renderProbeFlags(next);
         }catch(err){
@@ -11049,6 +11170,8 @@
       if(timeSel && !isTdms) timeSel.onchange=refreshProbe;
       const unitsCb=byId("m_df_units");
       if(unitsCb) unitsCb.onchange=refreshProbe;
+      const unitsRowCb=byId("m_df_units_row");
+      if(unitsRowCb) unitsRowCb.onchange=refreshProbe;
     }
     function startDataFileSourcePicker(){
       (async()=>{
@@ -12975,18 +13098,35 @@
       const rows=Array.isArray(raw) ? raw : (Array.isArray(raw?.limits) ? raw.limits : []);
       return rows.filter((r)=>r && typeof r==="object").map(normalizeLimit);
     }
-    function loadLimitLibrary(){
+    async function refreshLimitLibrary(){
+      let rows=[];
       try{
-        const raw=JSON.parse(localStorage.getItem(LIMIT_LIBRARY_KEY)||"[]");
-        limitLibrary=normalizeLimitLibrary(raw);
+        const data=await getJson("/api/limit-library");
+        rows=normalizeLimitLibrary(data?.limits);
       }catch{
-        limitLibrary=[];
+        rows=[];
       }
+      if(!rows.length){
+        try{
+          const legacy=JSON.parse(localStorage.getItem(LIMIT_LIBRARY_KEY)||"[]");
+          const migrated=normalizeLimitLibrary(legacy);
+          if(migrated.length){
+            await postJson("/api/limit-library", { limits:migrated });
+            localStorage.removeItem(LIMIT_LIBRARY_KEY);
+            rows=migrated;
+          }
+        }catch{}
+      }
+      limitLibrary=rows;
       return limitLibrary;
     }
-    function saveLimitLibrary(next){
+    function loadLimitLibrary(){
+      return limitLibrary;
+    }
+    async function saveLimitLibrary(next){
       limitLibrary=normalizeLimitLibrary(next);
-      try{ localStorage.setItem(LIMIT_LIBRARY_KEY, JSON.stringify(limitLibrary)); }catch{}
+      const res=await postJson("/api/limit-library", { limits:limitLibrary });
+      if(res && res.ok===false) throw new Error(res.error||"Failed to save limits");
       return limitLibrary;
     }
     function getLimitById(id){
@@ -13165,16 +13305,25 @@
     let channelClipboard=[];
     const channelClipboardTargets=[];
     function normalizeChannelClipboardKey(id){
-      return channelKeyFromId(id) || String(id||"").trim();
+      const raw=String(id??"").trim();
+      if(!raw) return "";
+      if(isSourceScopedChannelKey(raw)) return raw;
+      return channelKeyFromId(raw) || raw;
     }
     function channelPickerRowForKey(id){
       const key=normalizeChannelClipboardKey(id);
       if(!key) return null;
-      const calc=findCalculatedByKey(key);
-      if(calc) return { id:key, primary:key, meta:`calculated (${calc.kind||"calc"})` };
-      const alias=findAliasByKey(key);
-      if(alias) return { id:key, primary:key, meta:`alias (${aliasMemberNames(alias).length})` };
-      return { id:key, primary:key, meta:"" };
+      const short=channelKeyFromId(key)||key;
+      const calc=findCalculatedByKey(short);
+      if(calc) return { id:key, primary:short, sourceLabel:"", meta:`calculated (${calc.kind||"calc"})` };
+      const alias=findAliasByKey(short);
+      if(alias) return { id:key, primary:short, sourceLabel:"", meta:`alias (${aliasMemberNames(alias).length})` };
+      return {
+        id:key,
+        primary:short,
+        sourceLabel: isSourceScopedChannelKey(key) ? sourceLabelForDbId(channelDbIdFromKey(key)) : "",
+        meta:"",
+      };
     }
     function selectedChannelsForCalcInputs({ allowAliases=true }={}){
       const keys=[];
@@ -13244,6 +13393,8 @@
       const addOne=(key)=>{
         if(!accept(key) || target.selected.has(key)) return false;
         target.selected.add(key);
+        const name=channelKeyFromId(key);
+        if(name && name!==key) target.selected.delete(name);
         if(target.rowCache && !target.rowCache.has(key)){
           const allRows=typeof target.getAllRows==="function" ? target.getAllRows() : null;
           const cached=Array.isArray(allRows) ? allRows.find((r)=>r.id===key) : null;
@@ -13398,7 +13549,7 @@
       };
     }
     function buildConfigPayload(){
-      const channels=[...addedChannelIds].map((id)=>channelKeyFromId(id)).filter(Boolean);
+      const channels=[...addedChannelIds].map((id)=>String(id||"").trim()).filter(Boolean);
       const masks=structuredClone(state.masks||[]);
       return {
         channels,
@@ -13439,7 +13590,7 @@
       state.calculatedChannels=calculated;
       state.channelAliases=aliases;
       state.masks=masks;
-      addedChannelIds=new Set(channels);
+      addedChannelIds=migrateChannelKeySet(channels);
       // Keep calcs/aliases present in the channel list even if omitted from channels[].
       calculated.forEach((c)=>{ if(c?.name) addedChannelIds.add(c.name); });
       aliases.forEach((a)=>{ if(a?.name) addedChannelIds.add(a.name); });
@@ -14108,7 +14259,7 @@
         localStorage.setItem(PREFS_KEY, JSON.stringify(obj.preferences));
       }
       if(Array.isArray(obj.limits)){
-        localStorage.setItem(LIMIT_LIBRARY_KEY, JSON.stringify(normalizeLimitLibrary(obj.limits)));
+        try{ await postJson("/api/limit-library", { limits:normalizeLimitLibrary(obj.limits) }); }catch{}
       }
       if(obj.sources_workspace && typeof obj.sources_workspace==="object"){
         try{ await postJson("/api/sources-workspace", obj.sources_workspace); }catch{}
@@ -14462,6 +14613,7 @@
         apply_range_rule_ids:[],
         time_index_channel:null,
         units_in_headers:false,
+        units_in_row:false,
         parameters:{},
         note:"",
       };
@@ -14873,7 +15025,8 @@
                 <option value="all" ${ch.mode!=="include"?"selected":""}>All channels</option>
                 <option value="include" ${ch.mode==="include"?"selected":""}>Only listed channels</option>
               </select>`)}
-              ${propRow("Parse Units", boolSelect("ing_units", Boolean(draft.units_in_headers)))}
+              ${propRow("Parse Units from Header", boolSelect("ing_units", Boolean(draft.units_in_headers)))}
+              ${propRow("Parse Units from Row", boolSelect("ing_units_row", Boolean(draft.units_in_row)))}
             </div>
           </div>
           <div class="rangeMetaSection">
@@ -14919,6 +15072,7 @@
           calculated_channels:structuredClone(calculatedChannels),
           range_definition_ids:rangeDefinitionIds.slice(),
           units_in_headers:String(byId("ing_units")?.value||"false")==="true",
+          units_in_row:String(byId("ing_units_row")?.value||"false")==="true",
           updated_at:new Date().toISOString(),
         };
         let library=await loadIngestionLibrary();
@@ -16951,7 +17105,7 @@
           const idx=library.findIndex((l)=>l.id===next.id);
           if(idx>=0) library[idx]=next;
           else library.unshift(next);
-          saveLimitLibrary(library);
+          await saveLimitLibrary(library);
           setStatus(isEdit ? `Updated limit '${next.name}'.` : `Created limit '${next.name}'.`);
           try{ onSaved?.(next); }catch{}
           try{ renderOptionsList(); }catch{}
@@ -16978,8 +17132,8 @@
         fitForm();
       }
     }
-    function openLimitManagerModal(){
-      loadLimitLibrary();
+    async function openLimitManagerModal(){
+      await refreshLimitLibrary();
       let library=structuredClone(limitLibrary||[]);
       const byIdRow=(id)=>library.find((x)=>String(x.id)===String(id))||null;
       let searchEl=null;
@@ -17003,8 +17157,8 @@
           </div>
         `;
       };
-      const persistLibrary=()=>{
-        saveLimitLibrary(library);
+      const persistLibrary=async()=>{
+        await saveLimitLibrary(library);
         library=structuredClone(limitLibrary||[]);
         try{ renderOptionsList(); }catch{}
         return true;
@@ -18705,6 +18859,7 @@
       setStatus(`Indexing ${src.name||src.type}...`);
       await attachArtifactToSource(src, src.type, src.file_path, {
         unitsInHeaders: !!src.units_in_headers,
+        unitsInRow: !!src.units_in_row,
         timeIndexChannel: src.time_index_channel||null,
       });
       ensureFileSourceCatalog(src);
@@ -20790,7 +20945,7 @@
       if(loadInProgress){ setStatus("Load already in progress...", true); return; }
       const plot=getActivePlot();
       if(!plot) return;
-      loadLimitLibrary();
+      await refreshLimitLibrary();
       plot.summary=normalizeSummaryConfig(plot.summary);
       if(!plot.summary.rows.length){
         setStatus("Add summary metrics in Options first.", true);
@@ -20874,7 +21029,6 @@
     }
     function renderSummaryPlot(host, plot){
       if(!host || !plot) return;
-      loadLimitLibrary();
       try{ rebuildChannelUnitMap(); }catch{}
       plot.summary=normalizeSummaryConfig(plot.summary);
       const opts=getPlotOptions(plot);
@@ -21452,8 +21606,9 @@
         }
         if(!channels.length){
           const uh = (supportsHeaderUnitParsing(src.type) && src.units_in_headers) ? "&units_in_headers=true" : "";
-          tests = await getJson(`/api/file/tests?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}${uh}`);
-          channels = await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}${uh}`);
+          const ur = (supportsHeaderUnitParsing(src.type) && src.units_in_row) ? "&units_in_row=true" : "";
+          tests = await getJson(`/api/file/tests?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}${uh}${ur}`);
+          channels = await getJson(`/api/file/channels?source_type=${encodeURIComponent(src.type)}&file_path=${encodeURIComponent(src.file_path||"")}${uh}${ur}`);
         }
       }
       const packed = { tests, channels };
@@ -25568,13 +25723,13 @@
           [...addedChannelIds]
             .filter((name)=>!isAliasedChannelMember(name))
             .slice()
-            .sort((a,b)=>String(channelDisplayName(a)).localeCompare(String(channelDisplayName(b))))
+            .sort((a,b)=>String(channelListLabel(a)).localeCompare(String(channelListLabel(b))))
             .map((name)=>{
-              const calc=findCalculatedByKey(name);
-              const alias=findAliasByKey(name);
+              const calc=findCalculatedByKey(channelKeyFromId(name));
+              const alias=findAliasByKey(channelKeyFromId(name));
               return {
                 id: name,
-                primary: channelDisplayName(name),
+                primary: channelListLabel(name),
                 isCalculated: Boolean(calc),
                 isAlias: Boolean(alias),
                 calcKind: calc?.kind || null,
@@ -25708,8 +25863,8 @@
         clearChannelOverrideKeys(state.unitOverrides, id);
         clearChannelOverrideKeys(state.unitOverrides, key);
       } else if(kind==="mask"){ state.masks=(state.masks||[]).filter((m)=>m.id!==id); selectedMaskIds.delete(id); } else if(kind==="page"){ deletePage(id); focusedItem=null; return; } focusedItem=null; renderAll(); saveStateDeferred(); }
-    async function ingestDataFile(sourceType, filePath, { unitsInHeaders=false, timeIndexChannel=null, ingestMode=null, catalogId=null }={}){
-      const body={source_type:sourceType,file_path:filePath,units_in_headers:!!unitsInHeaders,time_index_channel:timeIndexChannel||null};
+    async function ingestDataFile(sourceType, filePath, { unitsInHeaders=false, unitsInRow=false, timeIndexChannel=null, ingestMode=null, catalogId=null, force=false }={}){
+      const body={source_type:sourceType,file_path:filePath,units_in_headers:!!unitsInHeaders,units_in_row:!!unitsInRow,time_index_channel:timeIndexChannel||null};
       // File open / plot path is always temporary into the hidden local catalog.
       // Permanent project ingest must pass an explicit catalogId + ingestMode.
       if(ingestMode) body.ingest_mode=ingestMode;
@@ -25718,14 +25873,15 @@
         body.catalog_id=catalogId;
         if(!ingestMode) body.ingest_mode="permanent";
       }
+      if(force) body.force=true;
       const r=await fetch("/api/v3/ingest/file",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
       if(!r.ok){ let msg=`Ingest failed (${r.status})`; try{ const e=await r.json(); if(e.detail) msg=typeof e.detail==="string"?e.detail:JSON.stringify(e.detail); }catch{} throw new Error(msg); }
       return await r.json();
     }
-    async function attachArtifactToSource(entry, sourceType, filePath, { unitsInHeaders=false, timeIndexChannel=null }={}){
+    async function attachArtifactToSource(entry, sourceType, filePath, { unitsInHeaders=false, unitsInRow=false, timeIndexChannel=null, force=false }={}){
       setStatus("Indexing file...");
       await nextPaint();
-      const ing=await ingestDataFile(sourceType, filePath, { unitsInHeaders, timeIndexChannel, ingestMode:"temporary", catalogId:null });
+      const ing=await ingestDataFile(sourceType, filePath, { unitsInHeaders, unitsInRow, timeIndexChannel, ingestMode:"temporary", catalogId:null, force });
       entry.artifact_id=ing.artifact_id||"";
       if(ing.test_id!=null) entry.test_id=Number(ing.test_id);
       // Temporary cache lives in the hidden local catalog — do not bind file sources to a project catalog.
@@ -26633,10 +26789,17 @@
               </div>`;
         const unitsRow=supportsHeaderUnitParsing(src.type) ? `
               <div class="rangeMetaRow">
-                <div class="rangeMetaCell">Parse Units</div>
+                <div class="rangeMetaCell">Parse Units from Header</div>
                 <select id="m_edit_units" class="objPropControl">
                   <option value="true" ${src.units_in_headers?"selected":""}>True</option>
                   <option value="false" ${src.units_in_headers?"":"selected"}>False</option>
+                </select>
+              </div>
+              <div class="rangeMetaRow">
+                <div class="rangeMetaCell">Parse Units from Row</div>
+                <select id="m_edit_units_row" class="objPropControl">
+                  <option value="true" ${src.units_in_row?"selected":""}>True</option>
+                  <option value="false" ${src.units_in_row?"":"selected"}>False</option>
                 </select>
               </div>` : "";
         const propsSection=(indexRow || unitsRow) ? `
@@ -26666,7 +26829,10 @@
             <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${saveIcon}</button>
           </div>`,{ ...WF_SOURCE_FORM, titleHtml:sourceTitleHtml },async()=>{
           src.name=(byId("m_edit_name").value||"").trim()||src.name;
-          if(supportsHeaderUnitParsing(src.type)) src.units_in_headers=String(byId("m_edit_units")?.value||"false")==="true";
+          if(supportsHeaderUnitParsing(src.type)){
+            src.units_in_headers=String(byId("m_edit_units")?.value||"false")==="true";
+            src.units_in_row=String(byId("m_edit_units_row")?.value||"false")==="true";
+          }
           if(src.type!=="tdms"){
             const timeSel=byId("m_edit_time");
             const nextTime=(timeSel?.value||"").trim();
@@ -26680,11 +26846,12 @@
             try{
               const probe=await probeDataFile(src.file_path, {
                 unitsInHeaders: !!src.units_in_headers,
+                unitsInRow: !!src.units_in_row,
                 timeIndexChannel: nextTime || null,
               });
               const fields=fileProbeFieldsFromProbe(probe, src.type, { timeIndexChannel: nextTime||null });
               if(nextTime) fields.needsTimeIndex=false;
-              fields.needsUnits=await resolveNeedsUnitsFlag(probe, src.type, src.file_path, !!src.units_in_headers);
+              fields.needsUnits=await resolveNeedsUnitsFlag(probe, src.type, src.file_path, !!src.units_in_headers, !!src.units_in_row);
               applyProbeFieldsToSource(src, fields);
               if(nextTime){ src.time_index_channel=nextTime; src.needs_time_index=false; }
             }catch{
@@ -26700,7 +26867,7 @@
         });
         // Refresh candidates from probe if empty
         if(src.type!=="tdms" && src.file_path && !candidates.length){
-          probeDataFile(src.file_path, { unitsInHeaders:!!src.units_in_headers }).then((probe)=>{
+          probeDataFile(src.file_path, { unitsInHeaders:!!src.units_in_headers, unitsInRow:!!src.units_in_row }).then((probe)=>{
             const next=Array.isArray(probe?.time_index_candidates)?probe.time_index_candidates:[];
             src.time_index_candidates=next;
             const sel=byId("m_edit_time");
@@ -27043,22 +27210,24 @@
     function clearChannelOverrideKeys(map, key){
       if(!map || !key) return;
       delete map[key];
+      if(isSourceScopedChannelKey(key)) return;
       Object.keys(map).forEach((k)=>{ if(channelKeyFromId(k)===key) delete map[k]; });
     }
     function lookupRawChannelCatalog(name){
       const key=channelKeyFromId(name);
-      return (channelsData||[]).find((c)=>!c.__isCalculated && c.channel_name===key) || null;
+      const dbId=isSourceScopedChannelKey(name) ? channelDbIdFromKey(name) : "";
+      return (channelsData||[]).find((c)=>!c.__isCalculated && c.channel_name===key && (!dbId || c.__dbId===dbId)) || null;
     }
     function editChannel(channelId){
       const key=channelKeyFromId(channelId);
       if(!key){ setStatus("Channel not found.", true); return; }
       if(isCalculatedChannelKey(key)){ editCalculatedChannel(key); return; }
       if(isAliasChannelKey(key)){ editChannelAlias(key); return; }
-      editRawChannel(key);
+      editRawChannel(channelId);
     }
     async function editRawChannel(channelId){
       const key=channelKeyFromId(channelId);
-      if(!key || !addedChannelIds.has(key)){ setStatus("Channel not found.", true); return; }
+      if(!key || (!addedChannelIds.has(channelId) && !addedChannelIds.has(key))){ setStatus("Channel not found.", true); return; }
       const catalog=lookupRawChannelCatalog(key);
       const displayName=channelDisplayName(key);
       const unitCurrent=String(channelOverrideValue(state.unitOverrides, key) || catalog?.unit || "");
@@ -27864,14 +28033,16 @@
         : [...addedChannelIds];
       initialSelected.forEach((key)=>{
         if(useExternal){
-          rowCache.set(key, { id:key, primary:key, meta:"" });
+          rowCache.set(key, { id:key, primary:channelKeyFromId(key)||key, sourceLabel:"", meta:"" });
           return;
         }
-        const calc=findCalculatedByKey(key);
-        const alias=findAliasByKey(key);
+        const short=channelKeyFromId(key)||key;
+        const calc=findCalculatedByKey(short);
+        const alias=findAliasByKey(short);
         rowCache.set(key, {
           id: key,
-          primary: key,
+          primary: short,
+          sourceLabel: isSourceScopedChannelKey(key) ? sourceLabelForDbId(channelDbIdFromKey(key)) : "",
           meta: calc ? `calculated (${calc.kind||"calc"})` : (alias ? `alias (${aliasMemberNames(alias).length})` : ""),
         });
       });
@@ -27916,17 +28087,26 @@
         if(kind==="avail") availAnchor = idx; else selAnchor = idx;
       };
 
+      const rowIsPicked=(rowId)=>{
+        if(selected.has(rowId)) return true;
+        const name=channelKeyFromId(rowId);
+        return Boolean(name && selected.has(name));
+      };
+
       const renderTransferList = (containerId, listRows, activeSet, kind)=>{
         const root = byId(containerId);
         if(!root) return;
         root.innerHTML="";
         listRows.forEach((r)=>{
           const el=document.createElement("div");
-          const isSelected = selected.has(r.id);
+          const isSelected = rowIsPicked(r.id);
           const aliased = !useExternal && kind==="avail" && isChannelCollapsedUnderListedAlias(r.id);
           el.className="selectRow"+(activeSet.has(r.id)?" active":"")+(kind==="avail" && isSelected ? " disabled" : "");
           const suffix=(kind==="avail" && isSelected)?" · selected":"";
-          el.innerHTML=`<div class="itemPrimary">${escapeHtml(r.primary)}${suffix}</div>${kind==="avail"?aliasBadgeHtml(r.id):""}`;
+          const sourceBit=(kind==="sel" && r.sourceLabel)
+            ? `<div class="itemMeta">${escapeHtml(r.sourceLabel)}</div>`
+            : "";
+          el.innerHTML=`<div class="itemPrimary">${escapeHtml(r.primary)}${suffix}</div>${sourceBit}${kind==="avail"?aliasBadgeHtml(channelKeyFromId(r.id)||r.id):""}`;
           if(aliased) el.title=`In alias: ${aliasesOwningListedChannel(r.id).map((a)=>a.name).join(", ")}`;
           el.onmousedown=(ev)=>{ if(ev&&ev.preventDefault) ev.preventDefault(); };
           el.onclick=(ev)=>{
@@ -27942,9 +28122,18 @@
 
       const selectedRows = ()=> [...selected]
         .filter((id)=>useExternal || !isChannelCollapsedUnderListedAlias(id))
-        .map((id)=>rowCache.get(id)||{id, primary:id, meta:""})
+        .map((id)=>rowCache.get(id)||{
+          id,
+          primary:channelKeyFromId(id)||id,
+          sourceLabel: isSourceScopedChannelKey(id) ? sourceLabelForDbId(channelDbIdFromKey(id)) : "",
+          meta:"",
+        })
         .filter(Boolean)
-        .sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
+        .sort((a,b)=>{
+          const src=String(a.sourceLabel||"").localeCompare(String(b.sourceLabel||""));
+          if(src) return src;
+          return String(a.primary).localeCompare(String(b.primary));
+        });
 
       const renderAllTransfer = ()=>{
         renderTransferList("cm_avail", allRows, availActive, "avail");
@@ -27967,15 +28156,17 @@
             : null;
           const dbId=db?.id || opt.dbId;
           opt.dbId=dbId;
+          const sourceLabel=sourceLabelForDbId(dbId) || (src?.name||src?.type||"");
           const rows=await fetchChannelsForDb(dbId);
           const byName=new Map();
           rows.forEach((r)=>{
-            const name=channelKeyFromId(r.id) || r.primary;
-            if(!name || byName.has(name)) return;
+            const id=String(r.id||"").trim();
+            const name=channelKeyFromId(id) || r.primary;
+            if(!id || !name || byName.has(name)) return;
             if(useExternal && (isCalculatedChannelKey(name) || isAliasChannelKey(name))) return;
-            const entry={ id:name, primary:name, meta:r.meta||"" };
+            const entry={ id, primary:name, sourceLabel, meta:r.meta||"" };
             byName.set(name, entry);
-            rowCache.set(name, entry);
+            rowCache.set(id, entry);
           });
           allRows=[...byName.values()].sort((a,b)=>String(a.primary).localeCompare(String(b.primary)));
         }catch(err){
@@ -28056,6 +28247,8 @@
         toMove.forEach((id)=>{
           if(!useExternal && isChannelCollapsedUnderListedAlias(id)){ skipped.push(id); return; }
           selected.add(id);
+          const name=channelKeyFromId(id);
+          if(name && name!==id) selected.delete(name);
         });
         availActive.clear();
         renderAllTransfer();
@@ -28070,8 +28263,10 @@
       byId("cm_to_avail").onclick=()=>{
         const toMove=[...selActive];
         toMove.forEach((id)=>{
-          if(!useExternal && (isCalculatedChannelKey(id) || isAliasChannelKey(id))) return;
+          const name=channelKeyFromId(id);
+          if(!useExternal && (isCalculatedChannelKey(name) || isAliasChannelKey(name))) return;
           selected.delete(id);
+          if(name) selected.delete(name);
         });
         selActive.clear();
         renderAllTransfer();
@@ -28097,8 +28292,10 @@
       );
       const calcNames=new Set((selectedCalcs||[]).map((c)=>c.name));
       (channelKeysAll||[]).forEach((key)=>{
-        const name=channelKeyFromId(key);
+        const ref=scopedChannelRef(key);
+        const name=ref.name;
         if(!name || calcNames.has(name)) return;
+        if(ref.dbId && ref.dbId!==dbId) return;
         const alias=findAliasByKey(name);
         if(alias){
           aliasMemberNames(alias).forEach((member)=>{
@@ -28138,9 +28335,11 @@
       const channelName=row?.channel_name;
       if(!channelName) return false;
       if((selectedCalcs||[]).some((c)=>c.name===channelName)) return false;
-      const keys=[...(selectedKeys||[])].map((k)=>channelKeyFromId(k)).filter(Boolean);
-      for(const key of keys){
-        if(isCalculatedChannelKey(key)) continue;
+      for(const raw of (selectedKeys||[])){
+        const ref=scopedChannelRef(raw);
+        const key=ref.name;
+        if(!key || isCalculatedChannelKey(key)) continue;
+        if(ref.dbId && row.__dbId && ref.dbId!==row.__dbId) continue;
         if(key===channelName) return true;
         const alias=findAliasByKey(key);
         if(alias && aliasMemberNames(alias).includes(channelName)) return true;
@@ -28166,26 +28365,65 @@
       }
       return null;
     }
+    function emptyCalcDiag(name){
+      return { name, finite:0, attempted:0, missingDeps:false, compileError:"", sourcesTried:0 };
+    }
+    function calcFailureMessages(selectedCalcs, calcRows, clientDiags=null){
+      const msgs=[];
+      const byName=new Map();
+      (calcRows||[]).forEach((r)=>{
+        const name=String(r?.channel_name||"");
+        if(!name) return;
+        const v=Number(r.value);
+        if(!Number.isFinite(v)) return;
+        byName.set(name, (byName.get(name)||0)+1);
+      });
+      const diagMap=new Map((clientDiags||[]).map((d)=>[d.name, d]));
+      (selectedCalcs||[]).forEach((calc)=>{
+        const name=String(calc?.name||"").trim();
+        if(!name) return;
+        if((byName.get(name)||0)>0) return;
+        const d=diagMap.get(name);
+        if(d?.compileError){
+          msgs.push(`Calculated channel '${name}' formula error: ${d.compileError}`);
+          return;
+        }
+        if(d?.missingDeps){
+          msgs.push(`Calculated channel '${name}' missing one or more input channels on the selected source(s).`);
+          return;
+        }
+        if(d && d.attempted>0 && d.finite===0){
+          msgs.push(`Calculated channel '${name}' produced no finite values (check formula domain, e.g. SQRT/LOG of invalid inputs).`);
+          return;
+        }
+        msgs.push(`Calculated channel '${name}' produced no plottable rows (check formula domain, e.g. SQRT/LOG of invalid inputs, or missing inputs).`);
+      });
+      return msgs;
+    }
     async function computeCalculatedRows(baseRows){
       const out=[];
+      const diags=[];
       const selectedCalcs=selectedCalculatedChannels();
       const dbIds=effectiveSelectedDatabaseIds();
       let workCounter=0;
       for(const calc of selectedCalcs){
+        const diag=emptyCalcDiag(calc.name);
+        diags.push(diag);
         const depNames=calcDepNames(calc);
         for(const dbId of dbIds){
+          diag.sourcesTried+=1;
           const calcLegend=legendSourceForCalc(calc, dbId);
           if(calc.kind==="rolling"){
             const srcName=resolveCalcDepForEval(depNames[0], null) || depNames[0];
-            if(!srcName) continue;
+            if(!srcName){ diag.missingDeps=true; continue; }
             // Prefer a member that actually has rows in this db when dep is an alias.
             const alias=findAliasByKey(depNames[0]);
             const resolvedSrc=alias
               ? (aliasMemberNames(alias).find((m)=>baseRows.some((r)=>r.__dbId===dbId && r.channel_name===m)) || null)
               : srcName;
-            if(!resolvedSrc) continue;
+            if(!resolvedSrc){ diag.missingDeps=true; continue; }
             const srcRows=baseRows.filter((r)=>r.__dbId===dbId && r.channel_name===resolvedSrc);
-            if(!srcRows.length) continue;
+            if(!srcRows.length){ diag.missingDeps=true; continue; }
             const byTest=new Map();
             srcRows.forEach((r)=>{
               const k=`${r.test_run_id}|${r.test_run_code}`;
@@ -28197,8 +28435,10 @@
               const w=Math.max(1, Number(calc.window||1));
               for(let i=0;i<rows.length;i++){
                 const vals=rows.slice(Math.max(0,i-w+1),i+1).map((x)=>Number(x.value)).filter((x)=>Number.isFinite(x));
+                diag.attempted+=1;
                 const v=rollingCalc(calc.op, vals);
                 if(v===null||!Number.isFinite(v)) continue;
+                diag.finite+=1;
                 out.push({ test_run_id:rows[i].test_run_id, test_run_code:rows[i].test_run_code, channel_name:calc.name, unit:calc.unit||null, time:rows[i].time, value:Number(v), __dbId:dbId, __ts:rows[i].__ts, __legendSource:calcLegend });
                 workCounter+=1;
                 if(workCounter%2000===0) await nextPaint();
@@ -28207,7 +28447,7 @@
             continue;
           }
           if(calc.kind==="formula"){
-            if(depNames.length<1) continue;
+            if(depNames.length<1){ diag.missingDeps=true; continue; }
             const resolvedDeps=depNames.map((dep)=>{
               const alias=findAliasByKey(dep);
               if(alias){
@@ -28215,9 +28455,12 @@
               }
               return baseRows.some((r)=>r.__dbId===dbId && r.channel_name===dep) ? dep : null;
             });
-            if(resolvedDeps.some((n)=>!n)) continue;
+            if(resolvedDeps.some((n)=>!n)){ diag.missingDeps=true; continue; }
             const compiled=compileFormula(calc.formula||"", resolvedDeps.length);
-            if(!compiled.ok) continue;
+            if(!compiled.ok){
+              diag.compileError=compiled.error||"invalid formula";
+              continue;
+            }
             const byTime=new Map();
             resolvedDeps.forEach((depName, idx)=>{
               baseRows.filter((r)=>r.__dbId===dbId && r.channel_name===depName).forEach((r)=>{
@@ -28254,7 +28497,9 @@
                 let v=null;
                 try{ v=compiled.evalFn(slot.vals, ctx); }catch{ v=null; }
                 rowIndex+=1;
+                if(!scan) diag.attempted+=1;
                 if(v===null||!Number.isFinite(v)) continue;
+                if(!scan) diag.finite+=1;
                 produced.push({ t, slot, v:Number(v) });
               }
               return produced;
@@ -28277,7 +28522,7 @@
           }
         }
       }
-      return out;
+      return { rows:out, diagnostics:diags };
     }
     async function loadMetadataForSelection(){
       const allMetadata = [];
@@ -28384,11 +28629,14 @@
       if(seriesCache){ seriesCache.setOverview(rowsAll, loadV3Meta, { mode:"overview" }); seriesCache.detail.clear(); }
       rowsAll.forEach((r)=>{ if(!Number.isFinite(r.__ts)) r.__ts=parseRowTimeMs(r); });
       let calcRows=[];
+      let calcDiagnostics=null;
       const serverCalcs=preferences.useServerCalc!==false;
       if(!serverCalcs){
         setStatus("Computing calculated channels...");
         await nextPaint();
-        calcRows=await computeCalculatedRows(rowsAll);
+        const computed=await computeCalculatedRows(rowsAll);
+        calcRows=computed.rows||[];
+        calcDiagnostics=computed.diagnostics||[];
       }else{
         const calcNames=new Set(selectedCalcs.map((c)=>c.name));
         calcRows=rowsAll.filter((r)=>calcNames.has(r.channel_name));
@@ -28397,6 +28645,17 @@
           const calc=calcByName.get(r.channel_name);
           if(calc) r.__legendSource=legendSourceForCalc(calc, r.__dbId);
         });
+        // Server drops non-finite results silently — diagnose empty calcs client-side.
+        const emptyCalcs=selectedCalcs.filter((c)=>{
+          const name=String(c?.name||"");
+          return name && !calcRows.some((r)=>r.channel_name===name && Number.isFinite(Number(r.value)));
+        });
+        if(emptyCalcs.length){
+          try{
+            const computed=await computeCalculatedRows(rowsAll);
+            calcDiagnostics=computed.diagnostics||[];
+          }catch{}
+        }
       }
       // Empty channel selection means "all added channels", already resolved into channelIdsAll.
       const selectedNonCalc=rowsAll.filter((r)=>rawRowMatchesSelectedKeys(r, channelIdsAll, selectedCalcs));
@@ -28450,6 +28709,10 @@
         setStatus(`Loaded ${finalRows.length} rows after masks${decNote}.`, false, { force:true });
       }else if(!finalRows.length){
         setStatus("Load finished with no plottable rows.", false, { force:true });
+      }
+      const calcWarns=calcFailureMessages(selectedCalcs, calcRows, calcDiagnostics);
+      if(calcWarns.length){
+        setStatus(calcWarns.join(" "), true, { durationMs:8000 });
       }
       }catch(err){
         const detail=formatPlotError(err);
@@ -28532,6 +28795,115 @@
       { id:"consolas", label:"Consolas", stack:'Consolas,"Courier New",monospace' },
     ];
     const DEFAULT_PREFS={ fontFamily:"inter", fontSize:14, colorMode:"dark", useServerCalc:true, zoomDetailRefetch:true, shortcuts:null };
+    const LIBRARY_PATH_FIELDS=[
+      { key:"configurations", label:"Configurations", hint:"Saved plot configurations." },
+      { key:"units", label:"Units", hint:"Unit categories and conversion formulas." },
+      { key:"range_definitions", label:"Range Definitions", hint:"Reusable range detection definitions." },
+      { key:"ingestion_rules", label:"Ingestion Rules", hint:"Permanent ingest rules and channel maps." },
+      { key:"limits", label:"Limits", hint:"Summary limit sets and thresholds." },
+    ];
+    let libraryPathInfo={};
+    async function loadLibraryPaths(){
+      try{
+        const data=await getJson("/api/library-paths");
+        libraryPathInfo=(data && data.libraries && typeof data.libraries==="object") ? data.libraries : {};
+      }catch{
+        libraryPathInfo={};
+      }
+      return libraryPathInfo;
+    }
+    function libraryPathValue(key){
+      const row=libraryPathInfo?.[key];
+      if(typeof row==="string") return row;
+      return String(row?.directory || row?.path || row?.default || "");
+    }
+    function prefsLibraryRowsHtml(){
+      const folderIcon=typeof treeIconSvg==="function" ? treeIconSvg("folder", false) : "";
+      return LIBRARY_PATH_FIELDS.map((field)=>{
+        const val=libraryPathValue(field.key);
+        return `<div class="prefsRow prefsPathRow">
+          <div class="prefsRowCopy">
+            <div class="prefsRowLabel">${escapeHtml(field.label)}</div>
+            <div class="prefsRowHint">${escapeHtml(field.hint)}</div>
+          </div>
+          <div class="prefsRowControl prefsPathControl">
+            <div class="prefsPathField inputWithSuffix">
+              <input id="m_pref_lib_${escAttr(field.key)}" type="text" spellcheck="false" value="${escAttr(val)}" />
+              <button type="button" class="inputSuffix" data-library-browse="${escAttr(field.key)}" aria-label="Choose ${escAttr(field.label)} folder">${folderIcon}</button>
+            </div>
+          </div>
+        </div>`;
+      }).join("");
+    }
+    async function applyLibraryPathFromInput(root, key, nextPath){
+      const path=String(nextPath||"").trim();
+      if(!path){ setStatus("Choose a folder.", true); return false; }
+      const res=await postJson("/api/library-paths", { libraries:{ [key]:path } });
+      if(!res || res.ok===false){
+        setStatus(res?.error || "Failed to update library folder.", true);
+        return false;
+      }
+      libraryPathInfo=res.libraries || libraryPathInfo;
+      refreshPrefsLibraryRows(root);
+      try{
+        if(key==="limits") await refreshLimitLibrary();
+        if(key==="units") await loadUnitLibrary();
+        if(key==="ingestion_rules") await loadIngestionLibrary();
+      }catch{}
+      setStatus(`Updated ${key.split("_").join(" ")} folder.`);
+      return true;
+    }
+    function prefsLibInput(root, key){
+      return root?.querySelector?.(`[id="m_pref_lib_${key}"]`) || null;
+    }
+    function refreshPrefsLibraryRows(root){
+      const group=root?.querySelector?.("[data-prefs-panel='files'] .prefsGroup");
+      if(!group) return;
+      group.innerHTML=`<div class="prefsGroupTitle">Libraries</div>${prefsLibraryRowsHtml()}`;
+      wirePrefsLibraryControls(root);
+      const win=root.closest?.(".appWindow");
+      if(win){
+        kickAppWindowPaint(win);
+        setTimeout(()=>{ if(win.isConnected) kickAppWindowPaint(win); }, 0);
+        setTimeout(()=>{ if(win.isConnected) kickAppWindowPaint(win); }, 80);
+      }
+    }
+    function wirePrefsLibraryControls(root){
+      if(!root) return;
+      root.querySelectorAll("[data-library-browse]").forEach((btn)=>{
+        btn.onclick=async(ev)=>{
+          if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+          if(btn.dataset.picking==="1") return;
+          btn.dataset.picking="1";
+          try{
+            const key=btn.getAttribute("data-library-browse");
+            const field=LIBRARY_PATH_FIELDS.find((f)=>f.key===key);
+            const picked=await postJson("/api/desktop/pick-folder", {
+              title: field ? `Select ${field.label} folder` : "Select folder",
+            });
+            if(!picked || picked.cancelled || !picked.path) return;
+            const input=prefsLibInput(root, key);
+            if(input){
+              input.value=picked.path;
+              input.setAttribute("value", picked.path);
+            }
+            await applyLibraryPathFromInput(root, key, picked.path);
+          }catch(err){
+            setStatus(err?.message || "Failed to choose folder.", true);
+          }finally{
+            delete btn.dataset.picking;
+          }
+        };
+      });
+      LIBRARY_PATH_FIELDS.forEach((field)=>{
+        const input=prefsLibInput(root, field.key);
+        if(!input) return;
+        input.addEventListener("change", ()=>{
+          if(root.querySelector(`[data-library-browse="${field.key}"]`)?.dataset?.picking==="1") return;
+          void applyLibraryPathFromInput(root, field.key, input.value);
+        });
+      });
+    }
     const SHORTCUT_ACTIONS=[
       { id:"plot", label:"Plot", hint:"Load/plot the active view" },
       { id:"plotAllVisible", label:"Plot All Visible Views", hint:"Plot every visible multiplot tile" },
@@ -28740,6 +29112,7 @@
         };
       });
       void refreshAboutAppVersion(root);
+      wirePrefsLibraryControls(root);
       root.querySelector(".prefsAboutLink")?.addEventListener("click",(e)=>{
         e.preventDefault();
         window.open(NOVA_GITHUB_URL, "_blank");
@@ -28808,6 +29181,10 @@
       });
     }
     function openPreferencesModal(){
+      void showPreferencesModal();
+    }
+    async function showPreferencesModal(){
+      await loadLibraryPaths();
       const fontOpts=FONT_OPTIONS.map((f)=>`<option value="${f.id}" ${preferences.fontFamily===f.id?"selected":""}>${f.label}</option>`).join("");
       const bodyHtml=`
         <div class="prefsShell">
@@ -28816,6 +29193,7 @@
             <button type="button" class="prefsNavItem" data-prefs-tab="font">Font &amp; Text</button>
             <button type="button" class="prefsNavItem" data-prefs-tab="shortcuts">Keyboard Shortcuts</button>
             <button type="button" class="prefsNavItem" data-prefs-tab="features">Features</button>
+            <button type="button" class="prefsNavItem" data-prefs-tab="files">Directory</button>
             <button type="button" class="prefsNavItem" data-prefs-tab="about">About</button>
           </nav>
           <div class="prefsPanels">
@@ -28880,6 +29258,14 @@
                   </div>
                   <div class="prefsRowControl"><label style="display:flex;align-items:center;gap:8px;margin:0;"><input id="m_pref_zoom_refetch" type="checkbox" style="width:auto;margin:0;" ${preferences.zoomDetailRefetch!==false?"checked":""}/></label></div>
                 </div>
+              </div>
+            </section>
+            <section class="prefsPanel" data-prefs-panel="files">
+              <h3 class="prefsPanelTitle">Directory</h3>
+              <p class="prefsPanelDesc">Choose the folders where NOVA stores library JSON files on this computer.</p>
+              <div class="prefsGroup">
+                <div class="prefsGroupTitle">Libraries</div>
+                ${prefsLibraryRowsHtml()}
               </div>
             </section>
             <section class="prefsPanel" data-prefs-panel="about">
@@ -29192,6 +29578,7 @@
         }
       }
       let calcRows=[];
+      let calcDiagnostics=null;
       if(preferences.useServerCalc!==false){
         const calcNames=new Set(selectedCalcs.map((c)=>c.name));
         calcRows=rowsAll.filter((r)=>calcNames.has(r.channel_name));
@@ -29201,7 +29588,9 @@
           if(calc) r.__legendSource=legendSourceForCalc(calc, r.__dbId);
         });
       }else{
-        calcRows=await computeCalculatedRows(rowsAll);
+        const computed=await computeCalculatedRows(rowsAll);
+        calcRows=computed.rows||[];
+        calcDiagnostics=computed.diagnostics||[];
       }
       const channelKeys=channelIdsForActiveLoad();
       const selNonCalc=rowsAll.filter((r)=>rawRowMatchesSelectedKeys(r, channelKeys, selectedCalcs));
@@ -29219,7 +29608,12 @@
       latestRows=finalRows;
       const gd=getPlotDiv();
       await plotRows(finalRows, { preserveUi:true, dataOnly:true, axisLocks: snapshotPlotAxisLocks(gd) });
-      setStatus(`Detail: ${finalRows.length} rows in window.`);
+      const calcWarns=calcFailureMessages(selectedCalcs, calcRows, calcDiagnostics);
+      if(calcWarns.length){
+        setStatus(calcWarns.join(" "), true, { durationMs:8000 });
+      }else{
+        setStatus(`Detail: ${finalRows.length} rows in window.`);
+      }
     }
 
     function initSidebarResize(){
@@ -29361,7 +29755,7 @@
         }
       });
       await loadUnitLibrary();
-      loadLimitLibrary();
+      await refreshLimitLibrary();
       loadPreferences();
       await loadAppearance();
       loadPlots();
@@ -29450,7 +29844,6 @@
       e.preventDefault();
       void openRangeDefinitionManagerModal();
     });
-    byId("addObjectBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); setStatus("Plot objects are coming soon."); });
     byId("loadBtn").addEventListener("mousedown",(e)=>{
       e.preventDefault();
       e.stopPropagation();

@@ -78,6 +78,30 @@ def test_csv_units_in_headers_parses_channel_units(tmp_path: Path):
     assert {r.unit for r in rows if r.channel_name == "P"} == {"psi"}
 
 
+def test_csv_units_in_row_gfssp_layout(tmp_path: Path):
+    csv_path = tmp_path / "inputFN.CSV"
+    csv_path.write_text(
+        "TIME,P1        ,P2        \n"
+        "SECONDS,kPa,kPa\n"
+        "0.200000E-01,0.500000E+02,0.118733E+03\n"
+        "0.400000E-01,0.500000E+02,0.117487E+03\n",
+        encoding="utf-8",
+    )
+    channels = file_channels("csv", str(csv_path), units_in_row=True)
+    names = {c.channel_name: c for c in channels}
+    assert "TIME" not in names
+    assert names["P1"].unit == "kPa"
+    assert names["P2"].unit == "kPa"
+    assert len(channels) == 2
+
+
+def test_csv_seconds_header_is_time_index(tmp_path: Path):
+    csv_path = tmp_path / "seconds.csv"
+    csv_path.write_text("SECONDS,P1\n0.0,1.0\n0.1,2.0\n", encoding="utf-8")
+    channels = file_channels("csv", str(csv_path))
+    assert [c.channel_name for c in channels] == ["P1"]
+
+
 def test_h5_file_source_errors_without_telemetry_time(tmp_path: Path):
     h5_path = tmp_path / "missing_time.h5"
     with h5py.File(h5_path, "w") as h5:

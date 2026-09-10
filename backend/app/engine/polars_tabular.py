@@ -9,6 +9,7 @@ from typing import Any
 import polars as pl
 
 from ..services.file_sources import (
+    csv_units_from_row,
     resolve_time_column_name,
     _arrow_table,
     _split_name_unit,
@@ -51,9 +52,14 @@ def _looks_relative_numeric(df: pl.DataFrame, time_col: str, *, force_unit: str 
         if force_unit == "us":
             return mx < 1e14 and mn >= 0
         return mx < 1e17 and mn >= 0
-    if name in {"time_s", "time", "t", "elapsed_s", "elapsed"} and mx <= 1e8:
+    if name in {"time_s", "time", "t", "elapsed_s", "elapsed", "seconds", "sec"} and mx <= 1e8:
         return True
     return mx <= 1e8 and mn >= 0
+
+
+def _epoch_datetime_us(raw: pl.Expr, *, scale_to_us: float) -> pl.Expr:
+    """UTC datetime from numeric times, rounded to microseconds (keeps sub-second steps)."""
+    return pl.from_epoch((raw * scale_to_us).round().cast(pl.Int64), time_unit="us")
 
 
 def _numeric_times_to_datetime_expr(time_col: str, *, force_unit: str | None = None) -> pl.Expr:
@@ -62,27 +68,27 @@ def _numeric_times_to_datetime_expr(time_col: str, *, force_unit: str | None = N
     mn = raw.min()
     span = mx - mn
 
+    # Always go through microseconds. Casting float seconds to Int64 first
+    # collapsed short relative series (e.g. 0.00, 0.02, …, 0.50 s) onto one stamp.
     if force_unit == "ms":
-        return pl.from_epoch(raw.cast(pl.Int64), time_unit="ms")
+        return _epoch_datetime_us(raw, scale_to_us=1_000.0)
     if force_unit == "ns":
-        return pl.from_epoch(raw.cast(pl.Int64), time_unit="ns")
+        return _epoch_datetime_us(raw, scale_to_us=0.001)
     if force_unit == "us":
-        return pl.from_epoch(raw.cast(pl.Int64), time_unit="us")
+        return _epoch_datetime_us(raw, scale_to_us=1.0)
     if force_unit == "s":
-        return pl.from_epoch(raw.cast(pl.Int64), time_unit="s")
+        return _epoch_datetime_us(raw, scale_to_us=1_000_000.0)
 
     return (
         pl.when(mx > 1e17)
-        .then(pl.from_epoch(raw.cast(pl.Int64), time_unit="ns"))
+        .then(_epoch_datetime_us(raw, scale_to_us=0.001))
         .when((mx > 1e14) & (span > 1e11))
-        .then(pl.from_epoch(raw.cast(pl.Int64), time_unit="us"))
+        .then(_epoch_datetime_us(raw, scale_to_us=1.0))
         .when(mx > 1e14)
-        .then(pl.from_epoch(raw.cast(pl.Int64), time_unit="ns"))
+        .then(_epoch_datetime_us(raw, scale_to_us=0.001))
         .when(mx > 1e11)
-        .then(pl.from_epoch(raw.cast(pl.Int64), time_unit="ms"))
-        .when((mn >= 1e8) & (span <= 86400 * 366 * 50))
-        .then(pl.from_epoch(raw.cast(pl.Int64), time_unit="s"))
-        .otherwise(pl.from_epoch(raw.cast(pl.Int64), time_unit="s"))
+        .then(_epoch_datetime_us(raw, scale_to_us=1_000.0))
+        .otherwise(_epoch_datetime_us(raw, scale_to_us=1_000_000.0))
     )
 
 
@@ -149,7 +155,7 @@ def _normalize_time_frame(
     if not resolved_time_col:
         raise ValueError(
             f"{source_label} requires a time column "
-            "(timestamp_utc/time/timestamp/datetime/time_s/x_ms/TIME) "
+            "(timestamp_utc/time/timestamp/datetime/time_s/x_ms/TIME/SECONDS) "
             "or an explicit time_index_channel."
         )
 
@@ -180,17 +186,30 @@ def _normalize_time_frame(
     return df, resolved_time_col, was_relative
 
 
+def _strip_polars_columns(df: pl.DataFrame) -> pl.DataFrame:
+    rename = {c: str(c).strip() for c in df.columns if str(c).strip() != str(c)}
+    return df.rename(rename) if rename else df
+
+
 def normalize_csv_polars(
     file_path: str,
     *,
     units_in_headers: bool = False,
+    units_in_row: bool = False,
     time_col: str | None = None,
 ) -> tuple[pl.DataFrame, dict[str, str | None], str, datetime]:
     try:
-        df = pl.read_csv(file_path, infer_schema_length=10000, ignore_errors=False)
+        read_kwargs: dict[str, Any] = {
+            "infer_schema_length": 10000,
+            "ignore_errors": False,
+        }
+        if units_in_row:
+            read_kwargs["skip_rows_after_header"] = 1
+        df = pl.read_csv(file_path, **read_kwargs)
     except Exception as exc:
         raise ValueError(f"Unable to read CSV contents: {exc}") from exc
 
+    df = _strip_polars_columns(df)
     df, resolved_time_col, was_relative = _normalize_time_frame(
         df,
         time_col=time_col,
@@ -198,11 +217,16 @@ def normalize_csv_polars(
     )
     df, t0_utc = anchor_relative_time_to_ingest_utc(df, was_relative=was_relative)
     unit_map: dict[str, str | None] = {}
+    if units_in_row:
+        unit_map.update(csv_units_from_row(file_path, list(df.columns)))
     if units_in_headers:
-        df, unit_map = _apply_units_in_headers_polars(
+        df, header_map = _apply_units_in_headers_polars(
             df,
             skip_columns={"__time__", resolved_time_col},
         )
+        for col, unit in header_map.items():
+            if unit:
+                unit_map[col] = unit
     return df, unit_map, resolved_time_col, t0_utc
 
 
@@ -264,7 +288,7 @@ def write_channel_parquets_from_polars(
     tmax_ms: float | None = None
 
     with_ms = df.with_columns(
-        (pl.col("__time__").dt.epoch("ms").cast(pl.Float64)).alias("x_ms"),
+        (pl.col("__time__").dt.epoch("us").cast(pl.Float64) / 1000.0).alias("x_ms"),
         pl.col("__time__").alias("timestamp_utc"),
     )
 

@@ -237,6 +237,7 @@ class FileIngestRequest(BaseModel):
     source_type: Literal["csv", "h5", "tdms", "parquet", "arrow"]
     file_path: str
     units_in_headers: bool = False
+    units_in_row: bool = False
     time_index_channel: str | None = None
     ingest_mode: Literal["temporary", "permanent"] | None = None
     parameters: dict[str, str | float | int | bool | None] = Field(default_factory=dict)
@@ -251,6 +252,7 @@ class FileIngestRequest(BaseModel):
     calculated_channels: list[CalculatedChannelSpec] = Field(default_factory=list)
     range_definition_ids: list[str] = Field(default_factory=list)
     ingestion_rule_id: str | None = None
+    force: bool = False
 
 
 class IngestWithRuleRequest(BaseModel):
@@ -269,6 +271,7 @@ class FileProbeChannel(BaseModel):
 class FileUnitsMetadataReport(BaseModel):
     supports_unit_metadata: bool
     parse_units_from_header: bool = False
+    parse_units_from_row: bool = False
     channels_with_units: list[str] = Field(default_factory=list)
     channels_without_units: list[str] = Field(default_factory=list)
     all_channels_have_units: bool = False
@@ -287,6 +290,7 @@ class FileSchemaValidation(BaseModel):
 class FileProbeRequest(BaseModel):
     file_path: str
     units_in_headers: bool = False
+    units_in_row: bool = False
     time_index_channel: str | None = None
 
 

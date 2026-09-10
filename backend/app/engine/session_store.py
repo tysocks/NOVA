@@ -9,7 +9,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SESSIONS_ROOT = Path(__file__).resolve().parents[2] / ".nova_sessions"
+from ..paths import sessions_root
+
+SESSIONS_ROOT = sessions_root()
 
 
 def ensure_sessions_root() -> Path:
@@ -58,6 +60,22 @@ def save_manifest(artifact_id: str, manifest: dict[str, Any]) -> None:
     root = artifact_dir(artifact_id)
     root.mkdir(parents=True, exist_ok=True)
     manifest_path(artifact_id).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+
+def clear_session_channel_cache(artifact_id: str) -> int:
+    """Delete temporary per-channel Parquet files for one artifact. Returns removed count."""
+    target = artifact_dir(artifact_id) / "data"
+    if not target.is_dir():
+        return 0
+    removed = 0
+    for child in list(target.iterdir()):
+        try:
+            if child.is_file():
+                child.unlink()
+                removed += 1
+        except OSError:
+            continue
+    return removed
 
 
 def find_artifact_for_path(file_path: str) -> str | None:
@@ -123,6 +141,7 @@ def initial_manifest(
     source_type: str,
     file_path: str,
     units_in_headers: bool,
+    units_in_row: bool = False,
     time_index_channel: str | None = None,
 ) -> dict[str, Any]:
     return {
@@ -133,6 +152,7 @@ def initial_manifest(
         "run_code": Path(file_path).stem,
         "test_run_id": 1,
         "units_in_headers": units_in_headers,
+        "units_in_row": units_in_row,
         "time_index_channel": time_index_channel,
         "time_bounds": None,
         "channels": [],

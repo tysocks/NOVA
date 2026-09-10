@@ -88,7 +88,7 @@ Add data to the session.
 - **Ingest** — Pick files and optionally apply an ingestion rule into a catalog.
 - **↻** — Refresh the selection. For an ingested file (or files under a selected folder), this clears the session channel cache and **re-ingests** so schema/unit/time-index changes take effect. Permanent catalogs are not wiped.
 
-Supported files: CSV, TDMS, HDF5 (`.h5` / `.hdf5`), Parquet, Arrow/Feather. Files are ingested to Parquet for fast queries. Session ingest lives under `backend/.nova_sessions/` (safe to delete; re-add files afterward).
+Supported files: CSV, TDMS, HDF5 (`.h5` / `.hdf5`), Parquet, Arrow/Feather. Files are ingested to Parquet for fast queries. Session ingest lives under `%LOCALAPPDATA%\NOVA\.nova_sessions\` (safe to delete; re-add files afterward).
 
 Right-click or double-click a source to rename or edit it. For CSV sources, **Edit → Properties** includes:
 
@@ -252,7 +252,7 @@ Primary query API: `POST /api/v3/series/query`. Health check: `GET /health`.
 - `examples/` — Sample CSV / Parquet / Arrow
 - `docs/data-file-formats.md` — File format rules
 
-Runtime data (not committed): `%LOCALAPPDATA%\NOVA\`, `backend/.nova_sessions/`, `backend/.nova_profile/` (desktop cache).
+Runtime data (not committed): `%LOCALAPPDATA%\NOVA\` — libraries, settings, session Parquet, catalog cache, desktop profile. Override with `NOVA_USER_DATA_DIR`.
 
 ---
 
@@ -264,5 +264,5 @@ Runtime data (not committed): `%LOCALAPPDATA%\NOVA\`, `backend/.nova_sessions/`,
 - **File plot is empty or slow** — Confirm ingest finished (status bar) and the original file path still exists. CSV needs a time column (`timestamp_utc`, `time`, `timestamp`, `datetime`, `time_s`, `TIME`, `SECONDS`, …) and numeric channels. After changing CSV unit/time options, use **↻** to re-ingest.
 - **CSV units wrong / missing** — Enable **Parse Units from Header** and/or **Parse Units from Row** on the source, save, refresh.
 - **Calculated channel missing from plot** — Check the status toast after Plot. Domain errors (e.g. `SQRT` of a negative) produce no finite points and now raise a visible alarm.
-- **Disk use** — Delete `backend/.nova_sessions/` and re-add files.
+- **Disk use** — Delete `%LOCALAPPDATA%\NOVA\.nova_sessions\` and re-add files.
 - **No databases when adding a source** — Open **File → Databases**, add a catalog or profile, save, retry.

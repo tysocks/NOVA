@@ -54,25 +54,26 @@ def _probe_csv(
     file_path: str,
     *,
     units_in_headers: bool,
+    units_in_row: bool = False,
     time_index_channel: str | None,
 ) -> FileProbeResponse:
     import pandas as pd
 
     header_df = pd.read_csv(file_path, nrows=0)
-    raw_columns = list(header_df.columns)
-    df, unit_map = _csv_frame(file_path, units_in_headers=units_in_headers, time_col=time_index_channel)
-    time_col = time_index_channel
-    if not time_col:
-        for c in DEFAULT_TIME_COLUMN_NAMES:
-            if c in raw_columns:
-                time_col = c
-                break
+    raw_columns = [str(c).strip() for c in header_df.columns]
+    df, unit_map = _csv_frame(
+        file_path,
+        units_in_headers=units_in_headers,
+        time_col=time_index_channel,
+        units_in_row=units_in_row,
+    )
+    time_col = resolve_time_column_name(raw_columns, time_index_channel)
 
     channels: list[FileProbeChannel] = []
     with_units: list[str] = []
     without_units: list[str] = []
 
-    if units_in_headers:
+    if units_in_headers or units_in_row:
         for col in df.columns:
             if col == "__time__" or col == time_col:
                 continue
@@ -114,6 +115,7 @@ def _probe_csv(
         units_metadata=_units_report(
             supports_unit_metadata=True,
             parse_units_from_header=True,
+            parse_units_from_row=True,
             with_units=with_units,
             without_units=without_units,
             format_label="CSV",
@@ -305,6 +307,7 @@ def _units_report(
     with_units: list[str],
     without_units: list[str],
     format_label: str,
+    parse_units_from_row: bool = False,
 ) -> FileUnitsMetadataReport:
     total = len(with_units) + len(without_units)
     if not supports_unit_metadata:
@@ -342,6 +345,7 @@ def _units_report(
     return FileUnitsMetadataReport(
         supports_unit_metadata=True,
         parse_units_from_header=parse_units_from_header,
+        parse_units_from_row=parse_units_from_row,
         channels_with_units=with_units,
         channels_without_units=without_units,
         all_channels_have_units=len(without_units) == 0,
@@ -354,6 +358,7 @@ def probe_file(
     file_path: str,
     *,
     units_in_headers: bool = False,
+    units_in_row: bool = False,
     time_index_channel: str | None = None,
 ) -> FileProbeResponse:
     path = Path(file_path)
@@ -364,7 +369,12 @@ def probe_file(
     source_type = detect_source_type(resolved)
 
     if source_type == "csv":
-        return _probe_csv(resolved, units_in_headers=units_in_headers, time_index_channel=time_index_channel)
+        return _probe_csv(
+            resolved,
+            units_in_headers=units_in_headers,
+            units_in_row=units_in_row,
+            time_index_channel=time_index_channel,
+        )
     if source_type == "h5":
         return _probe_h5(resolved, time_index_channel=time_index_channel)
     if source_type == "tdms":
@@ -389,6 +399,7 @@ def probe_file_with_validation(
     file_path: str,
     *,
     units_in_headers: bool = False,
+    units_in_row: bool = False,
     time_index_channel: str | None = None,
 ) -> FileProbeResponse:
     from .file_schema import validate_file_schema
@@ -396,6 +407,7 @@ def probe_file_with_validation(
     result = probe_file(
         file_path,
         units_in_headers=units_in_headers,
+        units_in_row=units_in_row,
         time_index_channel=time_index_channel,
     )
     validation = validate_file_schema(
@@ -403,5 +415,6 @@ def probe_file_with_validation(
         source_type=result.source_type,
         time_index_channel=time_index_channel or result.time_index_default,
         units_in_headers=units_in_headers,
+        units_in_row=units_in_row,
     )
     return result.model_copy(update={"schema_validation": validation})

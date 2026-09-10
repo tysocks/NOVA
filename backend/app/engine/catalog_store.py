@@ -23,9 +23,10 @@ from ..models import (
     TestParameterItem,
     TestRunItem,
 )
+from ..paths import catalog_db_file
 from .session_store import artifact_dir
 
-DEFAULT_CATALOG_DB_PATH = Path(__file__).resolve().parents[2] / ".nova_catalog.duckdb"
+DEFAULT_CATALOG_DB_PATH = catalog_db_file()
 # Mutable default used by tests via monkeypatch; prefer get_catalog_db_path().
 CATALOG_DB_PATH = DEFAULT_CATALOG_DB_PATH
 

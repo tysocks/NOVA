@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -13,6 +14,8 @@ from PySide6.QtGui import QIcon, QPainter, QPixmap
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile, QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen, QMainWindow
+
+from app.paths import backend_port_file, ensure_user_data_dir, profile_root as nova_profile_root
 
 HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
@@ -53,6 +56,89 @@ def find_existing_nova_port() -> int | None:
     return None
 
 
+def pids_listening_on_port(port: int) -> list[int]:
+    """Return PIDs with a listening socket on host port."""
+    if sys.platform != "win32":
+        return []
+    try:
+        completed = subprocess.run(
+            ["netstat", "-ano", "-p", "tcp"],
+            capture_output=True,
+            text=True,
+            timeout=8,
+            check=False,
+        )
+    except Exception:
+        return []
+    found: list[int] = []
+    marker = re.compile(rf":{port}\s")
+    for line in (completed.stdout or "").splitlines():
+        if "LISTENING" not in line.upper() or not marker.search(line):
+            continue
+        parts = line.split()
+        if not parts:
+            continue
+        try:
+            pid = int(parts[-1])
+        except ValueError:
+            continue
+        if pid > 4:
+            found.append(pid)
+    return list(dict.fromkeys(found))
+
+
+def kill_pid_tree(pid: int) -> None:
+    if pid <= 4:
+        return
+    if sys.platform == "win32":
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(pid)],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        return
+    try:
+        os.kill(pid, 15)
+    except OSError:
+        pass
+
+
+def stop_backend_process(server: subprocess.Popen | None) -> None:
+    if server is None:
+        return
+    pid = getattr(server, "pid", None)
+    if pid:
+        kill_pid_tree(pid)
+    else:
+        try:
+            server.terminate()
+        except Exception:
+            pass
+    try:
+        server.wait(timeout=5)
+    except Exception:
+        try:
+            server.kill()
+        except Exception:
+            pass
+
+
+def stop_existing_nova_backends() -> None:
+    """Kill orphaned NOVA uvicorn processes so the next launch loads current code."""
+    for port in range(DEFAULT_PORT, MAX_PORT + 1):
+        if not fetch_nova_health(port):
+            continue
+        for pid in pids_listening_on_port(port):
+            kill_pid_tree(pid)
+    deadline = time.time() + 8
+    while time.time() < deadline:
+        if find_existing_nova_port() is None:
+            return
+        time.sleep(0.15)
+
+
 def ports_used_by_other_apps() -> list[int]:
     blocked: list[int] = []
     for port in range(DEFAULT_PORT, MAX_PORT + 1):
@@ -68,12 +154,14 @@ def find_free_port() -> int | None:
     return None
 
 
-def write_active_port(project_root: Path, port: int) -> None:
-    (project_root / ".nova_backend_port").write_text(str(port), encoding="utf-8")
+def write_active_port(_project_root: Path | None = None, port: int = 0) -> None:
+    path = backend_port_file()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(str(port), encoding="utf-8")
 
 
-def clear_active_port(project_root: Path) -> None:
-    port_file = project_root / ".nova_backend_port"
+def clear_active_port(_project_root: Path | None = None) -> None:
+    port_file = backend_port_file()
     if port_file.exists():
         port_file.unlink()
 
@@ -118,10 +206,7 @@ def resolve_backend_port(
     log_path: Path,
 ) -> tuple[int | None, subprocess.Popen | None, object | None, str]:
     """Return (port, server_process, log_file_handle, error_message)."""
-    existing = find_existing_nova_port()
-    if existing is not None:
-        write_active_port(project_root, existing)
-        return existing, None, None, ""
+    stop_existing_nova_backends()
 
     blocked = ports_used_by_other_apps()
     free_port = find_free_port()
@@ -164,7 +249,7 @@ def resolve_backend_port(
                 f"\nPort {DEFAULT_PORT} is used by another application; "
                 f"NOVA tried port {free_port} without success."
             )
-        server.terminate()
+        stop_backend_process(server)
         log_file.close()
         return (
             None,
@@ -227,12 +312,21 @@ def main() -> None:
     app = QApplication(sys.argv)
     if icon_path.exists():
         app.setWindowIcon(QIcon(str(icon_path)))
-    profile_root = project_root / ".nova_profile"
+    ensure_user_data_dir()
+    profile_root = nova_profile_root()
     profile_root.mkdir(parents=True, exist_ok=True)
     profile = QWebEngineProfile.defaultProfile()
     profile.setPersistentStoragePath(str(profile_root / "storage"))
     profile.setCachePath(str(profile_root / "cache"))
     profile.setPersistentCookiesPolicy(QWebEngineProfile.ForcePersistentCookies)
+    try:
+        cache_type = getattr(getattr(QWebEngineProfile, "HttpCacheType", None), "NoCache", None)
+        if cache_type is not None:
+            profile.setHttpCacheType(cache_type)
+        profile.setHttpCacheMaximumSize(0)
+        profile.clearHttpCache()
+    except Exception:
+        pass
     splash_pix = QPixmap(520, 520)
     if icon_path.exists():
         splash_pix.fill(Qt.black)
@@ -305,13 +399,8 @@ def main() -> None:
 
         exit_code = app.exec()
     finally:
-        if server:
-            server.terminate()
-            try:
-                server.wait(timeout=5)
-            except Exception:
-                server.kill()
-            clear_active_port(project_root)
+        stop_backend_process(server)
+        clear_active_port(project_root)
         if log_file:
             log_file.close()
 

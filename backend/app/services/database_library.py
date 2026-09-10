@@ -20,7 +20,9 @@ from ..engine.catalog_store import (
     set_catalog_db_path,
 )
 
-DATABASE_LIBRARY_FILE = Path(__file__).resolve().parents[1] / ".nova_database_library.json"
+from ..paths import database_library_file
+
+DATABASE_LIBRARY_FILE = database_library_file()
 LOCAL_CATALOG_ID = "local"
 
 
