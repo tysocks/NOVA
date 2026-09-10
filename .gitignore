@@ -43,3 +43,9 @@ Thumbs.db
 
 # Git worktrees
 .worktrees/
+
+# Packaging / PyInstaller output
+build/
+dist/
+packaging/output/
+assets/NOVA_ICON.ico

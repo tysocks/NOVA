@@ -15,12 +15,49 @@ from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile, QWebEngin
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen, QMainWindow
 
-from app.paths import backend_port_file, ensure_user_data_dir, profile_root as nova_profile_root
+from app.paths import (
+    backend_port_file,
+    ensure_user_data_dir,
+    nova_user_data_dir,
+    profile_root as nova_profile_root,
+)
 
 HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 MAX_PORT = 8010
 BACKEND_HEALTH_TIMEOUT_S = 180.0
+NOVA_BACKEND_FLAG = "--nova-backend"
+NOVA_PICK_FOLDER_FLAG = "--nova-pick-folder"
+
+
+def is_frozen() -> bool:
+    return bool(getattr(sys, "frozen", False))
+
+
+def backend_dir() -> Path:
+    """Directory that contains the `app` package (dev tree or PyInstaller bundle)."""
+    if is_frozen():
+        return Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
+    return Path(__file__).resolve().parent
+
+
+def install_root() -> Path:
+    """Install / project root (icon assets, optional beside-exe files)."""
+    if is_frozen():
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parents[1]
+
+
+def resource_path(*parts: str) -> Path:
+    """Resolve a bundled resource from install root, then MEIPASS."""
+    candidates = [install_root().joinpath(*parts)]
+    if is_frozen():
+        candidates.append(backend_dir().joinpath(*parts))
+        candidates.append(backend_dir().joinpath("assets", *parts))
+    for path in candidates:
+        if path.exists():
+            return path
+    return candidates[0]
 
 
 def port_is_listening(host: str, port: int) -> bool:
@@ -173,15 +210,18 @@ def start_backend_process(
     log_file,
     port: int,
 ) -> subprocess.Popen:
-    python_for_backend = Path(sys.executable).with_name("python.exe")
-    if not python_for_backend.exists():
-        python_for_backend = Path(sys.executable)
     log_file.write(
         f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Launching backend on {HOST}:{port}\n"
     )
     log_file.flush()
-    return subprocess.Popen(
-        [
+    if is_frozen():
+        cmd = [str(sys.executable), NOVA_BACKEND_FLAG, "--host", HOST, "--port", str(port)]
+        cwd = str(install_root())
+    else:
+        python_for_backend = Path(sys.executable).with_name("python.exe")
+        if not python_for_backend.exists():
+            python_for_backend = Path(sys.executable)
+        cmd = [
             str(python_for_backend),
             "-m",
             "uvicorn",
@@ -190,12 +230,48 @@ def start_backend_process(
             HOST,
             "--port",
             str(port),
-        ],
-        cwd=str(backend_dir),
+        ]
+        cwd = str(backend_dir)
+    return subprocess.Popen(
+        cmd,
+        cwd=cwd,
         env=env,
         stdout=log_file,
         stderr=log_file,
     )
+
+
+def run_backend_server(argv: list[str] | None = None) -> None:
+    """Entry used by the frozen installer child process."""
+    import argparse
+
+    import uvicorn
+
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--host", default=HOST)
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT)
+    args, _ = parser.parse_known_args(argv)
+    from app.main import app as fastapi_app  # noqa: F401
+
+    uvicorn.run("app.main:app", host=args.host, port=args.port, log_level="info")
+
+
+def run_folder_picker(argv: list[str] | None = None) -> int:
+    from app.services import native_dialogs as dialogs
+
+    args = list(argv or [])
+    title = args[0] if args else "Select folder"
+    selected = dialogs._pick_folder_in_process(title)
+    dialogs._write_picker_out(selected)
+    if selected:
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+        sys.stdout.write(selected)
+        sys.stdout.flush()
+        return 0
+    return 1
 
 
 def resolve_backend_port(
@@ -302,22 +378,25 @@ class NovaMainWindow(QMainWindow):
 
 
 def main() -> None:
-    backend_dir = Path(__file__).resolve().parent
-    project_root = backend_dir.parent
-    log_path = project_root / "nova_backend.log"
-    icon_path = project_root / "assets" / "NOVA_ICON.png"
+    root = install_root()
+    be_dir = backend_dir()
+    log_path = nova_user_data_dir() / "nova_backend.log"
+    icon_path = resource_path("assets", "NOVA_ICON.png")
+    if not icon_path.exists():
+        icon_path = resource_path("NOVA_ICON.png")
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(backend_dir)
+    if not is_frozen():
+        env["PYTHONPATH"] = str(be_dir)
 
     app = QApplication(sys.argv)
     if icon_path.exists():
         app.setWindowIcon(QIcon(str(icon_path)))
     ensure_user_data_dir()
-    profile_root = nova_profile_root()
-    profile_root.mkdir(parents=True, exist_ok=True)
+    profile_dir = nova_profile_root()
+    profile_dir.mkdir(parents=True, exist_ok=True)
     profile = QWebEngineProfile.defaultProfile()
-    profile.setPersistentStoragePath(str(profile_root / "storage"))
-    profile.setCachePath(str(profile_root / "cache"))
+    profile.setPersistentStoragePath(str(profile_dir / "storage"))
+    profile.setCachePath(str(profile_dir / "cache"))
     profile.setPersistentCookiesPolicy(QWebEngineProfile.ForcePersistentCookies)
     try:
         cache_type = getattr(getattr(QWebEngineProfile, "HttpCacheType", None), "NoCache", None)
@@ -346,8 +425,8 @@ def main() -> None:
     app.processEvents()
 
     port, server, log_file, error = resolve_backend_port(
-        backend_dir=backend_dir,
-        project_root=project_root,
+        backend_dir=be_dir,
+        project_root=root,
         env=env,
         log_path=log_path,
     )
@@ -400,7 +479,7 @@ def main() -> None:
         exit_code = app.exec()
     finally:
         stop_backend_process(server)
-        clear_active_port(project_root)
+        clear_active_port(root)
         if log_file:
             log_file.close()
 
@@ -408,4 +487,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    if NOVA_BACKEND_FLAG in sys.argv:
+        rest = [a for a in sys.argv[1:] if a != NOVA_BACKEND_FLAG]
+        run_backend_server(rest)
+    elif NOVA_PICK_FOLDER_FLAG in sys.argv:
+        idx = sys.argv.index(NOVA_PICK_FOLDER_FLAG)
+        raise SystemExit(run_folder_picker(sys.argv[idx + 1 :]))
+    else:
+        main()

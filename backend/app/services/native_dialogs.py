@@ -32,7 +32,11 @@ def pick_folder(title: str = "Select folder") -> str | None:
     env["NOVA_FOLDER_PICKER_CHILD"] = "1"
     env["NOVA_FOLDER_PICKER_OUT"] = str(out_path)
     kwargs: dict = {
-        "args": [sys.executable, "-u", str(Path(__file__).resolve()), title],
+        "args": (
+            [sys.executable, "--nova-pick-folder", title]
+            if getattr(sys, "frozen", False)
+            else [sys.executable, "-u", str(Path(__file__).resolve()), title]
+        ),
         "capture_output": True,
         "text": True,
         "encoding": "utf-8",

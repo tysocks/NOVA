@@ -39,6 +39,24 @@ A sample CSV is at `examples/example_rocket_test.csv`.
 
 Closing the window stops the backend. Each launch starts a fresh backend on the first free port in **8000–8010** (any leftover process from a previous run is stopped first).
 
+### Windows install (built package)
+
+From a built tree (or after `.\packaging\build_windows.ps1`):
+
+```powershell
+.\packaging\Install-NOVA.ps1
+```
+
+That copies NOVA into `%LOCALAPPDATA%\Programs\NOVA` and creates **Desktop** and **Start Menu** shortcuts. Uninstall with `%LOCALAPPDATA%\Programs\NOVA\Uninstall-NOVA.ps1`.
+
+Build the onedir bundle + zip (requires the project venv):
+
+```powershell
+.\packaging\build_windows.ps1
+# or build and install in one step:
+.\packaging\build_windows.ps1 -Install
+```
+
 ---
 
 ## Window layout
