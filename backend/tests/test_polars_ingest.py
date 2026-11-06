@@ -1,8 +1,12 @@
 from pathlib import Path
 from datetime import datetime, timezone
 
+from fastapi import HTTPException
+
 from app.engine.file_index import run_ingest
-from app.engine.polars_tabular import normalize_csv_polars, normalize_tabular_polars
+from app.engine.polars_tabular import normalize_csv_polars, normalize_tabular_polars, preview_csv_table
+from app.main import preview_file_v3
+from app.models import FilePreviewRequest
 
 
 def _patch_sessions_and_catalog(monkeypatch, tmp_path: Path) -> None:
@@ -204,3 +208,142 @@ def test_gfssp_csv_units_in_row_ingest(monkeypatch, tmp_path: Path):
     assert "TIME" not in by_name
     assert by_name["P1"]["unit"] == "kPa"
     assert by_name["P1"]["point_count"] == 3
+
+
+def test_preview_csv_header_units(tmp_path: Path):
+    csv_path = tmp_path / "units.csv"
+    csv_path.write_text(
+        "time_s,THRUST (N),P[psi]\n0.0,1.0,10.0\n1.0,2.0,11.0\n",
+        encoding="utf-8",
+    )
+    result = preview_csv_table(str(csv_path), units_in_headers=True)
+    assert result["error"] is None
+    by_name = {col["name"]: col for col in result["columns"]}
+    assert by_name["THRUST"]["unit"] == "N"
+    assert by_name["THRUST"]["role"] == "channel"
+    assert by_name["THRUST"]["source_name"] == "THRUST"
+    assert by_name["P"]["unit"] == "psi"
+    assert "THRUST (N)" not in by_name
+    thrust_idx = result["columns"].index(by_name["THRUST"])
+    assert result["rows"][0][thrust_idx] == 1.0
+    assert result["rows"][1][thrust_idx] == 2.0
+
+
+def test_preview_csv_units_row(tmp_path: Path):
+    csv_path = tmp_path / "inputFN.CSV"
+    csv_path.write_text(
+        "TIME,P1        ,T1        \n"
+        "SECONDS,kPa,DEG_C\n"
+        "0.200000E-01,0.500000E+02,0.250000E+02\n"
+        "0.400000E-01,0.500000E+02,0.240884E+02\n"
+        "0.500000E+00,0.935425E+02,0.468283E+01\n",
+        encoding="utf-8",
+    )
+    result = preview_csv_table(str(csv_path), units_in_row=True)
+    assert result["error"] is None
+    assert result["sampled_rows"] == 3
+    assert result["time_column"] == "TIME"
+    by_name = {col["name"]: col for col in result["columns"]}
+    assert by_name["P1"]["unit"] == "kPa"
+    assert by_name["T1"]["unit"] == "DEG_C"
+    p_idx = result["columns"].index(by_name["P1"])
+    assert abs(result["rows"][0][p_idx] - 50.0) < 1e-6
+    assert all("kPa" not in row and "SECONDS" not in row for row in result["rows"])
+
+
+def test_preview_csv_include_and_rename(tmp_path: Path):
+    csv_path = tmp_path / "select.csv"
+    csv_path.write_text(
+        "time_s,THRUST (N),P[psi]\n0.0,1.0,10.0\n1.0,2.0,11.0\n",
+        encoding="utf-8",
+    )
+    result = preview_csv_table(
+        str(csv_path),
+        units_in_headers=True,
+        channels={
+            "mode": "include",
+            "include": ["THRUST"],
+            "exclude": [],
+            "rename": {"THRUST": "EngineThrust"},
+            "require": [],
+        },
+    )
+    assert result["error"] is None
+    assert [col["name"] for col in result["columns"]] == ["time_s", "EngineThrust"]
+    assert result["columns"][1]["source_name"] == "THRUST"
+    assert result["columns"][1]["unit"] == "N"
+    assert result["rows"][0][1] == 1.0
+    assert "P" not in {col["name"] for col in result["columns"]}
+
+
+def test_preview_csv_empty_and_bad_time(tmp_path: Path):
+    empty = tmp_path / "empty.csv"
+    empty.write_text("time_s,THRUST\n", encoding="utf-8")
+    empty_result = preview_csv_table(str(empty))
+    assert empty_result["error"]
+    assert "no data rows" in empty_result["error"].lower()
+    assert empty_result["rows"] == []
+
+    bad_time = tmp_path / "bad_time.csv"
+    bad_time.write_text("time_s,THRUST\nabc,1\ndef,2\n", encoding="utf-8")
+    bad_result = preview_csv_table(str(bad_time))
+    assert bad_result["error"]
+    assert "could not be parsed" in bad_result["error"]
+    assert bad_result["rows"] == []
+
+
+def test_preview_csv_row_cap(tmp_path: Path):
+    csv_path = tmp_path / "long.csv"
+    lines = ["time_s,value"] + [f"{i},{i * 10}" for i in range(60)]
+    csv_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    result = preview_csv_table(str(csv_path), limit_rows=50)
+    assert result["error"] is None
+    assert result["truncated_rows"] is True
+    assert result["sampled_rows"] == 50
+    assert len(result["rows"]) == 50
+    assert result["rows"][0][0] == 0
+    assert result["rows"][49][0] == 49
+
+
+def test_preview_csv_relative_time_values(tmp_path: Path):
+    csv_path = tmp_path / "relative.csv"
+    csv_path.write_text(
+        "time_s,THRUST\n0.0,1500.0\n1.5,1501.0\n",
+        encoding="utf-8",
+    )
+    result = preview_csv_table(str(csv_path))
+    assert result["error"] is None
+    assert result["time_kind"] == "relative"
+    assert result["time_column"] == "time_s"
+    assert result["columns"][0]["role"] == "time"
+    assert result["rows"][0][0] == 0.0
+    assert result["rows"][1][0] == 1.5
+    assert not isinstance(result["rows"][0][0], str)
+
+    _df, _units, time_col, t0_utc = normalize_csv_polars(str(csv_path))
+    assert time_col == "time_s"
+    assert t0_utc.tzinfo is not None
+
+
+def test_preview_endpoint_csv_only_and_known_errors(tmp_path: Path):
+    missing = tmp_path / "missing.csv"
+    try:
+        preview_file_v3(FilePreviewRequest(file_path=str(missing)))
+        raise AssertionError("missing file should be HTTP 400")
+    except HTTPException as exc:
+        assert exc.status_code == 400
+
+    empty = tmp_path / "empty.csv"
+    empty.write_text("time_s,THRUST\n", encoding="utf-8")
+    body = preview_file_v3(FilePreviewRequest(file_path=str(empty)))
+    assert body.error
+    assert "no data rows" in body.error.lower()
+
+    other = tmp_path / "trace.parquet"
+    other.write_text("not a csv", encoding="utf-8")
+    try:
+        preview_file_v3(FilePreviewRequest(file_path=str(other)))
+        raise AssertionError("non-csv should be HTTP 400")
+    except HTTPException as exc:
+        assert exc.status_code == 400
+        assert "CSV-only" in str(exc.detail)

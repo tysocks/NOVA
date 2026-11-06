@@ -888,6 +888,7 @@
     .modal.modalScale{ width:min(420px,94vw); overflow-x:hidden; }
     .modal.modalSourceForm{ width:min(598px,94vw); overflow:hidden; }
     .modal.modalAliasForm{ width:min(598px,94vw); overflow:hidden; }
+    .modal.modalIngest{ width:min(598px,94vw); overflow:hidden; }
     .modal.modalChannels{ width:min(960px,94vw); overflow-x:hidden; }
     .modal.modalNarrow{ width:min(220px,88vw); }
     .modal.modalMask{ width:min(340px,92vw); }
@@ -1567,6 +1568,106 @@
       box-shadow:none !important;
       outline:none !important;
     }
+    .ingestPreviewBlock{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+      width:100%;
+    }
+    .ingestPreviewRuleLine{
+      grid-column:1 / -1;
+      white-space:normal;
+      overflow:visible;
+      text-overflow:clip;
+      align-items:flex-start;
+      color:var(--nova-text-dim);
+      font-size:0.75rem;
+      line-height:1.4;
+      min-height:0;
+    }
+    .ingestPreviewPane{
+      position:relative;
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .ingestPreviewBusy{
+      display:none;
+      position:absolute;
+      top:6px;
+      right:8px;
+      z-index:2;
+      font-size:0.68rem;
+      color:var(--nova-text-dim);
+      pointer-events:none;
+    }
+    .ingestPreviewPane.is-busy .ingestPreviewBusy{ display:block; }
+    .ingestPreviewPane.is-busy .ingestPreview{ opacity:0.72; }
+    .ingestPreview{
+      overflow:auto;
+      min-height:140px;
+      max-height:240px;
+      border:1px solid var(--nova-divider);
+      border-radius:4px;
+      scrollbar-width:thin;
+    }
+    .ingestPreview::-webkit-scrollbar{ width:8px; height:8px; display:block; }
+    .ingestPreview::-webkit-scrollbar-thumb{
+      background:var(--nova-divider);
+      border-radius:4px;
+    }
+    .ingestPreview table{
+      width:max-content;
+      min-width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+    }
+    .ingestPreview th,
+    .ingestPreview td{
+      border-bottom:1px solid var(--nova-divider);
+      padding:6px 8px;
+      text-align:left;
+      white-space:nowrap;
+      vertical-align:top;
+    }
+    .ingestPreview th{
+      position:sticky;
+      top:0;
+      z-index:1;
+      background:var(--nova-elevated);
+      color:var(--nova-text);
+      font-weight:500;
+      font-size:0.75rem;
+      box-shadow:inset 0 -1px 0 var(--nova-divider);
+    }
+    .ingestPreviewName{ display:block; }
+    .ingestPreviewUnit{
+      display:block;
+      margin-top:1px;
+      font-size:0.68rem;
+      font-weight:400;
+      color:var(--nova-text-dim);
+    }
+    .ingestPreviewMessage{
+      padding:12px 10px;
+      color:var(--nova-text-dim);
+      font-size:0.78rem;
+      line-height:1.4;
+    }
+    .ingestPreviewMessage.is-error{ color:#eb5757; }
+    .ingestPreviewMeta{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      font-size:0.72rem;
+      color:var(--nova-text-dim);
+      line-height:1.35;
+    }
+    .appWindow.modalIngest .ingestPreviewBlock{ padding:0 16px 8px; }
+    .appWindow.modalIngest .ingestPreview{ max-height:min(320px, 40vh); }
+    .appWindow.modalIngest .aliasMemberList{ max-height:148px; }
     .rangeMetaRow select:focus,
     #m_obj_props select:focus,
     #m_obj_props .objPropControl:focus,
@@ -2387,6 +2488,17 @@
     .appWindow.modalNarrow{ width:260px; height:340px; }
     .appWindow.modalExport{ width:360px; height:280px; }
     .appWindow.modalExport .formStack{ padding:10px 16px 4px; gap:10px; }
+    .appWindow.modalIngest{
+      width:598px;
+      height:720px;
+      min-height:420px;
+      max-height:96vh;
+    }
+    .appWindow.modalIngest .appWindowHeader.modalHeader{ padding:8px 14px; }
+    .appWindow.modalIngest .appWindowHeader .appWindowClose{ width:20px; min-width:20px; height:20px; }
+    .appWindow.modalIngest .appWindowHeader .modalTitle{ font-size:0.85rem; }
+    .appWindow.modalIngest .formStack{ padding:10px 16px 8px; gap:12px; flex:0 0 auto; }
+    .appWindow.modalIngest .modalActions.modalActionsIconOnly{ padding:8px 12px; }
     .appWindowHeader{ display:flex; align-items:center; gap:6px; cursor:move; flex:0 0 auto; user-select:none; padding-right:8px; }
     .appWindowHeader .modalTitle{ flex:1; min-width:0; margin:0; display:flex; align-items:center; gap:8px; }
     .appWindowHeader .modalTitleIcon{
@@ -2520,6 +2632,7 @@
     .appWindow .appWindowContent>div:has(>.modalList){ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; padding-bottom:0 !important; }
     .appWindow .appWindowContent .formStack{ flex:0 0 auto; overflow:visible; }
     .appWindow.modalSourceForm .appWindowContent{ overflow:hidden; }
+    .appWindow.modalSourceForm .appWindowContent:has(.ingestPreviewPane){ overflow:auto; }
     .appWindowResize{ position:absolute; right:0; bottom:0; width:14px; height:14px; cursor:nwse-resize; z-index:2; background:linear-gradient(135deg, transparent 50%, var(--nova-text-dim) 50%); opacity:0.45; }
     .appWindowResize:hover{ opacity:0.85; }
     /* Preferences — VS Code-style settings shell */
@@ -9863,18 +9976,19 @@
       });
     }
     function loadState() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); const toolbar = Object.prototype.hasOwnProperty.call(s, "activeToolbar") ? s.activeToolbar : "sources"; state = { sources:s.sources || [], databases:s.databases || [], masks:s.masks || [], calculatedChannels:migrateCalculatedChannels(s.calculatedChannels || []), channelAliases:migrateChannelAliases(s.channelAliases || []), channelLabels:(s.channelLabels && typeof s.channelLabels==="object" && !Array.isArray(s.channelLabels))?s.channelLabels:{}, freqOverrides:s.freqOverrides || {}, unitOverrides:s.unitOverrides || {}, collapsed:s.collapsed || {}, activeToolbar: toolbar, sourceTreeExpanded: Array.isArray(s.sourceTreeExpanded)?s.sourceTreeExpanded:[] }; migrateLegacyTimeRef(state.sources, s.t0Mode); plotTimeMode=DEFAULT_TIME_REF; if(s.appearance) appearance={...appearance,...s.appearance}; selectedSourceIds = new Set(s.selectedSourceIds || []); selectedDatabaseIds = new Set(s.selectedDatabaseIds || []); selectedTestIds = new Set(s.selectedTestIds || []); selectedChannelIds = migrateChannelKeySet(s.selectedChannelIds || []); selectedMaskIds = new Set(s.selectedMaskIds || (s.masks || []).map((m)=>m.id)); addedTestIds = new Set(s.addedTestIds || []); addedChannelIds = migrateChannelKeySet(s.addedChannelIds || []); previewVisible = Boolean(s.previewVisible); activeToolbar = state.activeToolbar ?? null; if(activeToolbar && !["sources","channels","masks","ranges","objects","options","pages","ingestion"].includes(activeToolbar)) activeToolbar="sources"; sourceTreeExpanded = new Set(state.sourceTreeExpanded || s.sourceTreeExpanded || []); } catch {} }
-    const MODAL_SIZE_CLASSES=["modalScale","modalSourceForm","modalAliasForm","modalRangeDef","modalChannels","modalDbSource","modalNarrow","modalMask","modalCompact","modalExport"];
+    const MODAL_SIZE_CLASSES=["modalScale","modalSourceForm","modalAliasForm","modalRangeDef","modalChannels","modalDbSource","modalNarrow","modalMask","modalCompact","modalExport","modalIngest"];
     const WF={ floating:true };
     const WF_CHANNELS={ floating:true, size:"modalChannels", compact:true };
     const WF_DB_SOURCE={ floating:true, size:"modalDbSource", compact:true };
     const WF_NARROW={ floating:true, size:"modalNarrow", compact:true };
     const WF_EXPORT={ floating:true, size:"modalExport", compact:true, closable:true };
+    const WF_INGEST={ floating:true, size:"modalIngest", closable:true };
     const WF_CFG={ floating:true, size:"default", compact:true };
     const WF_SOURCE_FORM={ floating:true, size:"modalSourceForm", closable:true };
     const WF_ALIAS_FORM={ floating:true, size:"modalAliasForm", closable:true };
     const WF_RANGE_DEF_FORM={ floating:true, size:"modalRangeDef", closable:true };
     const dialogCloseStack=[];
-    const APP_WINDOW_SIZES={ modalScale:[420,520], modalSourceForm:[598,380], modalAliasForm:[598,320], modalRangeDef:[640,720], modalChannels:[960,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], modalExport:[360,280], modalPreferences:[820,560], default:[520,560] };
+    const APP_WINDOW_SIZES={ modalScale:[420,520], modalSourceForm:[598,380], modalAliasForm:[598,320], modalRangeDef:[640,720], modalChannels:[960,560], modalDbSource:[960,640], modalMask:[360,500], modalNarrow:[260,340], modalExport:[360,280], modalIngest:[598,720], modalPreferences:[820,560], default:[520,560] };
     function removeAppWindowEntry(dialogId){
       const idx=appWindowStack.findIndex((e)=>e.dialogId===dialogId);
       if(idx>=0) appWindowStack.splice(idx,1);
@@ -10947,6 +11061,158 @@
         time_index_channel: timeIndexChannel || null,
       });
     }
+    function csvPreviewPaneHtml(id){
+      return `<div id="${id}" class="ingestPreviewPane">
+        <div class="ingestPreviewBusy">Updating…</div>
+        <div class="ingestPreview"><div class="ingestPreviewMessage">Select a CSV to preview.</div></div>
+        <div class="ingestPreviewMeta"></div>
+      </div>`;
+    }
+    function csvPreviewSectionHtml(id){
+      return `<div class="ingestPreviewBlock">
+        <div class="rangeMetaHeader"><label>Preview</label></div>
+        <div class="rangeMetaDivider"></div>
+        ${csvPreviewPaneHtml(id)}
+      </div>`;
+    }
+    function formatPreviewCell(value){
+      if(value==null) return "";
+      if(typeof value==="number"){
+        if(!Number.isFinite(value)) return "";
+        return String(value);
+      }
+      return String(value);
+    }
+    function previewFooterText(payload){
+      const shown=Number(payload?.sampled_rows ?? (payload?.rows||[]).length) || 0;
+      const rowText=payload?.truncated_rows ? `Showing first ${shown} rows` : `Showing all ${shown} rows`;
+      if(!payload?.truncated_cols) return rowText;
+      const shownChannels=(payload.columns||[]).filter((col)=>col && col.role==="channel").length;
+      const totalChannels=Math.max(0, Number(payload.column_count||0) - 1);
+      return `${rowText} · ${shownChannels} of ${totalChannels} channels`;
+    }
+    function previewCalcNoteHtml(names){
+      const list=(names||[]).map((name)=>String(name||"").trim()).filter(Boolean);
+      if(!list.length) return "";
+      return `<div class="ingestPreviewCalcs">Computed on ingest: ${escapeHtml(list.join(", "))}</div>`;
+    }
+    function setCsvPreviewBusy(pane, busy){
+      if(!pane) return;
+      pane.classList.toggle("is-busy", !!busy);
+      if(busy) pane.setAttribute("aria-busy", "true");
+      else pane.removeAttribute("aria-busy");
+    }
+    function renderIngestPreviewTable(pane, payload, spec){
+      if(!pane) return;
+      const grid=pane.querySelector(".ingestPreview");
+      const meta=pane.querySelector(".ingestPreviewMeta");
+      if(!grid || !meta) return;
+      const names=(spec && spec.calculatedNames) || [];
+      const note=previewCalcNoteHtml(names);
+      const message=payload && payload.message ? String(payload.message) : "";
+      const error=payload && payload.error ? String(payload.error) : "";
+      if(message){
+        grid.innerHTML=`<div class="ingestPreviewMessage">${escapeHtml(message)}</div>`;
+        meta.innerHTML=note;
+        return;
+      }
+      if(error){
+        grid.innerHTML=`<div class="ingestPreviewMessage is-error">${escapeHtml(error)}</div>`;
+        meta.innerHTML=note;
+        return;
+      }
+      const columns=Array.isArray(payload?.columns) ? payload.columns : [];
+      const rows=Array.isArray(payload?.rows) ? payload.rows : [];
+      if(!columns.length){
+        grid.innerHTML=`<div class="ingestPreviewMessage">Select a CSV to preview.</div>`;
+        meta.innerHTML=note;
+        return;
+      }
+      const head=columns.map((col)=>{
+        const unit=col && col.unit ? `<span class="ingestPreviewUnit">${escapeHtml(col.unit)}</span>` : "";
+        return `<th scope="col"><span class="ingestPreviewName">${escapeHtml(col?.name||"")}</span>${unit}</th>`;
+      }).join("");
+      const body=rows.map((row)=>{
+        const cells=columns.map((_, idx)=>`<td>${escapeHtml(formatPreviewCell(row ? row[idx] : null))}</td>`).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+      grid.innerHTML=`<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+      const bits=[];
+      if(payload?.time_kind==="relative"){
+        bits.push(`<div class="ingestPreviewCaption">Relative time. On ingest, the first sample is anchored to wall-clock UTC.</div>`);
+      }
+      bits.push(`<div class="ingestPreviewFooter">${escapeHtml(previewFooterText(payload))}</div>`);
+      (payload?.warnings||[]).forEach((warning)=>{
+        if(warning) bits.push(`<div class="ingestPreviewWarning">${escapeHtml(warning)}</div>`);
+      });
+      if(note) bits.push(note);
+      meta.innerHTML=bits.join("");
+    }
+    const csvPreviewState=new Map();
+    function scheduleCsvPreview(paneId, build, delay){
+      const wait=Number.isFinite(delay) ? delay : 200;
+      let slot=csvPreviewState.get(paneId);
+      if(!slot){
+        slot={ seq:0, timer:null };
+        csvPreviewState.set(paneId, slot);
+      }
+      if(slot.timer) clearTimeout(slot.timer);
+      slot.timer=setTimeout(()=>{
+        slot.timer=null;
+        const spec=(typeof build==="function" ? build() : build) || {};
+        const token=++slot.seq;
+        const pane=byId(paneId);
+        if(!pane) return;
+        const request=spec.request;
+        const path=String(request?.file_path||"");
+        if(!request || !path.toLowerCase().endsWith(".csv")){
+          setCsvPreviewBusy(pane, false);
+          const message=spec.message || (path ? "Preview is CSV-only." : "Select a CSV to preview.");
+          renderIngestPreviewTable(pane, { message }, spec);
+          return;
+        }
+        setCsvPreviewBusy(pane, true);
+        postJson("/api/v3/file/preview", request).then((body)=>{
+          if(slot.seq!==token) return;
+          const host=byId(paneId);
+          if(!host) return;
+          setCsvPreviewBusy(host, false);
+          renderIngestPreviewTable(host, body||{}, spec);
+        }).catch((err)=>{
+          if(slot.seq!==token) return;
+          const host=byId(paneId);
+          if(!host) return;
+          setCsvPreviewBusy(host, false);
+          renderIngestPreviewTable(host, { error:String(err?.message||err) }, spec);
+        });
+      }, wait);
+    }
+    function formatIngestRuleLine(rule){
+      const header=rule?.units_in_headers ? "True" : "False";
+      const row=rule?.units_in_row ? "True" : "False";
+      const time=rule?.time_index_channel ? String(rule.time_index_channel) : "(auto)";
+      const mode=String(rule?.channels?.mode||"all").toLowerCase()==="include" ? "include" : "all";
+      return `Parse Units from Header: ${header} · Parse Units from Row: ${row} · Time index: ${time} · Channels: ${mode}`;
+    }
+    function ingestPreviewChannels(rule){
+      const block=(rule?.channels && typeof rule.channels==="object") ? rule.channels : {};
+      const rename=(block.rename && typeof block.rename==="object" && !Array.isArray(block.rename)) ? block.rename : {};
+      return {
+        mode:String(block.mode||"all").toLowerCase()==="include" ? "include" : "all",
+        include:Array.isArray(block.include) ? block.include.slice() : [],
+        exclude:Array.isArray(block.exclude) ? block.exclude.slice() : [],
+        rename,
+        require:Array.isArray(block.require) ? block.require.slice() : [],
+      };
+    }
+    function ingestPreviewCalcNames(rule){
+      const rows=Array.isArray(rule?.calculated_channels) ? rule.calculated_channels : [];
+      return rows.map((row)=>String(row?.name||"").trim()).filter(Boolean);
+    }
+    function currentIngestRule(selectId, rules){
+      const ruleId=byId(selectId)?.value||"";
+      return (rules||[]).find((rule)=>String(rule.id)===String(ruleId))||null;
+    }
     function schemaFlagState(schema){
       if(!schema) return { flag:"na", lines:["Schema check unavailable."] };
       const lines=[schema.summary].filter(Boolean);
@@ -11098,6 +11364,9 @@
               Parse Units from Row
             </label>
           </div>
+          <div style="grid-column:1 / -1;">
+            ${csvPreviewSectionHtml("m_df_preview")}
+          </div>
         </div>
         <div class="modalActions">
           <button id="modalCancelBtn" type="button">Cancel</button>
@@ -11147,6 +11416,23 @@
         setStatus(`Added ${resolvedType.toUpperCase()} source '${name}'.`);
         return true;
       }, WF);
+      const buildDataFilePreviewSpec=()=>{
+        const path=(byId("m_df_path")?.value||"").trim();
+        const probeType=detectFileTypeFromPath(path)||"";
+        if(!path) return { message:"Select a CSV to preview." };
+        if(probeType!=="csv") return { message:"Preview is CSV-only." };
+        const timeIndex=byId("m_df_time")?.value||null;
+        return {
+          request:{
+            file_path:path,
+            units_in_headers:Boolean(byId("m_df_units")?.checked),
+            units_in_row:Boolean(byId("m_df_units_row")?.checked),
+            time_index_channel:timeIndex||null,
+            limit_rows:50,
+            limit_cols:40,
+          },
+        };
+      };
       const refreshProbe=async()=>{
         const path=(byId("m_df_path").value||"").trim()||filePath;
         const timeIndex=isTdms ? null : (byId("m_df_time")?.value||null);
@@ -11162,6 +11448,8 @@
         }catch(err){
           const flagEl=byId("m_df_probe_flag");
           if(flagEl) flagEl.innerHTML=renderProbeErrorFlags(err);
+        }finally{
+          scheduleCsvPreview("m_df_preview", buildDataFilePreviewSpec);
         }
       };
       const pathInput=byId("m_df_path");
@@ -11172,6 +11460,7 @@
       if(unitsCb) unitsCb.onchange=refreshProbe;
       const unitsRowCb=byId("m_df_units_row");
       if(unitsRowCb) unitsRowCb.onchange=refreshProbe;
+      scheduleCsvPreview("m_df_preview", buildDataFilePreviewSpec);
     }
     function startDataFileSourcePicker(){
       (async()=>{
@@ -15647,6 +15936,7 @@
       const opts=rules.map((r)=>`<option value="${escAttr(r.id)}">${escAttr(r.name||"Untitled")}</option>`).join("");
       const icon=`<span class="modalTitleIcon"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7.25 2h1.5v7.2l2.1-2.1 1.05 1.05L8 12.05 4.1 8.15l1.05-1.05 2.1 2.1V2zM3 13.25h10v1.5H3v-1.5z"/></svg></span>`;
       const fileCount=files.length;
+      let focusedPath=null;
       openModal(
         "Ingest",
         `<div class="formStack">
@@ -15662,13 +15952,21 @@
                 <div class="rangeMetaCell">Rule</div>
                 <select id="ingest_rule" class="objPropControl">${opts}</select>
               </div>
+              <div class="rangeMetaRow">
+                <div class="rangeMetaCell ingestPreviewRuleLine" id="ingest_rule_summary"></div>
+              </div>
             </div>
           </div>
         </div>
+        <div class="aliasMembersBlock">
+          <div class="aliasMembersHeader"><label>Files</label></div>
+          <div id="ingest_picker_files" class="aliasMemberList"></div>
+        </div>
+        ${csvPreviewSectionHtml("ingest_picker_preview")}
         <div class="modalActions modalActionsIconOnly">
           <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Ingest">${modalSaveIconHtml()}</button>
         </div>`,
-        { ...WF_EXPORT, titleHtml:`${icon}<span>Ingest</span>` },
+        { ...WF_INGEST, titleHtml:`${icon}<span>Ingest</span>` },
         async()=>{
           const ruleId=byId("ingest_rule")?.value||"";
           const rule=rules.find((r)=>String(r.id)===String(ruleId));
@@ -15682,6 +15980,62 @@
           return true;
         }
       );
+      const listEl=byId("ingest_picker_files");
+      const refreshPreview=()=>{
+        const rule=currentIngestRule("ingest_rule", rules);
+        const summary=byId("ingest_rule_summary");
+        if(summary) summary.textContent=formatIngestRuleLine(rule);
+        scheduleCsvPreview("ingest_picker_preview", ()=>{
+          const current=currentIngestRule("ingest_rule", rules);
+          const names=ingestPreviewCalcNames(current);
+          if(!focusedPath) return { message:"Select a CSV to preview.", calculatedNames:names };
+          if(detectFileTypeFromPath(focusedPath)!=="csv") return { message:"Preview is CSV-only.", calculatedNames:names };
+          return {
+            calculatedNames:names,
+            request:{
+              file_path:focusedPath,
+              units_in_headers:!!current?.units_in_headers,
+              units_in_row:!!current?.units_in_row,
+              time_index_channel:current?.time_index_channel||null,
+              channels:ingestPreviewChannels(current),
+              limit_rows:50,
+              limit_cols:40,
+            },
+          };
+        });
+      };
+      const renderFiles=()=>{
+        if(!listEl) return;
+        const still=focusedPath && files.some((file)=>normalizeFilePath(file.file_path)===normalizeFilePath(focusedPath));
+        if(!still){
+          const next=files.find((file)=>detectFileTypeFromPath(file.file_path)==="csv");
+          focusedPath=next ? String(next.file_path||"") : null;
+        }
+        listEl.innerHTML=files.map((file, idx)=>{
+          const filePath=String(file.file_path||"");
+          const name=filePath.split(/[/\\]/).pop()||file.name||filePath;
+          const kind=(file.type||detectFileTypeFromPath(filePath)||"").toUpperCase();
+          const active=focusedPath && normalizeFilePath(filePath)===normalizeFilePath(focusedPath);
+          return `
+            <div class="selectRow${active?" active":""}" data-idx="${idx}" title="${escAttr(filePath)}">
+              <div class="itemPrimary">${escapeHtml(name)}${kind?` <span class="itemMeta">${escapeHtml(kind)}</span>`:""}</div>
+            </div>`;
+        }).join("");
+        listEl.querySelectorAll(".selectRow").forEach((row)=>{
+          row.onclick=(ev)=>{
+            if(ev.target.closest("button")) return;
+            const i=Number(row.getAttribute("data-idx"));
+            const file=files[i];
+            if(!file) return;
+            focusedPath=String(file.file_path||"");
+            renderFiles();
+          };
+        });
+        refreshPreview();
+      };
+      const ruleSel=byId("ingest_rule");
+      if(ruleSel) ruleSel.addEventListener("change", refreshPreview);
+      renderFiles();
     }
     async function openIngestFilesWindow(){
       await loadIngestionLibrary();
@@ -15704,6 +16058,9 @@
                 <div class="rangeMetaCell">Rule</div>
                 <select id="ingest_files_rule" class="objPropControl">${opts}</select>
               </div>
+              <div class="rangeMetaRow">
+                <div class="rangeMetaCell ingestPreviewRuleLine" id="ingest_files_rule_summary"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -15714,10 +16071,11 @@
           </div>
           <div id="ingest_files_list" class="aliasMemberList"></div>
         </div>
+        ${csvPreviewSectionHtml("ingest_files_preview")}
         <div class="modalActions modalActionsIconOnly">
           <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Ingest">${modalSaveIconHtml()}</button>
         </div>`,
-        { ...WF_ALIAS_FORM, titleHtml:`${icon}<span>Ingest</span>` },
+        { ...WF_INGEST, titleHtml:`${icon}<span>Ingest</span>` },
         async()=>{
           const ruleId=byId("ingest_files_rule")?.value||"";
           const rule=rules.find((r)=>String(r.id)===String(ruleId));
@@ -15733,18 +16091,45 @@
         }
       );
       const listEl=byId("ingest_files_list");
+      let focusedPath=null;
+      const refreshPreview=()=>{
+        const rule=currentIngestRule("ingest_files_rule", rules);
+        const summary=byId("ingest_files_rule_summary");
+        if(summary) summary.textContent=formatIngestRuleLine(rule);
+        scheduleCsvPreview("ingest_files_preview", ()=>{
+          const current=currentIngestRule("ingest_files_rule", rules);
+          const names=ingestPreviewCalcNames(current);
+          if(!focusedPath) return { message:"Select a CSV to preview.", calculatedNames:names };
+          if(detectFileTypeFromPath(focusedPath)!=="csv") return { message:"Preview is CSV-only.", calculatedNames:names };
+          return {
+            calculatedNames:names,
+            request:{
+              file_path:focusedPath,
+              units_in_headers:!!current?.units_in_headers,
+              units_in_row:!!current?.units_in_row,
+              time_index_channel:current?.time_index_channel||null,
+              channels:ingestPreviewChannels(current),
+              limit_rows:50,
+              limit_cols:40,
+            },
+          };
+        });
+      };
       const renderFiles=()=>{
         if(!listEl) return;
+        const still=focusedPath && files.some((filePath)=>normalizeFilePath(filePath)===normalizeFilePath(focusedPath));
+        if(!still) focusedPath=files.find((filePath)=>detectFileTypeFromPath(filePath)==="csv")||null;
         if(!files.length){
           listEl.innerHTML=`<div class="empty">No files selected.</div>`;
-          fitAliasEditorWindow(listEl);
+          refreshPreview();
           return;
         }
         listEl.innerHTML=files.map((filePath, idx)=>{
           const name=String(filePath).split(/[/\\]/).pop()||filePath;
           const kind=(detectFileTypeFromPath(filePath)||"").toUpperCase();
+          const active=focusedPath && normalizeFilePath(filePath)===normalizeFilePath(focusedPath);
           return `
-            <div class="selectRow" data-idx="${idx}" title="${escAttr(filePath)}">
+            <div class="selectRow${active?" active":""}" data-idx="${idx}" title="${escAttr(filePath)}">
               <div class="itemPrimary">${escapeHtml(name)}${kind?` <span class="itemMeta">${escapeHtml(kind)}</span>`:""}</div>
               <button type="button" class="aliasMemberRemove" data-idx="${idx}" aria-label="Remove">&#10005;</button>
             </div>`;
@@ -15759,6 +16144,13 @@
           };
         });
         listEl.querySelectorAll(".selectRow").forEach((row)=>{
+          row.onclick=(ev)=>{
+            if(ev.target.closest("button")) return;
+            const i=Number(row.getAttribute("data-idx"));
+            if(!Number.isInteger(i) || !files[i]) return;
+            focusedPath=files[i];
+            renderFiles();
+          };
           row.oncontextmenu=(ev)=>{
             ev.preventDefault();
             ev.stopPropagation();
@@ -15772,10 +16164,11 @@
             ], { zIndex:z });
           };
         });
-        fitAliasEditorWindow(listEl);
+        refreshPreview();
       };
+      const ruleSel=byId("ingest_files_rule");
+      if(ruleSel) ruleSel.addEventListener("change", refreshPreview);
       renderFiles();
-      bindAliasEditorManualResize(listEl);
       const addBtn=byId("ingest_files_add");
       if(addBtn) addBtn.onclick=async()=>{
         try{
@@ -26824,6 +27217,7 @@
               <input id="m_edit_path" type="text" value="${escAttr(src.file_path||"")}" disabled />
             </div>
             ${propsSection}
+            ${csvPreviewSectionHtml("m_edit_preview")}
           </div>
           <div class="modalActions modalActionsIconOnly">
             <button id="modalSaveCloseBtn" type="button" class="iconActionBtn" aria-label="Save">${saveIcon}</button>
@@ -26865,6 +27259,31 @@
           saveState();
           return true;
         });
+        const buildEditPreviewSpec=()=>{
+          const path=String(src.file_path||"").trim();
+          if(!path || detectFileTypeFromPath(path)!=="csv"){
+            return { message: path ? "Preview is CSV-only." : "Select a CSV to preview." };
+          }
+          const unitsInHeaders=String(byId("m_edit_units")?.value||"false")==="true";
+          const unitsInRow=String(byId("m_edit_units_row")?.value||"false")==="true";
+          const timeRaw=(byId("m_edit_time")?.value||"").trim();
+          return {
+            request:{
+              file_path:path,
+              units_in_headers:unitsInHeaders,
+              units_in_row:unitsInRow,
+              time_index_channel:timeRaw||null,
+              limit_rows:50,
+              limit_cols:40,
+            },
+          };
+        };
+        const scheduleEditPreview=()=>scheduleCsvPreview("m_edit_preview", buildEditPreviewSpec);
+        ["m_edit_time","m_edit_units","m_edit_units_row"].forEach((id)=>{
+          const el=byId(id);
+          if(el) el.addEventListener("change", scheduleEditPreview);
+        });
+        scheduleEditPreview();
         // Refresh candidates from probe if empty
         if(src.type!=="tdms" && src.file_path && !candidates.length){
           probeDataFile(src.file_path, { unitsInHeaders:!!src.units_in_headers, unitsInRow:!!src.units_in_row }).then((probe)=>{
@@ -26878,6 +27297,7 @@
             ).join("");
             const wrap=sel.closest(".novaSelect");
             if(wrap) syncNovaSelectBtn(wrap);
+            scheduleEditPreview();
           }).catch(()=>{});
         }
         return;
