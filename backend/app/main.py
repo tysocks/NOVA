@@ -34,6 +34,7 @@ from .engine.range_store import (
 )
 from .engine.file_index import get_ingest_status, manifest_to_channels, manifest_to_tests, run_ingest
 from .engine.file_probe import probe_file_with_validation
+from .engine.polars_tabular import preview_csv_table
 from .engine.export_series import build_series_csv, build_series_parquet
 from .engine.series_query import execute_series_query
 from .models import (
@@ -43,6 +44,8 @@ from .models import (
     DatabaseItem,
     FileIngestRequest,
     FileIngestResponse,
+    FilePreviewRequest,
+    FilePreviewResponse,
     FileProbeRequest,
     FileProbeResponse,
     HealthResponse,
@@ -1089,6 +1092,31 @@ def probe_file_v3(body: FileProbeRequest) -> FileProbeResponse:
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/v3/file/preview", response_model=FilePreviewResponse)
+def preview_file_v3(body: FilePreviewRequest) -> FilePreviewResponse:
+    """Sample CSV rows with the ingest reader. Does not write an artifact."""
+    path = Path(body.file_path)
+    if not path.is_file():
+        raise HTTPException(status_code=400, detail=f"File not found: {body.file_path}")
+    try:
+        source_type = detect_source_type(str(path.resolve()))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if source_type != "csv":
+        raise HTTPException(status_code=400, detail="Preview is CSV-only.")
+    channels = body.channels.model_dump() if body.channels is not None else None
+    payload = preview_csv_table(
+        str(path.resolve()),
+        units_in_headers=body.units_in_headers,
+        units_in_row=body.units_in_row,
+        time_col=body.time_index_channel,
+        channels=channels,
+        limit_rows=body.limit_rows,
+        limit_cols=body.limit_cols,
+    )
+    return FilePreviewResponse(**payload)
 
 
 @app.post("/api/v3/ingest/file", response_model=FileIngestResponse)

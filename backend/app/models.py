@@ -304,6 +304,47 @@ class FileProbeResponse(BaseModel):
     schema_validation: FileSchemaValidation | None = None
 
 
+class FilePreviewColumn(BaseModel):
+    name: str
+    unit: str | None = None
+    source_name: str
+    role: Literal["time", "channel"]
+
+
+class FilePreviewChannelSelection(BaseModel):
+    """Channel block from an ingestion rule. Omitted for temporary file open."""
+
+    mode: Literal["all", "include"] = "all"
+    include: list[str] = Field(default_factory=list)
+    exclude: list[str] = Field(default_factory=list)
+    rename: dict[str, str] = Field(default_factory=dict)
+    require: list[str] = Field(default_factory=list)
+
+
+class FilePreviewRequest(BaseModel):
+    file_path: str
+    units_in_headers: bool = False
+    units_in_row: bool = False
+    time_index_channel: str | None = None
+    channels: FilePreviewChannelSelection | None = None
+    limit_rows: int = Field(default=50, ge=1, le=200)
+    limit_cols: int = Field(default=40, ge=1, le=80)
+
+
+class FilePreviewResponse(BaseModel):
+    columns: list[FilePreviewColumn] = Field(default_factory=list)
+    rows: list[list[Any]] = Field(default_factory=list)
+    time_kind: Literal["relative", "absolute"] | None = None
+    time_column: str | None = None
+    sampled_rows: int = 0
+    truncated_rows: bool = False
+    truncated_cols: bool = False
+    column_count: int = 0
+    warnings: list[str] = Field(default_factory=list)
+    error: str | None = None
+    schema_summary: str = ""
+
+
 class FileIngestResponse(BaseModel):
     artifact_id: str
     status: str

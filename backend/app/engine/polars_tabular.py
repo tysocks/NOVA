@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -191,13 +192,13 @@ def _strip_polars_columns(df: pl.DataFrame) -> pl.DataFrame:
     return df.rename(rename) if rename else df
 
 
-def normalize_csv_polars(
+def _read_csv_polars(
     file_path: str,
     *,
-    units_in_headers: bool = False,
-    units_in_row: bool = False,
-    time_col: str | None = None,
-) -> tuple[pl.DataFrame, dict[str, str | None], str, datetime]:
+    units_in_row: bool,
+    n_rows: int | None = None,
+) -> pl.DataFrame:
+    """Read a CSV the same way ingest does. ``n_rows`` limits data rows only."""
     try:
         read_kwargs: dict[str, Any] = {
             "infer_schema_length": 10000,
@@ -205,17 +206,31 @@ def normalize_csv_polars(
         }
         if units_in_row:
             read_kwargs["skip_rows_after_header"] = 1
+        if n_rows is not None:
+            read_kwargs["n_rows"] = int(n_rows)
         df = pl.read_csv(file_path, **read_kwargs)
     except Exception as exc:
         raise ValueError(f"Unable to read CSV contents: {exc}") from exc
+    return _strip_polars_columns(df)
 
-    df = _strip_polars_columns(df)
+
+def _prepare_csv_frame(
+    df: pl.DataFrame,
+    file_path: str,
+    *,
+    units_in_headers: bool,
+    units_in_row: bool,
+    time_col: str | None,
+) -> tuple[pl.DataFrame, dict[str, str | None], str, bool]:
+    """Strip is already done. Resolve time, attach units, rename header units.
+
+    Does not anchor relative time. Header units overwrite a units-row unit.
+    """
     df, resolved_time_col, was_relative = _normalize_time_frame(
         df,
         time_col=time_col,
         source_label="CSV",
     )
-    df, t0_utc = anchor_relative_time_to_ingest_utc(df, was_relative=was_relative)
     unit_map: dict[str, str | None] = {}
     if units_in_row:
         unit_map.update(csv_units_from_row(file_path, list(df.columns)))
@@ -227,7 +242,199 @@ def normalize_csv_polars(
         for col, unit in header_map.items():
             if unit:
                 unit_map[col] = unit
+    return df, unit_map, resolved_time_col, was_relative
+
+
+def normalize_csv_polars(
+    file_path: str,
+    *,
+    units_in_headers: bool = False,
+    units_in_row: bool = False,
+    time_col: str | None = None,
+) -> tuple[pl.DataFrame, dict[str, str | None], str, datetime]:
+    df = _read_csv_polars(file_path, units_in_row=units_in_row)
+    df, unit_map, resolved_time_col, was_relative = _prepare_csv_frame(
+        df,
+        file_path,
+        units_in_headers=units_in_headers,
+        units_in_row=units_in_row,
+        time_col=time_col,
+    )
+    df, t0_utc = anchor_relative_time_to_ingest_utc(df, was_relative=was_relative)
     return df, unit_map, resolved_time_col, t0_utc
+
+
+def _clean_preview_unit(unit: str | None) -> str | None:
+    if unit is None:
+        return None
+    text = str(unit).strip()
+    return text or None
+
+
+def _json_number(value: Any) -> int | float | None:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return int(value)
+    if isinstance(value, float):
+        if math.isnan(value) or math.isinf(value):
+            return None
+        return float(value)
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if math.isnan(number) or math.isinf(number):
+        return None
+    return number
+
+
+def _json_utc(value: Any) -> str | None:
+    if value is None:
+        return None
+    dt = value
+    if not isinstance(dt, datetime) and hasattr(value, "to_pydatetime"):
+        dt = value.to_pydatetime()
+    if not isinstance(dt, datetime):
+        text = str(value).strip()
+        return text or None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.isoformat().replace("+00:00", "Z")
+
+
+def _preview_error(message: str, *, truncated_rows: bool = False) -> dict[str, Any]:
+    return {
+        "columns": [],
+        "rows": [],
+        "time_kind": None,
+        "time_column": None,
+        "sampled_rows": 0,
+        "truncated_rows": truncated_rows,
+        "truncated_cols": False,
+        "column_count": 0,
+        "warnings": [],
+        "error": message,
+        "schema_summary": f"CSV schema check failed: {message}",
+    }
+
+
+def _preview_rows(
+    df: pl.DataFrame,
+    columns: list[dict[str, Any]],
+    *,
+    time_kind: str,
+) -> list[list[Any]]:
+    series: list[list[Any]] = []
+    for col in columns:
+        if col["role"] == "time" and time_kind == "absolute":
+            values = [_json_utc(v) for v in df.get_column("__time__").to_list()]
+        else:
+            values = [_json_number(v) for v in df.get_column(col["source_name"]).to_list()]
+        series.append(values)
+    if not series:
+        return []
+    return [list(items) for items in zip(*series)]
+
+
+def preview_csv_table(
+    file_path: str,
+    *,
+    units_in_headers: bool = False,
+    units_in_row: bool = False,
+    time_col: str | None = None,
+    channels: dict[str, Any] | None = None,
+    limit_rows: int = 50,
+    limit_cols: int = 40,
+) -> dict[str, Any]:
+    """Sample a CSV with the ingest reader and return a display table.
+
+    Reads ``limit_rows + 1`` data rows to detect truncation, then applies the
+    same units-row skip, header rename, and time resolution as ingest. Relative
+    time stays as the file's elapsed numbers. Known read/selection failures
+    come back as ``error`` instead of raising.
+    """
+    from ..services.ingestion_rule_library import resolve_channel_selection
+
+    limit_rows = max(1, min(int(limit_rows or 50), 200))
+    limit_cols = max(1, min(int(limit_cols or 40), 80))
+    truncated_rows = False
+    try:
+        raw = _read_csv_polars(
+            file_path,
+            units_in_row=units_in_row,
+            n_rows=limit_rows + 1,
+        )
+        truncated_rows = raw.height > limit_rows
+        if truncated_rows:
+            raw = raw.head(limit_rows)
+        df, unit_map, resolved_time_col, was_relative = _prepare_csv_frame(
+            raw,
+            file_path,
+            units_in_headers=units_in_headers,
+            units_in_row=units_in_row,
+            time_col=time_col,
+        )
+        available: list[str] = []
+        for col in df.columns:
+            if col in {"__time__", resolved_time_col}:
+                continue
+            dtype = df.schema[col]
+            if getattr(dtype, "is_numeric", lambda: False)():
+                available.append(col)
+        if not available:
+            raise ValueError("No numeric channel columns found besides the time index.")
+        if channels is not None:
+            selected, mapping = resolve_channel_selection(available, channels)
+        else:
+            selected = available
+            mapping = {name: name for name in available}
+
+        time_kind = "relative" if was_relative else "absolute"
+        time_meta = {
+            "name": resolved_time_col,
+            "unit": _clean_preview_unit(unit_map.get(resolved_time_col)),
+            "source_name": resolved_time_col,
+            "role": "time",
+        }
+        channel_columns: list[dict[str, Any]] = []
+        for source in selected:
+            channel_columns.append(
+                {
+                    "name": str(mapping.get(source, source)),
+                    "unit": _clean_preview_unit(unit_map.get(source)),
+                    "source_name": source,
+                    "role": "channel",
+                }
+            )
+        # limit_cols caps channel columns. Time stays first and is not part of the cap.
+        column_count = 1 + len(channel_columns)
+        truncated_cols = len(channel_columns) > limit_cols
+        shown = [time_meta, *channel_columns[:limit_cols]]
+        rows = _preview_rows(df, shown, time_kind=time_kind)
+        warnings: list[str] = []
+        if df.height < 2:
+            warnings.append("CSV has fewer than 2 data rows.")
+        schema_summary = "CSV file passed schema checks."
+        if warnings:
+            schema_summary += f" {len(warnings)} warning(s)."
+        return {
+            "columns": shown,
+            "rows": rows,
+            "time_kind": time_kind,
+            "time_column": resolved_time_col,
+            "sampled_rows": len(rows),
+            "truncated_rows": truncated_rows,
+            "truncated_cols": truncated_cols,
+            "column_count": column_count,
+            "warnings": warnings,
+            "error": None,
+            "schema_summary": schema_summary,
+        }
+    except ValueError as exc:
+        return _preview_error(str(exc), truncated_rows=truncated_rows)
 
 
 def normalize_tabular_polars(
